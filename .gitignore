@@ -165,6 +165,7 @@ tests/
 !boulderbash/tests/
 !ageofwar/tests/
 !vegas/tests/
+!farmcord/tests/
 /levelup/data/backgrounds/Thumbs.db
 testcog/
 /reqbackup.txt

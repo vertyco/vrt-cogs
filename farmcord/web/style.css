@@ -1,0 +1,857 @@
+@font-face {
+  font-family: "Fredoka";
+  src: url("fonts/fredoka.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+:root {
+  --ink: #3a2a12;
+  --ink-soft: #7a6244;
+  --cream: #fffaf0;
+  --cream-deep: #f3e7cc;
+  --wood: #a86a34;
+  --wood-deep: #6b3f1c;
+  --leaf: #5bb031;
+  --leaf-deep: #3a7d1c;
+  --gold: #ffcf3f;
+  --gold-deep: #d79b00;
+  --red-tint: #ffe1dc;
+  --red-deep: #a5281c;
+  /* Room taken by Discord's buttons and the phone's notch. The hub copies Discord's sizes into this frame */
+  --safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --button: 44px;
+  --switch: 52px;
+  --tool: 64px;
+  color-scheme: light;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #206fb1;
+  color: var(--ink);
+  font-family: "Fredoka", "Trebuchet MS", "Segoe UI", sans-serif;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  /* Set from the page: where the HUD ends and how tall the tool bar is */
+  --hud-bottom: 72px;
+  --bar-height: 96px;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+
+.stage canvas {
+  display: block;
+}
+
+/* ---------- The HUD ---------- */
+
+.hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  padding: calc(var(--safe-top) + 8px) calc(var(--safe-right) + 10px) 6px calc(var(--safe-left) + 10px);
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas: "back purse level name people weather switches";
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+.back {
+  grid-area: back;
+}
+
+.purse {
+  grid-area: purse;
+}
+
+.level {
+  grid-area: level;
+}
+
+.weather {
+  grid-area: weather;
+}
+
+/* The room's name, ActivityHub's "who's here" button and the weather: cells of the HUD's row on wide screens, a row
+   of their own on an upright phone */
+.hud-line {
+  display: contents;
+}
+
+.people {
+  grid-area: people;
+  --hub-people-size: 42px;
+}
+
+.people:empty {
+  display: none;
+}
+
+.switches {
+  grid-area: switches;
+  display: flex;
+  gap: 8px;
+}
+
+.round-button {
+  width: var(--button);
+  height: var(--button);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--wood-deep);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.round-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.round-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--wood-deep);
+}
+
+.round-button.small {
+  --button: 36px;
+}
+
+/* The sound and music switches: big, and always on screen */
+.switch {
+  --button: var(--switch);
+  background: var(--leaf);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--leaf-deep);
+}
+
+.switch svg {
+  width: 28px;
+  height: 28px;
+}
+
+.switch[aria-pressed="false"] {
+  background: var(--cream-deep);
+  color: var(--ink-soft);
+  box-shadow: 0 4px 0 var(--wood-deep);
+}
+
+.switch .off,
+.switch[aria-pressed="false"] .on {
+  display: none;
+}
+
+.switch[aria-pressed="false"] .off {
+  display: block;
+}
+
+.pill {
+  box-sizing: border-box;
+  min-height: 42px;
+  margin: 0;
+  padding: 4px 14px 4px 6px;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--wood-deep);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pill-icon {
+  display: grid;
+  place-items: center;
+}
+
+.purse b {
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.level {
+  min-width: 170px;
+}
+
+.level-words {
+  flex: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 1px 8px;
+}
+
+.level-words small {
+  justify-self: end;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-bar {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--cream-deep);
+  overflow: hidden;
+}
+
+.xp-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7fd147, var(--leaf));
+  transition: width 0.4s ease-out;
+}
+
+.weather {
+  padding-left: 10px;
+  font-weight: 600;
+}
+
+.weather svg {
+  width: 24px;
+  height: 24px;
+  display: none;
+}
+
+.weather[data-weather="sun"] .sun,
+.weather[data-weather="rain"] .rain,
+.weather[data-weather="snow"] .snow {
+  display: block;
+}
+
+.room-name {
+  grid-area: name;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  color: #fff;
+  font-size: 1.7rem;
+  font-weight: 700;
+  pointer-events: none;
+  text-shadow: 0 3px 0 var(--wood-deep), 0 0 12px rgba(58, 42, 18, 0.45);
+}
+
+/* A FarmCoins amount with the coin picture */
+.price {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+
+/* A picture from the art sheets, cut out of its sheet with background-position */
+.art-icon {
+  position: relative;
+  display: inline-block;
+  flex: none;
+}
+
+.art-icon > span {
+  position: absolute;
+  background-repeat: no-repeat;
+}
+
+/* ---------- Exits ---------- */
+
+.exits {
+  position: absolute;
+  top: var(--hud-bottom);
+  bottom: var(--bar-height);
+  left: var(--safe-left);
+  right: var(--safe-right);
+  pointer-events: none;
+}
+
+.exit {
+  position: absolute;
+  min-height: var(--button);
+  padding: 6px 16px 6px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.94);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--wood-deep);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.exit svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--leaf-deep);
+}
+
+.exit:active {
+  box-shadow: 0 1px 0 var(--wood-deep);
+}
+
+.exit[data-dir="left"] {
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.exit[data-dir="right"] {
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: row-reverse;
+  padding: 6px 10px 6px 16px;
+}
+
+.exit[data-dir="up"] {
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.exit[data-dir="down"] {
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ---------- The tool bar ---------- */
+
+.tools {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 8px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 22px;
+  background: var(--wood);
+  box-shadow: 0 4px 0 var(--wood-deep), inset 0 2px 0 rgba(255, 255, 255, 0.25);
+}
+
+.tool {
+  position: relative;
+  width: var(--tool);
+  height: var(--tool);
+  padding: 2px 0 0;
+  border: 0;
+  border-radius: 16px;
+  background: var(--cream);
+  box-shadow: 0 3px 0 var(--cream-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.tool .picture {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+}
+
+.tool .picture svg {
+  width: 34px;
+  height: 34px;
+}
+
+.tool .label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tool .badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 14px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--leaf-deep);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tool[aria-pressed="true"] {
+  background: var(--gold);
+  box-shadow: 0 3px 0 var(--gold-deep);
+  transform: translateY(-5px);
+}
+
+.picker {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--bar-height) + 10px);
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(92vw, 420px);
+  max-height: calc(100% - var(--hud-bottom) - var(--bar-height) - 20px);
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 20px;
+  background: var(--cream);
+  box-shadow: 0 5px 0 var(--wood-deep);
+}
+
+.picker-top,
+.panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.picker h2,
+.panel-top h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.choices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.choice {
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 12px 6px 6px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 0 var(--cream-deep);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice .words {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.choice small {
+  color: var(--ink-soft);
+}
+
+.choice .count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dim {
+  color: var(--ink-soft);
+}
+
+/* ---------- Toasts and messages ---------- */
+
+/* A popover, so toasts show over the boxes the rooms open too. The browser's popover look is taken off */
+.toasts {
+  position: absolute;
+  inset: calc(var(--hud-bottom) + 62px) auto auto 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 540px);
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.toast {
+  margin: 0;
+  padding: 8px 18px;
+  border-radius: 18px;
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--wood-deep);
+  font-weight: 600;
+  text-align: center;
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast.error {
+  background: var(--red-tint);
+  color: var(--red-deep);
+  box-shadow: 0 3px 0 var(--red-deep);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.notice {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  /* Placed at left: 50%, the box would otherwise only grow to half the screen's width */
+  width: max-content;
+  max-width: min(86vw, 460px);
+  padding: 18px 26px;
+  border-radius: 22px;
+  background: var(--cream);
+  box-shadow: 0 5px 0 var(--wood-deep);
+  text-align: center;
+}
+
+.notice p {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.notice .button {
+  margin-top: 14px;
+}
+
+/* ---------- Boxes over the farm ---------- */
+
+.card {
+  box-sizing: border-box;
+  width: min(92vw, 460px);
+  max-height: 86vh;
+  border: 0;
+  border-radius: 24px;
+  padding: 22px;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: inherit;
+  box-shadow: 0 8px 0 var(--wood-deep);
+}
+
+.card.wide {
+  width: min(94vw, 760px);
+}
+
+.card::backdrop {
+  background: rgba(40, 25, 10, 0.5);
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 1.6rem;
+}
+
+.card h3 {
+  margin: 14px 0 6px;
+  font-size: 1.1rem;
+}
+
+.news {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.news li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 600;
+}
+
+.news small {
+  flex: none;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+.levelup {
+  text-align: center;
+}
+
+.burst {
+  color: var(--gold);
+  font-size: 2.6rem !important;
+  text-shadow: 0 4px 0 var(--gold-deep), 0 0 2px var(--wood-deep);
+}
+
+.reward {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.unlocks {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+
+.unlocks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 600;
+}
+
+.tag {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--leaf);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.panel-body {
+  overflow-y: auto;
+}
+
+.question {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.button {
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--cream-deep);
+  cursor: pointer;
+}
+
+.button.primary {
+  background: var(--leaf);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--leaf-deep);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.button:active {
+  transform: translateY(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+
+  .xp-bar i {
+    transition: none;
+  }
+}
+
+/* A phone held upright: the stats on one row and the room's name and weather under them */
+@media (max-width: 640px) {
+  :root {
+    --switch: 48px;
+    --tool: 60px;
+  }
+
+  .hud {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "back purse level switches"
+      "line line line line";
+    gap: 6px;
+  }
+
+  .hud-line {
+    grid-area: line;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hud-line .room-name {
+    flex: 1;
+  }
+
+  .pill {
+    padding-right: 10px;
+  }
+
+  .level {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .level-words {
+    min-width: 0;
+  }
+
+  /* The side exits sit over the back of the room, clear of where the farmer walks */
+  .exit[data-dir="left"],
+  .exit[data-dir="right"] {
+    top: 30%;
+  }
+
+  .level-words small {
+    display: none;
+  }
+
+  .room-name {
+    text-align: left;
+    font-size: 1.4rem;
+  }
+
+  .exit {
+    font-size: 0.95rem;
+  }
+
+  .tools {
+    gap: 6px;
+    padding: 6px;
+  }
+}
+
+/* A phone held sideways: one short row of stats and a short tool bar, to leave the farm room */
+@media (max-height: 500px) and (orientation: landscape) {
+  :root {
+    --button: 40px;
+    --switch: 44px;
+    --tool: 54px;
+  }
+
+  .hud {
+    padding-top: calc(var(--safe-top) + 6px);
+    gap: 6px;
+  }
+
+  .pill {
+    min-height: 38px;
+  }
+
+  .room-name {
+    font-size: 1.3rem;
+  }
+
+  .tools {
+    bottom: calc(var(--safe-bottom) + 4px);
+    padding: 5px;
+    gap: 6px;
+  }
+
+  .tool .picture {
+    width: 32px;
+    height: 32px;
+  }
+
+  .tool .picture > * {
+    zoom: 0.8;
+  }
+
+  /* The room fills the short screen, so the bottom exit moves aside, off the farmer coming in from below */
+  .exit[data-dir="down"] {
+    left: 10px;
+    transform: none;
+  }
+}

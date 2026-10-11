@@ -1,0 +1,2391 @@
+{
+ "frames": {
+  "soil/untilled": {
+   "frame": {
+    "x": 393,
+    "y": 828,
+    "w": 190,
+    "h": 92
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 103,
+    "w": 190,
+    "h": 92
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "soil/tilled": {
+   "frame": {
+    "x": 786,
+    "y": 1138,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/rotted": {
+   "frame": {
+    "x": 982,
+    "y": 1143,
+    "w": 190,
+    "h": 92
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 103,
+    "w": 190,
+    "h": 92
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wildflowers/seed": {
+   "frame": {
+    "x": 2,
+    "y": 1041,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wildflowers/sprout": {
+   "frame": {
+    "x": 786,
+    "y": 1039,
+    "w": 192,
+    "h": 95
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 101,
+    "w": 192,
+    "h": 95
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wildflowers/growing": {
+   "frame": {
+    "x": 785,
+    "y": 587,
+    "w": 192,
+    "h": 120
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 76,
+    "w": 192,
+    "h": 120
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wildflowers/ripe": {
+   "frame": {
+    "x": 590,
+    "y": 321,
+    "w": 192,
+    "h": 134
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 62,
+    "w": 192,
+    "h": 134
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wildflowers/withered": {
+   "frame": {
+    "x": 1569,
+    "y": 737,
+    "w": 192,
+    "h": 106
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 90,
+    "w": 192,
+    "h": 106
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wildflowers/dried": {
+   "frame": {
+    "x": 394,
+    "y": 333,
+    "w": 192,
+    "h": 134
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 62,
+    "w": 192,
+    "h": 134
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/tulips/seed": {
+   "frame": {
+    "x": 982,
+    "y": 1045,
+    "w": 192,
+    "h": 94
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 102,
+    "w": 192,
+    "h": 94
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/tulips/sprout": {
+   "frame": {
+    "x": 198,
+    "y": 828,
+    "w": 191,
+    "h": 103
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 92,
+    "w": 191,
+    "h": 103
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/tulips/growing": {
+   "frame": {
+    "x": 1569,
+    "y": 604,
+    "w": 191,
+    "h": 118
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 77,
+    "w": 191,
+    "h": 118
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/tulips/ripe": {
+   "frame": {
+    "x": 786,
+    "y": 455,
+    "w": 191,
+    "h": 128
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 67,
+    "w": 191,
+    "h": 128
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/tulips/withered": {
+   "frame": {
+    "x": 981,
+    "y": 455,
+    "w": 191,
+    "h": 127
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 68,
+    "w": 191,
+    "h": 127
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/tulips/dried": {
+   "frame": {
+    "x": 590,
+    "y": 459,
+    "w": 191,
+    "h": 128
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 67,
+    "w": 191,
+    "h": 128
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/lilies/seed": {
+   "frame": {
+    "x": 198,
+    "y": 717,
+    "w": 190,
+    "h": 94
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 102,
+    "w": 190,
+    "h": 94
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/lilies/sprout": {
+   "frame": {
+    "x": 2,
+    "y": 603,
+    "w": 190,
+    "h": 108
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 88,
+    "w": 190,
+    "h": 108
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/lilies/growing": {
+   "frame": {
+    "x": 590,
+    "y": 591,
+    "w": 190,
+    "h": 118
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 78,
+    "w": 190,
+    "h": 118
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/lilies/ripe": {
+   "frame": {
+    "x": 786,
+    "y": 321,
+    "w": 190,
+    "h": 130
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 65,
+    "w": 190,
+    "h": 130
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/lilies/withered": {
+   "frame": {
+    "x": 2,
+    "y": 472,
+    "w": 190,
+    "h": 127
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 70,
+    "w": 190,
+    "h": 127
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/lilies/dried": {
+   "frame": {
+    "x": 980,
+    "y": 321,
+    "w": 190,
+    "h": 130
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 65,
+    "w": 190,
+    "h": 130
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wheat/seed": {
+   "frame": {
+    "x": 198,
+    "y": 1041,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wheat/sprout": {
+   "frame": {
+    "x": 1765,
+    "y": 737,
+    "w": 192,
+    "h": 106
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 90,
+    "w": 192,
+    "h": 106
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wheat/growing": {
+   "frame": {
+    "x": 394,
+    "y": 180,
+    "w": 192,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 47,
+    "w": 192,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wheat/ripe": {
+   "frame": {
+    "x": 2,
+    "y": 2,
+    "w": 192,
+    "h": 184
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 12,
+    "w": 192,
+    "h": 184
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wheat/withered": {
+   "frame": {
+    "x": 394,
+    "y": 471,
+    "w": 192,
+    "h": 127
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 69,
+    "w": 192,
+    "h": 127
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/wheat/dried": {
+   "frame": {
+    "x": 198,
+    "y": 2,
+    "w": 192,
+    "h": 184
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 12,
+    "w": 192,
+    "h": 184
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/radishes/seed": {
+   "frame": {
+    "x": 2,
+    "y": 1138,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/radishes/sprout": {
+   "frame": {
+    "x": 590,
+    "y": 935,
+    "w": 192,
+    "h": 100
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 96,
+    "w": 192,
+    "h": 100
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/radishes/growing": {
+   "frame": {
+    "x": 392,
+    "y": 716,
+    "w": 192,
+    "h": 108
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 88,
+    "w": 192,
+    "h": 108
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/radishes/ripe": {
+   "frame": {
+    "x": 1176,
+    "y": 458,
+    "w": 192,
+    "h": 125
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 71,
+    "w": 192,
+    "h": 125
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/radishes/withered": {
+   "frame": {
+    "x": 588,
+    "y": 826,
+    "w": 192,
+    "h": 105
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 91,
+    "w": 192,
+    "h": 105
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/radishes/dried": {
+   "frame": {
+    "x": 1372,
+    "y": 458,
+    "w": 192,
+    "h": 125
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 71,
+    "w": 192,
+    "h": 125
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/potatoes/seed": {
+   "frame": {
+    "x": 198,
+    "y": 1138,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/potatoes/sprout": {
+   "frame": {
+    "x": 784,
+    "y": 826,
+    "w": 192,
+    "h": 105
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 92,
+    "w": 192,
+    "h": 105
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/potatoes/growing": {
+   "frame": {
+    "x": 981,
+    "y": 587,
+    "w": 192,
+    "h": 120
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 77,
+    "w": 192,
+    "h": 120
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/potatoes/ripe": {
+   "frame": {
+    "x": 1178,
+    "y": 180,
+    "w": 192,
+    "h": 135
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 61,
+    "w": 192,
+    "h": 135
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/potatoes/withered": {
+   "frame": {
+    "x": 198,
+    "y": 337,
+    "w": 192,
+    "h": 131
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 65,
+    "w": 192,
+    "h": 131
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/potatoes/dried": {
+   "frame": {
+    "x": 1374,
+    "y": 180,
+    "w": 192,
+    "h": 135
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 61,
+    "w": 192,
+    "h": 135
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peanuts/seed": {
+   "frame": {
+    "x": 394,
+    "y": 1140,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peanuts/sprout": {
+   "frame": {
+    "x": 2,
+    "y": 828,
+    "w": 192,
+    "h": 103
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 93,
+    "w": 192,
+    "h": 103
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peanuts/growing": {
+   "frame": {
+    "x": 392,
+    "y": 602,
+    "w": 192,
+    "h": 110
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 86,
+    "w": 192,
+    "h": 110
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peanuts/ripe": {
+   "frame": {
+    "x": 1177,
+    "y": 587,
+    "w": 192,
+    "h": 119
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 77,
+    "w": 192,
+    "h": 119
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peanuts/withered": {
+   "frame": {
+    "x": 1177,
+    "y": 710,
+    "w": 192,
+    "h": 118
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 78,
+    "w": 192,
+    "h": 118
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peanuts/dried": {
+   "frame": {
+    "x": 1373,
+    "y": 604,
+    "w": 192,
+    "h": 119
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 77,
+    "w": 192,
+    "h": 119
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/corn/seed": {
+   "frame": {
+    "x": 590,
+    "y": 1143,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/corn/sprout": {
+   "frame": {
+    "x": 1764,
+    "y": 492,
+    "w": 192,
+    "h": 122
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 74,
+    "w": 192,
+    "h": 122
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/corn/growing": {
+   "frame": {
+    "x": 1570,
+    "y": 178,
+    "w": 192,
+    "h": 156
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 40,
+    "w": 192,
+    "h": 156
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/corn/ripe": {
+   "frame": {
+    "x": 1570,
+    "y": 2,
+    "w": 192,
+    "h": 172
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 24,
+    "w": 192,
+    "h": 172
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/corn/withered": {
+   "frame": {
+    "x": 1178,
+    "y": 319,
+    "w": 192,
+    "h": 135
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 61,
+    "w": 192,
+    "h": 135
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/corn/dried": {
+   "frame": {
+    "x": 1766,
+    "y": 2,
+    "w": 192,
+    "h": 172
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 24,
+    "w": 192,
+    "h": 172
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peppers/seed": {
+   "frame": {
+    "x": 2,
+    "y": 1235,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peppers/sprout": {
+   "frame": {
+    "x": 2,
+    "y": 717,
+    "w": 192,
+    "h": 107
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 89,
+    "w": 192,
+    "h": 107
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peppers/growing": {
+   "frame": {
+    "x": 1373,
+    "y": 727,
+    "w": 192,
+    "h": 111
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 85,
+    "w": 192,
+    "h": 111
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peppers/ripe": {
+   "frame": {
+    "x": 784,
+    "y": 711,
+    "w": 192,
+    "h": 111
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 85,
+    "w": 192,
+    "h": 111
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peppers/withered": {
+   "frame": {
+    "x": 588,
+    "y": 713,
+    "w": 192,
+    "h": 109
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 87,
+    "w": 192,
+    "h": 109
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/peppers/dried": {
+   "frame": {
+    "x": 980,
+    "y": 711,
+    "w": 192,
+    "h": 111
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 85,
+    "w": 192,
+    "h": 111
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/sunflowers/seed": {
+   "frame": {
+    "x": 198,
+    "y": 1235,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/sunflowers/sprout": {
+   "frame": {
+    "x": 786,
+    "y": 935,
+    "w": 192,
+    "h": 100
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 96,
+    "w": 192,
+    "h": 100
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/sunflowers/growing": {
+   "frame": {
+    "x": 1764,
+    "y": 618,
+    "w": 192,
+    "h": 115
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 81,
+    "w": 192,
+    "h": 115
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/sunflowers/ripe": {
+   "frame": {
+    "x": 1374,
+    "y": 319,
+    "w": 192,
+    "h": 135
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 62,
+    "w": 192,
+    "h": 135
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/sunflowers/withered": {
+   "frame": {
+    "x": 1568,
+    "y": 477,
+    "w": 192,
+    "h": 123
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 73,
+    "w": 192,
+    "h": 123
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/sunflowers/dried": {
+   "frame": {
+    "x": 1570,
+    "y": 338,
+    "w": 192,
+    "h": 135
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 62,
+    "w": 192,
+    "h": 135
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/hops/seed": {
+   "frame": {
+    "x": 394,
+    "y": 2,
+    "w": 192,
+    "h": 174
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 22,
+    "w": 192,
+    "h": 174
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/hops/sprout": {
+   "frame": {
+    "x": 590,
+    "y": 2,
+    "w": 192,
+    "h": 174
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 22,
+    "w": 192,
+    "h": 174
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/hops/growing": {
+   "frame": {
+    "x": 786,
+    "y": 2,
+    "w": 192,
+    "h": 174
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 22,
+    "w": 192,
+    "h": 174
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/hops/ripe": {
+   "frame": {
+    "x": 982,
+    "y": 2,
+    "w": 192,
+    "h": 174
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 22,
+    "w": 192,
+    "h": 174
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/hops/withered": {
+   "frame": {
+    "x": 1178,
+    "y": 2,
+    "w": 192,
+    "h": 174
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 22,
+    "w": 192,
+    "h": 174
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/hops/dried": {
+   "frame": {
+    "x": 1374,
+    "y": 2,
+    "w": 192,
+    "h": 174
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 22,
+    "w": 192,
+    "h": 174
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blueberries/seed": {
+   "frame": {
+    "x": 394,
+    "y": 1237,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blueberries/sprout": {
+   "frame": {
+    "x": 196,
+    "y": 602,
+    "w": 192,
+    "h": 111
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 85,
+    "w": 192,
+    "h": 111
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blueberries/growing": {
+   "frame": {
+    "x": 2,
+    "y": 338,
+    "w": 192,
+    "h": 130
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 66,
+    "w": 192,
+    "h": 130
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blueberries/ripe": {
+   "frame": {
+    "x": 590,
+    "y": 180,
+    "w": 192,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 59,
+    "w": 192,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blueberries/withered": {
+   "frame": {
+    "x": 786,
+    "y": 180,
+    "w": 192,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 59,
+    "w": 192,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blueberries/dried": {
+   "frame": {
+    "x": 982,
+    "y": 180,
+    "w": 192,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 59,
+    "w": 192,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blackberries/seed": {
+   "frame": {
+    "x": 2,
+    "y": 1332,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blackberries/sprout": {
+   "frame": {
+    "x": 196,
+    "y": 472,
+    "w": 192,
+    "h": 126
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 70,
+    "w": 192,
+    "h": 126
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blackberries/growing": {
+   "frame": {
+    "x": 198,
+    "y": 190,
+    "w": 192,
+    "h": 143
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 53,
+    "w": 192,
+    "h": 143
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blackberries/ripe": {
+   "frame": {
+    "x": 1766,
+    "y": 178,
+    "w": 192,
+    "h": 153
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 43,
+    "w": 192,
+    "h": 153
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blackberries/withered": {
+   "frame": {
+    "x": 2,
+    "y": 190,
+    "w": 192,
+    "h": 144
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 52,
+    "w": 192,
+    "h": 144
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/blackberries/dried": {
+   "frame": {
+    "x": 1766,
+    "y": 335,
+    "w": 192,
+    "h": 153
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 43,
+    "w": 192,
+    "h": 153
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/cranberries/seed": {
+   "frame": {
+    "x": 198,
+    "y": 1332,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/cranberries/sprout": {
+   "frame": {
+    "x": 1374,
+    "y": 955,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/cranberries/growing": {
+   "frame": {
+    "x": 982,
+    "y": 941,
+    "w": 192,
+    "h": 100
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 96,
+    "w": 192,
+    "h": 100
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/cranberries/ripe": {
+   "frame": {
+    "x": 1178,
+    "y": 950,
+    "w": 192,
+    "h": 100
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 96,
+    "w": 192,
+    "h": 100
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/cranberries/withered": {
+   "frame": {
+    "x": 394,
+    "y": 1040,
+    "w": 192,
+    "h": 96
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 100,
+    "w": 192,
+    "h": 96
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/cranberries/dried": {
+   "frame": {
+    "x": 590,
+    "y": 1039,
+    "w": 192,
+    "h": 100
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 96,
+    "w": 192,
+    "h": 100
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/watermelon/seed": {
+   "frame": {
+    "x": 1570,
+    "y": 955,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/watermelon/sprout": {
+   "frame": {
+    "x": 1766,
+    "y": 955,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/watermelon/growing": {
+   "frame": {
+    "x": 394,
+    "y": 935,
+    "w": 192,
+    "h": 101
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 95,
+    "w": 192,
+    "h": 101
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/watermelon/ripe": {
+   "frame": {
+    "x": 980,
+    "y": 826,
+    "w": 192,
+    "h": 105
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 91,
+    "w": 192,
+    "h": 105
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/watermelon/withered": {
+   "frame": {
+    "x": 1374,
+    "y": 1052,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/watermelon/dried": {
+   "frame": {
+    "x": 1176,
+    "y": 832,
+    "w": 192,
+    "h": 105
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 91,
+    "w": 192,
+    "h": 105
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/pumpkin/seed": {
+   "frame": {
+    "x": 1178,
+    "y": 1054,
+    "w": 192,
+    "h": 93
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 103,
+    "w": 192,
+    "h": 93
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/pumpkin/sprout": {
+   "frame": {
+    "x": 2,
+    "y": 935,
+    "w": 192,
+    "h": 102
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 94,
+    "w": 192,
+    "h": 102
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/pumpkin/growing": {
+   "frame": {
+    "x": 1372,
+    "y": 842,
+    "w": 192,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 92,
+    "w": 192,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/pumpkin/ripe": {
+   "frame": {
+    "x": 1568,
+    "y": 847,
+    "w": 192,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 92,
+    "w": 192,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/pumpkin/withered": {
+   "frame": {
+    "x": 198,
+    "y": 935,
+    "w": 192,
+    "h": 102
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 94,
+    "w": 192,
+    "h": 102
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  },
+  "crop/pumpkin/dried": {
+   "frame": {
+    "x": 1764,
+    "y": 847,
+    "w": 192,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 92,
+    "w": 192,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 200,
+    "h": 200
+   },
+   "anchor": {
+    "x": 0.495,
+    "y": 0.7475
+   }
+  }
+ },
+ "meta": {
+  "app": "FarmCord build_art",
+  "version": "1.0",
+  "image": "crops-0.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 1960,
+   "h": 1427
+  },
+  "scale": "1.66667"
+ }
+}

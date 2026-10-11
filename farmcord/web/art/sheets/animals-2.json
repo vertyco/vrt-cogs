@@ -1,0 +1,5559 @@
+{
+ "frames": {
+  "animal/chicken/baby/0": {
+   "frame": {
+    "x": 1752,
+    "y": 1444,
+    "w": 45,
+    "h": 55
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 10,
+    "w": 45,
+    "h": 55
+   },
+   "sourceSize": {
+    "w": 48,
+    "h": 65
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9796
+   }
+  },
+  "animal/chicken/baby/1": {
+   "frame": {
+    "x": 1995,
+    "y": 1838,
+    "w": 45,
+    "h": 55
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 10,
+    "w": 45,
+    "h": 55
+   },
+   "sourceSize": {
+    "w": 48,
+    "h": 65
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9796
+   }
+  },
+  "animal/chicken/baby/5": {
+   "frame": {
+    "x": 1995,
+    "y": 1897,
+    "w": 44,
+    "h": 55
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 10,
+    "w": 44,
+    "h": 55
+   },
+   "sourceSize": {
+    "w": 48,
+    "h": 65
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9796
+   }
+  },
+  "animal/chicken/baby/6": {
+   "frame": {
+    "x": 1995,
+    "y": 1956,
+    "w": 44,
+    "h": 55
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 10,
+    "w": 44,
+    "h": 55
+   },
+   "sourceSize": {
+    "w": 48,
+    "h": 65
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9796
+   }
+  },
+  "animal/chicken/adult/female/27": {
+   "frame": {
+    "x": 1032,
+    "y": 1971,
+    "w": 59,
+    "h": 75
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 22,
+    "y": 6,
+    "w": 59,
+    "h": 75
+   },
+   "sourceSize": {
+    "w": 103,
+    "h": 90
+   },
+   "anchor": {
+    "x": 0.6103,
+    "y": 0.8739
+   }
+  },
+  "animal/chicken/adult/female/48": {
+   "frame": {
+    "x": 1193,
+    "y": 1964,
+    "w": 70,
+    "h": 82
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 23,
+    "y": 6,
+    "w": 70,
+    "h": 82
+   },
+   "sourceSize": {
+    "w": 103,
+    "h": 90
+   },
+   "anchor": {
+    "x": 0.6103,
+    "y": 0.8739
+   }
+  },
+  "animal/chicken/adult/female/58": {
+   "frame": {
+    "x": 953,
+    "y": 1971,
+    "w": 75,
+    "h": 75
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 19,
+    "y": 14,
+    "w": 75,
+    "h": 75
+   },
+   "sourceSize": {
+    "w": 103,
+    "h": 90
+   },
+   "anchor": {
+    "x": 0.6103,
+    "y": 0.8739
+   }
+  },
+  "animal/chicken/adult/male/37": {
+   "frame": {
+    "x": 1114,
+    "y": 1964,
+    "w": 75,
+    "h": 82
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 14,
+    "y": 4,
+    "w": 75,
+    "h": 82
+   },
+   "sourceSize": {
+    "w": 91,
+    "h": 87
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9778
+   }
+  },
+  "animal/goose/adult/0": {
+   "frame": {
+    "x": 1487,
+    "y": 1743,
+    "w": 111,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 7,
+    "w": 111,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/1": {
+   "frame": {
+    "x": 1545,
+    "y": 1594,
+    "w": 111,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 7,
+    "w": 111,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/2": {
+   "frame": {
+    "x": 1487,
+    "y": 1883,
+    "w": 111,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 7,
+    "w": 111,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/3": {
+   "frame": {
+    "x": 1602,
+    "y": 1734,
+    "w": 111,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 7,
+    "w": 111,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/4": {
+   "frame": {
+    "x": 1857,
+    "y": 1000,
+    "w": 112,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 7,
+    "w": 112,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/5": {
+   "frame": {
+    "x": 1841,
+    "y": 1140,
+    "w": 112,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 7,
+    "w": 112,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/6": {
+   "frame": {
+    "x": 1840,
+    "y": 1280,
+    "w": 112,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 7,
+    "w": 112,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/7": {
+   "frame": {
+    "x": 1802,
+    "y": 1420,
+    "w": 112,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 7,
+    "w": 112,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/8": {
+   "frame": {
+    "x": 1912,
+    "y": 568,
+    "w": 113,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 7,
+    "w": 113,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/25": {
+   "frame": {
+    "x": 1660,
+    "y": 1584,
+    "w": 110,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 7,
+    "w": 110,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/26": {
+   "frame": {
+    "x": 1937,
+    "y": 425,
+    "w": 109,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 7,
+    "w": 109,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/27": {
+   "frame": {
+    "x": 1716,
+    "y": 1874,
+    "w": 109,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 7,
+    "w": 109,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/28": {
+   "frame": {
+    "x": 1717,
+    "y": 1724,
+    "w": 109,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 7,
+    "w": 109,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/29": {
+   "frame": {
+    "x": 1602,
+    "y": 1874,
+    "w": 110,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 7,
+    "w": 110,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/31": {
+   "frame": {
+    "x": 1918,
+    "y": 1420,
+    "w": 112,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 7,
+    "w": 112,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/32": {
+   "frame": {
+    "x": 1932,
+    "y": 143,
+    "w": 111,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 6,
+    "w": 111,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/33": {
+   "frame": {
+    "x": 1815,
+    "y": 284,
+    "w": 111,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 8,
+    "y": 6,
+    "w": 111,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/34": {
+   "frame": {
+    "x": 1545,
+    "y": 145,
+    "w": 111,
+    "h": 138
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 8,
+    "y": 5,
+    "w": 111,
+    "h": 138
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/35": {
+   "frame": {
+    "x": 1930,
+    "y": 284,
+    "w": 111,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 8,
+    "y": 6,
+    "w": 111,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/36": {
+   "frame": {
+    "x": 1372,
+    "y": 1771,
+    "w": 111,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 6,
+    "w": 111,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/37": {
+   "frame": {
+    "x": 1636,
+    "y": 1444,
+    "w": 112,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 7,
+    "w": 112,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/79": {
+   "frame": {
+    "x": 1253,
+    "y": 1333,
+    "w": 112,
+    "h": 139
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 0,
+    "w": 112,
+    "h": 139
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/80": {
+   "frame": {
+    "x": 1292,
+    "y": 1176,
+    "w": 112,
+    "h": 139
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 0,
+    "w": 112,
+    "h": 139
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/81": {
+   "frame": {
+    "x": 1409,
+    "y": 878,
+    "w": 111,
+    "h": 139
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 8,
+    "y": 0,
+    "w": 111,
+    "h": 139
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/82": {
+   "frame": {
+    "x": 1294,
+    "y": 1027,
+    "w": 112,
+    "h": 139
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 0,
+    "w": 112,
+    "h": 139
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/83": {
+   "frame": {
+    "x": 1824,
+    "y": 2,
+    "w": 113,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 2,
+    "w": 113,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/94": {
+   "frame": {
+    "x": 1815,
+    "y": 143,
+    "w": 113,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 2,
+    "w": 113,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/95": {
+   "frame": {
+    "x": 1507,
+    "y": 437,
+    "w": 113,
+    "h": 138
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 1,
+    "w": 113,
+    "h": 138
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/96": {
+   "frame": {
+    "x": 1514,
+    "y": 291,
+    "w": 112,
+    "h": 138
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 1,
+    "w": 112,
+    "h": 138
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/goose/adult/97": {
+   "frame": {
+    "x": 1909,
+    "y": 714,
+    "w": 115,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 3,
+    "w": 115,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 119,
+    "h": 143
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   }
+  },
+  "animal/pig/baby/0": {
+   "frame": {
+    "x": 1973,
+    "y": 1000,
+    "w": 73,
+    "h": 108
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 0,
+    "w": 73,
+    "h": 108
+   },
+   "sourceSize": {
+    "w": 91,
+    "h": 113
+   },
+   "anchor": {
+    "x": 0.4251,
+    "y": 0.932
+   }
+  },
+  "animal/pig/baby/66": {
+   "frame": {
+    "x": 1956,
+    "y": 1280,
+    "w": 90,
+    "h": 113
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 1,
+    "y": 0,
+    "w": 90,
+    "h": 113
+   },
+   "sourceSize": {
+    "w": 91,
+    "h": 113
+   },
+   "anchor": {
+    "x": 0.4251,
+    "y": 0.932
+   }
+  },
+  "animal/pig/baby/73": {
+   "frame": {
+    "x": 1275,
+    "y": 1926,
+    "w": 91,
+    "h": 113
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 91,
+    "h": 113
+   },
+   "sourceSize": {
+    "w": 91,
+    "h": 113
+   },
+   "anchor": {
+    "x": 0.4251,
+    "y": 0.932
+   }
+  },
+  "animal/goat/baby/14": {
+   "frame": {
+    "x": 631,
+    "y": 1977,
+    "w": 57,
+    "h": 69
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 1,
+    "y": 6,
+    "w": 57,
+    "h": 69
+   },
+   "sourceSize": {
+    "w": 59,
+    "h": 79
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9176
+   }
+  },
+  "animal/goat/baby/16": {
+   "frame": {
+    "x": 692,
+    "y": 1977,
+    "w": 57,
+    "h": 69
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 1,
+    "y": 6,
+    "w": 57,
+    "h": 69
+   },
+   "sourceSize": {
+    "w": 59,
+    "h": 79
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9176
+   }
+  },
+  "animal/goat/baby/17": {
+   "frame": {
+    "x": 753,
+    "y": 1977,
+    "w": 57,
+    "h": 69
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 1,
+    "y": 6,
+    "w": 57,
+    "h": 69
+   },
+   "sourceSize": {
+    "w": 59,
+    "h": 79
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9176
+   }
+  },
+  "animal/goat/baby/18": {
+   "frame": {
+    "x": 814,
+    "y": 1977,
+    "w": 57,
+    "h": 69
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 1,
+    "y": 6,
+    "w": 57,
+    "h": 69
+   },
+   "sourceSize": {
+    "w": 59,
+    "h": 79
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9176
+   }
+  },
+  "animal/goat/baby/19": {
+   "frame": {
+    "x": 875,
+    "y": 1977,
+    "w": 57,
+    "h": 69
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 1,
+    "y": 6,
+    "w": 57,
+    "h": 69
+   },
+   "sourceSize": {
+    "w": 59,
+    "h": 79
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9176
+   }
+  },
+  "animal/goat/adult/6": {
+   "frame": {
+    "x": 1957,
+    "y": 1140,
+    "w": 89,
+    "h": 127
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 14,
+    "y": 12,
+    "w": 89,
+    "h": 127
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/43": {
+   "frame": {
+    "x": 1372,
+    "y": 1912,
+    "w": 106,
+    "h": 134
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 1,
+    "y": 8,
+    "w": 106,
+    "h": 134
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/46": {
+   "frame": {
+    "x": 724,
+    "y": 1205,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/47": {
+   "frame": {
+    "x": 995,
+    "y": 2,
+    "w": 99,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 10,
+    "y": 0,
+    "w": 99,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/48": {
+   "frame": {
+    "x": 724,
+    "y": 1059,
+    "w": 99,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 10,
+    "y": 0,
+    "w": 99,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/49": {
+   "frame": {
+    "x": 1300,
+    "y": 2,
+    "w": 100,
+    "h": 141
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 9,
+    "y": 1,
+    "w": 100,
+    "h": 141
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/50": {
+   "frame": {
+    "x": 1444,
+    "y": 147,
+    "w": 97,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 2,
+    "w": 97,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/51": {
+   "frame": {
+    "x": 1404,
+    "y": 2,
+    "w": 93,
+    "h": 141
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 16,
+    "y": 1,
+    "w": 93,
+    "h": 141
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/52": {
+   "frame": {
+    "x": 1027,
+    "y": 1197,
+    "w": 93,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 16,
+    "y": 0,
+    "w": 93,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/53": {
+   "frame": {
+    "x": 1029,
+    "y": 1043,
+    "w": 93,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 16,
+    "y": 0,
+    "w": 93,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/54": {
+   "frame": {
+    "x": 985,
+    "y": 1351,
+    "w": 96,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 13,
+    "y": 0,
+    "w": 96,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/55": {
+   "frame": {
+    "x": 825,
+    "y": 1205,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/56": {
+   "frame": {
+    "x": 827,
+    "y": 1059,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/57": {
+   "frame": {
+    "x": 885,
+    "y": 905,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/58": {
+   "frame": {
+    "x": 886,
+    "y": 751,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/59": {
+   "frame": {
+    "x": 889,
+    "y": 595,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/60": {
+   "frame": {
+    "x": 983,
+    "y": 446,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/61": {
+   "frame": {
+    "x": 990,
+    "y": 297,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/62": {
+   "frame": {
+    "x": 1081,
+    "y": 148,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/63": {
+   "frame": {
+    "x": 1098,
+    "y": 2,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/64": {
+   "frame": {
+    "x": 884,
+    "y": 1351,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/65": {
+   "frame": {
+    "x": 926,
+    "y": 1205,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/66": {
+   "frame": {
+    "x": 928,
+    "y": 1051,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/67": {
+   "frame": {
+    "x": 986,
+    "y": 897,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/68": {
+   "frame": {
+    "x": 987,
+    "y": 741,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/69": {
+   "frame": {
+    "x": 990,
+    "y": 592,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/70": {
+   "frame": {
+    "x": 1084,
+    "y": 443,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/71": {
+   "frame": {
+    "x": 1091,
+    "y": 294,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/72": {
+   "frame": {
+    "x": 1182,
+    "y": 148,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/73": {
+   "frame": {
+    "x": 1199,
+    "y": 2,
+    "w": 97,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 12,
+    "y": 0,
+    "w": 97,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/76": {
+   "frame": {
+    "x": 1774,
+    "y": 1560,
+    "w": 95,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 15,
+    "y": 5,
+    "w": 95,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/77": {
+   "frame": {
+    "x": 1540,
+    "y": 1453,
+    "w": 92,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 17,
+    "y": 4,
+    "w": 92,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/78": {
+   "frame": {
+    "x": 1408,
+    "y": 1170,
+    "w": 94,
+    "h": 138
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 15,
+    "y": 3,
+    "w": 94,
+    "h": 138
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/79": {
+   "frame": {
+    "x": 1369,
+    "y": 1319,
+    "w": 95,
+    "h": 138
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 14,
+    "y": 3,
+    "w": 95,
+    "h": 138
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/85": {
+   "frame": {
+    "x": 1941,
+    "y": 2,
+    "w": 96,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 13,
+    "y": 4,
+    "w": 96,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/86": {
+   "frame": {
+    "x": 1410,
+    "y": 1021,
+    "w": 93,
+    "h": 138
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 16,
+    "y": 3,
+    "w": 93,
+    "h": 138
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/87": {
+   "frame": {
+    "x": 1275,
+    "y": 1784,
+    "w": 93,
+    "h": 138
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 17,
+    "y": 3,
+    "w": 93,
+    "h": 138
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/goat/adult/88": {
+   "frame": {
+    "x": 1447,
+    "y": 1602,
+    "w": 94,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 16,
+    "y": 4,
+    "w": 94,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 111,
+    "h": 142
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   }
+  },
+  "animal/cow/adult/female/0": {
+   "frame": {
+    "x": 463,
+    "y": 1686,
+    "w": 164,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 164,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/1": {
+   "frame": {
+    "x": 392,
+    "y": 920,
+    "w": 163,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 1,
+    "w": 163,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/2": {
+   "frame": {
+    "x": 557,
+    "y": 1533,
+    "w": 161,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 1,
+    "w": 161,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/3": {
+   "frame": {
+    "x": 754,
+    "y": 151,
+    "w": 162,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 1,
+    "w": 162,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/4": {
+   "frame": {
+    "x": 829,
+    "y": 2,
+    "w": 162,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 1,
+    "w": 162,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/5": {
+   "frame": {
+    "x": 558,
+    "y": 764,
+    "w": 163,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 1,
+    "w": 163,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/6": {
+   "frame": {
+    "x": 557,
+    "y": 1384,
+    "w": 162,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 1,
+    "w": 162,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/7": {
+   "frame": {
+    "x": 561,
+    "y": 610,
+    "w": 163,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 1,
+    "w": 163,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/8": {
+   "frame": {
+    "x": 655,
+    "y": 456,
+    "w": 163,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 1,
+    "w": 163,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/9": {
+   "frame": {
+    "x": 293,
+    "y": 1847,
+    "w": 165,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 1,
+    "w": 165,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/10": {
+   "frame": {
+    "x": 462,
+    "y": 1847,
+    "w": 165,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 1,
+    "w": 165,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/11": {
+   "frame": {
+    "x": 659,
+    "y": 2,
+    "w": 166,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 1,
+    "y": 1,
+    "w": 166,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/12": {
+   "frame": {
+    "x": 488,
+    "y": 2,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/13": {
+   "frame": {
+    "x": 387,
+    "y": 771,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/14": {
+   "frame": {
+    "x": 387,
+    "y": 771,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/15": {
+   "frame": {
+    "x": 387,
+    "y": 771,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/16": {
+   "frame": {
+    "x": 390,
+    "y": 615,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/17": {
+   "frame": {
+    "x": 484,
+    "y": 461,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/18": {
+   "frame": {
+    "x": 484,
+    "y": 461,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/19": {
+   "frame": {
+    "x": 491,
+    "y": 307,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/20": {
+   "frame": {
+    "x": 390,
+    "y": 615,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/21": {
+   "frame": {
+    "x": 484,
+    "y": 461,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/22": {
+   "frame": {
+    "x": 484,
+    "y": 461,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/23": {
+   "frame": {
+    "x": 583,
+    "y": 151,
+    "w": 167,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 167,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/24": {
+   "frame": {
+    "x": 388,
+    "y": 1388,
+    "w": 165,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 1,
+    "w": 165,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/25": {
+   "frame": {
+    "x": 558,
+    "y": 1231,
+    "w": 162,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 1,
+    "w": 162,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/26": {
+   "frame": {
+    "x": 559,
+    "y": 913,
+    "w": 161,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 1,
+    "w": 161,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/27": {
+   "frame": {
+    "x": 559,
+    "y": 1062,
+    "w": 161,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 1,
+    "w": 161,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/28": {
+   "frame": {
+    "x": 631,
+    "y": 1682,
+    "w": 161,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 1,
+    "w": 161,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/29": {
+   "frame": {
+    "x": 662,
+    "y": 300,
+    "w": 163,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 1,
+    "w": 163,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/30": {
+   "frame": {
+    "x": 389,
+    "y": 1235,
+    "w": 165,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 1,
+    "y": 1,
+    "w": 165,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/31": {
+   "frame": {
+    "x": 390,
+    "y": 1082,
+    "w": 165,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 1,
+    "w": 165,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/32": {
+   "frame": {
+    "x": 293,
+    "y": 1698,
+    "w": 166,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 166,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/33": {
+   "frame": {
+    "x": 388,
+    "y": 1537,
+    "w": 165,
+    "h": 145
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 165,
+    "h": 145
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/34": {
+   "frame": {
+    "x": 1044,
+    "y": 1497,
+    "w": 164,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 1,
+    "w": 164,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/35": {
+   "frame": {
+    "x": 1635,
+    "y": 1304,
+    "w": 163,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 5,
+    "w": 163,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/36": {
+   "frame": {
+    "x": 1373,
+    "y": 1461,
+    "w": 163,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 5,
+    "w": 163,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/37": {
+   "frame": {
+    "x": 1873,
+    "y": 1560,
+    "w": 163,
+    "h": 135
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 7,
+    "w": 163,
+    "h": 135
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/38": {
+   "frame": {
+    "x": 1829,
+    "y": 1864,
+    "w": 162,
+    "h": 135
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 7,
+    "w": 162,
+    "h": 135
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/39": {
+   "frame": {
+    "x": 1691,
+    "y": 866,
+    "w": 162,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 6,
+    "w": 162,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/40": {
+   "frame": {
+    "x": 1744,
+    "y": 720,
+    "w": 161,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 6,
+    "w": 161,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/41": {
+   "frame": {
+    "x": 1747,
+    "y": 574,
+    "w": 161,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 6,
+    "w": 161,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/43": {
+   "frame": {
+    "x": 1578,
+    "y": 725,
+    "w": 162,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 5,
+    "w": 162,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/44": {
+   "frame": {
+    "x": 1581,
+    "y": 579,
+    "w": 162,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 5,
+    "w": 162,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/45": {
+   "frame": {
+    "x": 1468,
+    "y": 1312,
+    "w": 163,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 5,
+    "w": 163,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/46": {
+   "frame": {
+    "x": 1506,
+    "y": 1163,
+    "w": 163,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 5,
+    "w": 163,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/47": {
+   "frame": {
+    "x": 1501,
+    "y": 2,
+    "w": 164,
+    "h": 139
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 3,
+    "w": 164,
+    "h": 139
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/48": {
+   "frame": {
+    "x": 1085,
+    "y": 1343,
+    "w": 164,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 1,
+    "w": 164,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/50": {
+   "frame": {
+    "x": 1410,
+    "y": 729,
+    "w": 164,
+    "h": 138
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 4,
+    "w": 164,
+    "h": 138
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/51": {
+   "frame": {
+    "x": 1279,
+    "y": 1630,
+    "w": 164,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 5,
+    "w": 164,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/52": {
+   "frame": {
+    "x": 1873,
+    "y": 1699,
+    "w": 163,
+    "h": 135
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 7,
+    "w": 163,
+    "h": 135
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/55": {
+   "frame": {
+    "x": 1673,
+    "y": 1162,
+    "w": 163,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 6,
+    "w": 163,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/56": {
+   "frame": {
+    "x": 1674,
+    "y": 1012,
+    "w": 163,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 6,
+    "w": 163,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/57": {
+   "frame": {
+    "x": 1507,
+    "y": 1021,
+    "w": 163,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 5,
+    "w": 163,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/58": {
+   "frame": {
+    "x": 1524,
+    "y": 871,
+    "w": 163,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 5,
+    "w": 163,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/59": {
+   "frame": {
+    "x": 1413,
+    "y": 583,
+    "w": 164,
+    "h": 138
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 4,
+    "w": 164,
+    "h": 138
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/60": {
+   "frame": {
+    "x": 1124,
+    "y": 1189,
+    "w": 164,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 2,
+    "w": 164,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/female/61": {
+   "frame": {
+    "x": 1126,
+    "y": 1032,
+    "w": 164,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 1,
+    "w": 164,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 182,
+    "h": 177
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   }
+  },
+  "animal/cow/adult/male/22": {
+   "frame": {
+    "x": 1857,
+    "y": 860,
+    "w": 152,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 14,
+    "w": 152,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/23": {
+   "frame": {
+    "x": 1624,
+    "y": 433,
+    "w": 152,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 13,
+    "w": 152,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/24": {
+   "frame": {
+    "x": 1660,
+    "y": 145,
+    "w": 151,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 13,
+    "w": 151,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/25": {
+   "frame": {
+    "x": 1669,
+    "y": 2,
+    "w": 151,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 13,
+    "w": 151,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/26": {
+   "frame": {
+    "x": 1630,
+    "y": 287,
+    "w": 152,
+    "h": 137
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 13,
+    "w": 152,
+    "h": 137
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/27": {
+   "frame": {
+    "x": 1780,
+    "y": 428,
+    "w": 153,
+    "h": 136
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 14,
+    "w": 153,
+    "h": 136
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/37": {
+   "frame": {
+    "x": 1087,
+    "y": 887,
+    "w": 157,
+    "h": 141
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 157,
+    "h": 141
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/38": {
+   "frame": {
+    "x": 1088,
+    "y": 738,
+    "w": 157,
+    "h": 141
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 157,
+    "h": 141
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/39": {
+   "frame": {
+    "x": 1248,
+    "y": 883,
+    "w": 157,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 2,
+    "w": 157,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/40": {
+   "frame": {
+    "x": 1249,
+    "y": 734,
+    "w": 157,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 2,
+    "w": 157,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/41": {
+   "frame": {
+    "x": 1118,
+    "y": 1641,
+    "w": 157,
+    "h": 139
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 3,
+    "w": 157,
+    "h": 139
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/42": {
+   "frame": {
+    "x": 1252,
+    "y": 585,
+    "w": 157,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 2,
+    "w": 157,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/43": {
+   "frame": {
+    "x": 1091,
+    "y": 589,
+    "w": 157,
+    "h": 141
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 157,
+    "h": 141
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/44": {
+   "frame": {
+    "x": 722,
+    "y": 1533,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/45": {
+   "frame": {
+    "x": 723,
+    "y": 1380,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/46": {
+   "frame": {
+    "x": 631,
+    "y": 1831,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/47": {
+   "frame": {
+    "x": 792,
+    "y": 1831,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/48": {
+   "frame": {
+    "x": 796,
+    "y": 1679,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/49": {
+   "frame": {
+    "x": 883,
+    "y": 1526,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/50": {
+   "frame": {
+    "x": 953,
+    "y": 1825,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/51": {
+   "frame": {
+    "x": 1185,
+    "y": 440,
+    "w": 157,
+    "h": 141
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 157,
+    "h": 141
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/52": {
+   "frame": {
+    "x": 1346,
+    "y": 439,
+    "w": 157,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 2,
+    "w": 157,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/53": {
+   "frame": {
+    "x": 1212,
+    "y": 1487,
+    "w": 157,
+    "h": 139
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 3,
+    "w": 157,
+    "h": 139
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/54": {
+   "frame": {
+    "x": 1353,
+    "y": 293,
+    "w": 157,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 2,
+    "w": 157,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/55": {
+   "frame": {
+    "x": 1192,
+    "y": 294,
+    "w": 157,
+    "h": 141
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 157,
+    "h": 141
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/56": {
+   "frame": {
+    "x": 957,
+    "y": 1672,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/57": {
+   "frame": {
+    "x": 1114,
+    "y": 1818,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/58": {
+   "frame": {
+    "x": 724,
+    "y": 913,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/59": {
+   "frame": {
+    "x": 725,
+    "y": 759,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/60": {
+   "frame": {
+    "x": 728,
+    "y": 605,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/61": {
+   "frame": {
+    "x": 822,
+    "y": 449,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/62": {
+   "frame": {
+    "x": 829,
+    "y": 300,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/63": {
+   "frame": {
+    "x": 920,
+    "y": 151,
+    "w": 157,
+    "h": 142
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 157,
+    "h": 142
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/cow/adult/male/64": {
+   "frame": {
+    "x": 1283,
+    "y": 148,
+    "w": 157,
+    "h": 141
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 1,
+    "w": 157,
+    "h": 141
+   },
+   "sourceSize": {
+    "w": 176,
+    "h": 175
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   }
+  },
+  "animal/horse/baby/0": {
+   "frame": {
+    "x": 2,
+    "y": 467,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/1": {
+   "frame": {
+    "x": 2,
+    "y": 622,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/2": {
+   "frame": {
+    "x": 2,
+    "y": 777,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/3": {
+   "frame": {
+    "x": 2,
+    "y": 932,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/4": {
+   "frame": {
+    "x": 2,
+    "y": 1087,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/5": {
+   "frame": {
+    "x": 2,
+    "y": 1242,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/6": {
+   "frame": {
+    "x": 2,
+    "y": 1397,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/7": {
+   "frame": {
+    "x": 107,
+    "y": 312,
+    "w": 90,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 90,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/13": {
+   "frame": {
+    "x": 108,
+    "y": 157,
+    "w": 90,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 90,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/14": {
+   "frame": {
+    "x": 109,
+    "y": 2,
+    "w": 90,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 90,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/15": {
+   "frame": {
+    "x": 97,
+    "y": 622,
+    "w": 90,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 90,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/16": {
+   "frame": {
+    "x": 97,
+    "y": 777,
+    "w": 90,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 90,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/17": {
+   "frame": {
+    "x": 2,
+    "y": 1552,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/18": {
+   "frame": {
+    "x": 2,
+    "y": 1707,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 2,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/19": {
+   "frame": {
+    "x": 202,
+    "y": 157,
+    "w": 91,
+    "h": 150
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 3,
+    "w": 91,
+    "h": 150
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/20": {
+   "frame": {
+    "x": 203,
+    "y": 2,
+    "w": 91,
+    "h": 150
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 3,
+    "w": 91,
+    "h": 150
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/21": {
+   "frame": {
+    "x": 297,
+    "y": 156,
+    "w": 91,
+    "h": 150
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 3,
+    "w": 91,
+    "h": 150
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/22": {
+   "frame": {
+    "x": 298,
+    "y": 2,
+    "w": 91,
+    "h": 150
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 3,
+    "w": 91,
+    "h": 150
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/23": {
+   "frame": {
+    "x": 291,
+    "y": 776,
+    "w": 92,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 4,
+    "w": 92,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/24": {
+   "frame": {
+    "x": 196,
+    "y": 1392,
+    "w": 92,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 4,
+    "w": 92,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/25": {
+   "frame": {
+    "x": 196,
+    "y": 1545,
+    "w": 92,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 4,
+    "w": 92,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/26": {
+   "frame": {
+    "x": 292,
+    "y": 1392,
+    "w": 92,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 4,
+    "w": 92,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/27": {
+   "frame": {
+    "x": 292,
+    "y": 1545,
+    "w": 92,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 4,
+    "w": 92,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/28": {
+   "frame": {
+    "x": 197,
+    "y": 1086,
+    "w": 93,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 4,
+    "w": 93,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/29": {
+   "frame": {
+    "x": 200,
+    "y": 929,
+    "w": 93,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 4,
+    "w": 93,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/30": {
+   "frame": {
+    "x": 97,
+    "y": 1698,
+    "w": 94,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 4,
+    "w": 94,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/31": {
+   "frame": {
+    "x": 97,
+    "y": 1851,
+    "w": 94,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 4,
+    "w": 94,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/32": {
+   "frame": {
+    "x": 195,
+    "y": 1698,
+    "w": 94,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 4,
+    "y": 4,
+    "w": 94,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/33": {
+   "frame": {
+    "x": 97,
+    "y": 1239,
+    "w": 95,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 4,
+    "w": 95,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/34": {
+   "frame": {
+    "x": 97,
+    "y": 1392,
+    "w": 95,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 4,
+    "w": 95,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/37": {
+   "frame": {
+    "x": 201,
+    "y": 312,
+    "w": 95,
+    "h": 150
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 7,
+    "y": 6,
+    "w": 95,
+    "h": 150
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/38": {
+   "frame": {
+    "x": 191,
+    "y": 776,
+    "w": 96,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 7,
+    "w": 96,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/39": {
+   "frame": {
+    "x": 97,
+    "y": 1086,
+    "w": 96,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 6,
+    "y": 7,
+    "w": 96,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/40": {
+   "frame": {
+    "x": 195,
+    "y": 1851,
+    "w": 94,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 8,
+    "y": 7,
+    "w": 94,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/41": {
+   "frame": {
+    "x": 293,
+    "y": 619,
+    "w": 93,
+    "h": 148
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 9,
+    "y": 7,
+    "w": 93,
+    "h": 148
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/42": {
+   "frame": {
+    "x": 388,
+    "y": 463,
+    "w": 92,
+    "h": 148
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 10,
+    "y": 7,
+    "w": 92,
+    "h": 148
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/43": {
+   "frame": {
+    "x": 395,
+    "y": 309,
+    "w": 92,
+    "h": 148
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 10,
+    "y": 7,
+    "w": 92,
+    "h": 148
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/44": {
+   "frame": {
+    "x": 487,
+    "y": 155,
+    "w": 92,
+    "h": 148
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 10,
+    "y": 7,
+    "w": 92,
+    "h": 148
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/45": {
+   "frame": {
+    "x": 294,
+    "y": 1082,
+    "w": 92,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 10,
+    "y": 6,
+    "w": 92,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/46": {
+   "frame": {
+    "x": 196,
+    "y": 1239,
+    "w": 94,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 8,
+    "y": 6,
+    "w": 94,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/47": {
+   "frame": {
+    "x": 192,
+    "y": 467,
+    "w": 97,
+    "h": 150
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 5,
+    "w": 97,
+    "h": 150
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/48": {
+   "frame": {
+    "x": 97,
+    "y": 932,
+    "w": 99,
+    "h": 150
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 3,
+    "y": 5,
+    "w": 99,
+    "h": 150
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/49": {
+   "frame": {
+    "x": 2,
+    "y": 157,
+    "w": 102,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 1,
+    "y": 4,
+    "w": 102,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/50": {
+   "frame": {
+    "x": 2,
+    "y": 2,
+    "w": 103,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 4,
+    "w": 103,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/52": {
+   "frame": {
+    "x": 2,
+    "y": 312,
+    "w": 101,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 2,
+    "y": 4,
+    "w": 101,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/53": {
+   "frame": {
+    "x": 191,
+    "y": 622,
+    "w": 98,
+    "h": 150
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 5,
+    "y": 5,
+    "w": 98,
+    "h": 150
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/54": {
+   "frame": {
+    "x": 97,
+    "y": 1545,
+    "w": 95,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 8,
+    "y": 6,
+    "w": 95,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/55": {
+   "frame": {
+    "x": 297,
+    "y": 929,
+    "w": 91,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 11,
+    "y": 6,
+    "w": 91,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/56": {
+   "frame": {
+    "x": 294,
+    "y": 1235,
+    "w": 91,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 11,
+    "y": 6,
+    "w": 91,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/57": {
+   "frame": {
+    "x": 293,
+    "y": 466,
+    "w": 91,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 11,
+    "y": 6,
+    "w": 91,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/58": {
+   "frame": {
+    "x": 300,
+    "y": 310,
+    "w": 91,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 11,
+    "y": 6,
+    "w": 91,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/59": {
+   "frame": {
+    "x": 392,
+    "y": 156,
+    "w": 91,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 10,
+    "y": 6,
+    "w": 91,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/60": {
+   "frame": {
+    "x": 393,
+    "y": 2,
+    "w": 91,
+    "h": 149
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 10,
+    "y": 6,
+    "w": 91,
+    "h": 149
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/61": {
+   "frame": {
+    "x": 2,
+    "y": 1862,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 10,
+    "y": 5,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  },
+  "animal/horse/baby/62": {
+   "frame": {
+    "x": 97,
+    "y": 467,
+    "w": 91,
+    "h": 151
+   },
+   "rotated": false,
+   "trimmed": true,
+   "spriteSourceSize": {
+    "x": 10,
+    "y": 5,
+    "w": 91,
+    "h": 151
+   },
+   "sourceSize": {
+    "w": 104,
+    "h": 161
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   }
+  }
+ },
+ "meta": {
+  "app": "FarmCord build_art",
+  "version": "1.0",
+  "image": "animals-2.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 2048,
+   "h": 2048
+  },
+  "scale": "1.25"
+ }
+}

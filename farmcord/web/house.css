@@ -1,0 +1,385 @@
+/* The farmhouse: the board (its tabs and rows are the shop's, from market.css), the leaderboard on it, the wardrobe,
+   an extra room's description box, and the tray of decorations to place */
+
+/* ---------- The board ---------- */
+
+/* The tabs stay in view while the page scrolls under them, as in the shop */
+.panel-body:has(> .board),
+.panel-body:has(> .wardrobe) {
+  overflow: visible;
+}
+
+/* A row with no picture: the picture's column goes */
+.shop-row.plain {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "words owned deal"
+    "why why why";
+  min-height: 40px;
+  padding-left: 14px;
+}
+
+.board-intro {
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.badges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.badges li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: #faf5ea;
+}
+
+.badges li.earned {
+  background: #fff;
+  box-shadow: 0 2px 0 var(--gold-deep);
+}
+
+/* A badge not earned yet is a grey shadow of itself */
+.badges li:not(.earned) .art-icon {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.badge-words {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.badge-words small {
+  color: var(--ink-soft);
+}
+
+.badges li:not(.earned) b {
+  color: var(--ink-soft);
+}
+
+.badge-words .earned-on {
+  color: var(--leaf-deep);
+  font-weight: 700;
+}
+
+.about h3 {
+  margin-top: 4px;
+}
+
+.about p {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.credit-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--leaf-deep);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---------- The leaderboard, as Marble Munch's ---------- */
+
+.leaders {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.leaders li {
+  display: grid;
+  grid-template-columns: 4ch minmax(0, 1fr);
+  gap: 2px 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.leaders li.mine {
+  background: #fff3c4;
+}
+
+.leaders .place {
+  grid-row: span 2;
+  align-self: center;
+  font-weight: 700;
+  color: var(--leaf-deep);
+}
+
+.leaders .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.leaders .numbers {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.you {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ---------- The wardrobe ---------- */
+
+.wardrobe {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.wardrobe-preview {
+  position: sticky;
+  top: 0;
+  padding: 14px 18px 8px;
+  border-radius: 20px;
+  background: radial-gradient(circle at 50% 85%, #fff 0 38%, var(--cream-deep) 70%);
+  display: grid;
+  place-items: center;
+}
+
+.wardrobe-slots {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.wardrobe-slot {
+  width: 100%;
+}
+
+.wardrobe-slot h3 {
+  margin: 0 0 6px;
+}
+
+.outfit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.outfit-choice {
+  min-height: 48px;
+  padding: 4px 12px 4px 6px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 0 var(--cream-deep);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.outfit-choice[aria-pressed="true"] {
+  background: var(--gold);
+  box-shadow: 0 2px 0 var(--gold-deep);
+}
+
+/* The Wear button stays in view at the panel's foot while the choices scroll under it, as the shop's tabs do at its
+   top (the panel's padding is 22px) */
+.wardrobe-foot {
+  position: sticky;
+  bottom: -22px;
+  z-index: 1;
+  width: 100%;
+  margin-bottom: -22px;
+  padding: 8px 0 22px;
+  background: var(--cream);
+}
+
+/* The plain look's picture: an empty ring */
+.outfit-choice .none {
+  width: 26px;
+  height: 26px;
+  margin: 0 7px;
+  border: 3px dashed var(--ink-soft);
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+/* ---------- An extra room's description ---------- */
+
+.room-note {
+  position: absolute;
+  top: calc(var(--hud-bottom) + 10px);
+  left: calc(var(--safe-left) + 10px);
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 20px - var(--safe-left) - var(--safe-right)));
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(255, 250, 240, 0.96);
+  box-shadow: 0 4px 0 var(--wood-deep);
+  display: grid;
+  gap: 6px;
+}
+
+.room-note-label {
+  font-weight: 700;
+}
+
+.room-note textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 6px 10px;
+  border: 2px solid var(--cream-deep);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  resize: none;
+}
+
+.room-note-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.room-note-foot .button {
+  min-height: 38px;
+  padding: 6px 18px;
+}
+
+/* ---------- The tray of decorations to place ---------- */
+
+/* A strip under the HUD, over the sky or the wall, so the floor stays clear to drop on. It takes the description box's
+   place while it is open */
+.decor-tray {
+  position: absolute;
+  top: calc(var(--hud-bottom) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(calc(100vw - 20px - var(--safe-left) - var(--safe-right)), 720px);
+  padding: 10px 12px 12px;
+  border-radius: 20px;
+  background: var(--cream);
+  box-shadow: 0 5px 0 var(--wood-deep);
+}
+
+.app:has(#decor-tray:not([hidden])) #room-note {
+  display: none;
+}
+
+/* While a decoration is dragged, the tray is where it goes back */
+.decor-tray.dragging {
+  outline: 3px dashed var(--gold-deep);
+  outline-offset: -6px;
+}
+
+.decor-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.decor-top p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.decor-top .button {
+  flex: none;
+  min-height: 38px;
+  padding: 6px 18px;
+}
+
+/* One row, scrolled sideways when it is longer than the tray */
+.decor-items {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 4px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.decor-items li {
+  flex: none;
+}
+
+/* The line said when there is nothing to place */
+.decor-items li.dim {
+  flex: 1;
+  font-weight: 600;
+}
+
+/* A finger moving sideways on it scrolls the tray; moving down into the room, it drags the decoration */
+.decor-item {
+  position: relative;
+  min-height: 52px;
+  padding: 4px 12px 4px 6px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 0 var(--cream-deep);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+  touch-action: pan-x;
+  user-select: none;
+  cursor: grab;
+}
+
+.decor-item .count {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* An upright phone: the wardrobe's preview over its choices, and the board's plain rows stacked like the shop's */
+@media (max-width: 640px) {
+  .wardrobe {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wardrobe-preview {
+    position: static;
+  }
+
+  .shop-row.plain {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "words owned"
+      "deal deal"
+      "why why";
+  }
+
+  .badges {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .decor-top p {
+    font-size: 0.82rem;
+  }
+}

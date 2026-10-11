@@ -1,0 +1,952 @@
+{
+ "version": 1,
+ "room": {
+  "w": 1280,
+  "h": 720
+ },
+ "seasons": [
+  "spring",
+  "summer",
+  "autumn",
+  "winter"
+ ],
+ "sheets": [
+  {
+   "file": "sheets/crops-0.json",
+   "group": "crops"
+  },
+  {
+   "file": "sheets/items-0.json",
+   "group": "items"
+  },
+  {
+   "file": "sheets/world-0.json",
+   "group": "world"
+  },
+  {
+   "file": "sheets/farmer-0.json",
+   "group": "farmer"
+  },
+  {
+   "file": "sheets/animals-0.json",
+   "group": "animals"
+  },
+  {
+   "file": "sheets/animals-1.json",
+   "group": "animals"
+  },
+  {
+   "file": "sheets/animals-2.json",
+   "group": "animals"
+  },
+  {
+   "file": "sheets/animals-3.json",
+   "group": "animals"
+  },
+  {
+   "file": "sheets/animals-4.json",
+   "group": "animals"
+  }
+ ],
+ "images": {
+  "room/farmhouse_inside": {
+   "file": "images/farmhouse_inside.jpg",
+   "w": 1280,
+   "h": 720,
+   "tile": false
+  },
+  "sky/spring": {
+   "file": "images/sky_spring.jpg",
+   "w": 1450,
+   "h": 466,
+   "tile": true
+  },
+  "sky/summer": {
+   "file": "images/sky_summer.jpg",
+   "w": 1450,
+   "h": 466,
+   "tile": true
+  },
+  "sky/autumn": {
+   "file": "images/sky_autumn.jpg",
+   "w": 1450,
+   "h": 466,
+   "tile": true
+  },
+  "sky/winter": {
+   "file": "images/sky_winter.jpg",
+   "w": 1449,
+   "h": 465,
+   "tile": true
+  },
+  "ground/spring": {
+   "file": "images/ground_spring.png",
+   "w": 128,
+   "h": 128,
+   "tile": true
+  },
+  "ground/summer": {
+   "file": "images/ground_summer.png",
+   "w": 128,
+   "h": 128,
+   "tile": true
+  },
+  "ground/autumn": {
+   "file": "images/ground_autumn.png",
+   "w": 128,
+   "h": 128,
+   "tile": true
+  },
+  "ground/winter": {
+   "file": "images/ground_winter.png",
+   "w": 128,
+   "h": 128,
+   "tile": true
+  },
+  "ground/path": {
+   "file": "images/ground_path.png",
+   "w": 128,
+   "h": 128,
+   "tile": true
+  }
+ },
+ "farmer": {
+  "layers": [
+   "base",
+   "top",
+   "bottom",
+   "hat"
+  ]
+ },
+ "seasonal_scenes": [
+  "farmhouse",
+  "market",
+  "pond",
+  "fence",
+  "tree_1",
+  "tree_2",
+  "tree_3",
+  "bush_1",
+  "bush_2"
+ ],
+ "animations": {
+  "farmer/base": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/hat/beanie": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/hat/cap": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/hat/cowboy_hat": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/hat/straw_hat": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/top/jacket": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/top/plaid_shirt": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/top/sweater": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/top/t_shirt": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/bottom/blue_overalls": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/bottom/jeans": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "farmer/bottom/red_overalls": {
+   "frames": 60,
+   "clips": {
+    "walk_front": {
+     "start": 0,
+     "count": 28,
+     "fps": 30
+    },
+    "walk_back": {
+     "start": 28,
+     "count": 30,
+     "fps": 30
+    },
+    "stand_front": {
+     "start": 58,
+     "count": 1,
+     "fps": 30
+    },
+    "stand_back": {
+     "start": 59,
+     "count": 1,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.485,
+    "y": 0.9871
+   },
+   "size": {
+    "w": 137.3,
+    "h": 182.7
+   }
+  },
+  "animal/chicken/baby": {
+   "frames": 36,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 36,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9796
+   },
+   "size": {
+    "w": 38.4,
+    "h": 52.0
+   }
+  },
+  "animal/chicken/adult/female": {
+   "frames": 88,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 30,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 30,
+     "count": 17,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 47,
+     "count": 24,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 71,
+     "count": 17,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.6103,
+    "y": 0.8739
+   },
+   "size": {
+    "w": 82.4,
+    "h": 72.0
+   }
+  },
+  "animal/chicken/adult/male": {
+   "frames": 38,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 38,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9778
+   },
+   "size": {
+    "w": 72.8,
+    "h": 69.6
+   }
+  },
+  "animal/goose/baby": {
+   "frames": 55,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 15,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 15,
+     "count": 12,
+     "fps": 30
+    },
+    "idle_back": {
+     "start": 27,
+     "count": 16,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 43,
+     "count": 12,
+     "fps": 30
+    }
+   },
+   "anchor": {
+    "x": 0.4681,
+    "y": 0.9187
+   },
+   "size": {
+    "w": 49.6,
+    "h": 64.8
+   }
+  },
+  "animal/goose/adult": {
+   "frames": 106,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 23,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 23,
+     "count": 15,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 38,
+     "count": 38,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 76,
+     "count": 30,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.5324,
+    "y": 0.9843
+   },
+   "size": {
+    "w": 95.2,
+    "h": 114.4
+   }
+  },
+  "animal/pig/baby": {
+   "frames": 133,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 36,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 36,
+     "count": 30,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 66,
+     "count": 37,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 103,
+     "count": 30,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.4251,
+    "y": 0.932
+   },
+   "size": {
+    "w": 72.8,
+    "h": 90.4
+   }
+  },
+  "animal/pig/adult": {
+   "frames": 147,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 31,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 31,
+     "count": 43,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 74,
+     "count": 30,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 104,
+     "count": 43,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.5067,
+    "y": 0.9424
+   },
+   "size": {
+    "w": 98.4,
+    "h": 91.2
+   }
+  },
+  "animal/goat/baby": {
+   "frames": 69,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 31,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 31,
+     "count": 38,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.9176
+   },
+   "size": {
+    "w": 47.2,
+    "h": 63.2
+   }
+  },
+  "animal/goat/adult": {
+   "frames": 90,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 30,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 30,
+     "count": 16,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 46,
+     "count": 28,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 74,
+     "count": 16,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.5336,
+    "y": 0.9709
+   },
+   "size": {
+    "w": 88.8,
+    "h": 113.6
+   }
+  },
+  "animal/cow/baby": {
+   "frames": 106,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 23,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 23,
+     "count": 30,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 53,
+     "count": 23,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 76,
+     "count": 30,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.5,
+    "y": 0.8968
+   },
+   "size": {
+    "w": 85.6,
+    "h": 85.6
+   }
+  },
+  "animal/cow/adult/female": {
+   "frames": 122,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 34,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 34,
+     "count": 28,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 62,
+     "count": 33,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 95,
+     "count": 27,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.4551,
+    "y": 0.8114
+   },
+   "size": {
+    "w": 145.6,
+    "h": 141.6
+   }
+  },
+  "animal/cow/adult/male": {
+   "frames": 123,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 36,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 36,
+     "count": 29,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 65,
+     "count": 29,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 94,
+     "count": 29,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.4925,
+    "y": 0.8409
+   },
+   "size": {
+    "w": 140.8,
+    "h": 140.0
+   }
+  },
+  "animal/horse/baby": {
+   "frames": 138,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 35,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 35,
+     "count": 35,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 70,
+     "count": 33,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 103,
+     "count": 35,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.4869,
+    "y": 0.9328
+   },
+   "size": {
+    "w": 83.2,
+    "h": 128.8
+   }
+  },
+  "animal/horse/adult": {
+   "frames": 101,
+   "clips": {
+    "idle_front": {
+     "start": 0,
+     "count": 38,
+     "fps": 15
+    },
+    "walk_front": {
+     "start": 38,
+     "count": 11,
+     "fps": 15
+    },
+    "idle_back": {
+     "start": 49,
+     "count": 38,
+     "fps": 15
+    },
+    "walk_back": {
+     "start": 87,
+     "count": 14,
+     "fps": 15
+    }
+   },
+   "anchor": {
+    "x": 0.4273,
+    "y": 0.7752
+   },
+   "size": {
+    "w": 133.6,
+    "h": 181.6
+   }
+  }
+ }
+}
