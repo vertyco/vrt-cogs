@@ -32,7 +32,7 @@ There are no admin commands. Besides ActivityHub's own switches for turning the 
 
 Players can turn FarmCoins (the game's own money) into your bot's currency at the Market's bank counter, the way Neopets pays for its games. Each FarmCoin pays a set rate, up to a most-per-cash-in, and each player gets a few cash-ins a day. A cash-in only takes the FarmCoins that the most-per-cash-in pays for, so the rest stay on the farm. Credits never turn back into FarmCoins.
 
-Server admins (the server owner, anyone with Manage Server, or Red's admin role) and the bot owner see a gear button on the bank counter's panel. It turns payouts on and sets the credits per FarmCoin (1 by default), the most per cash-in (1,000) and the cash-ins a day (3). So at the defaults, one player can earn at most 3,000 credits a day. Payouts start off. Cash-ins come back at midnight UTC. ActivityHub's own **Payouts** tab doesn't cover FarmCord.
+Server admins (the server owner, anyone with Manage Server, or Red's admin role) and the bot owner see a gear button on the bank counter's panel. It turns payouts on and sets the credits per FarmCoin (1 by default), the most per cash-in (1,000) and the cash-ins a day (3). So at the defaults, one player can earn at most 3,000 credits a day. Payouts start off. Cash-ins come back at midnight UTC.
 
 With a global bank every server shares one balance, so only the bot owner sees the gear button, the settings apply in every server, and the daily cash-ins count across servers. In a DM the bank counter says cash-ins only work in a server.
 
