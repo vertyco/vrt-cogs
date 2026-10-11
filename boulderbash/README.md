@@ -12,7 +12,7 @@ Boulder Bash is a remake of Neopets' Flash game Destruct-O-Match III (2010). The
 
 ## Setup
 
-Boulder Bash needs ActivityHub, loaded and set up (see its README). Then:
+Boulder Bash needs ActivityHub 0.5.0 or later, loaded and set up (see its README). Then:
 
 ```
 [p]cog install vrt-cogs boulderbash

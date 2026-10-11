@@ -4,6 +4,18 @@ import { backToMenu, connect } from "activityhub";
 import { BOMB, EXTREMES, MAX_COLORS, TWO_BOARDS, WILD } from "./motion.js";
 import { createScene } from "./scene.js";
 import { Sound } from "./sound.js";
+import {
+  checkPassed,
+  disconnected,
+  hidePass,
+  onPeople,
+  placePeople,
+  report,
+  showLive,
+  startPassing,
+  watchPeople,
+  ZEN,
+} from "./whoshere.js";
 
 const CLOSED_BECAUSE = {
   1006: "Lost the connection. Go back to the menu and open Boulder Bash again.",
@@ -15,7 +27,6 @@ const CLOSED_BECAUSE = {
 const CLOSED_OTHERWISE = "The game ended. Go back to the menu and open it again.";
 const OFFLINE_PLAY = "Open Boulder Bash in Discord to play.";
 const EFFECTS_KEY = "boulderbash:effects";
-const ZEN = 0;
 // A phone held upright gets the stacked layout
 const TALL_BELOW = 0.8;
 const sound = new Sound();
@@ -34,6 +45,7 @@ const page = {
   payouts: null,
   toastTimer: null,
 };
+watchPeople(page);
 
 function $(id) {
   return document.getElementById(id);
@@ -66,6 +78,8 @@ async function start() {
   bindButtons();
   try {
     page.scene = await createScene($("scene"));
+    // Where the scene drew things can be read from outside, as the browser tests do
+    window.boulderbashScene = page.scene;
   } catch (e) {
     console.error("Boulder Bash: couldn't start drawing", e);
     showMessage("This device couldn't start the game's graphics.");
@@ -84,9 +98,13 @@ async function start() {
     showMessage(e.message);
     return;
   }
+  // Placed straight after connecting, so the hub never floats a button of its own over the game
+  $("people").append(page.hub.peopleButton());
+  page.hub.onPeople(onPeople);
   if (page.hub.offline) {
     return;
   }
+  report();
   loadPayouts();
   await goLive();
 }
@@ -96,6 +114,7 @@ async function goLive() {
     page.conn = await page.hub.socket();
   } catch (e) {
     showMessage(CLOSED_BECAUSE[e.status] || e.message);
+    disconnected();
     return;
   }
   page.conn.on(receive);
@@ -108,6 +127,7 @@ async function goLive() {
   page.conn.onClose((code) => {
     $("banner").hidden = true;
     showMessage(CLOSED_BECAUSE[code] || CLOSED_OTHERWISE);
+    disconnected();
   });
 }
 
@@ -126,6 +146,8 @@ function showScreen(name) {
   const before = page.screen;
   page.screen = name;
   $("stage").dataset.screen = name;
+  // The people button and the strip sit outside the stage, and follow the screen from here
+  document.body.dataset.screen = name;
   for (const id of ["title", "modes", "help", "play", "over"]) {
     $(id).hidden = id !== name;
   }
@@ -134,12 +156,14 @@ function showScreen(name) {
   }
   if (name !== "play") {
     hidePopup();
+    hidePass();
   }
   layout();
   if (["title", "modes", "over"].includes(name) && before !== name) {
     page.scene?.entrance();
   }
   sound.setScene(name === "play" ? "play" : "menu");
+  report();
 }
 
 // The logo tumbles in on the first visit, and again after a restart when effects are on
@@ -165,6 +189,7 @@ function layout() {
   const tall = window.innerWidth / window.innerHeight < TALL_BELOW;
   document.body.classList.toggle("tall", tall);
   const safe = safeArea();
+  let stage = null;
   if (!tall) {
     const roomW = window.innerWidth - safe.left - safe.right;
     const roomH = window.innerHeight - safe.top - safe.bottom;
@@ -172,6 +197,7 @@ function layout() {
     const x = safe.left + (roomW - 800 * scale) / 2;
     const y = safe.top + (roomH - 600 * scale) / 2;
     $("stage").style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    stage = { x, y, scale };
   }
   let playArea = null;
   if (tall && page.screen === "play") {
@@ -180,6 +206,7 @@ function layout() {
     playArea = { top, height: Math.max(100, bottom - top) };
   }
   page.scene?.layout({ tall, screen: page.screen, safe, playArea });
+  placePeople(stage, safe);
 }
 
 function toast(text) {
@@ -282,6 +309,7 @@ function onHello(hello) {
 function enterPlay(snapshot, rain) {
   page.game = { mode: snapshot.mode, state: snapshot.state, score: snapshot.score, slots: snapshot.slots, last: snapshot.last };
   page.boards = snapshot.boards.map(boardNumbers);
+  startPassing();
   renderSlots(snapshot.slots);
   page.result = null;
   showScreen("play");
@@ -363,6 +391,9 @@ function renderHud() {
   [0, 1].forEach((side) => {
     $(`next-${side}`).textContent = nextLine(side);
   });
+  report();
+  checkPassed();
+  showLive();
 }
 
 function nextLine(side) {

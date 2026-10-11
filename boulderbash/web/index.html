@@ -9,6 +9,9 @@
   <body>
     <div class="scene" id="scene"></div>
     <div class="safe" id="safe" aria-hidden="true"></div>
+    <!-- Who's here: drawn at the screen's size beside the scaled stage. The strip goes under the stage's own parts,
+         the passing note over the boards, and the people button (with the hub's arrival notes) over everything -->
+    <ol class="live" id="live" aria-label="Playing here now" hidden></ol>
 
     <div class="stage" id="stage" data-screen="title">
       <button type="button" class="icon-button corner-left" id="back" aria-label="Back to the menu">
@@ -122,6 +125,9 @@
 
       <p class="toast" id="toast" role="status" hidden></p>
     </div>
+
+    <p class="pass" id="pass" aria-live="polite" hidden></p>
+    <div class="people" id="people"></div>
 
     <p class="banner" id="banner" role="status" hidden>Reconnecting...</p>
     <div class="message" id="message" role="alert" hidden>

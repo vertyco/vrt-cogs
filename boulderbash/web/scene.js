@@ -558,6 +558,18 @@ class Scene {
     this.caveman.position.set(...this.onBackdrop(CAVEMAN_HOME));
   }
 
+  // Where the boards are on the screen, for keeping other things clear of them
+  boardsBox() {
+    const { x, y } = this.world;
+    const scale = this.world.scale.x;
+    return {
+      left: x + BOARD_SPAN[0] * scale,
+      top: y + BOARD_TOP * scale,
+      right: x + BOARD_SPAN[1] * scale,
+      bottom: y + BOARD_BOTTOM * scale,
+    };
+  }
+
   toStage(event) {
     return this.world.toLocal(event.global);
   }

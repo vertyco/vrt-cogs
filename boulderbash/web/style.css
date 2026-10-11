@@ -949,3 +949,269 @@ body.tall .toast {
   max-width: 88vw;
   text-align: center;
 }
+
+/* ---------- Who's here: the people button, the strip of scores and passing notes ---------- */
+
+/* These are drawn at the screen's own size, not the stage's, so names stay readable on a small stage. On wide screens
+   whoshere.js gives the stage's place: --stage-x and --stage-y are its top-left corner on the screen and --stage-s its
+   scale, so a spot (x, y) on the 800 x 600 stage is at (stage-x + x * stage-s, stage-y + y * stage-s) */
+.people {
+  position: fixed;
+  display: flex;
+  /* As big as the Back button, from just room for the faces in it up to 40px */
+  --hub-people-size: clamp(26px, calc(40px * var(--stage-s, 1)), 40px);
+  --accent: var(--glow);
+  --on-accent: var(--ink);
+  /* In the Back button's corner where Back is hidden, level with its middle */
+  left: calc(var(--stage-x, 0px) + 8px * var(--stage-s, 1));
+  top: calc(var(--stage-y, 0px) + 28px * var(--stage-s, 1));
+  transform: translateY(-50%);
+}
+
+/* Beside Back on the title */
+body[data-screen="title"] .people {
+  left: calc(var(--stage-x) + 48px * var(--stage-s) + 8px);
+}
+
+/* How to Play's slab fills that corner, so between its two signs */
+body[data-screen="help"] .people {
+  left: calc(var(--stage-x) + 679px * var(--stage-s));
+  top: calc(var(--stage-y) + 143px * var(--stage-s));
+  transform: translate(-50%, -50%);
+}
+
+/* The score tablet fills that corner after a game, so the other one */
+body[data-screen="over"] .people {
+  left: auto;
+  right: calc(100vw - var(--stage-x) - 792px * var(--stage-s));
+}
+
+/* In a game: left of End Game, level with its middle, and up to as tall */
+body[data-screen="play"] .people {
+  --hub-people-size: clamp(26px, calc(54px * var(--stage-s)), 40px);
+  left: auto;
+  right: calc(100vw - var(--stage-x) - 598px * var(--stage-s));
+  top: calc(var(--stage-y) + 31px * var(--stage-s));
+}
+
+/* Everyone here with a score, best first. With room beside the boards (body.strip-column), a column there under the
+   score, as wide as that room allows; its entries take the widest one's width, so they line up */
+.live {
+  position: fixed;
+  left: calc(var(--safe-left) + 10px);
+  top: calc(var(--stage-y) + 50px * var(--stage-s));
+  width: max-content;
+  max-width: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+/* Without that room, a row under the score, clear of the people button. whoshere.js gives its width and only puts in as
+   many entries as keep a few letters of every name */
+body.strip-row .live {
+  left: calc(var(--stage-x) + 8px * var(--stage-s));
+  top: calc(var(--stage-y) + 66px * var(--stage-s));
+  max-width: var(--row-room);
+  flex-direction: row;
+  transform: translateY(-50%);
+}
+
+.live li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 3px 9px 3px 8px;
+  border-radius: 999px;
+  background: rgba(42, 26, 14, 0.82);
+  color: var(--sand);
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.live li.mine {
+  box-shadow: inset 0 0 0 2px var(--glow);
+}
+
+.live li.away {
+  opacity: 0.5;
+}
+
+.live .rank {
+  min-width: 1ch;
+  color: var(--sand-deep);
+}
+
+.live .avatar {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--stone);
+  object-fit: cover;
+}
+
+/* With no picture, the first letter of the name */
+.live span.avatar {
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  font-size: 11px;
+}
+
+/* Names are other players' words: kept apart from the text around them, whichever way they are written */
+.live .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  unicode-bidi: isolate;
+}
+
+body.strip-row .live .name {
+  min-width: 30px;
+}
+
+.live .points {
+  flex: none;
+  margin-left: auto;
+  padding-left: 4px;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.live li.more {
+  padding: 3px 10px;
+}
+
+/* In the column beside the boards the score goes under the name, so a narrow column still has room for the name */
+body.strip-column .live li:not(.more) {
+  display: grid;
+  grid-template-columns: auto 20px minmax(0, 1fr);
+  grid-template-areas:
+    "rank face name"
+    "rank face points";
+  align-items: center;
+  column-gap: 5px;
+  height: auto;
+  padding: 3px 10px 3px 8px;
+  border-radius: 14px;
+  line-height: 14px;
+}
+
+body.strip-column .live .rank {
+  grid-area: rank;
+}
+
+body.strip-column .live .avatar {
+  grid-area: face;
+}
+
+body.strip-column .live .name {
+  grid-area: name;
+}
+
+body.strip-column .live .points {
+  grid-area: points;
+  margin: 0;
+  padding: 0;
+  font-size: 11px;
+}
+
+/* "You passed Ann!" for a moment, off the boards. whoshere.js finds it a spot clear of the boards, the strip and the
+   people button's arrival notes, and gives it its place and how wide it may be. It wraps between words, and only
+   breaks a word (.tight) when the room is too narrow for one. It never takes a tap */
+.pass {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: max-content;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 3px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: var(--glow);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Smaller, for a small window */
+.pass.small {
+  padding: 2px 8px;
+  border-width: 2px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.pass.tight {
+  overflow-wrap: anywhere;
+}
+
+.pass.show {
+  animation: pass-in 0.3s ease-out;
+}
+
+@keyframes pass-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+    scale: 0.9;
+  }
+}
+
+/* An upright phone: the people button in Back's corner on the menus (beside Back on the title), and under End Game
+   in a game, with the strip in a column under the score beside it. whoshere.js puts the passing note in the sky
+   above the boards */
+body.tall .people {
+  --hub-people-size: 40px;
+  left: calc(var(--safe-left) + 10px);
+  right: auto;
+  top: calc(var(--safe-top) + 30px);
+  transform: translateY(-50%);
+}
+
+body.tall[data-screen="title"] .people {
+  left: calc(var(--safe-left) + 58px);
+}
+
+body.tall[data-screen="play"] .people {
+  --hub-people-size: 36px;
+  left: auto;
+  right: calc(var(--safe-right) + 10px);
+  top: calc(var(--safe-top) + 60px);
+  transform: none;
+}
+
+body.tall .live {
+  left: calc(var(--safe-left) + 10px);
+  top: calc(var(--safe-top) + 60px);
+  max-width: calc(100vw - var(--safe-left) - var(--safe-right) - 150px);
+}
+
+body.tall .pass {
+  left: 50%;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  transform: translateX(-50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pass.show {
+    animation: none;
+  }
+}
