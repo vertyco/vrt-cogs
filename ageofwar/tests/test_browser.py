@@ -1,8 +1,10 @@
 import asyncio
+import io
 import time
 from types import SimpleNamespace
 
 import pytest
+from PIL import Image
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
@@ -169,6 +171,35 @@ def test_on_an_upright_phone_the_menus_fit_the_width(driver, live):
         )
         for left, right, bottom in edges:
             assert left >= -1 and right <= 391 and bottom <= 845
+    finally:
+        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+
+
+FIELD_AND_CANVAS = (
+    "const box = (s) => { const r = document.querySelector(s).getBoundingClientRect(); return [r.top, r.bottom]; };"
+    "return [box('#field'), box('#field canvas'), innerHeight];"
+)
+
+
+def test_opened_on_an_upright_phone_the_field_shows_from_the_start(driver, live):
+    # Opened at this size, so the window never changes size once the page has loaded
+    driver.execute_cdp_cmd("Emulation.setDeviceMetricsOverride", UPRIGHT_PHONE)
+    try:
+        start_against_the_computer(driver, live)
+        browser.wait_for(driver, "document.getElementById('app').dataset.layout === 'tall'")
+        time.sleep(0.5)
+        (field_top, field_bottom), (canvas_top, canvas_bottom), height = driver.execute_script(FIELD_AND_CANVAS)
+        # The field is a short box over the menus, and the canvas fills exactly that box
+        assert field_bottom - field_top < height / 2
+        assert abs(canvas_top - field_top) <= 1 and abs(canvas_bottom - field_bottom) <= 1
+        # Just above the box's bottom edge is the ground, where an oversized canvas would show only sky
+        middle = driver.execute_script(
+            "const r = document.getElementById('field').getBoundingClientRect(); return r.left + r.width / 2"
+        )
+        shot = Image.open(io.BytesIO(driver.get_screenshot_as_png())).convert("RGB")
+        scale = UPRIGHT_PHONE["deviceScaleFactor"]
+        ground = shot.getpixel((round(middle * scale), round((field_bottom - 6) * scale)))
+        assert any(abs(got - sky) > 24 for got, sky in zip(ground, (0x3D, 0xB2, 0xFF))), ground
     finally:
         driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
 
@@ -495,7 +526,9 @@ def test_the_corner_buttons_and_the_people_button_fit_between_the_menus(driver, 
         driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
 
 
-# What each side's arrow says, and how far it sticks out of its name's text
+# What each side's arrow says, with its empty alternative text so screen readers skip it, and how far it sticks out
+# of its name's text
+ARROW_MARKS = ['"◀︎" / ""', '"▶︎" / ""']
 ARROWS = (
     "const mark = (id, side) => getComputedStyle(document.querySelector(`#${id} .tag-name`), side).content;"
     "return [mark('side-1', '::before'), mark('side-2', '::after')];"
@@ -541,7 +574,7 @@ def test_the_side_names_and_faces_stay_on_screen_and_clear_the_buttons_and_menus
         # The names are centered under the round buttons, wherever those sit
         names = rect_of(driver, ".versus")
         assert abs((names[0] + names[2]) / 2 - (corner[0] + corner[2]) / 2) < 2
-        assert driver.execute_script(ARROWS) == ['"◀︎"', '"▶︎"']
+        assert driver.execute_script(ARROWS) == ARROW_MARKS
     finally:
         driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
 
@@ -577,7 +610,7 @@ def test_a_row_of_names_that_wraps_keeps_each_arrow_with_its_name(driver, live, 
         assert two[1] >= one[3]
         for left, _, right, _ in (one, two):
             assert left >= 0 and right <= 320
-        assert driver.execute_script(ARROWS) == ['"◀︎"', '"▶︎"']
+        assert driver.execute_script(ARROWS) == ARROW_MARKS
         # Each arrow is part of its own name, a little before the left one's letters and after the right one's
         (before_left, _), (_, after_right) = driver.execute_script(ARROW_ROOM)
         assert before_left < -8 and after_right > 8

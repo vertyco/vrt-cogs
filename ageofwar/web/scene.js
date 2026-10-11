@@ -987,5 +987,8 @@ export async function createScene(host, onProgress) {
     resolution: Math.min(window.devicePixelRatio || 1, 2),
   });
   host.appendChild(app.canvas);
+  // Pixi only sizes the canvas again when the window changes size. The field's box also changes without that, as when
+  // an upright phone's layout first gives it its short shape, and the canvas follows before that frame is drawn
+  new ResizeObserver(() => app.resize()).observe(host);
   return new Scene(app, lib);
 }

@@ -1,5 +1,10 @@
 # Age of War Changelog
 
+## 0.3.1
+
+- On an upright phone, a battle now shows the field straight away. Before, the field could show only sky until the window changed size.
+- Screen readers no longer read out the arrows beside the players' names.
+
 ## 0.3.0
 
 Needs ActivityHub 0.5.0 or later.
