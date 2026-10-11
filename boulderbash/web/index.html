@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Boulder Bash</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="scene" id="scene"></div>
+    <div class="safe" id="safe" aria-hidden="true"></div>
+
+    <div class="stage" id="stage" data-screen="title">
+      <button type="button" class="icon-button corner-left" id="back" aria-label="Back to the menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 L8 12 L15 19" /></svg>
+      </button>
+      <button type="button" class="icon-button corner-right" id="open-payouts" aria-label="Payout settings" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+      </button>
+
+      <h1 class="logo" id="logo" aria-label="Boulder Bash">
+        <span class="logo-line" aria-hidden="true"><span>B</span><span>o</span><span>u</span><span>l</span><span>d</span><span>e</span><span>r</span></span>
+        <span class="logo-line" aria-hidden="true"><span>B</span><span>a</span><span>s</span><span>h</span></span>
+      </h1>
+
+      <section class="screen signs" id="title" aria-label="Title">
+        <button type="button" class="sign s1" id="start">Start Game</button>
+        <button type="button" class="sign s2" id="how">How to Play</button>
+        <button type="button" class="sign s3" id="open-scores">High Scores</button>
+        <button type="button" class="sign s4" id="sound">Turn music off</button>
+        <button type="button" class="sign s5" id="effects">Turn effects off</button>
+      </section>
+
+      <section class="screen signs" id="modes" aria-label="Pick a mode" hidden>
+        <button type="button" class="sign s1" data-mode="0">Zen</button>
+        <button type="button" class="sign s2" data-mode="1">Normal</button>
+        <button type="button" class="sign s3" data-mode="2">Extreme</button>
+        <button type="button" class="sign s4" data-mode="3">Normal x2</button>
+        <button type="button" class="sign s5" data-mode="4">Extreme x2</button>
+      </section>
+
+      <section class="screen help" id="help" aria-label="How to play" hidden>
+        <div class="slab">
+          <div class="help-page" data-page="1">
+            <h2>How to play</h2>
+            <p>Tap a clump of two or more touching blocks of the same color to pick it. Tap it again to smash it.</p>
+            <p>Blocks above fall down, and empty columns slide together. Bigger clumps score more for every block.</p>
+            <p>A level ends when no clump of two is left. Reach the level's goal to go on to the next one.</p>
+            <p>Stone blocks never match. Only a Bomb clears them.</p>
+          </div>
+          <div class="help-page" data-page="2" hidden>
+            <h2>Modes</h2>
+            <dl class="modes-list">
+              <dt>Zen</dt><dd>Ten relaxed levels, with no goals and no score.</dd>
+              <dt>Normal</dt><dd>Ten levels. Reach each level's goal to go on.</dd>
+              <dt>Extreme</dt><dd>One tap smashes. New rows push up, faster and faster. Don't let a column reach the top.</dd>
+              <dt class="gap">Normal x2</dt><dd class="gap">Two boards at once, each with its own goals. Play on until both are done.</dd>
+              <dt>Extreme x2</dt><dd>Two Extreme boards. The game ends when either one fills up.</dd>
+            </dl>
+          </div>
+          <div class="help-page" data-page="3" hidden>
+            <h2>Special blocks</h2>
+            <ul class="specials">
+              <li><img src="art/special1.svg" alt="" /><span><b>Refill</b> drops a new block into every column with room.</span></li>
+              <li><img src="art/special2.svg" alt="" /><span><b>Countdown</b> counts down from 15. At 0, its whole clump turns to stone.</span></li>
+              <li><img src="art/special3.svg" alt="" /><span><b>Triple</b> scores its clump three times over.</span></li>
+              <li><img src="art/special4.svg" alt="" /><span><b>Bomb</b>: tap it to smash everything around it.</span></li>
+              <li><img src="art/special5.svg" alt="" /><span><b>Color wipe</b> also smashes every other block of its color.</span></li>
+            </ul>
+          </div>
+          <div class="help-page" data-page="4" hidden>
+            <h2>Special blocks</h2>
+            <ul class="specials">
+              <li><img src="art/special6.svg" alt="" /><span><b>Shifter</b> changes color every 6 seconds.</span></li>
+              <li><img src="art/special7.svg" alt="" /><span><b>Wild</b> joins a clump of any color. It can't be tapped on its own.</span></li>
+              <li><img src="art/special8.svg" alt="" /><span><b>Undo</b> charges the Undo slot, which takes back your last move.</span></li>
+              <li><img src="art/special9.svg" alt="" /><span><b>Shuffle</b> charges the Shuffle slot, which mixes up the blocks.</span></li>
+              <li><img src="art/special10.svg" alt="" /><span><b>Column hold</b> (Extreme only): its column skips the next rising row.</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="signs">
+          <button type="button" class="sign s1" id="help-back">Back</button>
+          <button type="button" class="sign s3" id="help-more">More</button>
+        </div>
+      </section>
+
+      <section class="screen play" id="play" aria-label="Play" hidden>
+        <div class="hud-top" id="hud-top">
+          <p class="score"><span class="label">Score</span> <span class="value" id="score">0</span></p>
+          <button type="button" class="sign end" id="end">End Game</button>
+        </div>
+        <div class="hud-bottom" id="hud-bottom">
+          <p class="next next-0" id="next-0"></p>
+          <div class="slots">
+            <button type="button" class="slot" id="slot-undo" data-state="empty" aria-label="Undo" disabled><img src="art/special8.svg" alt="" /></button>
+            <button type="button" class="slot" id="slot-shuffle" data-state="empty" aria-label="Shuffle" disabled><img src="art/special9.svg" alt="" /></button>
+          </div>
+          <p class="next next-1" id="next-1"></p>
+        </div>
+        <div class="popup tablet" id="popup" role="dialog" aria-live="polite" hidden>
+          <h2 id="popup-title">Level complete</h2>
+          <p id="popup-lines"></p>
+          <p class="hint">Tap or press any key</p>
+        </div>
+      </section>
+
+      <section class="screen over" id="over" aria-label="Game over" hidden>
+        <div class="tablet brown result">
+          <h2>Your score</h2>
+          <p class="big" id="final-score">0</p>
+          <p class="standing" id="standing"></p>
+          <div class="cashin" id="cashin" hidden>
+            <p class="cashin-text" id="cashin-text"></p>
+            <button type="button" class="button primary" id="cashin-button">Cash in</button>
+          </div>
+        </div>
+        <div class="signs">
+          <button type="button" class="sign s2" id="restart">Restart Game</button>
+        </div>
+      </section>
+
+      <p class="toast" id="toast" role="status" hidden></p>
+    </div>
+
+    <p class="banner" id="banner" role="status" hidden>Reconnecting...</p>
+    <div class="message" id="message" role="alert" hidden>
+      <p id="message-text"></p>
+      <button type="button" class="button" id="message-close">OK</button>
+    </div>
+
+    <dialog class="panel" id="scores" aria-labelledby="scores-title">
+      <h2 id="scores-title">High Scores</h2>
+      <p class="dim">Each player's best game on this server.</p>
+      <ol class="leaders" id="leaders"></ol>
+      <p class="you" id="you"></p>
+      <button type="button" class="button" id="close-scores">Close</button>
+    </dialog>
+
+    <dialog class="panel payouts" id="payouts" aria-labelledby="payouts-title">
+      <h2 id="payouts-title">Payouts</h2>
+      <p class="dim">After a game, players can cash in its score: each point pays the rate, up to the most per cash-in. Starting another game gives up a score that wasn't cashed in, so players save their cash-ins for their best games. Cash-ins come back at midnight UTC.</p>
+      <p class="dim" id="payouts-global" hidden>The bank is global, so these payouts apply in every server, and cash-ins count across servers.</p>
+      <label class="payout-switch"><input type="checkbox" id="payouts-on" /> Boulder Bash pays out</label>
+      <div class="payout-numbers">
+        <label><span id="payouts-rate-label">Credits per point</span><input type="number" id="payouts-rate" min="0" step="any" /></label>
+        <label><span>Most per cash-in</span><input type="number" id="payouts-cap" min="1" step="1" /></label>
+        <label><span>Cash-ins a day</span><input type="number" id="payouts-plays" min="1" step="1" /></label>
+      </div>
+      <p class="dim" id="payouts-day"></p>
+      <p class="dim" id="payouts-today"></p>
+      <p class="payout-status" id="payouts-status" role="status"></p>
+      <div class="actions">
+        <button type="button" class="button primary" id="save-payouts">Save</button>
+        <button type="button" class="button" id="reset-payouts">Reset</button>
+        <button type="button" class="button" id="close-payouts">Close</button>
+      </div>
+    </dialog>
+
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

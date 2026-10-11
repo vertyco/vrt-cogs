@@ -1336,6 +1336,17 @@ Tanks is another cog in the same repo (`tanks/`): turn-based artillery for up to
 | Playing a script back on a fixed clock | `web/playback.js` |
 | A browser preview recorded from the real match code | `tests/demo.py`, `web/demo.json` |
 
+### A single-player example: Boulder Bash
+
+Boulder Bash is a cog in the same repo (`boulderbash/`): a remake of Neopets' Destruct-O-Match III, a block-smashing puzzle. Each player plays their own game, and the bot owns the board: the page only says where the player tapped. It also shows Neopets-style payouts with an admin settings dialog inside the game.
+
+| Pattern | Where |
+|---|---|
+| One game per player, kept running while they're away, and a newer page taking over | `boulderbash/main.py` (`join`, `leave`, `tick`) |
+| Working a move out at once, then holding the board busy for as long as its animation lasts | `common/board.py` (`smash`), `common/timing.py`, `common/game.py` (`tap`) |
+| The page playing the same motion for exactly that long, checked by a test | `web/motion.js`, `tests/test_page.py` |
+| Score payouts and their settings dialog | `common/payouts.py`, `web/game.js` (`showOffer`, `showPayouts`) |
+
 ## 20. Glossary
 
 | Word | What it means here |

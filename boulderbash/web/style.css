@@ -1,0 +1,951 @@
+@font-face {
+  font-family: "Grandstander";
+  src: url("fonts/grandstander.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nunito";
+  src: url("fonts/nunito.woff2") format("woff2");
+  font-weight: 200 1000;
+  font-display: swap;
+}
+
+:root {
+  --ink: #2a1a0e;
+  --ink-soft: #6a5440;
+  --sand: #f3e6c8;
+  --sand-deep: #d8c39a;
+  --stone: #cdbb9b;
+  --amber: #ff9a1f;
+  --amber-deep: #b86400;
+  --glow: #ffe13a;
+  --display: "Grandstander", "Trebuchet MS", "Segoe UI", sans-serif;
+  --body: "Nunito", "Segoe UI", sans-serif;
+  /* Room taken by Discord's buttons and the phone's notch. The hub copies Discord's sizes into this frame */
+  --safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  color-scheme: light;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #3b2a1e;
+  color: var(--ink);
+  font-family: var(--body);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 3px solid var(--glow);
+  outline-offset: 2px;
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+}
+
+.scene canvas {
+  display: block;
+}
+
+/* Measured by the page to keep the stage clear of Discord's buttons */
+.safe {
+  position: fixed;
+  inset: 0;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ---------- Wide screens: the original's 800 x 600 stage, scaled to fit by game.js ---------- */
+
+.stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 800px;
+  height: 600px;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.stage button,
+.stage .tablet,
+.stage .slab {
+  pointer-events: auto;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+}
+
+.sign {
+  position: absolute;
+  width: 214px;
+  height: 72px;
+  padding: 0 12px 4px;
+  white-space: nowrap;
+  border: 0;
+  background: url("art/sign.svg") center / 100% 100% no-repeat;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.05;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: transform 0.08s;
+}
+
+.sign:hover,
+.sign:focus-visible {
+  background-image: url("art/sign-lit.svg");
+}
+
+.sign:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+.sign:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.signs .s1 {
+  left: 532px;
+  top: 20px;
+}
+
+.signs .s2 {
+  left: 504px;
+  top: 107px;
+}
+
+.signs .s3 {
+  left: 532px;
+  top: 194px;
+}
+
+.signs .s4 {
+  left: 479px;
+  top: 287px;
+}
+
+.signs .s5 {
+  left: 446px;
+  top: 380px;
+}
+
+/* How to Play has no gear button, so its signs keep clear of the slab */
+.help .signs .s1,
+.help .signs .s3 {
+  left: 572px;
+}
+
+.shaking .sign {
+  animation: shake 0.35s;
+}
+
+@keyframes shake {
+  20% {
+    translate: -4px 2px;
+  }
+  40% {
+    translate: 4px -2px;
+  }
+  60% {
+    translate: -3px 1px;
+  }
+  80% {
+    translate: 2px -1px;
+  }
+}
+
+.icon-button {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  padding: 7px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--stone);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.icon-button svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.corner-left {
+  left: 8px;
+  top: 8px;
+}
+
+.corner-right {
+  left: 754px;
+  top: 8px;
+}
+
+.stage:not([data-screen="title"]) .corner-left,
+.stage:not([data-screen="title"]) .corner-right {
+  display: none;
+}
+
+/* The logo: two lines of stone letters, which tumble in on the first visit */
+.logo {
+  position: absolute;
+  left: 30px;
+  top: 52px;
+  width: 400px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--display);
+  font-size: 84px;
+  font-weight: 900;
+  line-height: 0.92;
+  color: #d9ccb0;
+  -webkit-text-stroke: 4px var(--ink);
+  paint-order: stroke fill;
+  text-shadow:
+    0 6px 0 #7a6448,
+    0 9px 0 var(--ink);
+  pointer-events: none;
+}
+
+.stage:not([data-screen="title"]):not([data-screen="modes"]) .logo {
+  display: none;
+}
+
+.logo-line {
+  display: flex;
+  gap: 2px;
+}
+
+.logo-line span {
+  display: inline-block;
+}
+
+.logo-line span:nth-child(odd) {
+  rotate: -4deg;
+}
+
+.logo-line span:nth-child(even) {
+  rotate: 3deg;
+  translate: 0 4px;
+}
+
+.logo-line + .logo-line {
+  color: #f0b45c;
+  font-size: 1.12em;
+}
+
+.logo.build .logo-line span {
+  animation: tumble 0.45s backwards cubic-bezier(0.3, 1.4, 0.6, 1);
+  animation-delay: calc(var(--i) * 55ms);
+}
+
+@keyframes tumble {
+  from {
+    transform: translateY(-260px) rotate(-30deg);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+}
+
+/* ---------- How to Play ---------- */
+
+.slab {
+  position: absolute;
+  left: 15px;
+  top: 10px;
+  width: 585px;
+  height: 575px;
+  box-sizing: border-box;
+  padding: 56px 62px;
+  background: url("art/tablet.svg") center / 100% 100% no-repeat;
+}
+
+.help-page h2 {
+  margin: 0 0 18px;
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 900;
+}
+
+.help-page p {
+  margin: 0 0 14px;
+  font-size: 19px;
+  line-height: 1.4;
+}
+
+.modes-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 12px 16px;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.modes-list dt {
+  font-family: var(--display);
+  font-weight: 800;
+}
+
+.modes-list dd {
+  margin: 0;
+}
+
+.modes-list .gap {
+  margin-top: 16px;
+}
+
+.specials {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.specials li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.specials img {
+  width: 64px;
+  height: 64px;
+  flex: none;
+}
+
+/* ---------- Play ---------- */
+
+.score {
+  position: absolute;
+  left: 8px;
+  top: 2px;
+  margin: 0;
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 900;
+  -webkit-text-stroke: 5px var(--ink);
+  paint-order: stroke fill;
+}
+
+.score .label {
+  font-size: 22px;
+}
+
+.score .value {
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sign.end {
+  left: 606px;
+  top: 4px;
+  width: 186px;
+  height: 54px;
+  font-size: 21px;
+}
+
+.next {
+  position: absolute;
+  top: 520px;
+  width: 230px;
+  margin: 0;
+  color: #fff;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.15;
+  -webkit-text-stroke: 5px var(--ink);
+  paint-order: stroke fill;
+  white-space: pre-line;
+}
+
+.next-0 {
+  left: 24px;
+}
+
+.next-1 {
+  left: 550px;
+  text-align: right;
+}
+
+/* The two slots sit on stone slabs under the boards. Empty ones are faint, ones on hold half faint */
+.slots {
+  position: absolute;
+  left: 290px;
+  top: 500px;
+  display: flex;
+  gap: 40px;
+}
+
+.slot {
+  width: 90px;
+  height: 64px;
+  padding: 2px 0 6px;
+  border: 0;
+  background: url("art/slab.svg") center / 100% 100% no-repeat;
+  cursor: pointer;
+}
+
+.slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35));
+  transition: opacity 0.2s;
+}
+
+.slot[data-state="empty"],
+.slot[data-state="hold"] {
+  cursor: default;
+}
+
+.slot[data-state="empty"] img {
+  opacity: 0.1;
+}
+
+.slot[data-state="hold"] img {
+  opacity: 0.5;
+}
+
+.slot[data-state="ready"]:hover img {
+  filter: drop-shadow(0 0 8px var(--glow));
+}
+
+.slot.charged {
+  animation: charge 0.75s;
+}
+
+@keyframes charge {
+  40% {
+    transform: scale(1.3);
+    filter: drop-shadow(0 0 16px var(--glow));
+  }
+}
+
+.tablet {
+  box-sizing: border-box;
+  background: url("art/tablet.svg") center / 100% 100% no-repeat;
+  text-align: center;
+}
+
+.tablet.brown {
+  background-image: url("art/tablet-brown.svg");
+}
+
+.popup {
+  position: absolute;
+  left: 175px;
+  top: 118px;
+  width: 450px;
+  height: 320px;
+  padding: 52px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.popup h2,
+.result h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 40px;
+  font-weight: 900;
+}
+
+.popup p {
+  margin: 0;
+  font-size: 22px;
+  white-space: pre-line;
+}
+
+.popup .hint {
+  margin-top: 12px;
+  font-size: 17px;
+  color: var(--ink-soft);
+}
+
+/* ---------- Game over ---------- */
+
+.result {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  width: 420px;
+  height: 330px;
+  padding: 40px 40px 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.result .big {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 58px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.standing {
+  margin: 0;
+  min-height: 1.3em;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.standing .new {
+  color: #8a2c00;
+}
+
+.cashin {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cashin-text {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.button {
+  padding: 9px 18px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: var(--sand);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.button.primary {
+  background: var(--glow);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 10px 18px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: var(--sand);
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.banner {
+  position: fixed;
+  top: calc(var(--safe-top) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--sand);
+  font-family: var(--display);
+  font-weight: 800;
+}
+
+.message {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(88vw, 420px);
+  box-sizing: border-box;
+  padding: 24px;
+  border: 4px solid var(--ink);
+  border-radius: 22px;
+  background: var(--sand);
+  text-align: center;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 800;
+  box-shadow: 0 8px 0 var(--ink);
+}
+
+.message p {
+  margin: 0 0 16px;
+}
+
+/* ---------- Panels: high scores and payouts ---------- */
+
+.panel {
+  width: min(92vw, 460px);
+  border: 4px solid var(--ink);
+  border-radius: 24px;
+  padding: 22px;
+  background: var(--sand);
+  color: var(--ink);
+  font-family: var(--body);
+  box-shadow: 0 8px 0 var(--ink);
+}
+
+.panel::backdrop {
+  background: rgba(42, 26, 14, 0.55);
+}
+
+.panel h2 {
+  margin: 0 0 4px;
+  font-family: var(--display);
+  font-size: 1.7rem;
+  font-weight: 900;
+}
+
+.panel .dim {
+  margin: 0 0 12px;
+  color: var(--ink-soft);
+}
+
+.leaders {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.leaders li {
+  display: grid;
+  grid-template-columns: 3.5ch minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fff8e6;
+}
+
+.leaders li.mine {
+  background: #ffe9a0;
+}
+
+.leaders .place {
+  font-family: var(--display);
+  font-weight: 900;
+  color: var(--amber-deep);
+}
+
+.leaders .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.leaders .best {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.you {
+  margin: 0 0 14px;
+  font-weight: 700;
+}
+
+.payout-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+
+.payout-switch input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--amber-deep);
+}
+
+.payout-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.payout-numbers label {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.payout-numbers input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 2px solid var(--sand-deep);
+  border-radius: 12px;
+  background: #fff8e6;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.payout-status {
+  min-height: 1.3em;
+  margin: 6px 0 10px;
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo.build .logo-line span,
+  .shaking .sign,
+  .slot.charged {
+    animation: none;
+  }
+}
+
+/* ---------- A phone held upright: the same screens, stacked in a column ---------- */
+
+body.tall .stage {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  transform: none !important;
+}
+
+body.tall .corner-left {
+  position: fixed;
+  left: calc(var(--safe-left) + 10px);
+  top: calc(var(--safe-top) + 10px);
+}
+
+body.tall .corner-right {
+  position: fixed;
+  left: auto;
+  right: calc(var(--safe-right) + 10px);
+  top: calc(var(--safe-top) + 10px);
+}
+
+body.tall .logo {
+  left: 0;
+  right: 0;
+  top: calc(var(--safe-top) + 58px);
+  width: auto;
+  font-size: min(15vw, 64px);
+}
+
+body.tall .screen.signs,
+body.tall .help .signs,
+body.tall .over .signs {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+body.tall .screen.signs {
+  top: calc(var(--safe-top) + 58px + min(30vw, 128px) + 30px);
+}
+
+body.tall .signs .sign {
+  position: static;
+  width: min(64vw, 240px);
+  height: 62px;
+  font-size: 21px;
+}
+
+body.tall .slab {
+  left: 12px;
+  right: 12px;
+  top: calc(var(--safe-top) + 60px);
+  bottom: calc(var(--safe-bottom) + 96px);
+  width: auto;
+  height: auto;
+  padding: 50px 30px 30px;
+  overflow-y: auto;
+}
+
+body.tall .help-page h2 {
+  font-size: 28px;
+}
+
+body.tall .help-page p,
+body.tall .modes-list,
+body.tall .specials li {
+  font-size: 16px;
+}
+
+body.tall .specials img {
+  width: 48px;
+  height: 48px;
+}
+
+body.tall .help .signs {
+  bottom: calc(var(--safe-bottom) + 18px);
+  flex-direction: row;
+  justify-content: center;
+  gap: 12px;
+}
+
+body.tall .help .signs .sign {
+  width: 150px;
+}
+
+body.tall .hud-top {
+  position: absolute;
+  left: calc(var(--safe-left) + 10px);
+  right: calc(var(--safe-right) + 10px);
+  top: calc(var(--safe-top) + 6px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+body.tall .score {
+  position: static;
+}
+
+body.tall .sign.end {
+  position: static;
+  width: 140px;
+  height: 48px;
+  font-size: 18px;
+}
+
+/* Clear of the hub's frame rate counter in the bottom corner */
+body.tall .hud-bottom {
+  position: absolute;
+  left: calc(var(--safe-left) + 8px);
+  right: calc(var(--safe-right) + 8px);
+  bottom: calc(var(--safe-bottom) + 40px);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 8px;
+}
+
+body.tall .next {
+  position: static;
+  width: auto;
+  font-size: 16px;
+}
+
+body.tall .slots {
+  position: static;
+  gap: 14px;
+}
+
+body.tall .slot {
+  width: 80px;
+  height: 58px;
+}
+
+body.tall .popup {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92vw, 420px);
+  height: auto;
+  min-height: 260px;
+  padding: 44px 30px;
+}
+
+body.tall .over {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: calc(var(--safe-top) + 60px) 12px 0;
+}
+
+body.tall .result {
+  position: static;
+  width: 100%;
+  max-width: 440px;
+  height: auto;
+  min-height: 280px;
+  padding: 40px 28px;
+}
+
+body.tall .over .signs {
+  position: static;
+}
+
+body.tall .toast {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 100px);
+  white-space: normal;
+  width: max-content;
+  max-width: 88vw;
+  text-align: center;
+}

@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "A Stone Age block-smashing puzzle for ActivityHub, remade from Neopets' Destruct-O-Match III with all-new art, sound and music. Tap clumps of matching stone blocks to smash them, play five modes from relaxed Zen to the rising rows of Extreme, and chase each server's high score table. Each player plays their own game, on desktop or a phone held either way. Server admins can let players cash in their scores for credits, Neopets style, with a rate, a cap per cash-in and a few cash-ins a day. Needs ActivityHub.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores each player's Discord user ID, their display name and best score on each server's Boulder Bash high score table, and how many scores they cashed in today and the credits paid for them.",
+  "hidden": true,
+  "install_msg": "Thank you for installing Boulder Bash!\n\nBoulder Bash is a game for ActivityHub, which must be installed and set up first:\n`[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`\n`[p]cog install vrt-cogs activityhub`\n`[p]load activityhub`\nThen follow ActivityHub's README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nOnce both are loaded, Boulder Bash shows up in the hub's menu. Payouts start off: server admins turn them on from the gear button on Boulder Bash's title screen.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "A Stone Age block-smashing puzzle for ActivityHub",
+  "tags": ["activity", "games", "economy", "puzzle", "fun", "vert"],
+  "type": "COG"
+}
