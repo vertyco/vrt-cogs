@@ -39,7 +39,7 @@ Server admins set this up in the menu's **Payouts** settings tab. For each inclu
 
 The server owner, and members with the Manage Server permission (or Red's admin role), see a **This server** tab in the settings, and a **Payouts** tab (see [Payouts](#payouts)). It sets the server's default look, theme included, which every member sees until they pick their own in **My look**, and turns games on or off. A game that is off can't be played in this server at all, and anyone playing it is stopped. Games the bot owner turned off for every server don't show up here.
 
-They can also put the **Open Activities** button on any message the bot sent in their server, like a welcome or rules message: `[p]activities pin <message link>` adds it, and `[p]activities unpin <message link>` takes it off. The message keeps its text, embeds and other buttons, and the button keeps working after the bot restarts. To give the button its own label, emoji or color, type them after the link: `[p]activities pin <message link> Play games emoji: 🎮 color: blurple` (colors: blurple, grey, green, red). Pin again with new ones to change a button that's already there; only the parts you type change. Add `game:` to pin a button that opens one game instead of the menu, like `[p]activities pin <message link> game: Snake`. It works for the bundled games and for games from other cogs, and `[p]activities unpin <message link> Snake` takes just that button off. If the cog that posted the message redraws its own buttons later, the pinned button goes away and needs pinning again.
+They can also put the **Open Activities** button on any message the bot sent in their server, like a welcome or rules message: `[p]activityhub pin <message link>` adds it, and `[p]activityhub unpin <message link>` takes it off. The message keeps its text, embeds and other buttons, and the button keeps working after the bot restarts. To give the button its own label, emoji or color, type them after the link: `[p]activityhub pin <message link> Play games emoji: 🎮 color: blurple` (colors: blurple, grey, green, red). Pin again with new ones to change a button that's already there; only the parts you type change. Add `game:` to pin a button that opens one game instead of the menu, like `[p]activityhub pin <message link> game: Snake`. It works for the bundled games and for games from other cogs, and `[p]activityhub unpin <message link> Snake` takes just that button off. If the cog that posted the message redraws its own buttons later, the pinned button goes away and needs pinning again.
 
 The bot owner also sees a **Defaults** tab. It sets the look every server starts from, and turns games on or off in every server at once. A game the owner turns off leaves every menu, can't be played anywhere, and server admins can't turn it back on.
 
@@ -134,10 +134,14 @@ Caddy is a web server that gets and renews its HTTPS certificate by itself.
    The `Upgrade` and `Connection` lines are what let WebSockets through. Without them, live games can't connect.
 3. Get a certificate with `sudo certbot --nginx -d games.example.com`. Certbot adds the HTTPS part to the site.
 
-## Owner commands
+## Commands
+
+`[p]activityhub pin` and `unpin` are for server admins (see [For server admins](#for-server-admins)). The rest are for the bot owner.
 
 | Command | Does |
 |---|---|
+| `[p]activityhub pin <message link> [label] [game:] [emoji:] [color:]` | Adds an activities button to a message the bot sent, or changes how it looks. |
+| `[p]activityhub unpin <message link> [game]` | Takes an activities button off a message the bot sent. |
 | `[p]activityhub view` | Shows where the web server listens (and the default), whether it is running, whether a client secret is saved, and how many games are installed. |
 | `[p]activityhub setup` | Walks through the whole setup page by page, including Cloudflare Tunnel, Caddy and nginx, filled in with your bot's own address. |
 | `[p]activityhub webserver <host> <port>` | Saves where the web server listens and restarts it. The default is `127.0.0.1 8742`. |

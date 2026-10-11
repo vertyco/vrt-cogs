@@ -1,5 +1,10 @@
 # ActivityHub Changelog
 
+## 0.4.1
+
+- Pinning moved to `[p]activityhub pin` and `[p]activityhub unpin`, so server admins find them in `[p]activityhub`'s help. They work the same as before. `[p]activityhub` is now open to server admins, who see only `pin` and `unpin` there; the setup commands stay for the bot owner.
+- `[p]activities` is a plain command again: it only posts the **Open Activities** button, and its help points to `[p]activityhub pin`.
+
 ## 0.4.0
 
 The included games can now pay players in the bot's currency for their scores, the way Neopets pays for its games.

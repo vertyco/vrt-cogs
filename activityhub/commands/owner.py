@@ -15,11 +15,12 @@ _ = Translator("ActivityHub", __file__)
 
 class OwnerCommands(MixinMeta):
     @commands.group(name="activityhub")
-    @commands.is_owner()
+    @commands.admin_or_permissions(manage_guild=True)
     async def activityhub_group(self, ctx: commands.Context):
-        """Set up the activities web server and the Discord login"""
+        """Pin activities buttons on messages, and set up the web server and the Discord login"""
 
     @activityhub_group.command(name="webserver")
+    @commands.is_owner()
     async def set_webserver(self, ctx: commands.Context, host: str, port: commands.Range[int, 1, 65535]):
         """
         Set where the activities web server listens, then restart it
@@ -37,6 +38,7 @@ class OwnerCommands(MixinMeta):
             await ctx.send(_("The web server couldn't start on {}:{}. Check the bot's logs.").format(host, port))
 
     @activityhub_group.command(name="view")
+    @commands.is_owner()
     @commands.bot_has_permissions(embed_links=True)
     async def view_settings(self, ctx: commands.Context):
         """Show where the web server listens, whether it is running, and the rest of the setup"""
@@ -87,6 +89,7 @@ class OwnerCommands(MixinMeta):
         await ctx.send(embed=embed)
 
     @activityhub_group.command(name="setup", aliases=["setuphelp"])
+    @commands.is_owner()
     @commands.bot_has_permissions(embed_links=True)
     async def setup_guide(self, ctx: commands.Context):
         """
@@ -108,6 +111,7 @@ class OwnerCommands(MixinMeta):
         await DynamicMenu(ctx, pages).refresh()
 
     @activityhub_group.command(name="secret")
+    @commands.is_owner()
     async def set_secret(self, ctx: commands.Context):
         """
         Set the client secret used to log players in
@@ -117,6 +121,7 @@ class OwnerCommands(MixinMeta):
         await SetSecretView(self, ctx).start()
 
     @activityhub_group.command(name="check")
+    @commands.is_owner()
     async def check_setup(self, ctx: commands.Context, public_host: str | None = None):
         """
         Check every setup step and say which one is missing
@@ -132,6 +137,7 @@ class OwnerCommands(MixinMeta):
             await ctx.send(page)
 
     @activityhub_group.command(name="games")
+    @commands.is_owner()
     async def list_games(self, ctx: commands.Context):
         """List the installed activities with the Discord scopes each asks for, and any game cog that was refused"""
         games = sorted(self.registry.games.values(), key=lambda game: game.key)

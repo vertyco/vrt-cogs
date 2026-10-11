@@ -20,6 +20,7 @@ from ..views.launch import (
     remove_button,
     restyle_button,
 )
+from .owner import OwnerCommands
 
 log = logging.getLogger("red.vrt.activityhub.commands")
 _ = Translator("ActivityHub", __file__)
@@ -121,13 +122,18 @@ class UserCommands(MixinMeta):
         """Open the activities menu"""
         await self.launch(interaction)
 
-    @commands.group(name="activities", invoke_without_command=True)
+    @commands.command(name="activities")
     @commands.guild_only()
     async def activities_text(self, ctx: commands.Context):
-        """Post a button that opens the activities menu"""
+        """
+        Post a button that opens the activities menu
+
+        Server admins can add the button to a message the bot already sent with `[p]activityhub pin`.
+        """
         await ctx.send(_("Pick a game to play together."), view=launch_view())
 
-    @activities_text.command(name="pin")
+    @OwnerCommands.activityhub_group.command(name="pin")
+    @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
     async def pin_button(self, ctx: commands.Context, message: discord.Message, *, options: PinOptions = None):
         """
@@ -143,10 +149,10 @@ class UserCommands(MixinMeta):
         green or red). Pin again with new ones to change a button that's already there.
 
         **Examples:**
-        - `[p]activities pin <message link>`
-        - `[p]activities pin <message link> Play games emoji: 🎮 color: blurple`
-        - `[p]activities pin <message link> game: Snake`
-        - `[p]activities pin <message link> Snake time! game: Snake color: red`
+        - `[p]activityhub pin <message link>`
+        - `[p]activityhub pin <message link> Play games emoji: 🎮 color: blurple`
+        - `[p]activityhub pin <message link> game: Snake`
+        - `[p]activityhub pin <message link> Snake time! game: Snake color: red`
         """
         if not await self.check_editable(ctx, message):
             return
@@ -198,7 +204,8 @@ class UserCommands(MixinMeta):
         names = ", ".join(sorted(game.name for game in self.registry.games.values()))
         raise ValueError(_("No game called `{}` is installed. The games are: {}").format(text.strip(), names))
 
-    @activities_text.command(name="unpin")
+    @OwnerCommands.activityhub_group.command(name="unpin")
+    @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
     async def unpin_button(self, ctx: commands.Context, message: discord.Message, *, game: str = None):
         """
@@ -208,8 +215,8 @@ class UserCommands(MixinMeta):
         Add a game's name to take off that game's button instead of the menu button.
 
         **Examples:**
-        - `[p]activities unpin <message link>`
-        - `[p]activities unpin <message link> Snake`
+        - `[p]activityhub unpin <message link>`
+        - `[p]activityhub unpin <message link> Snake`
         """
         if not await self.check_editable(ctx, message):
             return
