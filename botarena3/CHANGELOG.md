@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1
+
+- Opening the Activity while your battle runs, or joining a friend's battle, now takes you to the battle even when its art is slow to load. Before, the intro could finish first and leave you on the menu while the battle went on without you.
+- A battle of your own that starts while the menu plays out (started from another device) now shows, instead of the menu's choice.
+- A window that lost its connection just as your battle in another window ended no longer stays stuck on the battle screen. When it reconnects, the bot says whether you still have a battle, and if not the page moves on.
+- A page the bot keeps refusing now waits a little longer between tries, up to 15 seconds, instead of asking every 2 seconds for ever.
+- A shop list that gets too short to scroll while you drag its scroller now stops scrolling.
+- The battle loop does a little less work each step, and the cog no longer keeps a lock in memory for every player who ever played.
+
 ## 0.1.0
 
 First release: Bot Arena 3 for ActivityHub, a port of the Flash game from Armor Games.

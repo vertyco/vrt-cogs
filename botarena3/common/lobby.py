@@ -42,7 +42,6 @@ class Run:
     players: dict[int, int]  # user id: the side they command
     names: list[str | None]  # each side's player, None for the computer
     boards: dict[int, str]  # user id: the Discord-wide name the leaderboard shows
-    seed: int
     beats_game: bool = False  # winning this arena beats the game for its career
     reported: bool = False  # its result went to the cog
     watchers: list = field(default_factory=list)
@@ -143,19 +142,21 @@ class Window:
         faces = self.faces(run)
         changed = faces != run.faces
         run.faces = faces
-        for conn in self.audience(run):
+        audience = self.audience(run)
+        for conn in audience:
             if changed:
                 await conn.send({"watchers": {"id": run.id, "people": faces}})
             await conn.send(update)
         if battle.done():
             await self.finish(run)
-        elif self.abandoned(run):
+        elif self.abandoned(run, audience):
             # Nobody to see it end, and it has stalled. A career battle's fee comes back when its player returns
             del self.runs[run.id]
             self.dirty = True
 
-    def abandoned(self, run: Run) -> bool:
-        if run.kind == "pvp" or run.battle.ended is not None or self.audience(run):
+    @staticmethod
+    def abandoned(run: Run, audience: list) -> bool:
+        if run.kind == "pvp" or run.battle.ended is not None or audience:
             return False
         return run.battle.step - run.battle.last_damage >= DRAW_STEPS
 
@@ -196,9 +197,8 @@ class Window:
     ) -> Run:
         """Starts a battle and shows it to its players. Everything up to the first await runs at once, so a caller
         that checked nobody is busy can't be overtaken by another start"""
-        seed = random.getrandbits(63)
-        battle = Battle(teams, colors, owned=owned, draws=draws, rng=random.Random(seed))
-        run = Run(new_id("b"), kind, index, title, background, battle, players, names, boards, seed, beats_game)
+        battle = Battle(teams, colors, owned=owned, draws=draws)
+        run = Run(new_id("b"), kind, index, title, background, battle, players, names, boards, beats_game)
         self.runs[run.id] = run
         self.dirty = True
         everywhere = self.everywhere()
@@ -299,9 +299,10 @@ class Window:
 
     async def join(self, conn: t.Any, follow: int | None = None) -> None:
         """A page arriving. `follow` is the friend whose Join in the hub's people list opened it, if any"""
-        await conn.send(self.lobby())
-        # A player who reopened the Activity lands in a new window, while their battle runs on in the old one
+        # A player who reopened the Activity lands in a new window, while their battle runs on in the old one. The page
+        # hears which battle is theirs, so one still showing a battle whose end it missed knows that battle is gone
         run = self.mine(conn.ctx.author.id)
+        await conn.send({**self.lobby(), "mine": run.id if run is not None else None})
         if run is not None:
             await conn.send(self.full(run, conn))
         elif follow is not None:

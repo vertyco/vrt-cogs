@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import typing as t
+import weakref
 from pathlib import Path
 
 from redbot.core import Config, commands
@@ -27,7 +28,7 @@ class BotArena3(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     BUSY = "You already have a battle running."
     FIGHT_GONE = "That fight isn't open any more."
@@ -39,8 +40,9 @@ class BotArena3(commands.Cog):
         self.config.register_user(career=None, pvp=dict(leaderboard.DEFAULTS))
         # One window per Activity window, keyed by its instance id
         self.windows: dict[str, Window] = {}
-        # One lock per player, so two devices or windows can't interleave changes to one career
-        self.locks: dict[int, asyncio.Lock] = {}
+        # One lock per player, so two devices or windows can't interleave changes to one career. A lock nobody holds
+        # or waits for is let go, so the map doesn't keep one for every player who ever played
+        self.locks: weakref.WeakValueDictionary[int, asyncio.Lock] = weakref.WeakValueDictionary()
         # Result saves in progress, kept so a task isn't garbage collected halfway
         self.saving: set[asyncio.Task] = set()
 
@@ -74,7 +76,10 @@ class BotArena3(commands.Cog):
     # ---------- Windows ----------
 
     def lock(self, user_id: int) -> asyncio.Lock:
-        return self.locks.setdefault(user_id, asyncio.Lock())
+        lock = self.locks.get(user_id)
+        if lock is None:
+            lock = self.locks[user_id] = asyncio.Lock()
+        return lock
 
     def window_for(self, conn: t.Any) -> Window:
         """The window's battles, started when its first player arrives, or again after its loop stopped"""

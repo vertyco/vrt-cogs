@@ -945,12 +945,8 @@ def test_a_battle_the_bot_stopped_goes_back_to_the_shop(driver, live, cog):
     on_screen(driver, "shop", timeout=15)
 
 
-def test_a_new_battle_on_the_battle_screen_is_judged_on_its_own_listing(driver, live, cog):
-    run = start_first_arena(driver, live, cog)
-    browser.wait_for(driver, "Number(document.body.dataset.step) > 0")
-    tell_page(
-        cog, live, {"lobby": {"battles": [{"id": run.id, "kind": "arena", "title": "", "names": []}], "fights": []}}
-    )
+def elsewhere(cog, live, run):
+    """A battle of the player's that no list in this window shows, as when it runs in another window"""
 
     def another():
         window = next(w for w in cog.windows.values() if run.id in w.runs)
@@ -958,9 +954,35 @@ def test_a_new_battle_on_the_battle_screen_is_judged_on_its_own_listing(driver, 
         message["battle"]["id"] = "elsewhere"
         return message
 
-    # A different battle takes the screen; a list without it then says nothing about it, since no list has shown it
     tell_page(cog, live, on_loop(live, another))
+
+
+def test_a_new_battle_on_the_battle_screen_is_judged_on_its_own_listing(driver, live, cog):
+    run = start_first_arena(driver, live, cog)
+    browser.wait_for(driver, "Number(document.body.dataset.step) > 0")
+    tell_page(
+        cog, live, {"lobby": {"battles": [{"id": run.id, "kind": "arena", "title": "", "names": []}], "fights": []}}
+    )
+    # A different battle takes the screen; a list without it then says nothing about it, since no list has shown it
+    elsewhere(cog, live, run)
     tell_page(cog, live, {"lobby": {"battles": [], "fights": []}})
+    assert stays(driver, "document.body.dataset.screen === 'battle'")
+
+
+def test_a_battle_in_another_window_that_ended_unheard_goes_back_to_the_shop(driver, live, cog):
+    run = start_first_arena(driver, live, cog)
+    browser.wait_for(driver, "Number(document.body.dataset.step) > 0")
+    elsewhere(cog, live, run)
+    # The connection came back after the battle ended: its "over" never came, and the bot says there's no battle now
+    tell_page(cog, live, {"lobby": {"battles": [], "fights": []}, "mine": None})
+    on_screen(driver, "shop", timeout=15)
+
+
+def test_a_battle_in_another_window_still_running_stays_on_screen(driver, live, cog):
+    run = start_first_arena(driver, live, cog)
+    browser.wait_for(driver, "Number(document.body.dataset.step) > 0")
+    elsewhere(cog, live, run)
+    tell_page(cog, live, {"lobby": {"battles": [], "fights": []}, "mine": "elsewhere"})
     assert stays(driver, "document.body.dataset.screen === 'battle'")
 
 

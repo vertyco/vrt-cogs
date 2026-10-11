@@ -24,6 +24,9 @@ const FRAME_MS = 1000 / FPS;
 // After a stall (a hidden tab, a slow phone) the timelines skip ahead rather than race through every missed frame
 const MOST_STEPS = 4;
 const RETRY_MS = 2000;
+// A new connection that keeps failing (the bot refusing it as it joins) is tried a little further apart each time, up
+// to this, so a page left open doesn't ask the bot every two seconds for ever
+const MOST_RETRY_MS = 15000;
 // Failed tries at a new connection before the rest of the window is told the player is no longer connected. The
 // page keeps trying after that
 const TRIES_BEFORE_GONE = 3;
@@ -128,6 +131,8 @@ const page = {
   screen: null,
   // Counts screen changes, so a slow one that finished loading late doesn't replace a newer one
   showing: 0,
+  // The screen on its way while its art loads, so the intro's or the menu's own ending doesn't replace it
+  loading: null,
   // The screen the fader shows once it is black, and whether the sound carries on through it (the original's
   // cancelstop). holding: the fade on its way has no screen yet. dark: it went black and waits for one
   next: null,
@@ -382,7 +387,7 @@ function closed(code) {
     leaveGame();
   }
   toast(RECONNECTING, 0);
-  setTimeout(reconnect, RETRY_MS);
+  setTimeout(reconnect, Math.min(RETRY_MS * page.failedTries, MOST_RETRY_MS));
 }
 
 async function reconnect() {
@@ -411,6 +416,20 @@ function receive(data) {
   if (!data || typeof data !== "object") {
     return;
   }
+  const before = page.battle?.id;
+  remember(data);
+  screens[page.screen]?.receive?.(page, data);
+  answers(data);
+  if (data.battle) {
+    toBattle(data.battle, before);
+  }
+  moveOn(data);
+  report();
+  renderWatchers();
+}
+
+// What the page keeps of the bot's word: the game data, the career, the window's lobby and the battle on the page
+function remember(data) {
   if ("data" in data) {
     page.data = data.data;
     arrived();
@@ -422,7 +441,6 @@ function receive(data) {
   if ("lobby" in data) {
     page.lobby = data.lobby;
   }
-  const before = page.battle?.id;
   if (data.battle) {
     page.battle = data.battle;
     page.updates = [];
@@ -433,7 +451,10 @@ function receive(data) {
   if (data.watchers && data.watchers.id === page.battle?.id) {
     page.battle.watchers = data.watchers.people;
   }
-  screens[page.screen]?.receive?.(page, data);
+}
+
+// The bot's answer to the menu's NEW CAREER, and its notices
+function answers(data) {
   if (data.done === "newCareer") {
     newCareerMade();
   } else if ("career" in data && page.menu?.waiting) {
@@ -444,22 +465,27 @@ function receive(data) {
   if (data.notice) {
     noticed(data.notice);
   }
-  // A screen may have started the fade to it already, at its own pace (the lists' PLAY). On the battle screen, the
-  // battle draws itself again, unless the page is on its way out of it
-  if (data.battle && page.screen !== "battle" && page.next !== "battle") {
+}
+
+// A screen may have started the fade to it already, at its own pace (the lists' PLAY). On the battle screen, the
+// battle draws itself again, unless the page is on its way out of it
+function toBattle(battle, before) {
+  if (page.screen !== "battle" && page.next !== "battle") {
     go("battle", { fadeSound: 3 });
-  } else if (data.battle && data.battle.you !== null && data.battle.id !== before && leavingBattle()) {
+  } else if (battle.you !== null && battle.id !== before && leavingBattle()) {
     backToBattle();
   }
-  // Only the battle on the page sends the player on: a battle left behind may still end after another one came
+}
+
+// Where the bot sends the player: on from the battle on the page (a battle left behind may still end after another
+// one came, and only this one counts), or to a friend they joined
+function moveOn(data) {
   if (data.over && data.over.id === page.battle?.id) {
     go(SCREEN_NAMES[data.over.next] ?? data.over.next, { fadeSound: 3 });
   }
   if (data.follow) {
     followed(SCREEN_NAMES[data.follow] ?? data.follow);
   }
-  report();
-  renderWatchers();
 }
 
 // The bot puts a player who joined a friend where the friend is. A battle comes as the battle itself; anything else
@@ -538,6 +564,7 @@ async function show(name) {
   const frame = page.root.frameOf(screen.frame ?? name);
   page.showing += 1;
   const token = page.showing;
+  page.loading = name;
   try {
     await page.lib.need(screen.art ?? artOn(frame));
   } catch (e) {
@@ -549,6 +576,7 @@ async function show(name) {
   if (token !== page.showing) {
     return;
   }
+  page.loading = null;
   screens[page.screen]?.leave?.(page);
   closeConfirm();
   // A screen after a fade that waited in the dark: the fader clears again
@@ -640,7 +668,13 @@ function hook(kind, argument, clip) {
     return true;
   }
   if (kind === "parentstop" && clip.parentClip === page.root) {
-    show(argument);
+    // A screen already on its way (the battle the bot sent while the intro played, its art still loading) goes ahead
+    // instead, and the intro holds its last frame until it shows
+    if (page.next || page.loading) {
+      clip.stop();
+    } else {
+      show(argument);
+    }
     return true;
   }
   return false;
@@ -849,12 +883,14 @@ function menuLeft(clip) {
   if (!menu) {
     return;
   }
+  // A screen the bot sent while the menu played out (the player's own battle) goes ahead instead of the choice
+  const elsewhere = Boolean(page.next || page.loading);
   page.fader.gotoAndPlay("end");
   page.playstart = MENU_CHOICES[menu.choice].music;
   menu.left = true;
   clip.stop();
   // A new career goes on once the bot has made it
-  if (!menu.waiting) {
+  if (!menu.waiting && !elsewhere) {
     show(MENU_CHOICES[menu.choice].to);
   }
 }

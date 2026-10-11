@@ -163,6 +163,19 @@ async def test_a_page_joining_mid_battle_gets_the_whole_battle():
     assert full["id"] == run.id and full["step"] == run.battle.step and full["ended"] == 0
     assert full["winner"] == 1 and full["flames"][0][0] == enemy.id and len(full["robots"]) == 2
     assert sent(again, "lobby")
+    assert sent(again, "mine") == [run.id]
+
+
+@pytest.mark.asyncio
+async def test_a_page_joining_after_its_battle_ended_hears_it_has_none():
+    room = FakeRoom()
+    me = FakeConn(room, 1)
+    win, _ = window(room)
+    run = await solo(win, me)
+    await win.finish(run)
+    again = FakeConn(room, 1)
+    await win.join(again)
+    assert sent(again, "mine") == [None] and not sent(again, "battle")
 
 
 @pytest.mark.asyncio

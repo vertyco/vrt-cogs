@@ -594,6 +594,9 @@ function setUpScroller(list, count) {
   scroller.alpha = scrolls ? 1 : GREYED;
   scroller.useHandCursor = scrolls;
   if (!scrolls) {
+    // A drag under way when the list got too short to scroll ends, so the rows don't keep easing after it
+    scroller.stopDrag();
+    scroller.onEnterFrame = null;
     scroller.setHandler("onPress", () => {});
     scroller.setHandler("onReleaseOutside", () => {});
     return;

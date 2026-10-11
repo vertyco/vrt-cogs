@@ -234,6 +234,11 @@ function receive(page, data) {
   if (data.lobby) {
     checkList(page, data.lobby);
   }
+  // A new connection hears which battle is the player's, in any window. None means their own battle on the page
+  // ended or stopped while the page wasn't listening. Another one comes right after, and takes the screen
+  if ("mine" in data && data.mine === null && state.battle.you !== null) {
+    gone(page);
+  }
 }
 
 function step(page) {
@@ -808,14 +813,18 @@ function listedIn(lobby) {
   return Boolean(lobby?.battles?.some((entry) => entry.id === state.id));
 }
 
-// A battle that leaves the window's list with no "over" was stopped (the bot's battle loop failed). The player goes
-// where the battle would have sent them
+// A battle that leaves the window's list with no "over" was stopped (the bot's battle loop failed)
 function checkList(page, lobby) {
   if (listedIn(lobby)) {
     state.listed = true;
-    return;
+  } else if (state.listed) {
+    gone(page);
   }
-  if (state.listed && !state.over && !state.left) {
+}
+
+// The battle on the page is gone with no "over" heard: the player goes where the battle would have sent them
+function gone(page) {
+  if (!state.over && !state.left) {
     state.left = true;
     const { you, kind } = state.battle;
     const next = you === null ? "watch" : ({ pvp: "pvp", challenge: "challengeselect" }[kind] ?? "shop");
