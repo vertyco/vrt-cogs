@@ -1,4 +1,4 @@
-"""DEVELOPERS.md checked against the code: the messages it quotes, and its code samples"""
+"""DEVELOPERS.md and REFERENCE.md checked against the code: the messages they quote, and their code samples"""
 
 import ast
 import json
@@ -12,6 +12,8 @@ import pytest
 
 HUB = Path(__file__).resolve().parents[1]
 GUIDE = (HUB / "DEVELOPERS.md").read_text(encoding="utf-8")
+# The code samples are spread over both pages
+DOCS = {name: (HUB / name).read_text(encoding="utf-8") for name in ("DEVELOPERS.md", "REFERENCE.md")}
 # Where the hub's own messages live. The vendored Discord SDK is left out, since its text isn't the hub's
 PYTHON_SOURCES = [*sorted((HUB / "common").glob("*.py")), *sorted((HUB / "commands").glob("*.py")), HUB / "main.py"]
 JS_SOURCES = [HUB / "web" / name for name in ("sdk.js", "host.js", "menu.js", "presence.js", "people.js", "arcade.js")]
@@ -154,7 +156,11 @@ def code_says(text: str) -> bool:
 
 def common_problems():
     """The 'What you see' cell of every row in the guide's Common problems tables"""
-    section = GUIDE[GUIDE.index("## 17. Common problems") : GUIDE.index("## 18. ")]
+    # Found by title, since the section numbers change when sections are added or moved
+    heading = re.search(r"^## \d+\. Common problems$", GUIDE, re.M)
+    assert heading, "DEVELOPERS.md has no Common problems section"
+    start = heading.start()
+    section = GUIDE[start : GUIDE.index("\n## ", start + 1)]
     for line in section.splitlines():
         if line.startswith("| ") and not line.startswith("| What you see"):
             yield line.split(" | ")[0][2:]
@@ -188,10 +194,11 @@ def guide_messages():
 
 
 def code_blocks(language: str):
-    for match in FENCE.finditer(GUIDE):
-        if match[2] == language:
-            line = GUIDE.count("\n", 0, match.start()) + 1
-            yield pytest.param(textwrap.dedent(match[3]), id=f"DEVELOPERS.md:{line}")
+    for name, text in DOCS.items():
+        for match in FENCE.finditer(text):
+            if match[2] == language:
+                line = text.count("\n", 0, match.start()) + 1
+                yield pytest.param(textwrap.dedent(match[3]), id=f"{name}:{line}")
 
 
 def test_the_guide_still_has_what_these_tests_read():

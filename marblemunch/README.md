@@ -37,4 +37,4 @@ The background music, "Toy Box", was made with Google's Lyria 3. The font is Fre
 
 ## For developers
 
-Marble Munch is the worked multiplayer example for ActivityHub's [DEVELOPERS.md](../activityhub/DEVELOPERS.md#20-bigger-examples-the-included-games). Section 20 there lists which file shows which pattern.
+Marble Munch is the worked multiplayer example for ActivityHub's [DEVELOPERS.md](../activityhub/DEVELOPERS.md#16-bigger-examples-the-included-games). Its "Bigger examples" section lists which file shows which pattern.

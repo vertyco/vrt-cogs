@@ -32,4 +32,4 @@ Tanks is a port of 2DPlay's Flash game "Tanks", and uses its art and sounds. Dra
 
 ## For developers
 
-Tanks shows ActivityHub's turn-based pattern: a slow live loop for one player's turn, and whole shots worked out at once and sent to every page as a script to play back. See section 20 of ActivityHub's [DEVELOPERS.md](../activityhub/DEVELOPERS.md#20-bigger-examples-the-included-games).
+Tanks shows ActivityHub's turn-based pattern: a slow live loop for one player's turn, and whole shots worked out at once and sent to every page as a script to play back. See "Bigger examples" in ActivityHub's [DEVELOPERS.md](../activityhub/DEVELOPERS.md#16-bigger-examples-the-included-games).

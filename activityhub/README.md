@@ -152,4 +152,4 @@ Caddy is a web server that gets and renews its HTTPS certificate by itself.
 
 ## Making games
 
-Any cog can add a game to the menu. [DEVELOPERS.md](DEVELOPERS.md) walks through it with a complete example, and covers testing a game's Python without Discord, multiplayer, showing who's playing what, uploads and sharing your game.
+Any cog can add a game to the menu. [DEVELOPERS.md](DEVELOPERS.md) walks through it with a complete example, and covers testing a game's Python without Discord, multiplayer, showing who's playing what, uploads and sharing your game. [REFERENCE.md](REFERENCE.md) lists every field and call for looking things up.
