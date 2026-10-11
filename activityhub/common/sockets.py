@@ -91,13 +91,20 @@ def to_json(data: t.Any) -> str:
 
 
 class Connection:
-    """One player's live connection to a game, as the game's socket handlers see it"""
+    """
+    One player's live connection to a game, as the game's socket handlers see it.
+    The menu's link has no game or room
+    """
 
-    def __init__(self, ws: web.WebSocketResponse, ctx: ActivityContext, game: Game, rooms: "Rooms"):
+    def __init__(self, ws: web.WebSocketResponse, ctx: ActivityContext, game: Game | None, rooms: "Rooms | None"):
         self.ws = ws
         self.ctx = ctx
+        # None for the hub's own menu link, which belongs to no game and no room
         self.game = game
         self.rooms = rooms
+        # The user id of the person this player joined from a people list, checked to be in the same window. Only
+        # the first live connection after a Join has one
+        self.follow: int | None = None
         # Everyone in this activity instance playing this game. Rooms.add sets it, before join runs
         self.room: Room | None = None
         self.inbox = InboxLimit()
@@ -109,6 +116,11 @@ class Connection:
         self.outbox: deque[str | tuple[int, asyncio.Future]] = deque()
         self.outbox_size = 0
         self.writer: asyncio.Task | None = None
+
+    @property
+    def label(self) -> str:
+        """What the connection is to, for the bot's log: a game's key, or the hub's menu"""
+        return self.game.key if self.game is not None else "the menu"
 
     async def send(self, data: t.Any) -> None:
         """
@@ -168,13 +180,13 @@ class Connection:
             self.let_go(f"they couldn't take a message in {SEND_SECONDS} seconds ({e!r})")
         except ConnectionError as e:
             # The player dropped while this was on its way. Their own pump sees that and runs leave
-            log.debug("Dropped a message to a closing connection on %s: %s", self.game.key, e)
+            log.debug("Dropped a message to a closing connection on %s: %s", self.label, e)
 
     def let_go(self, reason: str) -> None:
         """Disconnect a player who can't keep up, and drop the messages waiting for them"""
         if self.closer is not None:
             return
-        log.debug("Letting go of a player on %s: %s", self.game.key, reason)
+        log.debug("Letting go of a player on %s: %s", self.label, reason)
         # Marked closing straight away, so nothing more is queued for them. Their own pump sees the close and
         # runs leave
         self.closing = CLOSE_GOING_AWAY
@@ -183,13 +195,16 @@ class Connection:
         self.closer = asyncio.create_task(self.end(CLOSE_GOING_AWAY))
 
     async def broadcast(self, data: t.Any, include_self: bool = False) -> None:
-        """Queue a message to everyone connected to this game in the same activity instance, and return at once"""
+        """
+        Queue a message to everyone connected to this game in the same activity instance, and return at once.
+        The menu's link has no room, so only include_self reaches anyone
+        """
         text = to_json(data)
         for conn in self.peers() + ([self] if include_self else []):
             conn.queue_text(text)
 
     def peers(self) -> list["Connection"]:
-        """The other connections to this game in the same activity instance"""
+        """The other connections to this game in the same activity instance. Empty for the menu's link"""
         return [conn for conn in self.room.connections if conn is not self] if self.room else []
 
     async def close(self, code: int = 1000) -> None:

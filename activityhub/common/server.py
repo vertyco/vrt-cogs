@@ -12,9 +12,10 @@ from . import discord_api
 from .files import build_id
 from .game_routes import GameRoutes
 from .hub_routes import HubRoutes
+from .presence import Presence
 from .replies import MAX_BODY
 from .sessions import ActivityContext
-from .sockets import Rooms
+from .sockets import CLOSE_GOING_AWAY, Rooms
 
 log = logging.getLogger("red.vrt.activityhub.server")
 
@@ -38,6 +39,7 @@ class HubServer:
         self.bot = hub.bot
         self.web_dir = web_dir
         self.rooms = Rooms()
+        self.presence = Presence(self.game_on)
         self.runner: web.AppRunner | None = None
         self.http: aiohttp.ClientSession | None = None
         self.watchdog: asyncio.Task | None = None
@@ -59,6 +61,11 @@ class HubServer:
         return app
 
     async def on_shutdown(self, app: web.Application) -> None:
+        links = self.presence.links()
+        results = await asyncio.gather(*(link.end(CLOSE_GOING_AWAY) for link in links), return_exceptions=True)
+        for result in results:
+            if isinstance(result, BaseException):
+                log.warning("Couldn't close a menu link", exc_info=result)
         await self.rooms.close_all()
 
     async def start(self, host: str, port: int) -> None:
@@ -85,6 +92,7 @@ class HubServer:
         if self.runner:
             await self.runner.cleanup()
             self.runner = None
+        self.presence.stop()
         if self.http:
             await self.http.close()
             self.http = None
@@ -128,6 +136,10 @@ class HubServer:
         if guild_id is None:
             return False
         return key in await self.hub.config.guild_from_id(guild_id).disabled()
+
+    async def game_on(self, guild_id: int | None, key: str) -> bool:
+        """Whether a game is installed and on in that server"""
+        return key in self.hub.registry.games and not await self.game_off(guild_id, key)
 
     async def exchange_code(self, code: str) -> tuple[str, int] | None:
         if time.monotonic() < self.logins_paused_until:

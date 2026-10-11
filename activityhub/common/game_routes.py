@@ -70,6 +70,87 @@ def describe(e: Exception) -> str:
     return f"{type(e).__name__}: {text}" if text else type(e).__name__
 
 
+async def first_message(ws: web.WebSocketResponse) -> dict:
+    """The page's first message on a live connection, which carries its session pass. {} when it isn't an object"""
+    try:
+        msg = await ws.receive(timeout=AUTH_SECONDS)
+    except asyncio.TimeoutError as e:
+        log.debug("A live connection sent no session in time: %r", e)
+        return {}
+    if msg.type != WSMsgType.TEXT:
+        return {}
+    try:
+        data = loads(msg.data)
+    except ValueError as e:
+        log.debug("A live connection's first message isn't JSON: %s", e)
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def session_pass(first: dict) -> str | None:
+    session = first.get("session")
+    return session if isinstance(session, str) else None
+
+
+async def pump(conn: Connection, handle: t.Callable[[Connection, t.Any], t.Awaitable[None]]) -> None:
+    """
+    Hand each message to `handle` until the connection closes. A quiet connection gets a heartbeat, and one that
+    doesn't answer it is treated as closed
+    """
+    pinged = False
+    while True:
+        try:
+            msg = await conn.ws.receive(timeout=HEARTBEAT_SECONDS)
+        except asyncio.TimeoutError as e:
+            if pinged:
+                # Neither the browser's automatic answer to the last ping nor the page's came back: the player
+                # is gone (a phone that lost its network), so leave runs
+                log.debug("No answer to a heartbeat on %s, closing: %r", conn.label, e)
+                conn.closing = CLOSE_GOING_AWAY
+                return
+            # The receive timeout is the heartbeat timer: nothing arrived, so send something. Browsers answer
+            # protocol pings by themselves, and sdk.js answers the JSON ping, which also keeps proxies happy
+            log.debug("No message in %s seconds, sending a heartbeat: %r", HEARTBEAT_SECONDS, e)
+            pinged = True
+            await conn.write(conn.ws.ping())
+            await conn.send(PING)
+            continue
+        pinged = False
+        if msg.type in CLOSED_TYPES:
+            return
+        if not conn.inbox.take(len(msg.data or "")):
+            log.warning(
+                "Closed a live connection to %s: player %s sent more than the hub allows over %s seconds",
+                conn.label,
+                conn.ctx.author.id,
+                LIMIT_SECONDS,
+            )
+            await conn.end(CLOSE_TOO_MANY)
+            return
+        if msg.type == WSMsgType.PING:
+            await conn.write(conn.ws.pong(msg.data))
+        elif msg.type == WSMsgType.TEXT:
+            await deliver(conn, msg.data, handle)
+
+
+async def deliver(conn: Connection, text: str, handle: t.Callable[[Connection, t.Any], t.Awaitable[None]]) -> None:
+    """Answer the hub's own messages here, and hand everything else to `handle`"""
+    try:
+        data = loads(text)
+    except ValueError as e:
+        log.debug("Ignored a message that isn't JSON on %s: %s", conn.label, e)
+        return
+    if data == PONG:
+        # The page's answer to a heartbeat. Arriving at all was its whole job
+        return
+    reply = echo_reply(data)
+    if reply is not None:
+        # Behind the messages already queued to this player, so the time it measures is the time they feel
+        conn.queue_text(reply)
+        return
+    await handle(conn, data)
+
+
 class GameRoutes:
     """Everything under /games/<key>/: the page, its files, actions, raw routes and the live connection"""
 
@@ -235,7 +316,8 @@ class GameRoutes:
         # Pings are answered in pump, which also needs to see the browser's pongs to notice a player who vanished
         ws = web.WebSocketResponse(max_msg_size=MAX_BODY, autoping=False)
         await ws.prepare(request)
-        ctx = await self.socket_context(ws)
+        first = await first_message(ws)
+        ctx = self.server.context_for(session_pass(first))
         if ctx is None:
             await ws.close(code=CLOSE_SESSION, message=b"Session missing or expired")
             return ws
@@ -243,6 +325,7 @@ class GameRoutes:
             await ws.close(code=CLOSE_TURNED_OFF, message=b"Turned off in this server")
             return ws
         conn = Connection(ws, ctx, game, self.server.rooms)
+        conn.follow = self.server.presence.follow_target(ctx, first.get("follow"))
         # Ready goes out before join, so nothing join sends can reach the page ahead of it
         await conn.send(READY)
         self.server.rooms.add(conn)
@@ -251,7 +334,7 @@ class GameRoutes:
             if late_code is not None:
                 await conn.close_after_sends(late_code)
             elif await self.run_handler(conn, "join"):
-                await self.pump(conn)
+                await pump(conn, self.game_message)
                 # Out of the room before leave runs, so a leave that finds no peers knows it was the last one
                 self.server.rooms.discard(conn)
                 await self.run_handler(conn, "leave")
@@ -284,23 +367,6 @@ class GameRoutes:
             return CLOSE_TURNED_OFF
         return None
 
-    async def socket_context(self, ws: web.WebSocketResponse) -> ActivityContext | None:
-        """The player named by the first message, which must carry the session pass in time"""
-        try:
-            msg = await ws.receive(timeout=AUTH_SECONDS)
-        except asyncio.TimeoutError as e:
-            log.debug("A live connection sent no session in time: %r", e)
-            return None
-        if msg.type != WSMsgType.TEXT:
-            return None
-        try:
-            data = loads(msg.data)
-        except ValueError as e:
-            log.debug("A live connection's first message isn't JSON: %s", e)
-            return None
-        session = data.get("session") if isinstance(data, dict) else None
-        return self.server.context_for(session if isinstance(session, str) else None)
-
     async def run_handler(self, conn: Connection, event: str) -> bool:
         """Call the game's join or leave handler. A raising join closes the connection with 1011"""
         handler = conn.game.socket.get(event)
@@ -316,60 +382,7 @@ class GameRoutes:
             return False
         return True
 
-    async def pump(self, conn: Connection) -> None:
-        """
-        Hand each message to the game until the connection closes. A quiet connection gets a heartbeat,
-        and one that doesn't answer it is treated as closed
-        """
-        pinged = False
-        while True:
-            try:
-                msg = await conn.ws.receive(timeout=HEARTBEAT_SECONDS)
-            except asyncio.TimeoutError as e:
-                if pinged:
-                    # Neither the browser's automatic answer to the last ping nor the page's came back: the player
-                    # is gone (a phone that lost its network), so leave runs
-                    log.debug("No answer to a heartbeat on %s, closing: %r", conn.game.key, e)
-                    conn.closing = CLOSE_GOING_AWAY
-                    return
-                # The receive timeout is the heartbeat timer: nothing arrived, so send something. Browsers answer
-                # protocol pings by themselves, and sdk.js answers the JSON ping, which also keeps proxies happy
-                log.debug("No message in %s seconds, sending a heartbeat: %r", HEARTBEAT_SECONDS, e)
-                pinged = True
-                await conn.write(conn.ws.ping())
-                await conn.send(PING)
-                continue
-            pinged = False
-            if msg.type in CLOSED_TYPES:
-                return
-            if not conn.inbox.take(len(msg.data or "")):
-                log.warning(
-                    "Closed a live connection to %s: player %s sent more than the hub allows over %s seconds",
-                    conn.game.key,
-                    conn.ctx.author.id,
-                    LIMIT_SECONDS,
-                )
-                await conn.end(CLOSE_TOO_MANY)
-                return
-            if msg.type == WSMsgType.PING:
-                await conn.write(conn.ws.pong(msg.data))
-            elif msg.type == WSMsgType.TEXT:
-                await self.deliver(conn, msg.data)
-
-    async def deliver(self, conn: Connection, text: str) -> None:
-        try:
-            data = loads(text)
-        except ValueError as e:
-            log.debug("Ignored a message that isn't JSON on %s: %s", conn.game.key, e)
-            return
-        if data == PONG:
-            # The page's answer to a heartbeat. Arriving at all was its whole job
-            return
-        reply = echo_reply(data)
-        if reply is not None:
-            # Behind the messages already queued to this player, so the time it measures is the time they feel
-            conn.queue_text(reply)
-            return
+    async def game_message(self, conn: Connection, data: t.Any) -> None:
         handler = conn.game.socket.get("message")
         if handler is None:
             return

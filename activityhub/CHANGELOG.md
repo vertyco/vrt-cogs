@@ -1,5 +1,28 @@
 # ActivityHub Changelog
 
+## 0.5.0
+
+You can now see who's playing what. Everyone who opened the Activity from the same voice channel shows up in the menu and in every game.
+
+- In the menu, a game that people from your voice channel are playing has a number bubble on its corner. Resting the mouse on the game lists them, with what each one is doing (like `Playing · 1,230`) and a **Join** button, plus how many play it in other channels of the server. On a phone, tap the bubble; tapping the rest of the card still opens the game.
+- The Orb theme lists them on its big screen for the selected game, under **Playing now**.
+- The menu's header shows the faces of everyone else in your voice channel, each with a small badge of the game they're in. Press the row to see them all. Alone, it shows **Invite friends** instead, which opens Discord's invite window.
+- Every game has a people button. It opens a panel with everyone in your voice channel, grouped by the game they're in, with Join buttons to hop into another game, a count of people playing in other channels, and **Invite friends**.
+- When someone opens the game you're in, a short note slides out of the people button: "Ann joined".
+- **Join** opens the other person's game. In the middle of a round, it asks first ("Leave Snake to join Ann in Tanks?"), with **Stay** picked by default, so a stray tap doesn't throw away your round.
+- People whose Discord is in the background (a locked phone, another app in front) show dimmed, as away.
+- Snake, 2048 and Brick Breaker put the people button in their top bar, show a live strip under it with the scores of everyone playing the same game, say "You passed Ann!" when you go above someone, and end with your place among them, like "2nd of 3 here right now".
+
+For game developers:
+
+- New page calls: `hub.status(text, data)` sets what the player is doing for everyone to see, `hub.busy(true)` makes Join ask before taking them out of a round, `hub.people` and `hub.onPeople()` list everyone in the window, `hub.follow` says whose Join opened your game, and `hub.peopleButton()` and `hub.openPeople()` let you place the people button and open the panel yourself. In Python, `conn.follow` is the user id of the friend a player joined. Games that use them need ActivityHub 0.5.0 or later.
+- A game that does none of this still gets the people button, the panel, arrival notes and its menu bubble.
+- `DEVELOPERS.md` has a new section 11, "Who's here", with examples, and the Click Counter tutorial gains a step that sets a status line. The sections after it are each numbered one higher.
+
+## 0.4.2
+
+- Swiping through the Orb menu on a phone goes the right way now: the highlight follows your finger. Slide down or right for the next game, up or left for the one before.
+
 ## 0.4.1
 
 - Pinning moved to `[p]activityhub pin` and `[p]activityhub unpin`, so server admins find them in `[p]activityhub`'s help. They work the same as before. `[p]activityhub` is now open to server admins, who see only `pin` and `unpin` there; the setup commands stay for the bot owner.

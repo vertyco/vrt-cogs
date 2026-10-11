@@ -10,7 +10,7 @@ A few words used everywhere below:
 - **Red**: Red-DiscordBot, the bot framework this cog runs on. A **cog** is one Red plugin.
 - **Page**: the web page of your game (your `index.html` and the files it loads), running in the player's Discord window.
 
-There is a full [glossary](#20-glossary) at the end.
+There is a full [glossary](#21-glossary) at the end.
 
 **Contents**
 
@@ -24,16 +24,17 @@ There is a full [glossary](#20-glossary) at the end.
 8. [Reference: the page side](#8-reference-the-page-side)
 9. [What to trust, and paying out](#9-what-to-trust-and-paying-out)
 10. [Multiplayer with live connections](#10-multiplayer-with-live-connections), and [speed and fast-paced games](#speed-and-fast-paced-games)
-11. [Uploads and other raw requests](#11-uploads-and-other-raw-requests)
-12. [Extra Discord permissions](#12-extra-discord-permissions)
-13. [Opening your game from a command or button](#13-opening-your-game-from-a-command-or-button)
-14. [Files and caching](#14-files-and-caching)
-15. [Testing and debugging](#15-testing-and-debugging)
-16. [Common problems](#16-common-problems)
-17. [Discord's limits](#17-discords-limits)
-18. [Checklist before you share your game](#18-checklist-before-you-share-your-game)
-19. [Bigger examples: the included games](#19-bigger-examples-the-included-games)
-20. [Glossary](#20-glossary)
+11. [Who's here](#11-whos-here)
+12. [Uploads and other raw requests](#12-uploads-and-other-raw-requests)
+13. [Extra Discord permissions](#13-extra-discord-permissions)
+14. [Opening your game from a command or button](#14-opening-your-game-from-a-command-or-button)
+15. [Files and caching](#15-files-and-caching)
+16. [Testing and debugging](#16-testing-and-debugging)
+17. [Common problems](#17-common-problems)
+18. [Discord's limits](#18-discords-limits)
+19. [Checklist before you share your game](#19-checklist-before-you-share-your-game)
+20. [Bigger examples: the included games](#20-bigger-examples-the-included-games)
+21. [Glossary](#21-glossary)
 
 ## 1. What you are building
 
@@ -99,7 +100,7 @@ If you have read Discord's own Activity guides, most of their steps don't apply 
 
 What stays the same:
 
-- **It is still a web page in Discord's Activity window,** with the same limits: outside websites are blocked and service workers can't register. It runs on Discord's phone apps as well as desktop. See [Discord's limits](#17-discords-limits).
+- **It is still a web page in Discord's Activity window,** with the same limits: outside websites are blocked and service workers can't register. It runs on Discord's phone apps as well as desktop. See [Discord's limits](#18-discords-limits).
 - **Discord's toolkit commands still work** through `hub.discord`, like `openExternalLink` or `setActivity`.
 
 What you give up:
@@ -307,7 +308,7 @@ document.getElementById("click").addEventListener("click", async () => {
 });
 ```
 
-`"activityhub"` in the `import` line is not a file in your folder. The hub tells the browser where its helper script is when it serves your page. That is also why the page only works when the hub serves it (see [Common problems](#16-common-problems)).
+`"activityhub"` in the `import` line is not a file in your folder. The hub tells the browser where its helper script is when it serves your page. That is also why the page only works when the hub serves it (see [Common problems](#17-common-problems)).
 
 ### Step 2: load the cog
 
@@ -339,6 +340,21 @@ You should now see "Hi" and your name in that server, then "Clicks today: 1. Bal
 - **Python**: run `[p]reload clickcounter`.
 
 You should now see your change. That's the whole loop.
+
+### Step 6: show what you're doing
+
+This step needs two Discord accounts in the same voice channel, both in that voice channel's Activity. Accounts in different channels don't see each other.
+
+1. In `game.js`, add one line to the click handler, right after the line that shows `Clicks today`:
+
+   ```js
+   hub.status(`Clicked ${result.clicks} times today`);
+   ```
+
+2. On your first account, in the voice channel's Activity, close Click Counter and open it again so it picks up the change. Press **Click me** a few times.
+3. On a second account, join the same voice channel, open the Activity there (see [two players](#16-testing-and-debugging)), and stay in the menu.
+
+You should now see, on the second account, a **1** bubble on Click Counter's corner. Resting the mouse on its card shows your first account with "Clicked 3 times today" (or however many). In the Orb theme, the default, select Click Counter instead: its big screen lists the same line under **Playing now**. [Who's here](#11-whos-here) covers the rest.
 
 ## 4. How one click travels
 
@@ -376,8 +392,8 @@ These are the fields the dict can have. Any other field name is refused, so a ty
 | `thumbnail` | `str` or `pathlib.Path` | no | A wide picture inside `web_dir` (16:9, for example 640x360), like box art or a screenshot, written like `icon`. The grid and list layouts show it in place of the icon, and the Orb theme shows it large on the panel for the selected game. Without one, the menu uses the icon. |
 | `actions` | `dict[str, handler]` | no | Python methods the page calls with `hub.api(name, data)`. Names use letters, digits, `_`, `.` and `-`, 1 to 64 characters, and not only dots. See [handlers](#7-reference-handlers). |
 | `socket` | `dict[str, handler]` | no | Handlers for a live connection. The keys can only be `"join"`, `"message"` and `"leave"`. See [multiplayer](#10-multiplayer-with-live-connections). |
-| `routes` | `dict[str, handler]` | no | Raw requests, keyed `"METHOD path"`, for example `"POST avatar"`. `METHOD` is one of `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, in capitals. The path uses letters, digits, `_`, `.`, `-` and `/`, with no `.` or `..` parts. Paths match exactly, so there are no `{parameters}`, and each route can be listed once (leading and trailing `/` don't count). See [raw requests](#11-uploads-and-other-raw-requests). |
-| `scopes` | `list[str]` | no | Extra Discord permissions to ask the player for at login, one scope name per string. See [permissions](#12-extra-discord-permissions). |
+| `routes` | `dict[str, handler]` | no | Raw requests, keyed `"METHOD path"`, for example `"POST avatar"`. `METHOD` is one of `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, in capitals. The path uses letters, digits, `_`, `.`, `-` and `/`, with no `.` or `..` parts. Paths match exactly, so there are no `{parameters}`, and each route can be listed once (leading and trailing `/` don't count). See [raw requests](#12-uploads-and-other-raw-requests). |
+| `scopes` | `list[str]` | no | Extra Discord permissions to ask the player for at login, one scope name per string. See [permissions](#13-extra-discord-permissions). |
 
 Every handler (in `actions`, `socket` and `routes`) must be an `async def` that takes the arguments [the hub passes](#7-reference-handlers). The hub checks both when your game registers, so a mistake shows up in `[p]activityhub games` right away, not when a player first presses a button. Put the method itself in the dict, `self.click`, not `self.click()`.
 
@@ -439,8 +455,8 @@ Rules the hub enforces for you:
 
 - **Actions and socket handlers only run for a logged-in player**, and only while your game is on in that server.
 - **Raw routes also run without a login.** `ctx` is then `None`.
-- **Errors stay private.** If a handler raises, or an action returns something that isn't a dict (or can't be turned into JSON), the hub logs it in the bot's log and the page gets "Something went wrong.". Your error text never reaches players. Only `{"error": "..."}` text does. When you test as the bot owner, the page also shows you the reason (see [Testing](#15-testing-and-debugging)).
-- **Size limit.** Actions refuse bodies of 1 MB or more (the page sees "Request failed (413)"), and a live message of 1 MB or more closes the connection with `1009`. In raw routes, the limit applies only to `request.read()`, `.json()`, `.text()` and `.post()`. `request.content` and `request.multipart()` aren't limited: check `ctx` first, count bytes as you read, and stop at your own limit, like the [streaming example](#11-uploads-and-other-raw-requests). That is also how to accept uploads bigger than 1 MB.
+- **Errors stay private.** If a handler raises, or an action returns something that isn't a dict (or can't be turned into JSON), the hub logs it in the bot's log and the page gets "Something went wrong.". Your error text never reaches players. Only `{"error": "..."}` text does. When you test as the bot owner, the page also shows you the reason (see [Testing](#16-testing-and-debugging)).
+- **Size limit.** Actions refuse bodies of 1 MB or more (the page sees "Request failed (413)"), and a live message of 1 MB or more closes the connection with `1009`. In raw routes, the limit applies only to `request.read()`, `.json()`, `.text()` and `.post()`. `request.content` and `request.multipart()` aren't limited: check `ctx` first, count bytes as you read, and stop at your own limit, like the [streaming example](#12-uploads-and-other-raw-requests). That is also how to accept uploads bigger than 1 MB.
 - **What turns into JSON.** Replies and live messages are turned into JSON with orjson, a fast JSON library that comes with Red. Besides dicts, lists, text, numbers, booleans and `None`, it takes dataclasses, datetimes (as ISO 8601 text, like `"2026-01-02T00:00:00+00:00"`), UUIDs and enums. Dict keys that are numbers become text, like `{"1": ...}`. NaN, Infinity and whole numbers bigger than 64 bits are refused.
 
 **How your handlers run:**
@@ -461,6 +477,7 @@ Rules the hub enforces for you:
 | **`await`** `conn.close(code=1000)` | `code`: `int` | Closes the connection once the messages you queued before it have gone out. Use `1000`, or your own codes from `4100` to `4999`. Codes `4000` to `4099` are ActivityHub's, and `close` refuses them with a `ValueError`. |
 | `conn.ctx` | `ctx` | The same `ctx` the handlers get. |
 | `conn.room` | room | Everyone playing your game in the same window (the same `instance_id`), as one object their connections share. Keep it to reach them all from a timer, a loop or an action: see [multiplayer](#10-multiplayer-with-live-connections). |
+| `conn.follow` | `int` or `None` | The user id of the person this player joined with **Join** in the hub's people lists, or `None`. Only on the first live connection after a Join, and only when that person is in the same window. Reconnects have `None`. See [Who's here](#11-whos-here). |
 
 **`room`**, what `conn.room` gives you:
 
@@ -513,6 +530,9 @@ class HubConnection(Protocol):
     @property
     def room(self) -> HubRoom: ...
 
+    @property
+    def follow(self) -> int | None: ...
+
     async def send(self, data: Any) -> None: ...
 
     async def broadcast(self, data: Any, include_self: bool = False) -> None: ...
@@ -551,6 +571,13 @@ A red "400 (Bad Request)" line in the browser console is normal for `{"error"}` 
 | `hub.socket()` | `Promise<conn>` | Opens your game's live connection. Resolves once the hub has checked the login. If the login expired, it logs in again and retries once by itself. Once open, it reconnects by itself after a drop (see `conn.onReconnecting`). |
 | `hub.discord` | Discord toolkit or `null` | The menu's Discord Embedded App SDK object (the toolkit Discord gives Activity pages), for calls like `hub.discord.commands.openExternalLink(...)`. Listeners you add with `hub.discord.subscribe()` are removed for you when your game closes. Its participant list is everyone in the Activity, not your players: see [multiplayer](#10-multiplayer-with-live-connections). `null` outside Discord. |
 | `hub.stat(text)` | function | Adds a short text at the end of the hub's frame rate counter in the corner, like the `30 TPS` in `60 FPS · 85 ms · 30 TPS`, for a number like your update rate (see [measuring](#speed-and-fast-paced-games)). The `85 ms` is the hub's own: the delay of your live connection, shown while one is open. Up to 40 characters; longer text is cut. `hub.stat("")` removes it, and so does closing your game. Players who hid the counter (the menu's **Frame rate** setting) don't see it. Works in the preview too. |
+| `hub.status(text, data)` | function | Sets the player's status line (up to 60 characters), shown to everyone in the window, and optional data (any JSON value up to 1,024 characters) for your own pages. Each call sets both. Does nothing in the preview. See [Who's here](#11-whos-here). |
+| `hub.busy(on)` | function | `hub.busy(true)` while the player is mid-round, so Join asks before taking them away. `false` when the round ends. |
+| `hub.people` | array | Everyone in the window right now, the player included. A new array on each read. Empty in the preview. |
+| `hub.onPeople(fn)` | function | Calls `fn(people)` each time a new list arrives (not straight away), and returns a function that stops it. Your listeners are removed when your game closes. |
+| `hub.follow` | object or `null` | `{ id, name }` of the person whose Join opened your game, or `null`. |
+| `hub.peopleButton()` | function | Returns the people button, for you to place in your layout. The floating one then goes away. |
+| `hub.openPeople()` | function | Opens the people panel. |
 | `hub.backToMenu()` | function | Same as the `backToMenu` export. |
 
 Catching an error from an action looks like this:
@@ -644,7 +671,7 @@ async def share(self, ctx, data: dict) -> dict:
 
 Use `BucketType.user` or `BucketType.member`. `BucketType.channel` needs `ctx.channel`, which is `None` outside a server.
 
-For a stronger check, see how the included games [replay the player's moves](#19-bigger-examples-the-included-games).
+For a stronger check, see how the included games [replay the player's moves](#20-bigger-examples-the-included-games).
 
 ### Paying for scores, Neopets style
 
@@ -742,7 +769,7 @@ if (!hub.offline) {
 
 You should now see "Together: 0 (1 playing)". Open the Activity on a second account in the same voice channel and pick Click Counter there too: both pages show "2 playing", and a bump on one shows on both.
 
-Friends who open the Activity land in the menu, not in your game: each of them picks it there. A [Play button](#13-opening-your-game-from-a-command-or-button) opens your game straight away for each player who presses it.
+Friends who open the Activity land in the menu, not in your game: each of them picks it there. A [Play button](#14-opening-your-game-from-a-command-or-button) opens your game straight away for each player who presses it.
 
 Things to know:
 
@@ -768,11 +795,11 @@ Things to know:
 - **Message limit:** a page may send up to 300 messages and 1 MB a second, on average over 5 seconds, so a short burst is fine. That is far more than a game needs, even one that sends an input every frame on a 240 Hz screen. Only a page someone changed to flood the bot goes over it: it is disconnected with `4029`, without reconnecting, and the bot's log names the player.
 - **Reserved field:** don't send objects with an `activityhub` field from Python. The hub uses that field for its own messages, and `conn.send()` and `conn.broadcast()` refuse it with a `ValueError`.
 - **Your game needs `"socket"` in its description,** or `hub.socket()` fails with `4004`.
-- **Who is in your game:** use `conn.peers()` in Python. Discord's own participant list (`hub.discord.commands.getInstanceConnectedParticipants()`, the `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE` event) lists everyone in the Activity, including players in the menu or in other games.
+- **Who is in your game:** use `conn.peers()` in Python. Discord's own participant list (`hub.discord.commands.getInstanceConnectedParticipants()`, the `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE` event) lists everyone in the Activity, including players in the menu or in other games. To show everyone in the window and where they are, use `hub.people` (see [Who's here](#11-whos-here)).
 - **Waiting for an opponent:** remember `conn` and return from `join`. Start the match from the second player's `join`.
 - **Other players' broadcasts already reach a connection while its `join` runs.** Read your state and send the snapshot with no other `await` in between, or guard the state with an `asyncio.Lock` that `message` also takes.
 - **Refusing a player** (the room is full, they were kicked): `await conn.send({"error": "This table is full."})`, then `await conn.close(4100)`. `leave` still runs for that connection, so only undo what `join` did.
-- **Key per-player state by `conn`,** or check `self.players.get(ctx.author.id) is conn` before deleting it in `leave`. A player who reconnects has a new `conn` before the old one's `leave` runs.
+- **Key per-player state by `conn`,** or check `self.players.get(ctx.author.id) is conn` before deleting it in `leave`. A player who reconnects can have a new `conn` before the old one's `leave` runs.
 - **When your cog unloads or reloads,** `leave` still runs for every connected player, after your `cog_unload`, on the old cog object. Keep what `leave` needs alive until then.
 - **To reach everyone from an action, a timer or a command,** keep the window's room. `conn.room` is one object shared by everyone playing your game in that window: `await room.broadcast(data)` sends to all of them, and `room.connections` lists them. For example, with `self.rooms = {}` in `__init__`:
 
@@ -879,7 +906,215 @@ setInterval(() => {
 
 Your game server then does its own checks, which the hub did for you before: the hub's login and on/off switches don't reach it.
 
-## 11. Uploads and other raw requests
+## 11. Who's here
+
+**In short:** the hub shows everyone who is playing what, in the menu and inside every game, with no code from you. A few calls let your game say what its player is doing and show the others its own way.
+
+Friends usually open the Activity together, from one voice channel, and then spread out over different games. A **window** is everyone who opened the Activity from the same voice channel (or the same DM call). They share one `ctx.instance_id`. Everything in this section is about the people in the player's window.
+
+What players get without you writing anything:
+
+- **In the menu,** a game that people in this window are playing has a number bubble on its corner. Resting the mouse on the game (or tapping the bubble on a phone) lists them, with what each one is doing and a **Join** button, plus how many play it in other channels of the same server. The Orb theme lists them on its big screen for the selected game, under **Playing now**. The menu's header shows everyone else in the window.
+- **In your game,** a **people button** floats in the top-right corner. It opens the **people panel**: who is in your game, who is in each other game, who is in the menu, how many play in other channels, and an **Invite friends** button that opens Discord's invite window. When someone opens your game, a short "Ann joined" note slides out of the button.
+- **Join** opens the other person's game for the player. If your game says its player is mid-round, the hub asks first: "Leave Tanks to join Ann in Snake?", with **Stay** picked by default.
+- **Away:** people whose Discord is in the background (a locked phone, another app or tab in front) show dimmed, with "Away" in place of what they're doing.
+
+None of this needs a live connection in your game: the menu keeps its own connection to the bot for it. The rest of this section is how to make it better: say what your player is doing, say when leaving would cost them, show the others your own way, and put the people button where it fits your layout. It works the same for a single-player game played side by side and for a multiplayer one.
+
+### Say what the player is doing: `hub.status()`
+
+```js
+import { connect } from "activityhub";
+
+const hub = await connect();
+let clicks = 0;
+
+document.getElementById("click").addEventListener("click", () => {
+  clicks += 1;
+  hub.status(`Clicked ${clicks} times`, { clicks });
+});
+```
+
+The first argument is the **status line**: a short text everyone in the window sees next to the player's name, in the menu, the people panel and other games. Write what they're doing in a few words, like `Wave 4 · 1,230`, `Watching` or `Blackjack · bet 200`. Without one, the hub shows "Playing".
+
+The second argument is optional **data**: any JSON value, for your own game's pages to read in `hub.people` (a live score, a table number). The hub's own lists never show it.
+
+- Call it as often as you like, even every frame. The hub sends at most 4 updates a second, and the latest one wins.
+- Each call sets both. `hub.status("Watching")` also clears the data.
+- The text is one line of plain text, always shown as text (`<b>` shows as typed). Longer than 60 characters, it is cut. Characters are counted like `Array.from(text).length`, so 🎉 counts as one. The bot also removes line breaks, other control characters and the spaces at each end.
+- The data can be up to 1,024 characters once turned into JSON (`JSON.stringify`). The hub copies it when you call, so changing your object afterwards changes nothing until you call again. Data that is too big, isn't JSON, or has half an emoji in a text is left out, with a warning in the browser console. The text still goes through.
+- Your Python never sees either of them. When the bot needs a score, send it through your own action or live connection.
+- Both reset when your game closes. In the browser preview, `hub.status()` does nothing.
+- Everyone in the window sees both, whatever game they're in. Never put anything private in them.
+
+### Say when leaving would cost them: `hub.busy()`
+
+```js
+function startRound() {
+  hub.busy(true);
+}
+
+function endRound() {
+  hub.busy(false);
+}
+```
+
+While busy is on, Join asks the player before taking them out of your game, and **Stay** is the default answer. Turn it on when a round starts and off when it ends. Leave it off in menus, lobbies and results screens, so Join stays one tap there.
+
+- Only `true` turns it on. Anything else, like `1` or `"yes"`, counts as off.
+- It resets when your game closes. In the browser preview it does nothing.
+- Other pages see it as `busy` in `hub.people`.
+
+### Who else is here: `hub.people` and `hub.onPeople()`
+
+`hub.people` is everyone in the window right now, the player included, in the order they arrived. Each read gives a new array of new person objects, so you can sort and filter it freely. A person's `data` is the same object on every read, though: copy it before you change it. `hub.onPeople(fn)` calls `fn(people)` each time a new list arrives (at most 4 times a second), and returns a function that stops it.
+
+- `onPeople` doesn't call `fn` straight away. Draw once from `hub.people`, then again in `onPeople`, like the example below.
+- A new list doesn't always change what you show: someone in another game may only have changed their data. If drawing is costly, check what changed first.
+- Right after `connect()`, the list can still be empty or a moment old, for example when a Play button opened your game straight away. `onPeople` brings the next one.
+- The list can also go empty later: when the menu loses its connection to the bot for more than a minute, everyone leaves the list until it's back. Your page should cope with an empty list at any time.
+- The hub removes your listeners when your game closes.
+- `onPeople` throws a `TypeError` when `fn` isn't a function, like `hub.onPeople(draw())` with the brackets.
+- In the browser preview, `hub.people` is always empty and `fn` is never called.
+
+Each person is an object:
+
+| Field | What it is |
+|---|---|
+| `id` | Their Discord user id, as text. |
+| `name` | The name Discord shows for them in this server: their nickname, else their display name. |
+| `avatar` | The address of their Discord picture. Show the first letter of their name instead when it fails to load. |
+| `game` | The key of the game they're in, or `null` in the menu. |
+| `gameName` | That game's name, or `null` in the menu. |
+| `status` | Their status line, or `""` when their game set none. |
+| `data` | The data their game set with `hub.status()`, or `null`. It comes from whatever game they're in, so check `here` before reading it as your own game's. |
+| `busy` | `true` while their game says they're mid-round. |
+| `away` | `true` while Discord hides their Activity (a locked phone, another app or tab in front). Also `true` for 15 seconds after their menu loses its own connection to the bot; if it isn't back by then, they leave the list. Your game's live connection has nothing to do with it. |
+| `you` | `true` for the player on this page. |
+| `here` | `true` for people in your game, the player included. |
+
+This is the pattern for a solo game played side by side: a strip of everyone's live score.
+
+```js
+import { connect } from "activityhub";
+
+const hub = await connect();
+const strip = document.getElementById("strip");
+
+function showScores(people) {
+  const rows = people
+    .filter((person) => person.here && person.data && typeof person.data.score === "number")
+    .sort((a, b) => b.data.score - a.data.score);
+  strip.replaceChildren(
+    ...rows.map((person) => {
+      const row = document.createElement("li");
+      // Names come from Discord: always text, never HTML
+      row.textContent = `${person.you ? "You" : person.name}: ${person.data.score}`;
+      return row;
+    }),
+  );
+  // Nothing to compare with when the player is alone
+  strip.hidden = rows.length < 2;
+}
+
+showScores(hub.people);
+hub.onPeople(showScores);
+```
+
+Each page sets its own score with `hub.status(text, { score })`. The player's own entry comes back from the bot a moment after that call, so for a strip that keeps up with every point, show the player's own score from your game instead, like `arcade.js` does (below).
+
+Other pages' data is for showing only. A changed page can send any score it likes, so never pay out or rank a leaderboard from it: that's your Python's job (see [What to trust](#9-what-to-trust-and-paying-out)).
+
+`hub.people` is about the window, not your live connection. Someone can be in your game before their `hub.socket()` connects, or after it dropped. For who is connected right now, use `conn.peers()` in Python.
+
+Your Python sees none of the people list. Status lines, data, busy flags and who is where stay on the pages, and there is no Python call to read them. The one new thing Python gets is `conn.follow`, after a Join (below).
+
+### Put the people button in your layout: `hub.peopleButton()`
+
+The floating button in the top-right corner can cover something of yours. Place it yourself instead:
+
+```js
+import { connect } from "activityhub";
+
+const hub = await connect();
+document.querySelector("header").append(hub.peopleButton());
+```
+
+- Call it right after `connect()`, before anything else you `await`, and the floating button never shows. The hub shows the floating one a frame after `connect()` resolves, and hides it as soon as you call `hub.peopleButton()`. A page that never calls `connect()` gets the floating one 2 seconds after it loads.
+- It returns one element: the button, plus the spot its arrival notes slide out of. Put it anywhere in your page. Notes appear under it, lined up with whichever side of the screen it is nearer. Keep it out of boxes with `overflow: hidden`, which cut the notes off.
+- Call it once. Only the newest button it returned keeps up with the list.
+- The button shows up to 3 faces of the others in your game, and how many others are in the window. With nobody else there, it shows an invite icon.
+- Its size follows the CSS variable `--hub-people-size` (36px by default). Set it on anything above the button, like `header { --hub-people-size: 30px; }` or `:root`.
+- It takes its colors from your page's `--accent` and `--on-accent` CSS variables when your page sets them, and Discord's blurple and white otherwise. `--accent` colors the hover border, the keyboard focus ring, the arrival notes and the first-letter circles shown when a picture can't load; `--on-accent` colors the text on them. If your page uses `--accent` for something else, the button takes that color too.
+- `hub.openPeople()` opens the people panel, for your own button or menu entry.
+- In the browser preview it still returns a button, which opens a panel saying "Open this from Discord to see who's here.". A page opened in a tab of its own, without the menu around it, gets a button that does nothing.
+
+### Join: `hub.follow` and `conn.follow`
+
+When a player presses **Join** next to Ann, the hub opens Ann's game for them. What "joining Ann" means inside your game is up to you:
+
+- **One match per window** (most multiplayer games): nothing to do. Opening your game already puts them in Ann's match.
+- **Several tables or rooms in one window:** put them where Ann is. Your Python knows who they followed as `conn.follow` in `join`, and the page knows it as `hub.follow`.
+
+`conn.follow` is Ann's user id as an `int`, or `None`. It is only set:
+
+- on the player's first live connection after the Join: the first `hub.socket()` call, or the next one if that one failed to open,
+- and when Ann is in the same window (in any game or the menu) as the connection opens.
+
+A connection that drops and comes back has `None`, so a player who moved on isn't pulled back to Ann. The hub has checked that Ann is in the window. Whether Ann still sits at a table is up to your own state. For example, with `self.tables = {}` in `__init__`, and both handlers listed in `"socket"`:
+
+```python
+async def join(self, ctx, conn):
+    # Who sits at which table in this window: {user_id: table number}
+    seated = self.tables.setdefault(ctx.instance_id, {})
+    # Joined from the hub's people list: sit at the friend's table. Otherwise keep this player's own seat (a
+    # reconnect has no follow), or start a newcomer at table 1
+    table = seated.get(conn.follow) or seated.get(ctx.author.id, 1)
+    seated[ctx.author.id] = table
+    await conn.send({"table": table})
+
+
+async def leave(self, ctx, conn):
+    seated = self.tables.get(ctx.instance_id, {})
+    # A reconnect that opened before this leave ran is already in peers(): its player keeps the seat
+    if not any(peer.ctx.author.id == ctx.author.id for peer in conn.peers()):
+        seated.pop(ctx.author.id, None)
+    if not seated:
+        self.tables.pop(ctx.instance_id, None)
+```
+
+`leave` frees the seat, so nobody is sent to a table its player has left. A player whose connection dropped and came back after `leave` ran starts over at table 1. To hold seats through a drop, keep them for a short while after `leave` (20 seconds), like [Marble Munch](#a-multiplayer-example-marble-munch) does.
+
+`hub.follow` is `{ id, name }` (both text) of the person whose Join opened your game, or `null`. It stays the same while your page is open. The same idea on the page, for a game that moves between rooms itself:
+
+```js
+import { connect } from "activityhub";
+
+const hub = await connect();
+const friend = hub.follow ? hub.people.find((person) => person.id === hub.follow.id) : null;
+if (friend && friend.here && friend.data && friend.data.room) {
+  // goToRoom is your game's own function
+  goToRoom(friend.data.room);
+}
+```
+
+`friend.data.room` comes from Ann's page, so it says where to go, not that the player may go there: your Python still decides that.
+
+### A full example
+
+The included games do all of this in `activityhub/web/arcade.js`: `report` sets the status line, the data and busy, `rivals` and `showLive` draw the live strip from `hub.people`, and `buildBar` places the people button in the top bar.
+
+### Older hubs
+
+These calls came in ActivityHub 0.5.0. On an older hub they are missing, and calling one throws an error like `hub.status is not a function`. A game that should still run there checks first, and reads the list as `hub.people || []`:
+
+```js
+if (hub.status) {
+  hub.status("Getting ready");
+}
+```
+
+## 12. Uploads and other raw requests
 
 A raw route handles anything actions don't cover: file uploads, binary data, streaming. Your handler gets aiohttp's `request` and returns any aiohttp response, so you have full control.
 
@@ -955,7 +1190,7 @@ Things to know:
 
   A public `GET` route (one that is fine with `ctx` being `None`) also works straight from HTML, as `<img src="../raw/avatar?user=2">`. The hub's `<base>` tag puts plain relative paths in your file folder, so `raw/...` alone doesn't reach your routes.
 
-## 12. Extra Discord permissions
+## 13. Extra Discord permissions
 
 By default the login only asks for the player's name and avatar. `"scopes": [...]` asks for more. A scope is one permission the player approves, like "show what I'm playing in my Discord status". You then use it through `hub.discord`.
 
@@ -976,7 +1211,7 @@ Things to know:
 - **Only scopes used through `hub.discord` help.** Neither your page nor your Python gets the player's Discord access token.
 - **Scopes are read when the Activity opens.** Reopen it after adding one.
 
-## 13. Opening your game from a command or button
+## 14. Opening your game from a command or button
 
 Players open your game from the Activity menu, so you don't need a command. Server admins can also pin a button that opens your game on any message the bot sent, with `[p]activityhub pin <message link> game: <your key or name>`, and that needs no code from you. If you want a shortcut of your own anyway, the hub can open your game straight from a button or a slash command:
 
@@ -1032,13 +1267,13 @@ A hybrid command shows up as a slash command once the bot owner runs `[p]slash e
 - **It returns `True` when the Activity opened,** and `False` when it was refused or Discord failed.
 - **A button must use `timeout=None` and a fixed `custom_id`, and be added back with `bot.add_view`,** to keep working after 3 minutes and after restarts.
 
-## 14. Files and caching
+## 15. Files and caching
 
 The hub serves every file in your `web_dir`. A few rules keep that working:
 
 - **Use relative paths** in your page: `game.js`, `./levels.json`, `art/ship.png`. Never start a path with `/`. The bot log warns when `index.html` has a `src` or `href` starting with `/`.
 - **Caching is handled for you.** The hub serves your files under a versioned folder, like `/games/<key>/<code>/game.js`. The code changes whenever any of your files change. So a caching service (like Cloudflare, which keeps copies of files to serve them faster) never serves an old copy.
-- **Bundle everything** in `web_dir`: scripts, styles, images, sounds, fonts. Nothing from other websites (see [Discord's limits](#17-discords-limits)).
+- **Bundle everything** in `web_dir`: scripts, styles, images, sounds, fonts. Nothing from other websites (see [Discord's limits](#18-discords-limits)).
 - **Prefer `.js` and `.css` files:** they cache and debug better. Inline `<script>` isn't blocked: the hub's own import map is an inline script, so any page that can import `"activityhub"` can run inline code.
 - **Everything in `web_dir` is public.** Anyone can download it. Keep secrets and payout rules in Python. Files and folders whose names start with a dot (`.git`, `.env`) are the exception: the hub never serves them.
 - **Keep `web_dir` to your built page.** Point it at your build output (for example `dist/`), not a project folder with `node_modules`. Every file in it is public and is fingerprinted each time the game opens, so the bot log warns about a `node_modules` folder or more than 2000 files.
@@ -1049,9 +1284,9 @@ The hub serves every file in your `web_dir`. A few rules keep that working:
 - **Storage is shared.** Every game and the menu share one web address, so `localStorage` and `sessionStorage` are shared too. Prefix your keys with your game key (`"clickcounter:best"`), and keep anything that matters in Config. (Game cogs are fully trusted code, like any Red cog.)
 - **Links (symlinks, `npm link`) to files outside `web_dir` aren't served.** Copy the files in.
 - **Using a bundler?** Mark `activityhub` as external (esbuild `--external:activityhub`; Vite `build.rollupOptions.external: [/^activityhub/]` plus `base: './'`), output ES modules, and point `web_dir` at the build output folder.
-- **File types are set for you.** The hub serves `.html`, `.js`, `.mjs`, `.css`, `.json`, `.wasm`, `.svg`, `.woff2` and `.mp3` with the exact type browsers require. Other files get their usual type. Files ending in `.gz` or `.br` are sent compressed: see [engine builds](#17-discords-limits).
+- **File types are set for you.** The hub serves `.html`, `.js`, `.mjs`, `.css`, `.json`, `.wasm`, `.svg`, `.woff2` and `.mp3` with the exact type browsers require. Other files get their usual type. Files ending in `.gz` or `.br` are sent compressed: see [engine builds](#18-discords-limits).
 
-## 15. Testing and debugging
+## 16. Testing and debugging
 
 **In a normal browser (fastest).** Open the hub's address, for example `http://127.0.0.1:8742/`. The menu shows in preview mode, and your game opens inside it with `hub.offline` set to `true`. Make your page handle that, so you can work on the look without Discord. Press F12 to open the browser's developer tools: the Console tab shows JavaScript errors, the Network tab shows each request.
 
@@ -1106,8 +1341,10 @@ class FakeRoom:
 class FakeConn:
     """Stands in for a live connection. Keeps what was sent, and refuses what the hub would refuse"""
 
-    def __init__(self, ctx, room):
+    def __init__(self, ctx, room, follow=None):
         self.ctx, self.room, self.sent, self.closed = ctx, room, [], None
+        # The friend's user id when this player came in with Join, like the real conn.follow
+        self.follow = follow
         room.connections.append(self)
 
     async def send(self, data):
@@ -1162,7 +1399,7 @@ The hub's own tests (`activityhub/tests/fakes.py`) use the same kind of stand-in
 
 **Restarts.** The hub keeps logins in memory only, so a bot restart, or a reload or update of ActivityHub, forgets them. `hub.api()`, `hub.fetch()` and `hub.socket()` then log the player in again by themselves and retry once, and the game keeps running. Live connections still close with `1001`, and the helper reconnects them by itself. If Discord refuses the new login, the player is taken back to the menu, and if the menu can't log in either, it shows "Your session expired. Close this activity and open it again."
 
-## 16. Common problems
+## 17. Common problems
 
 **Your game isn't in the menu:**
 
@@ -1202,7 +1439,7 @@ The hub's own tests (`activityhub/tests/fakes.py`) use the same kind of stand-in
 | `asks for the scope 'x', which ActivityHub doesn't know` | A scope name the hub doesn't know, often a typo. Every installed game's scopes go into one login, so a wrong one stops every game from logging in. | Copy the name exactly from Discord's OAuth2 scope list. |
 | `index.html refers to ... with an absolute path, which the hub can't serve` | A `src` or `href` starts with `/`. | Use relative paths. Built with Vite? Set `base: './'`. To go back to the menu, call `backToMenu()`. |
 | `web_dir has a node_modules folder` (or `more than 2000 files`) | `web_dir` is your project folder, not your built page. | Point `web_dir` at your build output, like `dist/`. |
-| `the game frame went to ..., which isn't a file in web_dir` | Your page went to an address that isn't a file: an `href="#"` link, a router path, a reload after `history.pushState`, or a typo. The player saw "This page isn't part of the game." | See [Files and caching](#14-files-and-caching): use buttons, and memory or hash routing. |
+| `the game frame went to ..., which isn't a file in web_dir` | Your page went to an address that isn't a file: an `href="#"` link, a router path, a reload after `history.pushState`, or a typo. The player saw "This page isn't part of the game." | See [Files and caching](#15-files-and-caching): use buttons, and memory or hash routing. |
 | `the page opened a live connection, but activityhub_game() has no "socket"` | The page called `hub.socket()`. | Add `"socket"` to `activityhub_game()` and `[p]reload yourcog`, or don't call `hub.socket()`. |
 
 **Your page doesn't work:**
@@ -1225,7 +1462,7 @@ The hub's own tests (`activityhub/tests/fakes.py`) use the same kind of stand-in
 | A request with your own token gets 401, and your route never runs | The token was sent as `Authorization: Bearer ...`. The hub uses that header for the player's login, and took your token for an expired one. (Inside Discord, `hub.fetch()` also replaces that header with the player's login.) | Send your own tokens in another header, like `X-Api-Key`. |
 | The player lands back in the menu mid-game | Their login expired and Discord refused a fresh one. | Nothing to fix. They open your game again. |
 | Pressing a Back link shows the menu again, with a warning in the console | The link went to `/` or another address, and the hub closed your game. | Call `backToMenu()` instead of linking. |
-| The game frame shows "This page isn't part of the game." | The frame went to an address that isn't a file in `web_dir`: an `href="#"` link, a router path, or a reload after `history.pushState`. The bot log names the address. | See [Files and caching](#14-files-and-caching): use buttons, and memory or hash routing. |
+| The game frame shows "This page isn't part of the game." | The frame went to an address that isn't a file in `web_dir`: an `href="#"` link, a router path, or a reload after `history.pushState`. The bot log names the address. | See [Files and caching](#15-files-and-caching): use buttons, and memory or hash routing. |
 | `hub.socket()` throws "This game has no live connection. Add "socket" to activityhub_game() and reload the cog." | Your description has no `"socket"` field. | Add `"socket"`, then `[p]reload yourcog`. |
 | `hub.socket()` throws "The live connection closed (1006)." | A proxy in front of the bot blocks WebSockets, the network dropped, or your game isn't loaded. | Ask the bot owner to allow WebSockets through the proxy. Check `[p]activityhub games`. |
 | The page never gets a message, and the bot console says `coroutine 'Connection.send' was never awaited` | `conn.send()` was called without `await`. | `await conn.send(...)`. |
@@ -1236,7 +1473,23 @@ The hub's own tests (`activityhub/tests/fakes.py`) use the same kind of stand-in
 | A picture or script from another website doesn't load inside Discord | Discord blocks outside websites. | Put the file in `web_dir`. |
 | Your change doesn't show | The page was still open, or the Python wasn't reloaded. | Reopen the game. For Python, `[p]reload yourcog`. |
 
-## 17. Discord's limits
+**Who's here:**
+
+| What you see | Why | Fix |
+|---|---|---|
+| Your status line never shows | You're in the browser preview, where `hub.status()` does nothing. Or you're looking from an account in another voice channel, which only sees a count. Or the player is away (their Discord tab or app is in the background), and lists show "Away" instead. | Test inside Discord, with both accounts in the same voice channel and both windows in front. |
+| `hub.status is not a function` | `connect()` returns a promise, or the bot runs an ActivityHub older than 0.5.0. | `const hub = await connect();`. For older hubs, update ActivityHub, or check `if (hub.status)` first. |
+| `hub.status() data is ... characters, over the 1024 the hub passes on` in the browser console | The data is longer than 1,024 characters as JSON, so the hub left it out. The text still went through. | Send less: a score and a state, not a whole board. |
+| `hub.status() data isn't JSON, so it was left out` in the browser console | The data holds something JSON can't, like a `BigInt` or an object that contains itself, or the data itself is a function. (A function or `undefined` inside an object is left out without any warning: that's how `JSON.stringify` works.) | Send plain objects, arrays, text, numbers, booleans and `null`. |
+| `hub.status() data has half an emoji in it, which the hub can't pass on` in the browser console | A text in the data was cut through the middle of an emoji, for example with `.slice()`. | Cut text by whole characters: `Array.from(text).slice(0, 20).join("")`. |
+| `hub.onPeople() needs a function, got ...` | You passed something else, often a call: `hub.onPeople(draw())`. | Pass the function itself: `hub.onPeople(draw)`. |
+| `hub.people` is empty | You're in the browser preview, the first list hasn't arrived yet, or the menu lost its connection to the bot for more than a minute. | Draw from `hub.people` once, then again in `hub.onPeople()`, and show something sensible for an empty list. |
+| The people panel says "Open this from Discord to see who's here." | You're in the browser preview. | Open the Activity from Discord. |
+| The people button covers one of your buttons | The floating button sits in the top-right corner. | Place it yourself with `hub.peopleButton()`. |
+| The floating people button shows for a moment, then goes away | You called `hub.peopleButton()` after another `await`. | Call it right after `connect()`. |
+| `conn.follow` is `None` after a Join | Only the first live connection after a Join has it. A reconnect, a later `hub.socket()`, or a friend who left the window before it opened gives `None`. | Read it in `join`, and keep what you need from it in your own state. |
+
+## 18. Discord's limits
 
 Discord runs Activities with some rules of its own. ActivityHub can't change them.
 
@@ -1266,7 +1519,7 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
   });
   ```
 
-## 18. Checklist before you share your game
+## 19. Checklist before you share your game
 
 **Sharing your game.** Your users need ActivityHub too, and Red doesn't install required cogs by itself. Say how to get it in `info.json`'s `install_msg`, like the quick start does, and in your README: `[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`, then `[p]cog install vrt-cogs activityhub` and `[p]load activityhub`. ActivityHub is hidden from `[p]cog list` while it's in beta, but `[p]cog install` still finds it. A field added in a later ActivityHub is refused by older ones, so say which version your game needs (`[p]help ActivityHub` shows it, and so does `bot.get_cog("ActivityHub").__version__`).
 
@@ -1281,12 +1534,14 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
 - [ ] Every file the page needs is inside `web_dir`, loaded with a relative path.
 - [ ] Nothing secret is in `web_dir`.
 - [ ] `web_dir` holds only page files: not your cog's `.py` files, `.env` or `node_modules`.
-- [ ] Your page works on a phone-sized screen and with touch, since Activities run on Discord's phone apps too, and nothing you tap sits under Discord's buttons at the top ([safe areas](#17-discords-limits)).
+- [ ] Your page works on a phone-sized screen and with touch, since Activities run on Discord's phone apps too, and nothing you tap sits under Discord's buttons at the top ([safe areas](#18-discords-limits)).
 - [ ] If you use a live connection: the page shows when it's reconnecting (`conn.onReconnecting`), `join` sends the full state, and the page says something useful in `conn.onClose`.
+- [ ] Your game sets a status line (`hub.status`), and `hub.busy(true)` while a round is on.
+- [ ] The people button doesn't cover anything, on a computer and on a phone.
 - [ ] `info.json` has an `end_user_data_statement`, and your cog deletes a player's data when Red asks it to (`red_delete_data_for_user`).
 - [ ] `info.json`'s `install_msg` (or your README) says how to get ActivityHub.
 
-## 19. Bigger examples: the included games
+## 20. Bigger examples: the included games
 
 ActivityHub comes with three games: Snake, Brick Breaker and 2048. They use the same `activityhub_game()` API as any game cog, so they are full working examples to read.
 
@@ -1347,13 +1602,15 @@ Boulder Bash is a cog in the same repo (`boulderbash/`): a remake of Neopets' De
 | The page playing the same motion for exactly that long, checked by a test | `web/motion.js`, `tests/test_page.py` |
 | Score payouts and their settings dialog | `common/payouts.py`, `web/game.js` (`showOffer`, `showPayouts`) |
 
-## 20. Glossary
+## 21. Glossary
 
 | Word | What it means here |
 |---|---|
 | **Action** | A Python method your page calls by name with `hub.api(name, data)`. It gets `ctx` and `data` and returns a dict. |
 | **Activity** | A game window that opens inside Discord, usually in a voice channel. A bot can have only one, so ActivityHub turns it into a menu. |
+| **Busy** | A game's flag that its player is mid-round (`hub.busy(true)`), so Join asks before taking them away. |
 | **ctx** | The object every handler gets, saying who the player is and where (`ctx.author`, `ctx.guild`, `ctx.channel`, `ctx.instance_id`). The hub proved it with Discord. |
+| **Follow** | The person a player joined with **Join**: `hub.follow` on the page, `conn.follow` in Python. |
 | **Frame** | A page inside a page (an HTML `iframe`). Your game runs in one, inside the hub's menu page. |
 | **Handler** | Any of your `async def` methods the hub calls: actions, live connection handlers and raw routes. |
 | **Instance** | One running Activity window. Everyone in the same window shares its `instance_id`. |
@@ -1361,8 +1618,12 @@ Boulder Bash is a cog in the same repo (`boulderbash/`): a remake of Neopets' De
 | **Live connection** | A WebSocket: a connection between the page and the bot that stays open, so both can send at any time. Used for multiplayer. |
 | **Room** | Everyone playing your game in one Activity window, as `conn.room`. Its `broadcast` reaches all of them. |
 | **Page** | Your game's web side: `index.html` and the files it loads. |
+| **People button** | The hub's button in your game that opens the people panel. It floats in the top-right corner unless you place it with `hub.peopleButton()`. |
+| **People panel** | The hub's list of everyone in the window, grouped by where they are, with Join and Invite buttons. |
 | **Preview** | The menu and your game opened in a normal browser, outside Discord. `hub.offline` is `true` there. |
 | **Raw route** | A handler that gets the raw web request and returns any response. Used for uploads and anything actions can't do. |
 | **Scope** | One extra Discord permission the player approves at login, like changing their Discord status. |
 | **Session** | The player's login with the hub. The page carries a session pass with every request. It lasts up to 12 hours and ends when the bot restarts or ActivityHub reloads; `hub.api()`, `hub.fetch()` and `hub.socket()` then log the player in again by themselves. |
+| **Status line** | A short text your game sets for its player with `hub.status()`, like `Wave 4 · 1,230`. Everyone in the window sees it. |
 | **web_dir** | The folder holding your page: `index.html` and everything it loads. |
+| **Window** | Everyone who opened the Activity from the same voice channel (or the same DM call). They share one `ctx.instance_id`. |

@@ -29,7 +29,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.4.1"
+    __version__ = "0.5.0"
 
     def __init__(self, bot: Red):
         super().__init__()

@@ -376,3 +376,14 @@ async def test_close_all():
     conns = [connect(rooms, make_game(), 1), connect(rooms, make_game("b"), 2)]
     await rooms.close_all()
     assert [c.ws.close_code for c in conns] == [1001, 1001]
+
+
+@pytest.mark.asyncio
+async def test_a_connection_without_a_game_says_what_it_is():
+    ctx = ActivityContext(author=SimpleNamespace(id=1), guild=None, instance_id="i-1")
+    conn = Connection(FakeWebSocket(), ctx, None, None)
+    assert conn.label == "the menu" and conn.follow is None and conn.peers() == []
+    await conn.send({"hi": 1})
+    await delivered(conn)
+    assert conn.ws.sent == [{"hi": 1}]
+    assert Connection(FakeWebSocket(), ctx, make_game("snake"), Rooms()).label == "snake"

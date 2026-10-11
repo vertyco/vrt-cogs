@@ -1205,3 +1205,63 @@ body[data-theme="orb"] .swatch[aria-pressed="true"] {
     transition: none;
   }
 }
+
+/* ---------- Who's here on the Orb ---------- */
+
+/* The pod is round, so the count sits on its rim, and shrinks with a small pod */
+.pod .bubble {
+  top: -4px;
+  right: -4px;
+  min-width: clamp(16px, calc(var(--pod) * 0.4), 22px);
+  height: clamp(16px, calc(var(--pod) * 0.4), 22px);
+  padding: 0 4px;
+  box-shadow: 0 0 0 2px rgb(var(--orb-deep));
+  font-size: clamp(0.62rem, calc(var(--pod) * 0.22), 0.75rem);
+}
+
+.screen-people {
+  margin-top: 10px;
+}
+
+.screen-people:focus {
+  outline: none;
+}
+
+.screen-people-title,
+.screen-more {
+  margin: 0 0 4px;
+  color: rgb(var(--orb-light));
+  font-family: var(--display);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.screen-people .hub-person {
+  padding: 3px 0;
+}
+
+.screen-people .hub-avatar {
+  width: 26px;
+  height: 26px;
+}
+
+.screen-people .hub-person-status {
+  color: rgb(var(--orb-dim));
+}
+
+.no-details .screen-people {
+  display: none;
+}
+
+/* The panel is a fixed height on an upright phone. And menu.js leaves the list out when it would push the Select
+   prompt off the screen. In both, the players show in a list under the pod's count instead */
+.orb-screen.no-room .screen-people {
+  display: none;
+}
+
+@media (max-aspect-ratio: 4/5) {
+  .screen-people {
+    display: none;
+  }
+}

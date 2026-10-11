@@ -18,6 +18,7 @@ from activityhub.tests.browser import (
     wait_for_console,
 )
 from activityhub.tests.fakes import (
+    ADMIN_ID,
     GUILD_ID,
     MANAGER_ID,
     MEMBER_ID,
@@ -468,23 +469,23 @@ def test_orb_swipes_move_along_the_ring_on_a_phone_held_sideways(driver, live, t
         open_menu(driver, live, DISCORD_QUERY)
         assert driver.execute_script("return document.body.dataset.theme") == "orb"
         assert driver.execute_script(f"return {PILLS}")[:3] == ["second", "demo", "extra0"]
-        # Up along the ring brings the next game in, one per step
-        slide(driver, (420, 300), (420, 200))
+        # Down along the ring moves to the next game, one per step, like the highlight follows the finger
+        slide(driver, (420, 200), (420, 300))
         wait_for(driver, f"{SELECTED} === 'extra0'")
         # Browsers keep a page quiet until the first touch ends, so the move sound comes from the next slide on
-        slide(driver, (420, 200), (420, 250))
+        slide(driver, (420, 300), (420, 250))
         wait_for(driver, f"{SELECTED} === 'demo'")
         wait_for(driver, f"window.soundLog.includes({MOVE})")
         # Left and right work too, and a slide that starts on a pill doesn't open its game
-        slide(driver, (600, 200), (500, 200))
+        slide(driver, (500, 200), (600, 200))
         wait_for(driver, f"{SELECTED} === 'extra1'")
         pill = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="extra1"]').rect
         x, y = pill["x"] + pill["width"] / 2, pill["y"] + pill["height"] / 2
-        slide(driver, (x, y), (x + 50, y))
+        slide(driver, (x, y), (x - 50, y))
         wait_for(driver, f"{SELECTED} === 'extra0'")
         assert driver.find_elements(By.ID, "game-frame") == []
         # A fast slide that arrives in one big move goes as far as a slow one, here three steps
-        slide(driver, (420, 340), (420, 340 - 3 * 44 - 10), steps=1)
+        slide(driver, (420, 190), (420, 190 + 3 * 44 + 10), steps=1)
         wait_for(driver, f"{SELECTED} === 'extra3'")
         assert driver.execute_script("return window.scrollY") == 0
     finally:
@@ -495,7 +496,7 @@ def test_orb_swipes_move_along_the_ring_on_an_upright_phone(driver, live):
     touch_device(driver, 375, 740)
     try:
         open_menu(driver, live, DISCORD_QUERY)
-        slide(driver, (300, 560), (300, 510))
+        slide(driver, (300, 510), (300, 560))
         wait_for(driver, f"{SELECTED} === 'demo'")
         assert driver.find_element(By.CSS_SELECTOR, "#orb-screen .screen-name").text.lower() == "demo"
         assert driver.execute_script("return window.scrollY") == 0
@@ -562,7 +563,7 @@ def test_orb_slides_hold_the_page_still_and_work_from_anywhere(driver, live):
             "window.addEventListener('touchmove', (event) => window.heldStill.push(event.defaultPrevented));"
         )
         # A slide that starts on the orb, away from every tab, still moves along the ring
-        slide(driver, (30, 600), (30, 540))
+        slide(driver, (30, 540), (30, 600))
         wait_for(driver, f"{SELECTED} === 'demo'")
         assert driver.execute_script("return window.heldStill.length > 0 && window.heldStill.every(Boolean)")
         assert driver.find_elements(By.ID, "game-frame") == []
@@ -889,3 +890,654 @@ def test_first_menu_comes_with_the_login(driver, live):
     assert any("/hub/api/token" in name for name in asked)
     assert not any("/hub/api/menu" in name or "/hub/api/config" in name for name in asked)
     wait_for(driver, "window.fakeDiscord.authenticate === 1")
+
+
+BUBBLE = "document.querySelector('.card[data-key=\"demo\"] .bubble')"
+HOVER = "document.getElementById('hover-people')"
+DEMO_CARD = '.card[data-key="demo"]'
+PEOPLE_ROW = "document.getElementById('people-row')"
+
+
+def hover_demo(driver):
+    """The mouse rests on the demo card until its players show"""
+    ActionChains(driver).move_to_element(driver.find_element(By.CSS_SELECTOR, DEMO_CARD)).perform()
+    wait_for(driver, f"!{HOVER}.hidden")
+
+
+def person_status(driver, user_id, status):
+    wait_for(driver, f"window.activityhubHost.presence.people.find((p) => p.id === '{user_id}')?.status === '{status}'")
+
+
+def tap(driver, x, y):
+    for kind, points in (("touchStart", [{"x": x, "y": y}]), ("touchEnd", [])):
+        driver.execute_cdp_cmd("Input.dispatchTouchEvent", {"type": kind, "touchPoints": points})
+
+
+def test_bubbles_count_people_in_each_game(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    assert driver.execute_script("return document.querySelectorAll('#games .bubble').length") == 0
+    live.add_person(MANAGER_ID, where="demo", status="Clicking")
+    assert wait_for(driver, f"{BUBBLE}?.textContent") == "1"
+    live.add_person(ADMIN_ID, where="demo")
+    assert wait_for(driver, f"{BUBBLE}?.textContent === '2' && {BUBBLE}.getAttribute('aria-label')") == "2 playing Demo"
+
+
+def test_hovering_a_card_lists_its_players(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo", status="Clicking")
+    live.add_person(ADMIN_ID, where="demo", instance="i-2")
+    wait_for(driver, BUBBLE)
+    hover_demo(driver)
+    text = wait_for(driver, f"{HOVER}.innerText")
+    assert "Manager" in text and "Clicking" in text and "+1 playing in another channel" in text
+    # The list stays while the mouse moves onto it, so its Join button can be pressed
+    ActionChains(driver).move_to_element(
+        driver.find_element(By.CSS_SELECTOR, "#hover-people .hub-join")
+    ).click().perform()
+    wait_for(driver, "document.body.classList.contains('playing')")
+    assert driver.execute_script("return window.activityhubHost.follow") == {"id": str(MANAGER_ID), "name": "Manager"}
+
+
+def test_tapping_the_bubble_opens_the_list_not_the_game(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "list"}
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo")
+    wait_for(driver, BUBBLE)
+    driver.execute_script(f"{BUBBLE}.click()")
+    wait_for(driver, f"!{HOVER}.hidden")
+    assert not driver.execute_script("return document.body.classList.contains('opening')")
+    # A second tap puts it away again
+    driver.execute_script(f"{BUBBLE}.click()")
+    wait_for(driver, f"{HOVER}.hidden")
+
+
+def test_alone_shows_invite_and_no_bubbles(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    wait_for(driver, f"!{PEOPLE_ROW}.hidden")
+    assert driver.find_element(By.CSS_SELECTOR, "#people-row .invite-pill").text == "Invite friends"
+    assert driver.execute_script("return document.querySelectorAll('#games .bubble').length") == 0
+    driver.find_element(By.CSS_SELECTOR, "#people-row .invite-pill").click()
+    assert wait_for(driver, "window.fakeDiscord.invite") == 1
+
+
+def test_the_header_shows_everyone_else(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo")
+    live.add_person(ADMIN_ID, away=True)
+    wait_for(driver, "document.querySelectorAll('#people-row .face').length === 2")
+    assert driver.execute_script("return document.querySelectorAll('#people-row .face .game-badge').length") == 1
+    assert driver.execute_script("return document.querySelectorAll('#people-row .hub-avatar.away').length") == 1
+    driver.find_element(By.CSS_SELECTOR, "#people-row .people-stack").click()
+    wait_for(driver, "!document.querySelector('.hub-people-panel').hidden")
+
+
+def test_the_orb_screen_lists_who_is_playing(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo", status="Clicking")
+    driver.execute_script("document.querySelector('.pill[data-key=\"demo\"]').focus()")
+    text = wait_for(
+        driver, "document.querySelector('#orb-screen .screen-face:not(.leaving) .screen-people')?.innerText"
+    )
+    # The title is set in capitals, which innerText reports
+    assert "playing now" in text.lower() and "Manager" in text
+
+
+def test_no_bubbles_and_no_row_once_the_menu_link_is_gone(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo")
+    wait_for(driver, BUBBLE)
+    wait_for(driver, f"!{PEOPLE_ROW}.hidden")
+    # What the menu link does when it gives up for good: an empty list for every page
+    driver.execute_script("const p = window.activityhubHost.presence; p.people = []; p.elsewhere = {}; p.notify([])")
+    wait_for(driver, f"{BUBBLE} === null && {PEOPLE_ROW}.hidden")
+
+
+def test_a_hover_join_click_survives_a_list_arriving_mid_press(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    conn = live.add_person(MANAGER_ID, where="demo", status="one")
+    wait_for(driver, BUBBLE)
+    hover_demo(driver)
+    join = driver.find_element(By.CSS_SELECTOR, "#hover-people .hub-join")
+    ActionChains(driver).move_to_element(join).click_and_hold().perform()
+    try:
+        # The status line changes, which redraws the list unless a press is under way in it
+        live.update_person(conn, where="demo", status="two")
+        person_status(driver, MANAGER_ID, "two")
+        assert "two" not in driver.execute_script(f"return {HOVER}.innerText")
+    finally:
+        ActionChains(driver).release().perform()
+    wait_for(driver, "document.body.classList.contains('playing')")
+
+
+def test_the_hover_list_catches_up_once_the_press_ends(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    conn = live.add_person(MANAGER_ID, where="demo", status="one")
+    wait_for(driver, BUBBLE)
+    hover_demo(driver)
+    # A press on the list's own text, which is no button, still holds the list as it is
+    name = driver.find_element(By.CSS_SELECTOR, "#hover-people .hub-person-name")
+    ActionChains(driver).move_to_element(name).click_and_hold().perform()
+    try:
+        live.update_person(conn, where="demo", status="two")
+        person_status(driver, MANAGER_ID, "two")
+        assert "two" not in driver.execute_script(f"return {HOVER}.innerText")
+    finally:
+        ActionChains(driver).release().perform()
+    wait_for(driver, f"{HOVER}.innerText.includes('two')")
+
+
+def test_a_space_press_on_a_hover_join_survives_a_list_arriving(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    conn = live.add_person(MANAGER_ID, where="demo", status="one")
+    wait_for(driver, BUBBLE)
+    hover_demo(driver)
+    driver.execute_script(f"{HOVER}.querySelector('.hub-join').focus()")
+    ActionChains(driver).key_down(Keys.SPACE).perform()
+    try:
+        live.update_person(conn, where="demo", status="two")
+        person_status(driver, MANAGER_ID, "two")
+    finally:
+        ActionChains(driver).key_up(Keys.SPACE).perform()
+    wait_for(driver, "document.body.classList.contains('playing')")
+
+
+def test_lists_that_change_nothing_shown_are_not_drawn_again(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    conn = live.add_person(MANAGER_ID, where="demo", status="one")
+    wait_for(driver, BUBBLE)
+    hover_demo(driver)
+    wait_for(driver, f"{PEOPLE_ROW}.querySelector('.face')")
+    driver.execute_script(
+        f"window.listRow = {HOVER}.querySelector('.hub-person'); window.stack = {PEOPLE_ROW}.querySelector('.people-stack')"
+    )
+    # The game's data isn't shown in either place
+    live.update_person(conn, where="demo", status="one", data={"wave": 4})
+    wait_for(driver, "window.activityhubHost.presence.people.find((p) => p.id === '3').data?.wave === 4")
+    assert driver.execute_script(f"return window.listRow === {HOVER}.querySelector('.hub-person')")
+    assert driver.execute_script(f"return window.stack === {PEOPLE_ROW}.querySelector('.people-stack')")
+    # A new status line is drawn in the list, and only changes the faces' tooltips
+    live.update_person(conn, where="demo", status="two", data={"wave": 4})
+    wait_for(driver, f"{HOVER}.innerText.includes('two')")
+    assert driver.execute_script(f"return window.listRow !== {HOVER}.querySelector('.hub-person')")
+    assert driver.execute_script(f"return window.stack === {PEOPLE_ROW}.querySelector('.people-stack')")
+    assert driver.execute_script(f"return {PEOPLE_ROW}.querySelector('.face').title") == "Manager: two"
+
+
+def test_the_header_row_waits_out_a_press(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo")
+    wait_for(driver, "document.querySelectorAll('#people-row .face').length === 1")
+    stack = driver.find_element(By.CSS_SELECTOR, "#people-row .people-stack")
+    ActionChains(driver).move_to_element(stack).click_and_hold().perform()
+    try:
+        # Someone else arrives, which redraws the row unless a press is under way in it
+        live.add_person(ADMIN_ID, away=True)
+        wait_for(driver, "window.activityhubHost.presence.people.length === 3")
+        assert driver.execute_script("return document.querySelectorAll('#people-row .face').length") == 1
+    finally:
+        ActionChains(driver).release().perform()
+    wait_for(driver, "!document.querySelector('.hub-people-panel').hidden")
+    wait_for(driver, "document.querySelectorAll('#people-row .face').length === 2")
+
+
+def test_the_orb_screen_join_survives_a_list_arriving_mid_press(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    conn = live.add_person(MANAGER_ID, where="demo", status="one")
+    driver.execute_script("document.querySelector('.pill[data-key=\"demo\"]').focus()")
+    wait_for(driver, "document.querySelector('#orb-screen .screen-face:not(.leaving) .screen-people .hub-join')")
+    wait_for(driver, SETTLED)
+    join = driver.find_element(By.CSS_SELECTOR, "#orb-screen .screen-face:not(.leaving) .hub-join")
+    ActionChains(driver).move_to_element(join).click_and_hold().perform()
+    try:
+        live.update_person(conn, where="demo", status="two")
+        person_status(driver, MANAGER_ID, "two")
+    finally:
+        ActionChains(driver).release().perform()
+    wait_for(driver, "document.body.classList.contains('playing')")
+    assert driver.execute_script("return window.activityhubHost.follow.name") == "Manager"
+
+
+def test_a_pod_bubble_only_selects_the_pod_when_the_screen_lists_the_players(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo")
+    pod = '.pill[data-key="demo"] .pod .bubble'
+    wait_for(driver, f"document.querySelector('{pod}')?.textContent === '1'")
+    wait_for(driver, SETTLED)
+    driver.find_element(By.CSS_SELECTOR, pod).click()
+    wait_for(driver, f"{SELECTED} === 'demo'")
+    assert driver.execute_script(f"return {HOVER}.hidden")
+    assert not driver.execute_script("return document.body.classList.contains('opening')")
+
+
+def test_on_an_upright_phone_the_orb_bubble_opens_the_list_beside_the_pod(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        live.add_person(MANAGER_ID, where="demo", status="Clicking")
+        pod = '.pill[data-key="demo"] .pod .bubble'
+        wait_for(driver, f"document.querySelector('{pod}')?.textContent === '1'")
+        wait_for(driver, SETTLED)
+        box = driver.execute_script(f"return document.querySelector('{pod}').getBoundingClientRect().toJSON()")
+        tap(driver, box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+        wait_for(driver, f"!{HOVER}.hidden")
+        assert "Manager" in driver.execute_script(f"return {HOVER}.innerText")
+        # The panel on this screen is a fixed size with no room for players, so the list opens in its place
+        screen = "document.querySelector('#orb-screen .screen-face:not(.leaving) .screen-people')"
+        assert driver.execute_script(f"return {screen}.dataset.key") == "demo"
+        assert driver.execute_script(f"return !{screen}.getClientRects().length")
+        assert driver.execute_script("return document.documentElement.scrollWidth <= window.innerWidth")
+        assert not driver.execute_script("return document.body.classList.contains('opening')")
+    finally:
+        plain_device(driver)
+
+
+# Puts a crowd in the page's people list the way the menu link would: this player, then `count` others in `game`
+CROWD = """
+const [count, game, elsewhere] = arguments;
+const p = window.activityhubHost.presence;
+const people = [{ id: p.me, name: 'Me', avatar: null, game: null, status: '', data: null, busy: false, away: false }];
+for (let i = 0; i < count; i++) {
+  people.push({
+    id: String(100 + i), name: 'Player ' + i, avatar: null, game, status: 'Playing', data: null, busy: false, away: false,
+  });
+}
+// The bot's own lists are ignored from here on, or the next one would take the crowd away again
+p.receive = () => {};
+p.people = people;
+p.elsewhere = elsewhere;
+p.notify([]);
+"""
+BOX_RECT = "const r = document.getElementById('hover-people').getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]"
+
+
+class NoIconCog(DemoCog):
+    """A game with no picture of its own"""
+
+    async def activityhub_game(self) -> dict:
+        desc = await super().activityhub_game()
+        del desc["icon"]
+        return desc
+
+
+def crowd(driver, count, game="demo", elsewhere=None):
+    wait_for(driver, "window.activityhubHost.presence.people.length > 0")
+    driver.execute_script(CROWD, count, game, elsewhere or {})
+
+
+def viewport(driver, width, height):
+    driver.execute_cdp_cmd(
+        "Emulation.setDeviceMetricsOverride",
+        {"width": width, "height": height, "deviceScaleFactor": 1, "mobile": False},
+    )
+
+
+def inside_the_screen(driver, selector):
+    return driver.execute_script(
+        f"const r = document.querySelector('{selector}').getBoundingClientRect();"
+        "return r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth"
+    )
+
+
+@pytest.mark.parametrize(("width", "height", "layout"), [(1280, 568, "grid"), (390, 844, "list")])
+def test_a_crowded_hover_list_stays_on_the_screen_and_scrolls(driver, live, width, height, layout):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": layout}
+    viewport(driver, width, height)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        crowd(driver, 20)
+        wait_for(driver, BUBBLE)
+        driver.execute_script(f"{BUBBLE}.click()")
+        wait_for(driver, f"!{HOVER}.hidden")
+        assert inside_the_screen(driver, "#hover-people")
+        # There are more rows than fit, and the last Join is reached by scrolling to it
+        assert driver.execute_script(f"return {HOVER}.scrollHeight > {HOVER}.clientHeight")
+        driver.execute_script(f"{HOVER}.scrollTop = {HOVER}.scrollHeight")
+        last = driver.find_elements(By.CSS_SELECTOR, "#hover-people .hub-join")[-1]
+        assert len(driver.find_elements(By.CSS_SELECTOR, "#hover-people .hub-join")) == 20
+        box = driver.execute_script(BOX_RECT)
+        assert box[1] <= last.rect["y"] and last.rect["y"] + last.rect["height"] <= box[3] + 1
+        last.click()
+        wait_for(driver, "document.body.classList.contains('playing')")
+    finally:
+        plain_device(driver)
+
+
+def test_a_full_orb_screen_leaves_its_list_out_when_the_select_prompt_would_not_fit(driver, live):
+    viewport(driver, 1082, 568)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        driver.execute_script("document.querySelector('.pill[data-key=\"demo\"]').focus()")
+        crowd(driver, 7, elsewhere={"demo": 3})
+        pod = '.pill[data-key="demo"] .pod .bubble'
+        wait_for(driver, f"document.querySelector('{pod}')?.textContent === '7'")
+        wait_for(driver, "document.getElementById('orb-screen').classList.contains('no-room')")
+        assert inside_the_screen(driver, "#orb-screen .screen-select")
+        assert driver.execute_script(
+            "return !document.querySelector('.screen-face .screen-people').getClientRects().length"
+        )
+        # The bubble opens the hover list in its place, and the list shows everyone
+        wait_for(driver, SETTLED)
+        driver.find_element(By.CSS_SELECTOR, pod).click()
+        wait_for(driver, f"!{HOVER}.hidden")
+        assert driver.execute_script(f"return {HOVER}.querySelectorAll('.hub-person').length") == 7
+        # With room for the list again it goes back in, and the Select prompt is still on the screen
+        viewport(driver, 1280, 1000)
+        wait_for(driver, "!document.getElementById('orb-screen').classList.contains('no-room')")
+        assert driver.execute_script(
+            "return document.querySelector('.screen-face .screen-people').getClientRects().length > 0"
+        )
+        assert inside_the_screen(driver, "#orb-screen .screen-select")
+    finally:
+        plain_device(driver)
+
+
+# What the header row looks like next to the server's name: whether it is clipped, what the name kept, and what the
+# faces and the count add up to
+HEADER_FIT = """
+const stack = document.querySelector('#people-row .people-stack');
+const more = stack.querySelector('.more');
+const name = document.getElementById('who-name');
+const style = getComputedStyle(name);
+const range = document.createRange();
+range.selectNodeContents(name);
+const text = range.getBoundingClientRect();
+const box = stack.getBoundingClientRect();
+return {
+  faces: stack.querySelectorAll('.face').length,
+  count: more ? Number(more.textContent.replace('+', '')) : 0,
+  clipped: stack.scrollWidth > stack.clientWidth + 1,
+  moreInside: !more || more.getBoundingClientRect().right <= box.right + 1,
+  rowFits: box.right <= document.getElementById('people-row').getBoundingClientRect().right + 1 && box.right <= innerWidth,
+  textWidth: text.width,
+  shown: name.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+  em: parseFloat(style.fontSize),
+  gap: box.left - text.right,
+};
+"""
+
+
+@pytest.mark.parametrize("theme", ["orb", "standard"])
+@pytest.mark.parametrize("name", ["Vert", "Vertyco ARK Gaming Community"])
+def test_the_header_row_fits_beside_the_server_name(driver, live, theme, name):
+    live.hub.config.globals["look"] = {"theme": theme}
+    live.hub.bot.guilds[GUILD_ID].name = name
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        for others in (1, 2, 3, 12):
+            crowd(driver, others)
+            wait_for(driver, "document.querySelector('#people-row .people-stack')")
+            fit = driver.execute_script(HEADER_FIT)
+            assert not fit["clipped"] and fit["moreInside"] and fit["rowFits"], (others, fit)
+            # The name keeps six em of its text, or all of it when that is shorter
+            assert fit["shown"] >= min(fit["textWidth"], 6 * fit["em"]) - 1, (others, fit)
+            # Whatever the faces leave out is counted
+            assert fit["faces"] + fit["count"] == others, (others, fit)
+            if name == "Vert":
+                assert fit["gap"] <= 17, (others, fit)
+    finally:
+        plain_device(driver)
+
+
+@pytest.mark.parametrize("theme", ["orb", "standard"])
+def test_the_header_row_is_never_clipped_when_there_is_no_room_for_a_face(driver, live, theme):
+    live.hub.config.globals["look"] = {"theme": theme}
+    live.hub.bot.guilds[GUILD_ID].name = "Vertyco ARK Gaming Community"
+    touch_device(driver, 320, 640)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        crowd(driver, 12)
+        wait_for(driver, "document.querySelector('#people-row .people-stack')")
+        fit = driver.execute_script(HEADER_FIT)
+        # The count alone, whole, and the name gives way to it
+        assert not fit["clipped"] and fit["moreInside"] and fit["rowFits"], fit
+        assert fit["faces"] == 0 and fit["count"] == 12, fit
+        assert driver.execute_script(
+            "return !!document.querySelector('#people-row .people-stack.count-only .hub-icon')"
+        )
+    finally:
+        plain_device(driver)
+
+
+def test_alone_on_a_phone_the_invite_is_its_icon(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        crowd(driver, 0)
+        wait_for(driver, "document.querySelector('#people-row .invite-pill.compact')")
+        pill = "document.querySelector('#people-row .invite-pill')"
+        assert driver.execute_script(
+            f"return [{pill}.textContent, {pill}.title, {pill}.getAttribute('aria-label')]"
+        ) == ["", "Invite friends", "Invite friends"]
+    finally:
+        plain_device(driver)
+
+
+def test_the_header_row_is_fitted_again_when_the_window_changes(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    live.hub.bot.guilds[GUILD_ID].name = "Vertyco ARK Gaming Community"
+    open_menu(driver, live, DISCORD_QUERY)
+    crowd(driver, 12)
+    wait_for(driver, "document.querySelectorAll('#people-row .face').length === 5")
+    assert driver.execute_script("return document.querySelector('#people-row .more').textContent") == "+7"
+    touch_device(driver, 360, 740)
+    try:
+        wait_for(driver, "document.querySelectorAll('#people-row .face').length < 5")
+        fit = driver.execute_script(HEADER_FIT)
+        assert not fit["clipped"] and fit["moreInside"] and fit["rowFits"] and fit["faces"] + fit["count"] == 12, fit
+    finally:
+        plain_device(driver)
+
+
+def test_settings_previews_keep_the_bubbles(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    live.user_id = OWNER_ID
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo")
+    wait_for(driver, f"{BUBBLE}?.textContent === '1'")
+    open_settings(driver)
+    assert driver.execute_script(f"return {BUBBLE} !== null")
+    # Drawing the cards again for a preview isn't a new arrival, so nothing pops
+    Select(driver.find_element(By.ID, "field-layout")).select_by_value("list")
+    wait_for(driver, "document.getElementById('games').classList.contains('list')")
+    assert driver.execute_script(f"return {BUBBLE}?.textContent") == "1"
+    assert not driver.execute_script(f"return {BUBBLE}.classList.contains('pop')")
+
+
+def test_coming_back_from_a_game_does_not_pop_the_bubbles(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo")
+    wait_for(driver, f"{BUBBLE}?.classList.contains('pop')")
+    driver.execute_script("window.activityhubHost.openGame('second')")
+    wait_for(driver, "document.body.classList.contains('playing')")
+    driver.execute_script("window.activityhubHost.closeGame()")
+    wait_for(driver, f"{BUBBLE}?.textContent === '1'")
+    assert not driver.execute_script(f"return {BUBBLE}.classList.contains('pop')")
+
+
+@pytest.mark.parametrize("layout", ["list", "compact"])
+def test_a_long_title_runs_clear_of_the_bubble(driver, live, layout):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": layout}
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        live.add_person(MANAGER_ID, where="demo")
+        wait_for(driver, BUBBLE)
+        name = f"document.querySelector('{DEMO_CARD} .name')"
+        driver.execute_script(f"{name}.textContent = 'Super Long Game Name Deluxe Edition Remastered'")
+        clear = driver.execute_script(
+            f"""const range = document.createRange(); range.selectNodeContents({name});
+            const bubble = {BUBBLE}.getBoundingClientRect();
+            return [...range.getClientRects()].every((r) => r.right <= bubble.left || r.bottom <= bubble.top);"""
+        )
+        assert clear
+    finally:
+        plain_device(driver)
+
+
+def test_keyboard_focus_opens_the_list_and_tabbing_away_closes_it(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo", status="Clicking")
+    wait_for(driver, BUBBLE)
+    driver.execute_script("document.querySelector('.card[data-key=\"second\"]').focus()")
+    ActionChains(driver).send_keys(Keys.TAB).perform()
+    assert driver.execute_script("return document.activeElement.dataset.key") == "demo"
+    wait_for(driver, f"!{HOVER}.hidden")
+    # A group of its own with a name, not a tooltip, since it holds buttons
+    assert driver.execute_script(f"return [{HOVER}.getAttribute('role'), {HOVER}.getAttribute('aria-label')]") == [
+        "group",
+        "Playing Demo",
+    ]
+    # The list comes right after the last card, so the next Tab reaches its Join buttons and keeps it open
+    ActionChains(driver).send_keys(Keys.TAB).perform()
+    assert driver.execute_script("return document.activeElement.classList.contains('hub-join')")
+    time.sleep(0.5)
+    assert driver.execute_script(f"return !{HOVER}.hidden")
+    # And Tab out of it puts it away
+    ActionChains(driver).send_keys(Keys.TAB).perform()
+    wait_for(driver, f"{HOVER}.hidden")
+
+
+def test_focus_going_into_the_list_cancels_a_waiting_swap(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo", status="Clicking")
+    wait_for(driver, BUBBLE)
+    hover_demo(driver)
+    # Focus is on the card (a click on it would open the game, so only focus it), and its card has a timer waiting
+    driver.execute_script("document.querySelector('.card[data-key=\"second\"]').focus()")
+    driver.execute_script(f"{HOVER}.querySelector('.hub-join').focus()")
+    time.sleep(0.6)
+    assert driver.execute_script(f"return !{HOVER}.hidden && document.activeElement.classList.contains('hub-join')")
+
+
+def test_leaving_the_card_closes_the_list(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo")
+    wait_for(driver, BUBBLE)
+    hover_demo(driver)
+    ActionChains(driver).move_by_offset(0, 400).perform()
+    wait_for(driver, f"{HOVER}.hidden")
+
+
+def test_escape_and_a_tap_outside_close_the_list(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo")
+    wait_for(driver, BUBBLE)
+    driver.execute_script(f"{BUBBLE}.click()")
+    wait_for(driver, f"!{HOVER}.hidden")
+    ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+    wait_for(driver, f"{HOVER}.hidden")
+    driver.execute_script(f"{BUBBLE}.click()")
+    wait_for(driver, f"!{HOVER}.hidden")
+    # A press inside the list leaves it open, and one anywhere else closes it
+    driver.execute_script(f"{HOVER}.dispatchEvent(new PointerEvent('pointerdown', {{ bubbles: true }}))")
+    assert driver.execute_script(f"return !{HOVER}.hidden")
+    driver.execute_script("document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))")
+    wait_for(driver, f"{HOVER}.hidden")
+
+
+@pytest.mark.parametrize("layout", ["grid", "list"])
+def test_a_touch_on_a_bubble_opens_the_list_and_not_the_game(driver, live, layout):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": layout}
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        live.add_person(MANAGER_ID, where="demo")
+        wait_for(driver, BUBBLE)
+        box = driver.execute_script(f"return {BUBBLE}.getBoundingClientRect().toJSON()")
+        tap(driver, box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+        wait_for(driver, f"!{HOVER}.hidden")
+        time.sleep(0.4)
+        assert driver.execute_script(f"return !{HOVER}.hidden")
+        assert not driver.execute_script("return document.body.classList.contains('opening')")
+        # A tap anywhere else puts it away
+        tap(driver, 200, 820)
+        wait_for(driver, f"{HOVER}.hidden")
+    finally:
+        plain_device(driver)
+
+
+def test_a_header_badge_falls_back_to_the_games_first_letter(driver, live, tmp_path):
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    register(live.hub, NoIconCog(write_demo_web(tmp_path / "quiet"), key="quiet", name="Quiet Game", cog_name="Quiet"))
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="quiet")
+    wait_for(driver, "document.querySelector('#people-row .face .game-badge')")
+    badge = "document.querySelector('#people-row .face .game-badge')"
+    assert driver.execute_script(f"return [{badge}.tagName, {badge}.textContent]") == ["SPAN", "Q"]
+
+
+def test_a_long_list_scrolls_in_the_orb_by_wheel_and_by_touch(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        crowd(driver, 20)
+        pod = '.pill[data-key="demo"] .pod .bubble'
+        wait_for(driver, f"document.querySelector('{pod}')")
+        wait_for(driver, SETTLED)
+        driver.execute_script(f"document.querySelector('{pod}').click()")
+        wait_for(driver, f"!{HOVER}.hidden")
+        box = driver.execute_script(BOX_RECT)
+        x, y = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+        # A finger drag scrolls the list and doesn't move the Orb's selection
+        slide(driver, (x, y + 100), (x, y - 100))
+        wait_for(driver, f"{HOVER}.scrollTop > 0")
+        assert driver.execute_script(f"return {SELECTED}") == "demo"
+        # So does the wheel (here back up), which would otherwise turn the Orb
+        before = driver.execute_script(f"return {HOVER}.scrollTop")
+        driver.execute_cdp_cmd(
+            "Input.dispatchMouseEvent", {"type": "mouseWheel", "x": x, "y": y, "deltaX": 0, "deltaY": -120}
+        )
+        wait_for(driver, f"{HOVER}.scrollTop < {before}")
+        assert driver.execute_script(f"return {SELECTED}") == "demo"
+    finally:
+        plain_device(driver)
+
+
+def tab_to_a_hover_join(driver):
+    """Focus on the last card, then Tab into the list that follows it"""
+    driver.execute_script("document.querySelector('.card[data-key=\"second\"]').focus()")
+    ActionChains(driver).send_keys(Keys.TAB).perform()
+    wait_for(driver, f"!{HOVER}.hidden")
+    ActionChains(driver).send_keys(Keys.TAB).perform()
+    assert driver.execute_script("return document.activeElement.classList.contains('hub-join')")
+
+
+def test_focus_stays_on_a_hover_join_when_the_list_is_drawn_again(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo", status="Clicking")
+    wait_for(driver, BUBBLE)
+    tab_to_a_hover_join(driver)
+    live.add_person(ADMIN_ID, where="demo")
+    wait_for(driver, f"{HOVER}.querySelectorAll('.hub-person').length === 2")
+    time.sleep(0.5)
+    assert driver.execute_script("return document.activeElement.dataset.join") == str(MANAGER_ID)
+    assert driver.execute_script(f"return !{HOVER}.hidden")
+
+
+def test_focus_goes_to_the_list_when_the_person_it_was_on_leaves(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    conn = live.add_person(MANAGER_ID, where="demo", status="Clicking")
+    live.add_person(ADMIN_ID, where="demo")
+    wait_for(driver, f"{BUBBLE}?.textContent === '2'")
+    tab_to_a_hover_join(driver)
+    assert driver.execute_script("return document.activeElement.dataset.join") == str(MANAGER_ID)
+    live.update_person(conn, where=None)
+    wait_for(driver, f"{HOVER}.querySelectorAll('.hub-person').length === 1")
+    time.sleep(0.5)
+    assert driver.execute_script("return document.activeElement.id") == "hover-people"
+    assert driver.execute_script(f"return !{HOVER}.hidden")

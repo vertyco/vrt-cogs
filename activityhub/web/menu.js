@@ -3,6 +3,7 @@ import { request } from "./sdk.js";
 import { FrameRate } from "./fps.js";
 import { MenuSounds } from "./sounds.js";
 import { applyGlow, buildArm, buildOrbParts, drawWeb, gearIcon, introPills, turnArm, turnPanels } from "./orb.js";
+import { PressHold, avatar, elsewhereLine, icon, personRow, statusText } from "./people.js";
 
 const TAB_NAMES = { look: "My look", order: "My order", server: "This server", payouts: "Payouts", defaults: "Defaults" };
 // Each look tab edits one saved level and falls back to the levels before it
@@ -42,6 +43,28 @@ const PAYOUT_FIELDS = [
   ["plays", () => "Cash-ins a day", "1"],
 ];
 const ACCENTS = ["#5865F2", "#57F287", "#FEE75C", "#EB459E", "#ED4245", "#00A8FC", "#F0B232", "#99AAB5"];
+// How long the mouse rests on a card (or the keyboard on it) before its players show
+const HOVER_MS = 250;
+const HOVER_LEAVE_MS = 150;
+const ROW_MAX = 5;
+const SCREEN_MAX = 4;
+// The gap kept between a list and the edge of the screen
+const EDGE = 8;
+// The header row's parts as menu.css draws them, to fit the row to the room: the button's padding and border, the
+// first face, how much of each face after it shows, the "+N" after the last (with room for three characters), and
+// the whole button when it is only a count. A little room is left over so a rounding never squeezes the name
+const STACK_PAD = 16;
+const FACE_FIRST = 26;
+const FACE_NEXT = 20;
+const FACE_MORE = 34;
+const COUNT_ONLY = 64;
+const FIT_SLACK = 4;
+// The server's name keeps this many em of its text, or all of it when it is shorter
+const NAME_KEEP_EM = 6;
+// Under this width the invite pill is only its icon
+const COMPACT_WIDTH = 480;
+// The lists with Join buttons or a button to press: a card's players, the header's people, the Orb screen's players
+const PEOPLE_LISTS = "#hover-people, #people-row, .screen-people";
 
 const $ = (id) => document.getElementById(id);
 const clamp = (value, low, high) => Math.min(Math.max(value, low), high);
@@ -65,6 +88,15 @@ const page = {
   tones: null,
   webDrawn: "",
   dragging: null,
+  // The card whose players the hover list shows, and the timer that opens or closes it
+  hoverTimer: null,
+  hoverKey: null,
+  // Holds the people lists as they are while a press is under way in one of them
+  hold: null,
+  // The count each game's bubble last showed, so drawing the cards again isn't taken for a new arrival
+  counts: new Map(),
+  // Watches the Orb screen's size, which the people list changes
+  screenWatch: null,
 };
 const sounds = new MenuSounds();
 const frameRate = new FrameRate();
@@ -90,6 +122,7 @@ async function start() {
   mark("menu script running");
   page.host = startHost({
     onGameClosed: gameClosed,
+    onJoin: (key, follow) => openGame(key, follow),
     onSessionExpired: sessionExpired,
     onStat: (text) => frameRate.setStat(text),
     onLatency: (ms) => frameRate.setLatency(ms),
@@ -99,6 +132,9 @@ async function start() {
   bindPanel();
   buildOrbParts();
   bindOrb();
+  page.hold = new PressHold((node) => Boolean(node.closest?.(PEOPLE_LISTS)), redrawPeople);
+  bindHover();
+  page.host.presence.listen(peopleChanged);
   // The menu shows as soon as the bot has logged the player in; Discord accepting the login finishes after
   page.host.ready.catch((e) => {
     if (page.state) {
@@ -190,11 +226,12 @@ function hideNotice() {
   layoutOrb();
 }
 
-function openGame(key) {
+function openGame(key, follow = null) {
   closePanel();
+  hideHover();
   page.selected = key;
   sounds.setInMenu(false);
-  page.host.openGame(key);
+  page.host.openGame(key, follow);
 }
 
 function gameClosed() {
@@ -237,10 +274,12 @@ function render() {
   if (!page.state) {
     return;
   }
+  page.host.setGames(page.state.games);
   applyLook(page.state.look);
   renderHeader();
   renderGames(page.state.games);
   $("gear").hidden = page.state.tabs.length === 0;
+  peopleChanged();
 }
 
 function renderHeader() {
@@ -273,9 +312,11 @@ function renderHeader() {
 function renderGames(games) {
   if (orbTheme()) {
     renderOrb(games);
-    return;
+  } else {
+    $("games").replaceChildren(...(games.length ? games.map(gameCard) : [emptyState()]));
   }
-  $("games").replaceChildren(...(games.length ? games.map(gameCard) : [emptyState()]));
+  // Settings previews redraw the cards too, and the bubbles go back on them with the rest
+  updateBubbles();
 }
 
 function cardText(game) {
@@ -420,6 +461,11 @@ function orbScreen() {
   select.append(el("span", "select-button"), el("span", "", "Select"));
   select.addEventListener("click", () => selectedPill()?.click());
   screen.append(buildArm(), el("div", "screen-faces"), select);
+  // The panel grows and shrinks as faces and their lists change, and the room for it changes with the window
+  page.screenWatch?.disconnect();
+  // A frame later, since a fit that changes the panel's size would otherwise be seen as a loop in the observer
+  page.screenWatch = new ResizeObserver(() => requestAnimationFrame(fitScreenPeople));
+  page.screenWatch.observe(screen);
   return screen;
 }
 
@@ -519,6 +565,10 @@ function selectPill(pill, quiet) {
   }
   pill.classList.add("selected");
   page.selected = pill.dataset.key;
+  // A list opened from another pod's bubble belongs to that pod
+  if (page.hoverKey && page.hoverKey !== page.selected) {
+    hideHover();
+  }
   showOnScreen(page.state.games.find((game) => game.key === page.selected) || SETTINGS_ITEM, !quiet);
   placePills();
   if (!quiet) {
@@ -537,11 +587,13 @@ function showOnScreen(item, turn) {
   const old = faces.querySelector(".screen-face");
   if (!old || !turn) {
     faces.replaceChildren(face);
+    fitScreenPeople();
     return;
   }
   old.classList.add("leaving");
   old.setAttribute("aria-hidden", "true");
   faces.prepend(face);
+  fitScreenPeople();
   turnPanels(old, face, false);
   turnArm(document.querySelector("#orb-screen .screen-arm"), false);
 }
@@ -558,6 +610,13 @@ function screenFace(item) {
   text.append(el("h2", "screen-name", item.name));
   if (item.description) {
     text.append(el("p", "screen-desc", item.description));
+  }
+  if (item.key) {
+    const people = el("div", "screen-people");
+    people.dataset.key = item.key;
+    people.tabIndex = -1;
+    fillScreenPeople(people);
+    text.append(people);
   }
   face.append(picture, text);
   return face;
@@ -682,11 +741,12 @@ function layoutOrb() {
   if (orbTheme() && page.state && !page.host.frame) {
     placePills();
     drawOrbWeb();
+    fitScreenPeople();
   }
 }
 
 // On a touch screen, sliding a finger up or down along the ring, or left and right across the screen, moves one
-// pill per step. The pills follow the finger, so sliding up or left brings the next one in
+// pill per step. The selection follows the finger, so sliding down or right moves to the next one
 function bindSwipe() {
   let swipe = null;
   document.addEventListener("pointerdown", (event) => {
@@ -709,7 +769,7 @@ function bindSwipe() {
       swipe[swipe.axis] += steps * SWIPE_STEP;
       // A slide sounds like the arrow keys, unlike a tap on a pill, which opens it with the select sound
       page.touch = false;
-      moveSelection(-steps);
+      moveSelection(steps);
     }
   });
   // Some phones still scroll or bounce the page under a finger, which would take the slide away from the ring,
@@ -737,6 +797,430 @@ function emptyState() {
     box.append(el("p", "", help));
   }
   return box;
+}
+
+// ---------- Who's here ----------
+
+function menuPeople() {
+  return page.host.presence.view(null);
+}
+
+// The others in this window playing a game
+function playing(key) {
+  return menuPeople().filter((person) => !person.you && person.game === key);
+}
+
+function joinPerson(person) {
+  page.host.join(person);
+}
+
+// What a person's row shows
+function rowSignature(person) {
+  return [person.id, person.name, person.avatar, statusText(person), Boolean(person.away)];
+}
+
+// Fills a box with the parts `build` makes, unless `shown` says it already has them. Lists come up to 4 times a
+// second, mostly with new game data nobody sees, and drawing a list again reloads its pictures
+function drawPeople(box, shown, build) {
+  if (box.dataset.shown === shown) {
+    return false;
+  }
+  // Keyboard focus on a button in the box goes back to that button, or to the box itself once that person has gone
+  const focused = box !== document.activeElement && box.contains(document.activeElement) ? document.activeElement : null;
+  box.dataset.shown = shown;
+  box.replaceChildren(...build());
+  if (focused) {
+    const same = focused.dataset.join === undefined ? `.${focused.classList[0]}` : `[data-join="${CSS.escape(focused.dataset.join)}"]`;
+    (box.querySelector(same) || box).focus();
+  }
+  return true;
+}
+
+function peopleChanged() {
+  if (!page.state) {
+    return;
+  }
+  updateBubbles();
+  page.hold.request();
+}
+
+// The lists drawn again from the newest people. Buttons in them wait for a press to end first (page.hold)
+function redrawPeople() {
+  renderPeopleRow();
+  const boxes = document.querySelectorAll("#orb-screen .screen-face:not(.leaving) .screen-people");
+  if ([...boxes].map(fillScreenPeople).includes(true)) {
+    fitScreenPeople();
+  }
+  if (page.hoverKey) {
+    showHover(page.hoverKey);
+  }
+}
+
+// The count on each card's corner (an Orb pod's, in that theme), changed in place so nothing else redraws
+function updateBubbles() {
+  for (const card of document.querySelectorAll("#games .card[data-key]")) {
+    const key = card.dataset.key;
+    const count = playing(key).length;
+    const holder = card.querySelector(".pod") || card;
+    let bubble = holder.querySelector(".bubble");
+    // A title runs clear of the bubble in the layouts where it reaches that far
+    card.classList.toggle("has-bubble", count > 0);
+    if (!count) {
+      bubble?.remove();
+      page.counts.delete(key);
+      continue;
+    }
+    if (!bubble) {
+      bubble = el("span", "bubble");
+      bubble.addEventListener("click", (event) => bubbleTapped(event, key));
+      holder.append(bubble);
+    }
+    if ((page.counts.get(key) || 0) < count) {
+      // Restarting the pop needs a reflow between taking the class off and putting it back
+      bubble.classList.remove("pop");
+      void bubble.offsetWidth;
+      bubble.classList.add("pop");
+    }
+    page.counts.set(key, count);
+    bubble.textContent = count > 9 ? "9+" : String(count);
+    const game = page.state.games.find((item) => item.key === key);
+    bubble.setAttribute("aria-label", `${count} playing ${game ? game.name : key}`);
+  }
+}
+
+// Whether the Orb screen is showing this game's players right now. It has no room for them on a small screen
+function screenListsPlayers(key) {
+  const box = document.querySelector(`#orb-screen .screen-face:not(.leaving) .screen-people[data-key="${CSS.escape(key)}"]`);
+  return Boolean(box && box.getClientRects().length);
+}
+
+// The bubble shows the list instead of opening the game. Where the Orb screen lists the selected game's players, a
+// tap there only selects the pod
+function bubbleTapped(event, key) {
+  event.preventDefault();
+  event.stopPropagation();
+  const card = event.currentTarget.closest(".card");
+  if (orbTheme()) {
+    card.focus({ preventScroll: true });
+    if (screenListsPlayers(key)) {
+      return;
+    }
+  }
+  if (page.hoverKey === key) {
+    hideHover();
+  } else {
+    showHover(key, card);
+  }
+}
+
+function bindHover() {
+  const games = $("games");
+  const box = $("hover-people");
+  games.addEventListener("pointerover", (event) => {
+    const card = event.target.closest(".card[data-key]");
+    if (event.pointerType === "mouse" && card && !orbTheme()) {
+      hoverSoon(card);
+    }
+  });
+  games.addEventListener("pointerout", (event) => {
+    const card = event.target.closest(".card[data-key]");
+    if (event.pointerType === "mouse" && card && !card.contains(event.relatedTarget) && !box.contains(event.relatedTarget)) {
+      hoverLeft();
+    }
+  });
+  games.addEventListener("focusin", (event) => {
+    const card = event.target.closest(".card[data-key]");
+    if (card && !orbTheme()) {
+      hoverSoon(card);
+    }
+  });
+  games.addEventListener("focusout", (event) => {
+    if (!box.contains(event.relatedTarget)) {
+      hoverLeft();
+    }
+  });
+  // Only a mouse leaves a list by moving away: a finger lifted from it, after a scroll, has not gone anywhere
+  box.addEventListener("pointerenter", (event) => {
+    if (event.pointerType === "mouse") {
+      clearTimeout(page.hoverTimer);
+    }
+  });
+  box.addEventListener("pointerleave", (event) => {
+    if (event.pointerType === "mouse") {
+      hoverLeft();
+    }
+  });
+  // The list follows the last card in the page, so Tab goes from that card into its Join buttons. A timer from the
+  // card that focus just left would otherwise swap or close the list under the keyboard, and the list closes when
+  // focus leaves it for anything but a card
+  box.addEventListener("focusin", () => clearTimeout(page.hoverTimer));
+  box.addEventListener("focusout", (event) => {
+    if (!box.contains(event.relatedTarget)) {
+      hoverLeft();
+    }
+  });
+  // A long list scrolls, so the Orb's wheel and swipe, which move its selection, leave presses and turns in it alone
+  box.addEventListener("pointerdown", (event) => event.stopPropagation());
+  box.addEventListener("wheel", (event) => event.stopPropagation(), { passive: true });
+  // The header row is fitted to the width of the name, the name's font arrives after the first draw, and the window
+  // changes size
+  window.addEventListener("resize", () => page.hold.request());
+  document.fonts?.addEventListener("loadingdone", () => page.hold.request());
+  document.addEventListener("pointerdown", (event) => {
+    if (page.hoverKey && !box.contains(event.target) && !event.target.closest(".bubble")) {
+      hideHover();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      hideHover();
+    }
+  });
+}
+
+function hoverSoon(card) {
+  clearTimeout(page.hoverTimer);
+  if (page.hoverKey !== card.dataset.key) {
+    page.hoverTimer = setTimeout(() => showHover(card.dataset.key, card), HOVER_MS);
+  }
+}
+
+// A moment to move onto the list, so its Join buttons can be reached
+function hoverLeft() {
+  clearTimeout(page.hoverTimer);
+  page.hoverTimer = setTimeout(hideHover, HOVER_LEAVE_MS);
+}
+
+function peopleList(people) {
+  const list = el("ul", "hub-people-list");
+  list.append(...people.map((person) => personRow(document, person, joinPerson)));
+  return list;
+}
+
+function hoverParts(people, elsewhere) {
+  const parts = [];
+  if (people.length) {
+    parts.push(peopleList(people));
+  }
+  if (elsewhere) {
+    parts.push(el("p", "hover-elsewhere", elsewhereLine(elsewhere)));
+  }
+  return parts;
+}
+
+function showHover(key, card = document.querySelector(`#games .card[data-key="${CSS.escape(key)}"]`)) {
+  const people = playing(key);
+  const elsewhere = page.host.presence.elsewhere[key] || 0;
+  if (!card || (!people.length && !elsewhere)) {
+    hideHover();
+    return;
+  }
+  const box = $("hover-people");
+  drawPeople(box, JSON.stringify([key, people.map(rowSignature), elsewhere]), () => hoverParts(people, elsewhere));
+  box.setAttribute("aria-label", `Playing ${page.host.gameName(key)}`);
+  box.hidden = false;
+  page.hoverKey = key;
+  placeHover(box, card);
+}
+
+// Under the card, or above it when there is no room below. The list is never taller than the screen: with more
+// players than fit it scrolls, so the last Join stays reachable
+function placeHover(box, card) {
+  const safe = getComputedStyle(page.host.safeArea);
+  const low = EDGE + parseFloat(safe.paddingTop);
+  const high = window.innerHeight - EDGE - parseFloat(safe.paddingBottom);
+  box.style.maxHeight = `${Math.max(0, high - low)}px`;
+  const height = box.offsetHeight;
+  const at = card.getBoundingClientRect();
+  const below = at.bottom + 6;
+  const top = below + height > high ? at.top - height - 6 : below;
+  box.style.left = `${clamp(at.left, EDGE, window.innerWidth - box.offsetWidth - EDGE)}px`;
+  box.style.top = `${clamp(top, low, Math.max(low, high - height))}px`;
+}
+
+function hideHover() {
+  clearTimeout(page.hoverTimer);
+  page.hoverKey = null;
+  $("hover-people").hidden = true;
+}
+
+// How wide the header row's button is with this many faces. With none it is only the count
+function stackWidth(faces, others) {
+  if (!faces) {
+    return COUNT_ONLY;
+  }
+  return STACK_PAD + FACE_FIRST + (faces - 1) * FACE_NEXT + (others > faces ? FACE_MORE : 0);
+}
+
+// How many faces the header row has room for, possibly none (then it is only the count). The row never shrinks and
+// the server's name does, with an ellipsis, so this is the one place that decides how they share the line: the name
+// keeps NAME_KEEP_EM of its text (all of it when it is shorter) and the row takes the rest
+function faceCount(others) {
+  const bar = document.querySelector(".bar");
+  const who = document.querySelector(".who");
+  const name = $("who-name");
+  const barStyle = getComputedStyle(bar);
+  const whoStyle = getComputedStyle(who);
+  const inside = bar.clientWidth - parseFloat(barStyle.paddingLeft) - parseFloat(barStyle.paddingRight);
+  // A menu that isn't showing has no width to fit to
+  if (inside <= 0) {
+    return Math.min(others, ROW_MAX);
+  }
+  // The gear takes no room when it is hidden, and the Orb has none at all (Settings is a pod there)
+  const gear = $("gear");
+  const beside = gear.offsetWidth ? gear.offsetWidth + parseFloat(barStyle.columnGap) : 0;
+  const share = whoStyle.maxWidth.endsWith("%") ? (inside * parseFloat(whoStyle.maxWidth)) / 100 : Infinity;
+  const gap = parseFloat(whoStyle.columnGap);
+  // What the name and the row share: the badge and the gap after it come first, then the gap and margin before the row
+  const room = Math.min(inside - beside, share) - who.querySelector(".badge").offsetWidth - 2 * gap;
+  // The Orb's name has padding for its glow and the margins to cancel it, so its text is what it takes of the line
+  const nameStyle = getComputedStyle(name);
+  const margins = parseFloat(nameStyle.marginLeft) + parseFloat(nameStyle.marginRight);
+  const keep = Math.min(name.scrollWidth + margins, NAME_KEEP_EM * parseFloat(nameStyle.fontSize));
+  const rowRoom = room - keep - parseFloat(getComputedStyle($("people-row")).marginLeft) - FIT_SLACK;
+  for (let faces = Math.min(others, ROW_MAX); faces > 0; faces -= 1) {
+    if (stackWidth(faces, others) <= rowRoom) {
+      return faces;
+    }
+  }
+  // Not even one face fits: the count, unless that is wider than one face would be
+  return stackWidth(1, others) <= COUNT_ONLY ? 1 : 0;
+}
+
+// Everyone else in the window next to the server's name, or an invite when nobody else is here. Without the menu
+// link there is no list at all, and the row goes away with it
+function renderPeopleRow() {
+  const row = $("people-row");
+  const people = menuPeople();
+  if (!page.host.inDiscord || !page.host.login || !people.length) {
+    row.hidden = true;
+    return;
+  }
+  const others = people.filter((person) => !person.you);
+  const faces = others.slice(0, others.length ? faceCount(others.length) : 0);
+  const compact = window.innerWidth < COMPACT_WIDTH;
+  // The status lines only show in the faces' tooltips, so they are set in place and don't count as a new row
+  const shown = JSON.stringify([
+    others.length,
+    compact,
+    faces.map((person) => [
+      person.id,
+      person.name,
+      person.avatar,
+      Boolean(person.away),
+      person.game,
+      page.host.gameName(person.game),
+      page.host.gameIcon(person.game),
+    ]),
+  ]);
+  drawPeople(row, shown, () => [others.length ? peopleStack(others, faces) : invitePill(compact)]);
+  row.querySelectorAll(".face").forEach((face, i) => {
+    face.title = `${faces[i].name}: ${statusText(faces[i])}`;
+  });
+  row.hidden = false;
+}
+
+// A phone's header has no room for the words, so the pill is only its icon
+function invitePill(compact) {
+  const invite = el("button", "invite-pill");
+  invite.type = "button";
+  if (compact) {
+    invite.classList.add("compact");
+    invite.append(icon(document, "invite"));
+    invite.title = "Invite friends";
+    invite.setAttribute("aria-label", "Invite friends");
+  } else {
+    invite.textContent = "Invite friends";
+  }
+  invite.addEventListener("click", () => page.host.invite());
+  return invite;
+}
+
+function peopleStack(others, faces) {
+  const open = el("button", "people-stack");
+  open.type = "button";
+  open.setAttribute("aria-label", `Who's here: ${others.length} ${others.length === 1 ? "other" : "others"}`);
+  if (!faces.length) {
+    // No room for a face: the people icon and how many
+    open.classList.add("count-only");
+    open.append(icon(document, "people"), el("span", "more", String(others.length)));
+  } else {
+    open.append(...faces.map(headerFace));
+    if (others.length > faces.length) {
+      open.append(el("span", "more", `+${others.length - faces.length}`));
+    }
+  }
+  open.addEventListener("click", () => page.host.people.open());
+  return open;
+}
+
+// The game's first letter, for a game without a picture or whose picture won't load, as on its card
+function letterBadge(game) {
+  return el("span", "game-badge letter", initial(page.host.gameName(game)));
+}
+
+// A face with a small badge for the game they're in
+function headerFace(person) {
+  const face = el("span", "face");
+  face.append(avatar(document, person));
+  if (!person.game) {
+    return face;
+  }
+  const picture = page.host.gameIcon(person.game);
+  if (picture) {
+    const badge = el("img", "game-badge");
+    badge.alt = "";
+    badge.addEventListener("error", () => badge.replaceWith(letterBadge(person.game)));
+    badge.src = picture;
+    face.append(badge);
+  } else {
+    face.append(letterBadge(person.game));
+  }
+  return face;
+}
+
+function screenParts(people, elsewhere) {
+  const parts = [];
+  if (people.length) {
+    parts.push(el("p", "screen-people-title", "Playing now"), peopleList(people.slice(0, SCREEN_MAX)));
+    if (people.length > SCREEN_MAX) {
+      parts.push(el("p", "screen-more", `and ${people.length - SCREEN_MAX} more`));
+    }
+  }
+  if (elsewhere) {
+    parts.push(el("p", "hover-elsewhere", elsewhereLine(elsewhere)));
+  }
+  return parts;
+}
+
+// The Orb screen's "Playing now" for the game it shows
+function fillScreenPeople(box) {
+  const people = playing(box.dataset.key);
+  const elsewhere = page.host.presence.elsewhere[box.dataset.key] || 0;
+  const shown = JSON.stringify([people.slice(0, SCREEN_MAX).map(rowSignature), people.length, elsewhere]);
+  const drew = drawPeople(box, shown, () => screenParts(people, elsewhere));
+  box.hidden = !people.length && !elsewhere;
+  return drew;
+}
+
+// The screen lists its players only while the panel, with the Select prompt hanging under it, still fits between
+// the header and the bottom edge. A window too short for that leaves the list out, and the pod's bubble opens the
+// hover list instead (screenListsPlayers). The list goes back in first, so the measure is of the panel as it
+// would be; both happen before the browser draws, so nothing flickers
+function fitScreenPeople() {
+  const screen = document.getElementById("orb-screen");
+  if (!screen || !orbTheme() || page.host.frame) {
+    return;
+  }
+  screen.classList.remove("no-room");
+  const panel = screen.getBoundingClientRect();
+  if (!panel.height) {
+    return;
+  }
+  const select = screen.querySelector(".screen-select").getBoundingClientRect();
+  const bottom = window.innerHeight - parseFloat(getComputedStyle($("menu")).paddingBottom) - EDGE;
+  const top = document.querySelector(".bar").getBoundingClientRect().bottom;
+  screen.classList.toggle("no-room", select.bottom > bottom || panel.top < top);
 }
 
 // ---------- Settings panel ----------

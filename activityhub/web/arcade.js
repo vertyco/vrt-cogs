@@ -16,6 +16,19 @@ const PAUSE_KEYS = ["Escape", "p", "P"];
 const BANNER_MS = 1500;
 const COUNT_UP_MS = 700;
 const MEDALS = ["gold", "silver", "bronze"];
+const PASS_MS = 1600;
+// Passing notes this close together share one
+const PASS_MERGE_MS = 1000;
+const STRIP_MAX = 5;
+const STRIP_MAX_PHONE = 3;
+// The mark beside someone mid-round. A Map, since the state is another player's word and a plain object would
+// answer to names like "constructor"
+const MARKS = new Map([
+  ["playing", "▶"],
+  ["paused", "❚❚"],
+]);
+// A narrow window gets a smaller strip: fewer entries, and only the player's own name
+const phone = window.matchMedia("(max-width: 520px)");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 // Static markup only, never player text
@@ -54,6 +67,12 @@ function icon(name) {
 
 function fmt(n) {
   return Number(n).toLocaleString();
+}
+
+function ordinal(n) {
+  const tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? "th" : { 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th";
+  return `${n}${suffix}`;
 }
 
 function randomSeed() {
@@ -102,11 +121,36 @@ class Arcade {
       document.documentElement.style.setProperty("--arcade-accent", options.accent);
       document.documentElement.style.setProperty("--arcade-on-accent", textOn(options.accent));
     }
+    // This round's score, and whether the player has a score this session
+    this.score = 0;
+    this.scored = false;
+    // The others the player can still pass this round: seen at or above the player's score
+    this.ahead = new Set();
+    // The passing note on show, when it began, and whether a second pass has already joined it
+    this.passNames = [];
+    this.passAt = -Infinity;
+    this.passExtended = false;
+    this.passTimer = null;
+    // What the strip shows, and each entry's parts by person, so a change only touches what moved
+    this.stripKey = "";
+    this.liveRows = new Map();
     this.buildBar();
     this.screen = el("div", { class: "arcade-screen", role: "dialog", "aria-modal": "true" });
     this.hintText = el("div", { class: "arcade-hint", "aria-live": "polite" });
     this.hintText.hidden = true;
     this.stage.append(this.hintText);
+    this.passNoteBox = el("div", { class: "arcade-pass", "aria-live": "polite" });
+    this.passNoteBox.hidden = true;
+    this.stage.append(this.passNoteBox);
+    this.strip = el("ol", { class: "arcade-live", "aria-label": "Playing here now" });
+    this.strip.hidden = true;
+    this.bar.after(this.strip);
+    this.liveMore = el("li", { class: "arcade-live-more" });
+    hub.onPeople(() => {
+      this.followRivals();
+      this.showLive();
+    });
+    phone.addEventListener("change", () => this.showLive());
     this.bannerNode = null;
     document.body.append(this.screen);
     this.listen(options.autoPause !== false);
@@ -133,11 +177,13 @@ class Arcade {
       el("span", { class: "arcade-stat" }, [el("small", { text: "Score" }), this.scoreText]),
       this.bestStat,
     ]);
-    const bar = el("header", { class: "arcade-bar" }, [back, name, stats, this.muteButton, this.pauseButton]);
+    const people = this.hub.peopleButton();
+    const bar = el("header", { class: "arcade-bar" }, [back, name, stats, people, this.muteButton, this.pauseButton]);
     // A clicked button would keep the keyboard, so the next Space or Enter meant for the game would press it again.
     // Tab still reaches the buttons
     bar.addEventListener("mousedown", (event) => event.preventDefault());
     document.body.prepend(bar);
+    this.bar = bar;
     this.showMute();
     this.showBest();
     this.pauseButton.hidden = true;
@@ -149,21 +195,222 @@ class Arcade {
     return img;
   }
 
-  setScore(score) {
+  // Shows the score in the bar. False when it was already showing
+  drawScore(score) {
     const text = fmt(score);
     if (this.scoreText.textContent === text) {
-      return;
+      return false;
     }
     this.scoreText.textContent = text;
     // Restarting the bump animation needs a reflow between taking the class off and putting it back
     this.scoreText.classList.remove("bump");
     void this.scoreText.offsetWidth;
     this.scoreText.classList.add("bump");
+    return true;
+  }
+
+  setScore(score) {
+    this.score = score;
+    if (this.drawScore(score)) {
+      this.report();
+      this.checkPassed();
+      this.showLive();
+    }
   }
 
   showBest() {
     this.bestStat.hidden = !this.best;
     this.bestText.textContent = this.best ? fmt(this.best) : "";
+  }
+
+  // ---------- Who's here ----------
+
+  // What everyone else in the window sees this player doing, and whether leaving now would cost them a round
+  report() {
+    let text = "Getting ready";
+    let data = { state: "idle" };
+    if (this.playing) {
+      const state = this.paused ? "paused" : "playing";
+      text = `${this.paused ? "Paused" : "Playing"} · ${fmt(this.score)}`;
+      data = { state, score: this.score };
+    } else if (this.scored) {
+      text = `Scored ${fmt(this.score)}`;
+      data = { state: "over", score: this.score };
+    }
+    this.hub.status(text, data);
+    this.hub.busy(this.playing);
+  }
+
+  // The others in this game with a score this session
+  rivals() {
+    return this.hub.people
+      .filter((p) => p.here && !p.you && p.data && typeof p.data.score === "number" && p.data.state !== "idle")
+      .map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, score: p.data.score, state: p.data.state, away: p.away }));
+  }
+
+  // Everyone here with a score, the player included, best first. The player always sees their own place, and
+  // comes before anyone with the same score, as on the results. Nothing here takes a click, so it is only redrawn
+  // when what it shows has changed, and then entry by entry, so a point of the player's own redraws no picture
+  showLive() {
+    const rivals = this.rivals();
+    if (!rivals.length) {
+      this.strip.hidden = true;
+      this.stripKey = "";
+      this.liveRows.clear();
+      return;
+    }
+    const rows = [...rivals];
+    if (this.scored) {
+      const state = this.playing ? (this.paused ? "paused" : "playing") : "over";
+      const you = { id: this.hub.player?.id, name: "You", avatar: this.hub.player?.avatar, score: this.score, state };
+      rows.push({ ...you, you: true });
+    }
+    rows.sort((a, b) => b.score - a.score || Boolean(b.you) - Boolean(a.you));
+    const shown = rows.slice(0, phone.matches ? STRIP_MAX_PHONE : STRIP_MAX);
+    const mine = rows.find((row) => row.you);
+    if (mine && !shown.includes(mine)) {
+      shown[shown.length - 1] = mine;
+    }
+    const lines = shown.map((row) => [rows.indexOf(row) + 1, row]);
+    const more = rows.length - shown.length;
+    const key = JSON.stringify([lines, more]);
+    if (key === this.stripKey) {
+      return;
+    }
+    this.stripKey = key;
+    const items = lines.map(([rank, row]) => this.liveRow(row, rank));
+    const keep = new Set(lines.map(([, row]) => (row.you ? "you" : row.id)));
+    for (const id of this.liveRows.keys()) {
+      if (!keep.has(id)) {
+        this.liveRows.delete(id);
+      }
+    }
+    if (more > 0) {
+      this.liveMore.textContent = `+${more}`;
+      items.push(this.liveMore);
+    }
+    const same = items.length === this.strip.children.length && items.every((item, i) => this.strip.children[i] === item);
+    if (!same) {
+      this.strip.replaceChildren(...items);
+    }
+    this.strip.hidden = false;
+  }
+
+  // The picture, or the first letter of the name in a circle when there is none or it can't load
+  liveAvatar(row) {
+    const initial = () => el("span", { class: "avatar", text: Array.from(row.name)[0]?.toUpperCase() ?? "" });
+    if (!row.avatar) {
+      return initial();
+    }
+    const picture = el("img", { class: "avatar", src: row.avatar, alt: "" });
+    picture.addEventListener("error", () => picture.replaceWith(initial()));
+    return picture;
+  }
+
+  // One entry, made once per person and updated in place after that. Its picture is only drawn again when the
+  // picture or the name changes
+  liveRow(row, rank) {
+    const id = row.you ? "you" : row.id;
+    let entry = this.liveRows.get(id);
+    if (!entry) {
+      entry = {
+        item: el("li"),
+        rank: el("span", { class: "rank" }),
+        name: el("span", { class: "name" }),
+        points: el("b", { class: "points" }),
+        state: el("span", { class: "state" }),
+        face: null,
+      };
+      entry.item.append(entry.rank, el("span"), entry.name, entry.points);
+      this.liveRows.set(id, entry);
+    }
+    const face = `${row.avatar || ""}|${row.name}`;
+    if (entry.face !== face) {
+      entry.face = face;
+      entry.item.children[1].replaceWith(this.liveAvatar(row));
+    }
+    entry.rank.textContent = String(rank);
+    entry.name.textContent = row.name;
+    entry.points.textContent = fmt(row.score);
+    const mark = MARKS.get(row.state);
+    if (mark) {
+      entry.state.textContent = mark;
+      entry.state.setAttribute("aria-label", row.state);
+      entry.item.append(entry.state);
+    } else {
+      entry.state.remove();
+    }
+    entry.item.className = row.you ? "you" : row.away ? "away" : "";
+    return entry.item;
+  }
+
+  // The others the player can still pass: those seen at or above their score. One who drops below without the player
+  // scoring has started a new round, and was not passed
+  followRivals() {
+    const rivals = this.rivals();
+    for (const id of this.ahead) {
+      const rival = rivals.find((r) => r.id === id);
+      if (!rival || rival.score < this.score) {
+        this.ahead.delete(id);
+      }
+    }
+    rivals.filter((r) => r.score >= this.score).forEach((r) => this.ahead.add(r.id));
+  }
+
+  // "You passed Ann!" when the player's score goes above someone who was at or above it, and shows a score above 0
+  checkPassed() {
+    if (!this.playing) {
+      return;
+    }
+    const rivals = this.rivals();
+    const passed = rivals.filter((r) => this.ahead.has(r.id) && r.score > 0 && this.score > r.score);
+    passed.forEach((rival) => this.ahead.delete(rival.id));
+    rivals.filter((r) => r.score >= this.score).forEach((r) => this.ahead.add(r.id));
+    if (!passed.length) {
+      return;
+    }
+    this.passNote(passed.map((rival) => rival.name));
+  }
+
+  // Shows the note for these names. A pass within a second of the note's start joins it, once
+  passNote(names) {
+    const now = performance.now();
+    if (now - this.passAt < PASS_MERGE_MS && !this.passExtended) {
+      this.passNames = [...this.passNames, ...names];
+      this.passExtended = true;
+    } else {
+      this.passNames = names;
+      this.passAt = now;
+      this.passExtended = false;
+    }
+    // Each name sits in its own <bdi>, so a name written right to left can't reorder the words around it
+    const parts = ["You passed "];
+    this.passNames.forEach((name, i) => {
+      if (i > 0) {
+        parts.push(i === this.passNames.length - 1 ? " and " : ", ");
+      }
+      parts.push(el("bdi", { text: name }));
+    });
+    parts.push("!");
+    this.passNoteBox.replaceChildren(...parts);
+    this.passNoteBox.hidden = false;
+    this.passNoteBox.classList.remove("show");
+    void this.passNoteBox.offsetWidth;
+    this.passNoteBox.classList.add("show");
+    clearTimeout(this.passTimer);
+    this.passTimer = setTimeout(() => {
+      this.passNoteBox.hidden = true;
+    }, PASS_MS);
+  }
+
+  // "2nd of 3 here right now" on the results, when others here have a score
+  placeLine(score) {
+    const rivals = this.rivals();
+    if (!rivals.length) {
+      return null;
+    }
+    const place = 1 + rivals.filter((rival) => rival.score > score).length;
+    return this.note(`${ordinal(place)} of ${rivals.length + 1} here right now`, "arcade-note arcade-place");
   }
 
   showMute() {
@@ -293,6 +540,11 @@ class Arcade {
   }
 
   async showTitle(problem = "") {
+    // Whether this is the first time or a round failed to start, nothing is being played now. The people
+    // listener only fires on changes, so this is also the first look at whoever is here already
+    this.scored = false;
+    this.report();
+    this.showLive();
     const status = this.note(problem, problem ? "arcade-note arcade-error" : "arcade-note");
     const buttons = [this.button(problem ? "Try again" : "Play", () => this.play(), true)];
     if (this.inServer) {
@@ -399,7 +651,13 @@ class Arcade {
     this.playing = true;
     this.paused = false;
     this.pauseButton.hidden = false;
-    this.setScore(0);
+    this.score = 0;
+    this.scored = true;
+    this.ahead.clear();
+    this.drawScore(0);
+    this.report();
+    this.followRivals();
+    this.showLive();
     this.game.play(round.seed);
   }
 
@@ -408,6 +666,7 @@ class Arcade {
       return;
     }
     this.paused = true;
+    this.report();
     this.game.pause();
     this.show([
       el("h1", { text: "Paused" }),
@@ -418,6 +677,7 @@ class Arcade {
 
   resume() {
     this.paused = false;
+    this.report();
     this.hide();
     this.game.resume();
   }
@@ -474,11 +734,18 @@ class Arcade {
     this.paused = false;
     this.pauseButton.hidden = true;
     this.hint("");
+    this.score = score;
+    this.report();
+    this.showLive();
+    const place = this.placeLine(score);
     const final = el("p", { class: "arcade-final" });
     const status = this.note(this.run ? "Saving..." : "");
     const again = this.button("Play again", () => this.play(), true);
     const menu = this.button("Menu", () => this.leave());
-    this.show([el("h1", { text: "Game over" }), final, status, this.actions([again, menu])], "arcade-results");
+    this.show(
+      [el("h1", { text: "Game over" }), final, ...(place ? [place] : []), status, this.actions([again, menu])],
+      "arcade-results",
+    );
     this.countUp(final, score);
     if (!this.run) {
       status.textContent = this.hub.offline

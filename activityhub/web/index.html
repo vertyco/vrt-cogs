@@ -10,6 +10,8 @@
     <!-- Every script up front, so the browser fetches them together instead of one import at a time -->
     <link rel="modulepreload" href="menu.js" />
     <link rel="modulepreload" href="host.js" />
+    <link rel="modulepreload" href="presence.js" />
+    <link rel="modulepreload" href="people.js" />
     <link rel="modulepreload" href="sdk.js" />
     <link rel="modulepreload" href="sounds.js" />
     <link rel="modulepreload" href="orb.js" />
@@ -35,6 +37,7 @@
         <div class="who">
           <span class="badge"><img id="who-icon" alt="" hidden /><span id="who-letter">A</span></span>
           <span id="who-name" class="who-name">Activities</span>
+          <div id="people-row" class="people-row" tabindex="-1" hidden></div>
         </div>
         <button id="gear" class="icon-button gear" type="button" aria-label="Settings" hidden>&#9881;</button>
       </header>
@@ -54,6 +57,8 @@
         </div>
       </aside>
     </div>
+    <!-- Outside the menu, whose Orb theme turns off touch scrolling: a long list scrolls under a finger -->
+    <div id="hover-people" class="hover-people" role="group" tabindex="-1" hidden></div>
     <script type="module" src="menu.js"></script>
   </body>
 </html>

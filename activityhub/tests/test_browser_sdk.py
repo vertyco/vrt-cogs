@@ -1,5 +1,6 @@
 import asyncio
 import shutil
+import time
 
 import pytest
 from selenium.webdriver.common.by import By
@@ -15,7 +16,7 @@ from activityhub.tests.browser import (
     wait_for,
     wait_for_console,
 )
-from activityhub.tests.fakes import GUILD_ID, MEMBER_ID, DemoCog, make_hub, register, write_demo_web
+from activityhub.tests.fakes import GUILD_ID, MANAGER_ID, MEMBER_ID, DemoCog, make_hub, register, write_demo_web
 
 # A game page that starts its own Discord toolkit, the real one, instead of using hub.discord
 OWN_SDK_JS = """import { DiscordSDK } from "./discord-sdk.js";
@@ -423,3 +424,179 @@ def test_only_a_handshake_from_the_games_own_page_is_reported(driver, live):
     lines = wait_for_console(driver, "all sent")
     assert len([line for line in lines if "own DiscordSDK" in line]) == 1
     assert not any("Uncaught" in line for line in lines)
+
+
+def person(live, user_id=MEMBER_ID):
+    window = live.server.presence.windows.get("i-1")
+    return window.people.get(user_id) if window else None
+
+
+def test_a_game_sets_its_status_and_reads_the_people_list(driver, live):
+    open_game_in_host(driver, live)
+    assert in_game(driver, "hub.status('Clicked 3 times', {clicks: 3}); hub.busy(true); done('ok');") == "ok"
+    found = None
+    for _ in range(100):
+        found = person(live)
+        if found and found.status == "Clicked 3 times":
+            break
+        time.sleep(0.05)
+    assert (found.where, found.data, found.busy) == ("demo", {"clicks": 3}, True)
+    live.add_person(MANAGER_ID, where="demo", status="Watching")
+    seen = in_game(
+        driver,
+        "const check = (people) => {"
+        "  if (people.length === 2) { stop(); done(people.map((p) => [p.name, p.you, p.here, p.gameName])); }"
+        "};"
+        "const stop = hub.onPeople(check);"
+        "check(hub.people);",
+    )
+    assert seen == [["Member", True, True, "demo"], ["Manager", False, True, "demo"]]
+
+
+def test_follow_reaches_the_page(driver, live):
+    assert open_host(driver, live) == "online"
+    driver.execute_script("window.testHost.openGame('demo', {id: '3', name: 'Manager'})")
+    wait_for(driver, "document.body.classList.contains('playing')")
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    wait_for(driver, "window.demo && window.demo.done")
+    assert in_game(driver, "done(hub.follow)") == {"id": "3", "name": "Manager"}
+    # The game gets a copy, so editing it doesn't change what the next page of the game sees
+    assert in_game(driver, "hub.follow.name = 'Changed'; done((await connect()).follow);") == {
+        "id": "3",
+        "name": "Manager",
+    }
+
+
+def test_offline_people_calls_do_nothing(driver, live):
+    driver.get(f"{live.url}/games/demo/")
+    wait_for(driver, "window.demo && window.demo.done")
+    script = (
+        "hub.status('x'); hub.busy(true); const stop = hub.onPeople(() => {}); stop();"
+        "hub.people.push('edited'); done([hub.people, hub.follow]);"
+    )
+    assert in_game(driver, script) == [[], None]
+
+
+# What a game does by mistake when it passes the result of a call instead of a function
+BAD_LISTENER = "try { hub.onPeople('nope'); } catch (e) { done([e.name, e.message]); }"
+BAD_LISTENER_ERROR = ["TypeError", "hub.onPeople() needs a function, got string"]
+
+
+def test_on_people_needs_a_function(driver, live):
+    open_game_in_host(driver, live)
+    assert in_game(driver, BAD_LISTENER) == BAD_LISTENER_ERROR
+
+
+def test_offline_on_people_needs_a_function_too(driver, live):
+    driver.get(f"{live.url}/games/demo/")
+    wait_for(driver, "window.demo && window.demo.done")
+    assert in_game(driver, BAD_LISTENER) == BAD_LISTENER_ERROR
+
+
+# How many people listeners the menu holds, read from inside a game frame
+LISTENER_COUNT = "window.parent.testHost.presence.listeners.size"
+
+
+def test_people_listeners_a_game_added_go_when_it_closes(driver, live):
+    # The menu outlives the game, so a listener left behind would keep running a page that is gone
+    assert open_host(driver, live) == "online"
+    baseline = driver.execute_script("return window.testHost.presence.listeners.size")
+    open_game(driver)
+    assert in_game(driver, f"hub.onPeople(() => {{}}); hub.onPeople(() => {{}}); done({LISTENER_COUNT});") == (
+        baseline + 2
+    )
+    driver.switch_to.default_content()
+    driver.execute_script("window.testHost.closeGame()")
+    wait_for(driver, f"window.testHost.presence.listeners.size === {baseline}")
+
+
+def test_the_stop_from_on_people_removes_just_its_own_listener(driver, live):
+    open_game_in_host(driver, live)
+    script = f"""
+        const start = {LISTENER_COUNT};
+        const first = hub.onPeople(() => {{}});
+        hub.onPeople(() => {{}});
+        first();
+        const after = {LISTENER_COUNT};
+        first();
+        done([after - start, {LISTENER_COUNT} - start]);
+    """
+    assert in_game(driver, script) == [1, 1]
+
+
+def test_a_people_listener_that_throws_does_not_stop_the_next_one(driver, live):
+    open_game_in_host(driver, live)
+    script = """
+        window.heard = [];
+        hub.onPeople(() => { throw new Error('listener broke'); });
+        hub.onPeople((people) => window.heard.push(people.length));
+        done(true);
+    """
+    assert in_game(driver, script) is True
+    live.add_person(MANAGER_ID, where="demo")
+    wait_for(driver, "window.heard.length > 0")
+    wait_for_console(driver, "a people listener failed")
+
+
+# Replaces WebSocket with one that closes at once, the way a dropped network refuses a connection, until the script
+# puts the real one back
+FAIL_SOCKETS = """
+    window.WebSocket = class extends EventTarget {
+      constructor() {
+        super();
+        setTimeout(() => this.dispatchEvent(new CloseEvent('close', { code: 1006 })), 0);
+      }
+    };
+"""
+
+
+def open_followed_game(driver, live):
+    """
+    Open the demo game as someone who followed the manager there. Returns what each live connection of the game sends
+    as its follow, as the bot receives it, with the game page's own first connection already taken out
+    """
+    seen = []
+    real = live.server.presence.follow_target
+
+    def spy(ctx, value):
+        seen.append(value)
+        return real(ctx, value)
+
+    live.server.presence.follow_target = spy
+    assert open_host(driver, live) == "online"
+    live.add_person(MANAGER_ID, where="demo")
+    driver.execute_script("window.testHost.openGame('demo', {id: '3', name: 'Manager'})")
+    wait_for(driver, "document.body.classList.contains('playing')")
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    wait_for(driver, "window.demo && window.demo.done")
+    # The game page's own hub opened its first live connection with the follow
+    assert seen == ["3"]
+    seen.clear()
+    return seen
+
+
+def test_a_first_live_connection_that_fails_to_open_hands_the_follow_to_the_next(driver, live):
+    seen = open_followed_game(driver, live)
+    # A fresh hub whose first try fails, like a network blip while the game starts, still has the follow to send
+    script = (
+        "const Real = window.WebSocket;"
+        f"{FAIL_SOCKETS}"
+        "const failed = await hub.socket().then(() => 'opened', (e) => e.status);"
+        "window.WebSocket = Real;"
+        "const first = await hub.socket();"
+        "const second = await hub.socket();"
+        "first.close(); second.close();"
+        "done(failed);"
+    )
+    assert in_game(driver, script) == 1006
+    assert seen == ["3", None]
+
+
+def test_live_connections_opened_together_send_the_follow_once(driver, live):
+    seen = open_followed_game(driver, live)
+    script = (
+        "const both = await Promise.all([hub.socket(), hub.socket()]);both.forEach((conn) => conn.close());done(true);"
+    )
+    assert in_game(driver, script) is True
+    # Which of the two reaches the bot first isn't fixed
+    assert sorted(seen, key=str) == ["3", None]

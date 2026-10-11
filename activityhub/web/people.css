@@ -1,0 +1,363 @@
+/* "Who's here" (people.js): the people button, its notes, the people panel and Join's question. Used by the menu
+   page and inside game frames, so every color falls back to Discord's when the page sets none */
+.hub-people {
+  --hub-accent: var(--accent, #5865f2);
+  --hub-on-accent: var(--on-accent, #ffffff);
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* The display rules above and below would otherwise win over the hidden attribute */
+.hub-people[hidden],
+.hub-people-panel[hidden] {
+  display: none;
+}
+
+.hub-people.floating {
+  position: fixed;
+  top: calc(8px + var(--safe-top, 0px));
+  right: calc(8px + var(--safe-right, 0px));
+  z-index: 3;
+}
+
+/* A game's page sets --hub-people-size (36px by default) to make its button bigger or smaller */
+.hub-people-button {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--hub-people-size, 36px);
+  min-width: var(--hub-people-size, 36px);
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(17, 18, 20, 0.78);
+  color: #ffffff;
+  font: 600 0.85rem/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.hub-people-button:hover {
+  border-color: var(--hub-accent);
+}
+
+.hub-people-button:focus-visible,
+.hub-people-panel button:focus-visible,
+.hub-confirm button:focus-visible,
+.hub-join:focus-visible {
+  outline: 2px solid var(--accent, #5865f2);
+  outline-offset: 2px;
+}
+
+.hub-people-face {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hub-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hub-stack {
+  display: inline-flex;
+}
+
+.hub-stack .hub-avatar + .hub-avatar {
+  margin-left: -8px;
+}
+
+.hub-avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--accent, #5865f2);
+  color: var(--on-accent, #ffffff);
+  font-weight: 700;
+}
+
+.hub-avatar.small {
+  width: 22px;
+  height: 22px;
+  font-size: 0.7rem;
+  box-shadow: 0 0 0 2px rgba(17, 18, 20, 0.9);
+}
+
+.hub-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hub-avatar.away {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+/* An arrival note slides down out of its button. A name inside it can't turn the note's other words around */
+.hub-note {
+  position: absolute;
+  top: calc(100% + 6px);
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--hub-accent);
+  color: var(--hub-on-accent);
+  font: 600 0.8rem/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  unicode-bidi: isolate;
+  animation: hub-note-in 0.25s ease-out;
+}
+
+.hub-note.start {
+  left: 0;
+}
+
+.hub-note.end {
+  right: 0;
+}
+
+@keyframes hub-note-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* ---------- The panel ---------- */
+
+.hub-people-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.hub-people-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: min(320px, 100vw);
+  padding-top: var(--safe-top, 0px);
+  padding-right: var(--safe-right, 0px);
+  background: var(--panel, #232428);
+  color: var(--text, #dbdee1);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.4);
+  animation: hub-panel-side 0.2s ease-out;
+}
+
+@keyframes hub-panel-side {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+.hub-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 8px 16px;
+}
+
+.hub-panel-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.hub-panel-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.hub-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px calc(16px + var(--safe-bottom, 0px));
+}
+
+.hub-group + .hub-group,
+.hub-invite {
+  margin-top: 14px;
+}
+
+.hub-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 6px;
+  color: var(--muted, #949ba4);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hub-game-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.hub-group-count {
+  margin-left: auto;
+}
+
+.hub-people-list,
+.hub-elsewhere {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hub-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-radius: 10px;
+}
+
+.hub-person-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Names and status lines come from players. Isolated, a right-to-left mark in one can't turn the text around it */
+.hub-person-name,
+.hub-person-status {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  unicode-bidi: isolate;
+}
+
+.hub-person-name {
+  font-weight: 600;
+}
+
+.hub-person-status {
+  color: var(--muted, #949ba4);
+  font-size: 0.82rem;
+}
+
+.hub-join,
+.hub-invite-button,
+.hub-confirm button {
+  flex: none;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font: 600 0.85rem/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  cursor: pointer;
+}
+
+.hub-join,
+.hub-invite-button.primary,
+.hub-confirm .primary {
+  background: var(--accent, #5865f2);
+  color: var(--on-accent, #ffffff);
+}
+
+.hub-elsewhere li {
+  padding: 4px;
+  color: var(--muted, #949ba4);
+  font-size: 0.85rem;
+}
+
+.hub-invite-button {
+  width: 100%;
+  padding: 10px 12px;
+}
+
+.hub-panel-note {
+  margin: 8px 4px;
+  color: var(--muted, #949ba4);
+}
+
+/* ---------- Join's question ---------- */
+
+.hub-confirm {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 22;
+  width: min(340px, calc(100vw - 32px));
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--panel, #232428);
+  color: var(--text, #dbdee1);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, -50%);
+}
+
+.hub-confirm-text {
+  margin: 0 0 14px;
+  font-weight: 600;
+  unicode-bidi: isolate;
+}
+
+.hub-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* A phone gets the panel from the bottom, where a thumb reaches. It never gets near the top, so it needs no room
+   for Discord's buttons there */
+@media (max-width: 520px) {
+  .hub-people-panel {
+    top: auto;
+    width: 100vw;
+    padding-top: 0;
+    max-height: 75vh;
+    border-radius: 16px 16px 0 0;
+    animation-name: hub-panel-up;
+  }
+}
+
+@keyframes hub-panel-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-note,
+  .hub-people-panel {
+    animation: none;
+  }
+}

@@ -1,6 +1,7 @@
 // ActivityHub helper for game pages. Games import it with: import { connect } from "activityhub";
 // Inside Discord a game runs in a frame inside the hub menu, which owns the only Discord toolkit
 // connection Discord allows per Activity. This file borrows that login through window.parent.
+import { buttonWrap, fillButton, PREVIEW_TEXT, useStyles } from "./people.js";
 
 const GAME_PATH = /^\/games\/([a-z0-9-]+)\//;
 
@@ -67,6 +68,37 @@ function gameRoot() {
   return match ? `/games/${match[1]}/` : "/";
 }
 
+function gameKey() {
+  const match = location.pathname.match(GAME_PATH);
+  return match ? match[1] : null;
+}
+
+// A listener that isn't a function, like the result of calling one by mistake, would only fail on every update
+function needListener(listener) {
+  if (typeof listener !== "function") {
+    throw new TypeError(`hub.onPeople() needs a function, got ${typeof listener}`);
+  }
+}
+
+// hub.onPeople: the listener gets the list as this game sees it, and goes away with the game's page
+function watchPeople(host, key, listener) {
+  needListener(listener);
+  const stop = host.presence.listen(() => listener(host.presence.view(key)));
+  window.addEventListener("pagehide", stop, { once: true });
+  return stop;
+}
+
+// A game page opened on its own has no menu around it, so its people button only says where to go
+function lonelyButton() {
+  useStyles(document);
+  const wrap = buttonWrap(document, () => {});
+  const button = wrap.querySelector("button");
+  fillButton(button, []);
+  button.title = PREVIEW_TEXT;
+  button.setAttribute("aria-label", PREVIEW_TEXT);
+  return wrap;
+}
+
 function withSession(options, session) {
   const headers = new Headers(options.headers || {});
   if (session) {
@@ -95,6 +127,19 @@ function offlineHub(host) {
     socket: unavailable,
     fetch: (path, options = {}) => fetch(`${gameRoot()}raw/${path}`, options),
     stat: (text) => stat(host, text),
+    // A new array on each read, like the online hub's, so a game that edits one doesn't see its edit on the next
+    get people() {
+      return [];
+    },
+    follow: null,
+    status: () => {},
+    busy: () => {},
+    onPeople(listener) {
+      needListener(listener);
+      return () => {};
+    },
+    peopleButton: () => (host ? host.people.frameButton(document) : lonelyButton()),
+    openPeople: () => host?.people.open(),
     backToMenu,
   };
 }
@@ -121,14 +166,15 @@ function closedEarly(code) {
   return new HubError(`The live connection closed (${code}).`, code);
 }
 
-// One WebSocket to the hub. Resolves with it once the hub has checked the login, and hands every later message
-// and the close to `events`
-function openLink(root, session, events) {
+// One WebSocket to the hub at `path`. The first message carries the session pass (and anything else in `first`).
+// Resolves with the socket once the hub has checked the login, and hands every later message and the close to
+// `events`
+function openLink(path, first, events) {
   return new Promise((resolve, reject) => {
     const scheme = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${scheme}://${location.host}${root}ws`);
+    const ws = new WebSocket(`${scheme}://${location.host}${path}`);
     let ready = false;
-    ws.addEventListener("open", () => ws.send(JSON.stringify({ session })));
+    ws.addEventListener("open", () => ws.send(JSON.stringify(first)));
     ws.addEventListener("message", (event) => {
       let data;
       try {
@@ -160,10 +206,11 @@ function openLink(root, session, events) {
   });
 }
 
-// What hub.socket() resolves with. It stays the same object while the helper reconnects by itself, so the game's
-// handlers keep working. `open(events)` resolves with a ready WebSocket, logging the player in again when needed.
-// `showLatency(ms)` gets each round trip it times, and null while there is no connection
-function liveConnection(open, showLatency) {
+// Internal: the menu link (presence.js) uses this too. What hub.socket() resolves with. It stays the same object
+// while the helper reconnects by itself, so the game's handlers keep working. `open(events)` resolves with a ready
+// WebSocket, logging the player in again when needed. `showLatency(ms)` gets each round trip it times, and null
+// while there is no connection
+export function liveConnection(open, showLatency) {
   const handlers = [];
   const held = [];
   const closers = [];
@@ -356,42 +403,61 @@ function frameDiscord(sdk) {
   });
 }
 
-function onlineHub(host, login) {
-  const root = gameRoot();
-  // A bot restart or an ActivityHub reload forgets every login. The menu's Discord connection is still good,
-  // so a fresh login fixes it without leaving the game. Requests refused together share one login.
-  async function freshSession(used) {
-    if (host.login.session !== used) {
-      return host.login.session;
-    }
-    try {
-      return (await host.relogin()).session;
-    } catch (e) {
-      host.sessionExpired();
-      throw e;
-    }
+// A bot restart or an ActivityHub reload forgets every login. The menu's Discord connection is still good, so a
+// fresh login fixes it without leaving the page. Requests refused together share one login. When the login fails,
+// the player is sent back to the menu's login screen, unless `expire` is false: the caller then has to cope with the
+// error itself
+async function freshSession(host, used, expire = true) {
+  if (host.login.session !== used) {
+    return host.login.session;
   }
-  const expiredFetch = (resp) => resp.status === 401 && resp.headers.get("X-ActivityHub") === "session-expired";
-  // A live connection, logging in again once if the hub has forgotten the login
-  async function openLive(events) {
+  try {
+    return (await host.relogin()).session;
+  } catch (e) {
+    if (expire) {
+      host.sessionExpired();
+    } else {
+      console.warn("ActivityHub: couldn't log in again", e);
+    }
+    throw e;
+  }
+}
+
+// Internal: opens the live connection at `path` for liveConnection, logging in again once if the hub has forgotten
+// the login. `extra` rides along with the session pass on the first connection only, so a reconnect never repeats it.
+// With `expire` false a login that can't be renewed fails the connection quietly instead of ending the player's
+// session, which the menu link needs: it can wait and try again, and it must not close the game that is open
+export function liveOpener(host, path, extra = {}, expire = true) {
+  let once = extra;
+  return async function open(events) {
+    const sent = once;
+    once = {};
     const used = host.login.session;
     try {
-      return await openLink(root, used, events);
+      return await openLink(path, { ...sent, session: used }, events);
     } catch (e) {
       if (e.status !== CLOSE_SESSION) {
         throw e;
       }
     }
-    const session = await freshSession(used);
+    const session = await freshSession(host, used, expire);
     try {
-      return await openLink(root, session, events);
+      return await openLink(path, { ...sent, session }, events);
     } catch (e) {
-      if (e.status === CLOSE_SESSION) {
+      if (expire && e.status === CLOSE_SESSION) {
         host.sessionExpired();
       }
       throw e;
     }
-  }
+  };
+}
+
+function onlineHub(host, login) {
+  const root = gameRoot();
+  const key = gameKey();
+  // Only the game's first live connection says who the player followed. hub.follow keeps it for the page
+  let unsentFollow = host.follow ? { follow: host.follow.id } : {};
+  const expiredFetch = (resp) => resp.status === 401 && resp.headers.get("X-ActivityHub") === "session-expired";
   return {
     player: login.player,
     discord: frameDiscord(host.sdk),
@@ -408,7 +474,7 @@ function onlineHub(host, login) {
         }
       }
       // Actions answer 401 before any handler runs, so sending it again can't run the action twice
-      const session = await freshSession(used);
+      const session = await freshSession(host, used);
       try {
         return await request(path, { body, session });
       } catch (e) {
@@ -425,7 +491,7 @@ function onlineHub(host, login) {
       if (!expiredFetch(resp)) {
         return resp;
       }
-      const session = await freshSession(used);
+      const session = await freshSession(host, used);
       if (options.body instanceof ReadableStream) {
         // A stream is used up once sent. Later requests have the fresh login, but this one can't go again
         console.warn("ActivityHub: the login expired and a streamed body can't be sent twice, so this got 401");
@@ -438,9 +504,29 @@ function onlineHub(host, login) {
       return retried;
     },
     socket() {
-      return liveConnection(openLive, (ms) => host.setLatency(ms)).start();
+      // Taken now, so a connection opened at the same time doesn't repeat it, and given back when this one fails
+      // to open, so the game's next try still carries it
+      const extra = unsentFollow;
+      unsentFollow = {};
+      return liveConnection(liveOpener(host, `${root}ws`, extra), (ms) => host.setLatency(ms))
+        .start()
+        .catch((e) => {
+          if (!("follow" in unsentFollow)) {
+            unsentFollow = extra;
+          }
+          throw e;
+        });
     },
     stat: (text) => stat(host, text),
+    follow: host.follow ? { ...host.follow } : null,
+    get people() {
+      return host.presence.view(key);
+    },
+    onPeople: (listener) => watchPeople(host, key, listener),
+    status: (text, data) => host.setStatus(text, data),
+    busy: (on) => host.setBusy(on),
+    peopleButton: () => host.people.frameButton(document),
+    openPeople: () => host.people.open(),
     backToMenu,
   };
 }
@@ -449,7 +535,9 @@ export async function connect() {
   const host = findHost();
   if (host) {
     const login = await host.ready;
-    return login ? onlineHub(host, login) : offlineHub(host);
+    const hub = login ? onlineHub(host, login) : offlineHub(host);
+    host.people.connected();
+    return hub;
   }
   if (new URLSearchParams(location.search).has("frame_id")) {
     // Inside Discord only the menu may start the Discord toolkit, so a game opened on its own goes there

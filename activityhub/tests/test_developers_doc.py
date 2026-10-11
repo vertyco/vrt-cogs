@@ -14,7 +14,7 @@ HUB = Path(__file__).resolve().parents[1]
 GUIDE = (HUB / "DEVELOPERS.md").read_text(encoding="utf-8")
 # Where the hub's own messages live. The vendored Discord SDK is left out, since its text isn't the hub's
 PYTHON_SOURCES = [*sorted((HUB / "common").glob("*.py")), *sorted((HUB / "commands").glob("*.py")), HUB / "main.py"]
-JS_SOURCES = [HUB / "web" / name for name in ("sdk.js", "host.js", "menu.js")]
+JS_SOURCES = [HUB / "web" / name for name in ("sdk.js", "host.js", "menu.js", "presence.js", "people.js", "arcade.js")]
 
 # In a message from the code, FIELD is a part filled in when it runs: an f-string or template literal field, or a
 # %s log argument. In the guide's text, ANY stands for ..., and OPEN and CLOSE mark an example value like 'x' or <key>
@@ -35,6 +35,7 @@ NOT_THE_HUBS = (
     "does not provide",
     "coroutine",
     "hub.api is not",
+    "hub.status is not",
     "ValueError: Out of range",
     '"activityhub"',
 )
@@ -153,7 +154,7 @@ def code_says(text: str) -> bool:
 
 def common_problems():
     """The 'What you see' cell of every row in the guide's Common problems tables"""
-    section = GUIDE[GUIDE.index("## 16. Common problems") : GUIDE.index("## 17. ")]
+    section = GUIDE[GUIDE.index("## 17. Common problems") : GUIDE.index("## 18. ")]
     for line in section.splitlines():
         if line.startswith("| ") and not line.startswith("| What you see"):
             yield line.split(" | ")[0][2:]

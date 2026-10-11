@@ -111,6 +111,8 @@ input:focus-visible {
 }
 
 .icon-button {
+  /* A long server name beside the gear shrinks, and the gear stays a whole button */
+  flex: none;
   width: 40px;
   height: 40px;
   border: 0;
@@ -674,4 +676,179 @@ body.playing .menu {
 
 .compact .has-thumb .icon {
   display: grid;
+}
+
+/* ---------- Who's here (people.js draws the rows) ---------- */
+
+.card {
+  position: relative;
+}
+
+/* How many people in this window are playing the game */
+.bubble {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 2px var(--card);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* A finger needs more than the bubble's own size to hit it */
+.bubble::after {
+  position: absolute;
+  inset: -10px;
+  content: "";
+}
+
+.bubble.pop {
+  animation: bubble-pop 0.3s ease-out;
+}
+
+@keyframes bubble-pop {
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+/* Lists take focus themselves when the person the keyboard was on has left them, with no ring to show for it */
+.hover-people:focus,
+.people-row:focus {
+  outline: none;
+}
+
+.hover-people {
+  position: fixed;
+  z-index: 5;
+  width: min(300px, calc(100vw - 16px));
+  /* menu.js sets the height this list may have, which is the screen's; more players than fit scroll */
+  max-height: calc(100vh - 16px);
+  padding: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+}
+
+/* The menu goes away under a game, and the list is outside the menu */
+body.opening .hover-people,
+body.playing .hover-people {
+  display: none;
+}
+
+.hover-elsewhere {
+  margin: 6px 4px 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* The row never shrinks: the name gives way with an ellipsis, and menu.js picks how many faces leave it room */
+.people-row {
+  display: flex;
+  flex: none;
+  margin-left: 6px;
+}
+
+.people-stack,
+.invite-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 10px 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+.invite-pill {
+  padding: 0 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* A phone's header has no room for the words */
+.invite-pill.compact {
+  justify-content: center;
+  width: 34px;
+  padding: 0;
+}
+
+.people-stack .face {
+  position: relative;
+  display: inline-flex;
+}
+
+.people-stack .face + .face {
+  margin-left: -6px;
+}
+
+.people-stack .hub-avatar {
+  width: 26px;
+  height: 26px;
+  box-shadow: 0 0 0 2px var(--surface);
+  font-size: 0.75rem;
+}
+
+.game-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+
+/* A game without a picture shows its first letter, like its card */
+.game-badge.letter {
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* A long title runs clear of the bubble where the layout lets it reach that far */
+.list .has-bubble .text,
+.compact .has-bubble .text {
+  padding-right: 26px;
+}
+
+/* No room for a face: the people icon and the count */
+.people-stack.count-only {
+  padding: 0 10px;
+}
+
+.people-stack.count-only .more {
+  color: inherit;
+}
+
+.people-stack .more {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble.pop {
+    animation: none;
+  }
 }

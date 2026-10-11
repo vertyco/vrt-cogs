@@ -32,6 +32,7 @@ Server admins set this up in the menu's **Payouts** settings tab. For each inclu
 
 - `/activities` opens the menu. `[p]activities` posts an **Open Activities** button that does the same thing, and works even if slash commands aren't synced.
 - Pick a game to play it. The game opens inside the menu, and its menu button brings you back.
+- See who's playing what: a number bubble on each game people in your voice channel are playing, a people panel in every game, and **Join** to hop into a friend's game.
 - **Settings** is the last item in the Orb theme's list, or the gear button in the Standard theme. **My look** picks the theme, the Orb theme's glow color, whether descriptions show, and whether the frame rate counter shows in the corner (on by default). **My order** sets the order of the games. Both follow you to every server.
 - There are two themes. **Orb**, the default, is a glowing console-style menu: each game's icon sits in a glass pod on a ring around a big orb, and a see-through robot arm holds a panel with the selected game's picture and description beside the ring (above it on a phone held upright). Every move turns the panel on the arm and the frame around the orb. It has menu sounds (on by default, with a switch to turn them off) and a glow color that colors the whole theme, green by default. In the Orb theme the arrow keys, the mouse wheel, or sliding a finger up and down the ring or across the screen move between games. A long list scrolls along the ring, and Settings is the last item instead of the gear button. **Standard** looks like Discord, and you pick its layout, color and background.
 
@@ -151,4 +152,4 @@ Caddy is a web server that gets and renews its HTTPS certificate by itself.
 
 ## Making games
 
-Any cog can add a game to the menu. [DEVELOPERS.md](DEVELOPERS.md) walks through it with a complete example, and covers testing a game's Python without Discord, multiplayer, uploads and sharing your game.
+Any cog can add a game to the menu. [DEVELOPERS.md](DEVELOPERS.md) walks through it with a complete example, and covers testing a game's Python without Discord, multiplayer, showing who's playing what, uploads and sharing your game.

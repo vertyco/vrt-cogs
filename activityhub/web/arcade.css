@@ -82,6 +82,8 @@ button:focus-visible {
 /* ---------- Top bar ---------- */
 
 .arcade-bar {
+  position: relative;
+  z-index: 5;
   flex: none;
   display: flex;
   align-items: center;
@@ -603,6 +605,7 @@ button:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .arcade-card,
   .arcade-hint,
+  .arcade-pass.show,
   .arcade-score.bump {
     animation: none;
   }
@@ -619,5 +622,137 @@ button:focus-visible {
   }
   100% {
     opacity: 0;
+  }
+}
+
+/* ---------- Who's here ---------- */
+
+.arcade-bar .hub-people {
+  --hub-people-size: 34px;
+  --accent: var(--arcade-accent);
+  --on-accent: var(--arcade-on-accent);
+}
+
+/* The others here with a score: a row between the bar and the playfield, which sizes itself to what is left */
+.arcade-live {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: 0;
+  padding: 4px calc(8px + var(--arcade-safe-right)) 4px calc(8px + var(--arcade-safe-left));
+  list-style: none;
+}
+
+.arcade-live li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--arcade-bar) 85%, transparent);
+  color: var(--arcade-text);
+  font-size: 0.75rem;
+}
+
+.arcade-live li.you {
+  box-shadow: inset 0 0 0 1.5px var(--arcade-accent);
+}
+
+.arcade-live li.away {
+  opacity: 0.55;
+}
+
+.arcade-live .rank {
+  min-width: 1ch;
+  color: var(--arcade-muted);
+  font-weight: 700;
+}
+
+.arcade-live .avatar {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--arcade-line);
+  object-fit: cover;
+}
+
+/* With no picture, the first letter of the name */
+.arcade-live span.avatar {
+  display: grid;
+  place-items: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+/* Names are other players' words: kept apart from the text around them, whichever way they are written */
+.arcade-live .name {
+  min-width: 0;
+  max-width: 9ch;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  unicode-bidi: isolate;
+}
+
+.arcade-live .state {
+  color: var(--arcade-good);
+  font-size: 0.65rem;
+}
+
+.arcade-live-more {
+  padding: 3px 8px !important;
+  font-weight: 700;
+}
+
+/* "You passed Ann!" over the playfield, apart from the game's own hint. A long name is cut short, not the stage */
+.arcade-pass {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  z-index: 5;
+  max-width: calc(100% - 16px);
+  padding: 8px 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 999px;
+  background: var(--arcade-accent);
+  color: var(--arcade-on-accent);
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.arcade-pass.show {
+  animation: arcade-pass-in 0.3s ease-out;
+}
+
+@keyframes arcade-pass-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.9);
+  }
+}
+
+.arcade-place {
+  color: var(--arcade-gold);
+  font-weight: 700;
+}
+
+/* On a phone only the player's own name stays, to mark their entry */
+@media (max-width: 520px) {
+  .arcade-live li:not(.you) .name {
+    display: none;
+  }
+}
+
+/* The people button takes the bar's last spare room on the narrowest phones, where the game's logo would be crushed
+   under the score */
+@media (max-width: 340px) {
+  .arcade-bar-logo {
+    display: none;
   }
 }

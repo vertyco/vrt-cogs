@@ -7,6 +7,7 @@ import discord
 from aiohttp import web
 
 from .files import file_response, inject_head, resolve_inside
+from .game_routes import first_message, pump, session_pass
 from .games import Game
 from .looks import BUILTIN_LOOK, SettingsError, apply_look_change, effective_look
 from .menu import allowed_tabs, games_json, merge_disabled, merge_order, ordered_games, player_json
@@ -14,6 +15,7 @@ from .replies import (
     BAD_REQUEST,
     INSTANCE_FAILED,
     LOGIN_FAILED,
+    MAX_BODY,
     NO_CACHE,
     NOT_ALLOWED,
     NOT_IN_SERVER,
@@ -23,6 +25,7 @@ from .replies import (
     read_object,
 )
 from .sessions import ActivityContext
+from .sockets import CLOSE_SESSION, READY, Connection
 
 if t.TYPE_CHECKING:
     from .server import HubServer
@@ -45,6 +48,7 @@ class HubRoutes:
         app.router.add_get("/hub/api/menu", self.menu_state)
         app.router.add_post("/hub/api/settings", self.settings)
         app.router.add_get("/hub/api/ping", self.ping)
+        app.router.add_get("/hub/ws", self.menu_link)
         app.router.add_get("/hub/{build}/{path:.+}", self.hub_file)
         app.router.add_get("/", self.menu_page)
 
@@ -76,6 +80,32 @@ class HubRoutes:
     async def ping(self, request: web.Request) -> web.Response:
         # The host tells the setup check which address Discord's URL mapping points at
         return web.json_response({"application_id": str(self.bot.application_id), "host": request.host})
+
+    async def menu_link(self, request: web.Request) -> web.WebSocketResponse:
+        """The menu's live connection for the whole session: where its player is, and who else is in the window"""
+        ws = web.WebSocketResponse(max_msg_size=MAX_BODY, autoping=False)
+        await ws.prepare(request)
+        ctx = self.server.context_for(session_pass(await first_message(ws)))
+        if ctx is None:
+            await ws.close(code=CLOSE_SESSION, message=b"Session missing or expired")
+            return ws
+        conn = Connection(ws, ctx, None, None)
+        await conn.send(READY)
+        presence = self.server.presence
+        await presence.connect(conn)
+        try:
+            await pump(conn, self.menu_message)
+        finally:
+            presence.disconnect(conn)
+            if not ws.closed:
+                await conn.end(conn.closing or 1000)
+        return ws
+
+    async def menu_message(self, conn: Connection, data: t.Any) -> None:
+        try:
+            await self.server.presence.update(conn, data)
+        except Exception as e:
+            log.error("Live connection message handler of %s failed", conn.label, exc_info=e)
 
     async def token(self, request: web.Request) -> web.Response:
         body = await read_object(request) or {}

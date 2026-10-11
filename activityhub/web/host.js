@@ -3,6 +3,8 @@
 // page must never navigate or reload itself while inside Discord.
 import { DiscordSDK } from "./vendor/discord-sdk.js";
 import { request } from "./sdk.js";
+import { PeopleUI } from "./people.js";
+import { Presence } from "./presence.js";
 
 export const GAME_FRAME_ID = "game-frame";
 // How long a game takes to fade in over the menu
@@ -21,6 +23,12 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const SAFE_SIDES = ["top", "right", "bottom", "left"];
 // The longest text a game can add to the frame rate counter, which is one small pill
 const STAT_MAX = 40;
+// What hub.status() passes on. The bot cuts or drops anything longer too
+const STATUS_MAX = 60;
+const DATA_MAX = 1024;
+// Half an emoji in JSON text: JSON.stringify writes a lone surrogate as an escape like \ud83d, which the bot can't
+// turn back into text. A backslash that is itself escaped (\\ud83d) is only text, so the escapes are paired off
+const LONE_SURROGATE = /(?:^|[^\\])(?:\\\\)*\\u[dD][89a-fA-F]/;
 
 // An invisible box padded by the room Discord's own buttons (the back pill and Leave) and the phone's notch take
 // at each edge. Discord sets --discord-safe-area-inset-* on this page only; iOS gives only the browser's env()
@@ -71,6 +79,31 @@ async function getLogin(sdk, scopes) {
   return { session: login.session, accessToken: login.access_token, player: login.player, menu: login.menu };
 }
 
+// A copy of the data a game passed to hub.status() when the bot can pass it on, else null. It is a copy so the game
+// changing its object later can't push it over the limit or break it, since it is sent up to 250 ms after the call
+// and again after every reconnect
+function statusData(data) {
+  let text;
+  try {
+    text = JSON.stringify(data ?? null);
+    if (text === undefined) {
+      throw new TypeError("not a JSON value");
+    }
+  } catch (e) {
+    console.warn("ActivityHub: hub.status() data isn't JSON, so it was left out", e);
+    return null;
+  }
+  if (text.length > DATA_MAX) {
+    console.warn(`ActivityHub: hub.status() data is ${text.length} characters, over the ${DATA_MAX} the hub passes on`);
+    return null;
+  }
+  if (LONE_SURROGATE.test(text)) {
+    console.warn("ActivityHub: hub.status() data has half an emoji in it, which the hub can't pass on");
+    return null;
+  }
+  return JSON.parse(text);
+}
+
 export class Host {
   constructor(params, events) {
     this.events = events;
@@ -87,10 +120,21 @@ export class Host {
     new ResizeObserver(() => this.shareSafeArea()).observe(this.safeArea, { box: "border-box" });
     window.addEventListener("resize", () => this.shareSafeArea());
     window.addEventListener("message", (event) => this.checkGameMessage(event));
+    // The person whose Join opened the current game, and the menu's games by key, for names and icons
+    this.follow = null;
+    this.games = new Map();
+    this.presence = new Presence(this);
+    this.people = new PeopleUI(this);
+    // Discord hides the whole Activity at once, so this page sees it for every game
+    document.addEventListener("visibilitychange", () => this.presence.set({ away: document.hidden }));
     // loggedIn is enough to show the menu. ready also waits for Discord to accept the login, which games need
     // before they use the toolkit, so the menu shows while that last step runs.
     this.loggedIn = this.start();
     this.ready = this.loggedIn.then((login) => this.authenticate(login));
+    this.loggedIn.then(
+      (login) => login && this.presence.start(),
+      (e) => console.debug("ActivityHub: no menu link without a login", e),
+    );
   }
 
   async start() {
@@ -186,8 +230,10 @@ export class Host {
   }
 
   // The menu fades out at once, and the game stays hidden until its page has loaded
-  openGame(key) {
+  openGame(key, follow = null) {
     this.closeGame(false);
+    this.follow = follow;
+    this.presence.set({ where: key, status: "", data: null, busy: false });
     const frame = document.createElement("iframe");
     frame.id = GAME_FRAME_ID;
     frame.className = "game-frame loading";
@@ -210,6 +256,7 @@ export class Host {
       this.shareSafeArea();
       frame.focus();
       this.showGame(frame);
+      this.people.gameLoaded();
     });
     this.showTimer = setTimeout(() => this.showGame(frame), SHOW_ANYWAY_MS);
     document.body.append(frame);
@@ -245,6 +292,9 @@ export class Host {
     this.frame.remove();
     this.frame = null;
     this.gameKey = null;
+    this.follow = null;
+    this.presence.set({ where: null, status: "", data: null, busy: false });
+    this.people.gameClosed();
     this.setStat("");
     this.setLatency(null);
     document.body.classList.remove("opening", "playing");
@@ -264,6 +314,55 @@ export class Host {
   setLatency(ms) {
     if (this.events.onLatency) {
       this.events.onLatency(Number.isFinite(ms) ? Math.max(0, Math.round(ms)) : null);
+    }
+  }
+
+  // The menu's games, so people lists can say "Snake" with its icon instead of "snake"
+  setGames(games) {
+    this.games = new Map(games.map((game) => [game.key, game]));
+  }
+
+  gameName(key) {
+    return this.games.get(key)?.name || key || "";
+  }
+
+  gameIcon(key) {
+    return this.games.get(key)?.icon || null;
+  }
+
+  // hub.status(): the open game's line about its player, and data for its own pages. Cut by whole characters, so an
+  // emoji at the limit is kept or dropped as one, never split
+  setStatus(text, data = null) {
+    const status = text === null || text === undefined ? "" : Array.from(String(text)).slice(0, STATUS_MAX).join("");
+    this.presence.set({ status, data: statusData(data) });
+  }
+
+  // hub.busy(): the open game's player is mid-round, so Join asks before taking them away
+  setBusy(on) {
+    this.presence.set({ busy: on === true });
+  }
+
+  // Discord's own window for inviting friends into this Activity
+  invite() {
+    if (!this.sdk) {
+      return;
+    }
+    this.sdk.commands
+      .openInviteDialog()
+      .catch((e) => console.warn("ActivityHub: Discord didn't open its invite window", e));
+  }
+
+  // Join from a people list: open the game they're in, with them as the follow. Mid-round, ask first
+  async join(person) {
+    if (this.frame && this.presence.state.busy && !(await this.people.confirmLeave(person))) {
+      return;
+    }
+    this.people.close();
+    const follow = { id: person.id, name: person.name };
+    if (this.events.onJoin) {
+      this.events.onJoin(person.game, follow);
+    } else {
+      this.openGame(person.game, follow);
     }
   }
 

@@ -10,8 +10,10 @@ from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import WebDriverWait
 
+from activityhub.common.presence import FIELDS
 from activityhub.common.server import HUB_WEB_DIR, HubServer
-from activityhub.tests.fakes import GUILD_ID, MEMBER_ID
+from activityhub.common.sockets import Connection
+from activityhub.tests.fakes import GUILD_ID, MEMBER_ID, context_for
 
 log = logging.getLogger("red.vrt.activityhub.tests.browser")
 
@@ -51,6 +53,9 @@ FAKE_SDK = """export class DiscordSDK {
         return { access_token };
       },
       getInstanceConnectedParticipants: async () => ({ participants: [] }),
+      openInviteDialog: async () => {
+        calls.invite = (calls.invite || 0) + 1;
+      },
     };
   }
 
@@ -110,6 +115,8 @@ def start_chrome():
     """Headless Chrome, or None when it can't start on this machine"""
     options = webdriver.ChromeOptions()
     options.add_argument("--headless=new")
+    # Headless Chrome still plays the games' sounds through the computer's speakers
+    options.add_argument("--mute-audio")
     options.add_argument("--window-size=1280,800")
     try:
         return webdriver.Chrome(options=options)
@@ -146,6 +153,19 @@ def wait_for(driver, script: str, timeout: float = 10):
     return WebDriverWait(driver, timeout).until(lambda d: d.execute_script(f"return {script}"))
 
 
+class SilentSocket:
+    """A second player's menu link in browser tests: it takes every message and shows none"""
+
+    closed = False
+
+    async def send_str(self, text):
+        return None
+
+    async def close(self, code=1000, message=b"", drain=True):
+        self.closed = True
+        return True
+
+
 class LiveHub:
     """The hub's web server on a background thread, so the browser can load it while the test drives it"""
 
@@ -180,7 +200,41 @@ class LiveHub:
         self.thread.start()
         asyncio.run_coroutine_threadsafe(self.serve(), self.loop).result(10)
 
+    def add_person(self, user_id, where=None, status="", data=None, busy=False, away=False, instance="i-1"):
+        """Someone else in a window, as the bot's people list sees them, for testing what a page shows"""
+
+        async def add():
+            conn = Connection(SilentSocket(), context_for(self.hub, user_id=user_id, instance_id=instance), None, None)
+            await self.server.presence.connect(conn)
+            state = {"where": where, "status": status, "data": data, "busy": busy, "away": away}
+            await self.server.presence.update(conn, state)
+            return conn
+
+        return asyncio.run_coroutine_threadsafe(add(), self.loop).result(5)
+
+    def update_person(self, conn, **state):
+        # presence.update ignores a message with a field it doesn't know, so a misspelt one would change nothing
+        unknown = sorted(set(state) - FIELDS)
+        if unknown:
+            raise ValueError(f"Not person fields: {unknown}. They are {sorted(FIELDS)}")
+        defaults = {"where": None, "status": "", "data": None, "busy": False, "away": False}
+        coro = self.server.presence.update(conn, {**defaults, **state})
+        asyncio.run_coroutine_threadsafe(coro, self.loop).result(5)
+
+    def drop_person(self, conn):
+        async def drop():
+            self.server.presence.disconnect(conn)
+
+        asyncio.run_coroutine_threadsafe(drop(), self.loop).result(5)
+
+    async def shut_down(self) -> None:
+        await self.runner.cleanup()
+        # After cleanup, whose closed menu links start the graces this cancels
+        self.server.presence.stop()
+        # One turn of the loop, so the cancelled tasks finish before it stops
+        await asyncio.sleep(0)
+
     def stop(self) -> None:
-        asyncio.run_coroutine_threadsafe(self.runner.cleanup(), self.loop).result(15)
+        asyncio.run_coroutine_threadsafe(self.shut_down(), self.loop).result(15)
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.thread.join(5)

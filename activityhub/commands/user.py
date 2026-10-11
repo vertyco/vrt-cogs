@@ -76,7 +76,7 @@ class UserCommands(MixinMeta):
             if interaction.interaction is None:
                 raise TypeError(
                     "hub.launch() needs the discord.Interaction from a button press or slash command. "
-                    "A text command has none: post a button that calls launch instead (DEVELOPERS.md section 13)."
+                    "A text command has none: post a button that calls launch instead (DEVELOPERS.md section 14)."
                 )
             interaction = interaction.interaction
         # Opening the Activity is a reply to the interaction, and an interaction gets only one first reply

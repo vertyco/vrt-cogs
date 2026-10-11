@@ -161,7 +161,7 @@ async def test_a_text_command_context_is_refused_with_a_fix(cog, discord_calls):
         await cog.launch(command_context(None), "demo")
     assert str(caught.value) == (
         "hub.launch() needs the discord.Interaction from a button press or slash command. "
-        "A text command has none: post a button that calls launch instead (DEVELOPERS.md section 13)."
+        "A text command has none: post a button that calls launch instead (DEVELOPERS.md section 14)."
     )
     assert discord_calls["launched"] == [] and cog.launches.wanted == {}
 
