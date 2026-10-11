@@ -12,8 +12,12 @@
         <div class="field" id="field"></div>
         <div class="hud" id="hud" hidden></div>
         <div class="sides" id="sides" hidden>
-          <span class="side-tag" id="side-1"></span>
-          <span class="side-tag" id="side-2"></span>
+          <div class="versus">
+            <span class="side-tag" id="side-1"></span>
+            <span class="vs">vs</span>
+            <span class="side-tag" id="side-2"></span>
+          </div>
+          <span class="side-watchers" id="side-watchers" hidden></span>
         </div>
         <div class="overlay" id="overlay" hidden>
           <p class="big" id="overlay-big"></p>
@@ -91,7 +95,7 @@
           <button type="button" class="button" id="open-help">Instructions</button>
           <button type="button" class="button" id="open-leaderboard">Fastest wins</button>
         </div>
-        <p class="watching" id="watching"></p>
+        <div class="watching" id="watching" hidden></div>
       </section>
 
       <section class="panel" id="results" aria-label="Results" hidden>

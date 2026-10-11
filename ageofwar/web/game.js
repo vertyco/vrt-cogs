@@ -17,14 +17,18 @@ const SIDE_NAMES = ["Left base", "Right base"];
 // The original's last screens
 const VICTORY = ["Victory!", "Congratulations, you won the war and destroyed your ennemy."];
 const DEFEAT = ["Defeat!", "Maybe you didn't tried hard enough?"];
-// Room the corner buttons need between the menu strips: five buttons and their gaps, with a margin, at full size
-// and at their smaller size
-const CORNER_ROOM = 230;
-const SMALL_CORNER_ROOM = 180;
+// Room the corner buttons and the people button need between the menu strips: five buttons, the people button and
+// their gaps, with a margin, at full size and at their smaller size
+const CORNER_ROOM = 290;
+const SMALL_CORNER_ROOM = 244;
 // The menu button whose hover picture is the sword that marks a line
 const SWORD = 1032;
 // The original's loading bar is 288 long when full
 const LOADING_BAR = 288;
+// People who aren't at a base show as faces, this many at most, then "+N"
+const WATCHER_FACES = 6;
+// Longer names are cut to this many characters on the side tags, where both sides' names share the screen
+const TAG_NAME_MAX = 12;
 const sound = new Sound();
 const page = {
   hub: null,
@@ -39,10 +43,24 @@ const page = {
   updates: 0,
   toastTimer: null,
   preview: false,
+  // What the watcher faces last showed, so an identical list leaves them alone
+  watchLook: null,
+  // The status last given to the hub, and whether the game's connection has closed for good
+  reported: null,
+  closed: false,
 };
 
 function $(id) {
   return document.getElementById(id);
+}
+
+// What a person sees as single characters, so a flag or a joined emoji is never split. Older browsers have no
+// segmenter and count code points instead
+const segmenter =
+  typeof Intl.Segmenter === "function" ? new Intl.Segmenter(undefined, { granularity: "grapheme" }) : null;
+
+function characters(text) {
+  return segmenter ? Array.from(segmenter.segment(text), (part) => part.segment) : Array.from(text);
 }
 
 // ---------- Starting ----------
@@ -76,6 +94,8 @@ async function start() {
     showOverlay("Sorry!", e.message);
     return;
   }
+  document.querySelector(".corner").append(page.hub.peopleButton());
+  page.hub.onPeople(renderWatchers);
   if (page.hub.offline) {
     await showPreview();
     return;
@@ -100,6 +120,7 @@ async function goLive() {
     page.conn = await page.hub.socket();
   } catch (e) {
     showOverlay("Sorry!", CLOSED_BECAUSE[e.status] || e.message);
+    leaveGame();
     return;
   }
   page.conn.on(receive);
@@ -112,6 +133,7 @@ async function goLive() {
   page.conn.onClose((code) => {
     $("banner").hidden = true;
     showOverlay("Sorry!", CLOSED_BECAUSE[code] || CLOSED_OTHERWISE);
+    leaveGame();
   });
 }
 
@@ -217,7 +239,122 @@ function applyState(state) {
   showSetup(state);
   showResults(state);
   showPlaying(state);
+  renderWatchers();
+  report(state);
   layout(page.scene.scale);
+}
+
+// ---------- Who's here ----------
+
+// What the rest of the window sees this player doing: a status line, its data, and whether a battle is on for them
+function activity(state) {
+  const seat = page.mySeat;
+  if (seat === null) {
+    return ["Watching", null, false];
+  }
+  let text = "Setting up";
+  if (state.stage === "playing") {
+    const other = 1 - seat;
+    const rival = state.players[other] === "human" ? state.seats[other].name : "CPU";
+    text = `Battle vs ${rival}`;
+  } else if (state.stage === "results" && state.results) {
+    text = state.results.winner - 1 === seat ? "Won" : "Lost";
+  }
+  return [text, { seat }, state.stage === "playing"];
+}
+
+// The hub passes on whatever it is told, even when nothing changed, so only changes go to it
+function tell(text, data, busy) {
+  const look = JSON.stringify([text, data, busy]);
+  if (look === page.reported) {
+    return;
+  }
+  page.reported = look;
+  page.hub.status(text, data);
+  page.hub.busy(busy);
+}
+
+function report(state) {
+  if (!page.closed) {
+    tell(...activity(state));
+  }
+}
+
+// The game's connection is gone for good, so a friend's Join has nothing to interrupt
+function leaveGame() {
+  page.closed = true;
+  tell("Not connected", null, false);
+}
+
+// The people here who aren't at a base, from the hub's list: in the setup panel, and next to the side names in a
+// battle
+function renderWatchers() {
+  const state = page.state;
+  if (!state) {
+    return;
+  }
+  const people = page.hub.people;
+  const seated = new Set(state.seats.filter((seat) => seat.kind === "human").map((seat) => seat.id));
+  const watchers = people.filter((person) => person.here && !seated.has(person.id));
+  // The hub's list counts people. The bot's number counts connections, so someone with the game open on two
+  // devices is two there. It stands in only while the hub has no list
+  const count = people.length ? watchers.length : state.watching;
+  const shown = watchers.slice(0, WATCHER_FACES);
+  // Lists arrive several times a second, and a face rebuilt between a press and its release loses the tap
+  const faceKeys = shown.map((person) => [person.id, person.name, person.avatar, person.you, person.away]);
+  const look = JSON.stringify([count, faceKeys]);
+  if (look === page.watchLook) {
+    return;
+  }
+  page.watchLook = look;
+  for (const box of [$("watching"), $("side-watchers")]) {
+    box.hidden = !count;
+    box.replaceChildren(...(count ? watcherRow(shown, count) : []));
+  }
+}
+
+function watcherRow(shown, count) {
+  const row = shown.map(watcherFace);
+  const more = count - row.length;
+  if (more > 0 && row.length) {
+    const extra = document.createElement("span");
+    extra.className = "more";
+    extra.textContent = `+${more}`;
+    row.push(extra);
+  }
+  const label = document.createElement("span");
+  label.className = "label";
+  label.textContent = `${count} watching`;
+  row.push(label);
+  return row;
+}
+
+// A watcher's picture. Hovering shows their name; tapping says it, for phones
+function watcherFace(person) {
+  const face = document.createElement("button");
+  face.type = "button";
+  face.className = "face";
+  const name = person.you ? "You" : person.name;
+  face.title = name;
+  face.setAttribute("aria-label", name);
+  face.classList.toggle("away", Boolean(person.away));
+  const letter = document.createTextNode(characters(name)[0]?.toUpperCase() ?? "");
+  if (person.avatar) {
+    const img = document.createElement("img");
+    img.alt = "";
+    img.addEventListener("error", () => img.replaceWith(letter));
+    img.src = person.avatar;
+    face.append(img);
+  } else {
+    face.append(letter);
+  }
+  face.addEventListener("click", () => {
+    // A focused button would also take the Space key that pauses
+    face.blur();
+    // The name sits between marks that keep a right-to-left name from turning the sentence around
+    showToast(person.you ? "That's you." : `\u2068${person.name}\u2069 is watching.`, 2500);
+  });
+  return face;
 }
 
 // ---------- Setup ----------
@@ -243,7 +380,6 @@ function showSetup(state) {
   $("start").hidden = !host;
   $("stand").hidden = page.mySeat === null;
   $("hint").textContent = setupHint(state, host, vsComputer);
-  $("watching").textContent = state.watching ? `${state.watching} watching` : "";
 }
 
 function seatCard(seat, number) {
@@ -296,13 +432,10 @@ function showPlaying(state) {
   const playing = state.stage === "playing";
   const side = playing ? mySide() : null;
   $("hud").hidden = side === null;
-  const watching = playing && side === null;
-  $("sides").hidden = !watching;
-  if (watching) {
-    state.seats.forEach((seat, number) => {
-      const name = state.players[number] === "cpu" ? "Computer" : seat.name;
-      $(`side-${number + 1}`).textContent = seat.standIn ? `${name} (computer playing)` : name;
-    });
+  // Everyone sees whose side is whose, not only the people watching
+  $("sides").hidden = !playing;
+  if (playing) {
+    state.seats.forEach((seat, number) => showTag($(`side-${number + 1}`), state.players[number], seat));
   }
   const solo = playing && state.players.filter((kind) => kind === "human").length === 1;
   $("pause").hidden = !(solo && side !== null);
@@ -314,6 +447,26 @@ function showPlaying(state) {
   } else {
     hideOverlay();
   }
+}
+
+// A side's name tag. A name too long for the screen is cut, and a base the computer plays says so under the name.
+// The arrow that says which base it is (style.css) belongs to the name, so it stays with it when the row wraps
+function showTag(tag, kind, seat) {
+  const name = document.createElement("span");
+  name.className = "tag-name";
+  name.textContent = kind === "cpu" ? "Computer" : cut(seat.name);
+  tag.replaceChildren(name);
+  if (seat.standIn) {
+    const note = document.createElement("span");
+    note.className = "note";
+    note.textContent = "(computer playing)";
+    tag.append(note);
+  }
+}
+
+function cut(name) {
+  const letters = characters(name);
+  return letters.length > TAG_NAME_MAX ? `${letters.slice(0, TAG_NAME_MAX - 1).join("")}\u2026` : name;
 }
 
 function togglePause() {

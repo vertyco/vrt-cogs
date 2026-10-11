@@ -1,6 +1,6 @@
 {
   "author": ["Vertyco"],
-  "description": "Age of War for ActivityHub, ported from Louissi's Flash game, with its original art, sounds and music. Defend your base and destroy the enemy's through five ages, from cavemen to super soldiers: train units, build and sell turrets, add turret spots, evolve with experience, and call down each age's special attack. Play the original's computer on Normal, Harder or Impossible, or a friend in the same Activity, while others watch. The bot runs every battle, and a global leaderboard keeps each player's fastest win on each difficulty. Works on desktop and on phones held either way. Needs ActivityHub 0.1.9 or later.",
+  "description": "Age of War for ActivityHub, ported from Louissi's Flash game, with its original art, sounds and music. Defend your base and destroy the enemy's through five ages, from cavemen to super soldiers: train units, build and sell turrets, add turret spots, evolve with experience, and call down each age's special attack. Play the original's computer on Normal, Harder or Impossible, or a friend in the same Activity, while others watch. The bot runs every battle, and a global leaderboard keeps each player's fastest win on each difficulty. Works on desktop and on phones held either way. Needs ActivityHub 0.5.0 or later.",
   "disabled": false,
   "end_user_data_statement": "This cog stores each player's Discord user ID, Discord display name, and their fastest Age of War win and win count on each difficulty, for the global leaderboard.",
   "hidden": true,

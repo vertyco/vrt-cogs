@@ -10,7 +10,7 @@ Defend your base and destroy the enemy's, for [ActivityHub](../activityhub/READM
 
 ## Setup
 
-Age of War needs ActivityHub 0.1.9 or later, loaded and set up (see its README). Then:
+Age of War needs ActivityHub 0.5.0 or later, loaded and set up (see its README). Then:
 
 ```
 [p]cog install vrt-cogs ageofwar

@@ -1,5 +1,14 @@
 # Age of War Changelog
 
+## 0.3.0
+
+Needs ActivityHub 0.5.0 or later.
+
+- Both sides' names now show for the players too during a battle, not only for people watching. They sit in the middle of the screen under the round buttons, where the menus and health bars stay clear, as "◀ Left name vs Right name ▶": each arrow points to that name's base. A name longer than 12 characters is cut short, and the people watching are on a row of their own under the names.
+- "2 watching" is now a row of the watchers' pictures, in setup and next to the side names during a battle. Hover one (or tap it on a phone) to see who it is. Watchers who are away are dimmed.
+- The hub's people button sits with the round buttons, and the menu and people panel show what you're doing: "Battle vs Ann", "Won", "Lost" or "Watching".
+- Join from the hub's people list asks first while you're in a battle.
+
 ## 0.2.1
 
 - Opening the game shows the original's black loading screen, with its bar filling as the art downloads, instead of a half-built setup screen with a broken logo. The setup screen fades in once everything is ready.

@@ -220,23 +220,85 @@ button.art:active {
   pointer-events: none;
 }
 
-/* People watching see who plays each base */
+/* Everyone sees who plays each base, with the people watching. They sit in the middle, under the round buttons: the
+   menus and the bases' health bars keep the sides of the screen. The names are a row of their own, the faces another.
+   The top is 34 px lower than the round buttons need, so an arrival note sliding out of the people button (a 6 px gap
+   and about 28 px of note) doesn't cover a name */
 .sides {
   position: absolute;
-  top: calc(var(--safe-top) + 8px);
+  top: calc(var(--safe-top) + 84px);
   left: calc(var(--safe-left) + 10px);
   right: calc(var(--safe-right) + 10px);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   pointer-events: none;
 }
 
+/* On wide windows, under the menus' wooden panels (the original draws them 75 high), and under the round buttons
+   too when those sit there */
+.app[data-layout="wide"] .sides {
+  top: calc(var(--safe-top) + 75px * var(--left-scale, 1) + 42px);
+}
+
+.app[data-layout="wide"][data-corner="below"] .sides {
+  top: calc(var(--safe-top) + 75px * var(--left-scale, 1) + 84px);
+}
+
+/* Centered under the round buttons when those sit in the gap between the menus, which is not the screen's middle */
+.app[data-layout="wide"]:not([data-corner="below"]) .sides {
+  left: calc((410px * var(--left-scale, 1) + 100% - 240px * var(--right-scale, 1)) / 2);
+  right: auto;
+  transform: translateX(-50%);
+}
+
+/* The left base's name, "vs", the right base's name. The arrows point to each name's base, and they are part of the
+   name, so a row that wraps still says which is which */
+.versus {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.vs {
+  color: var(--paper);
+  font: bold 12px Arial, Helvetica, sans-serif;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+/* The text form of each arrow, never the emoji one */
+#side-1 .tag-name::before {
+  content: "\25C0\FE0E";
+  margin-right: 0.4em;
+}
+
+#side-2 .tag-name::after {
+  content: "\25B6\FE0E";
+  margin-left: 0.4em;
+}
+
 .side-tag {
+  box-sizing: border-box;
+  max-width: 100%;
   padding: 4px 10px;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.45);
   color: var(--paper);
   font: bold 14px Arial, Helvetica, sans-serif;
+  text-align: center;
+  /* A name can't turn the words around it */
+  unicode-bidi: isolate;
+  overflow-wrap: anywhere;
+}
+
+.side-tag .note {
+  display: block;
+  font-size: 12px;
+  opacity: 0.85;
 }
 
 /* ---------- Loading ---------- */
@@ -281,6 +343,7 @@ button.art:active {
   left: calc((410px * var(--left-scale, 1) + 100% - 240px * var(--right-scale, 1)) / 2);
   transform: translateX(-50%);
   display: flex;
+  align-items: center;
   gap: 6px;
   z-index: 5;
 }
@@ -685,4 +748,74 @@ button.art:active {
   margin-left: var(--right-pad);
   margin-bottom: calc(120px * (var(--right-scale) - 1));
   transform-origin: 0 0;
+}
+
+/* ---------- Who's here ---------- */
+
+.watching,
+.side-watchers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Over the sky, in a pill like the side names */
+.side-watchers {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--paper);
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+}
+
+.watching .face,
+.side-watchers .face {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  overflow: hidden;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: #5a4630;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto;
+  unicode-bidi: isolate;
+}
+
+.watching .face.away,
+.side-watchers .face.away {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.watching .face img,
+.side-watchers .face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watching .more,
+.watching .label,
+.side-watchers .more,
+.side-watchers .label {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+/* As tall as the round buttons beside it, which are smaller only in a battle with little room */
+.app[data-stage="playing"][data-corner="small"] .corner .hub-people {
+  --hub-people-size: 30px;
+}
+
+/* One picture on the people button in a battle, where the buttons share the gap between the menus */
+.app[data-stage="playing"] .corner .hub-stack .hub-avatar:nth-child(n + 2) {
+  display: none;
 }
