@@ -172,6 +172,29 @@ def test_look_previews_live_and_saves(driver, live):
     assert live.hub.config.users[MEMBER_ID]["look"] == {"layout": "list"}
 
 
+def test_keyboard_focus_goes_into_settings_and_back_to_the_gear(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    open_menu(driver, live, DISCORD_QUERY)
+    open_settings(driver)
+    assert driver.execute_script("return document.activeElement.dataset.tab") == "look"
+    ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+    wait_for(driver, "!document.body.classList.contains('panel-open')")
+    assert driver.execute_script("return document.activeElement.id") == "gear"
+
+
+def test_a_save_after_a_bot_restart_logs_in_again_and_keeps_the_edits(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    open_menu(driver, live, DISCORD_QUERY)
+    open_settings(driver)
+    Select(driver.find_element(By.ID, "field-layout")).select_by_value("list")
+    # The bot restarted while the panel was open, and forgot the login
+    live.hub.sessions.sessions.clear()
+    save(driver)
+    assert live.hub.config.users[MEMBER_ID]["look"] == {"layout": "list"}
+    assert driver.execute_script("return document.body.classList.contains('panel-open')")
+    assert driver.execute_script("return window.fakeDiscord") == {"created": 1, "authorize": 2, "authenticate": 1}
+
+
 def test_reset_is_staged_until_saved(driver, live):
     live.hub.config.globals["look"] = {"theme": "standard"}
     live.hub.config.user_from_id(MEMBER_ID).data["look"] = {"layout": "list"}
@@ -1145,6 +1168,26 @@ def inside_the_screen(driver, selector):
     )
 
 
+def test_the_hover_list_moves_with_its_card_when_the_page_scrolls(driver, live, tmp_path):
+    for i in range(8):
+        folder = write_demo_web(tmp_path / f"extra{i}")
+        register(live.hub, DemoCog(folder, key=f"extra{i}", name=f"Extra {i}", cog_name=f"Extra{i}"))
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "list"}
+    viewport(driver, 1280, 420)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        live.add_person(MANAGER_ID, where="demo")
+        wait_for(driver, BUBBLE)
+        hover_demo(driver)
+        gap = f"{HOVER}.getBoundingClientRect().top - document.querySelector('{DEMO_CARD}').getBoundingClientRect().bottom"
+        before = driver.execute_script(f"return {gap}")
+        driver.execute_script("window.scrollBy(0, 40)")
+        wait_for(driver, "window.scrollY > 0")
+        wait_for(driver, f"Math.abs(({gap}) - {before}) < 1")
+    finally:
+        plain_device(driver)
+
+
 @pytest.mark.parametrize(("width", "height", "layout"), [(1280, 568, "grid"), (390, 844, "list")])
 def test_a_crowded_hover_list_stays_on_the_screen_and_scrolls(driver, live, width, height, layout):
     live.hub.config.globals["look"] = {"theme": "standard", "layout": layout}
@@ -1493,6 +1536,58 @@ def test_a_long_list_scrolls_in_the_orb_by_wheel_and_by_touch(driver, live):
         assert driver.execute_script(f"return {SELECTED}") == "demo"
     finally:
         plain_device(driver)
+
+
+PANEL_BODY = "document.querySelector('.hub-people-panel .hub-panel-body')"
+PANEL_RECT = f"const r = {PANEL_BODY}.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]"
+
+
+def open_crowded_people_panel(driver, live):
+    """The Orb menu with the people panel open over it, holding more people than fit"""
+    open_menu(driver, live, DISCORD_QUERY)
+    crowd(driver, 30)
+    wait_for(driver, SETTLED)
+    driver.execute_script("window.activityhubHost.people.open()")
+    wait_for(driver, f"{PANEL_BODY}.scrollHeight > {PANEL_BODY}.clientHeight")
+    # Measured once the panel has slid all the way in
+    wait_for(driver, SETTLED)
+    box = driver.execute_script(PANEL_RECT)
+    return (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+
+
+def test_the_people_panel_scrolls_over_the_orb_by_touch(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        x, y = open_crowded_people_panel(driver, live)
+        selected = driver.execute_script(f"return {SELECTED}")
+        # A finger drag scrolls the panel, and the ring behind it stays where it was
+        slide(driver, (x, y + 100), (x, y - 100))
+        wait_for(driver, f"{PANEL_BODY}.scrollTop > 0")
+        assert driver.execute_script(f"return {SELECTED}") == selected
+    finally:
+        plain_device(driver)
+
+
+def wheel_at(driver, x, y):
+    """Two notches of a mouse wheel, down, with the mouse at x, y"""
+    driver.execute_cdp_cmd(
+        "Input.dispatchMouseEvent", {"type": "mouseWheel", "x": x, "y": y, "deltaX": 0, "deltaY": 240}
+    )
+
+
+def test_the_people_panel_scrolls_over_the_orb_by_wheel_and_keeps_its_keys(driver, live):
+    driver.set_window_size(1280, 600)
+    x, y = open_crowded_people_panel(driver, live)
+    selected = driver.execute_script(f"return {SELECTED}")
+    wheel_at(driver, x, y)
+    wait_for(driver, f"{PANEL_BODY}.scrollTop > 0")
+    # The arrow keys belong to the panel too, not the ring behind it
+    ActionChains(driver).send_keys(Keys.ARROW_DOWN).perform()
+    assert driver.execute_script(f"return {SELECTED}") == selected
+    # Once the panel closes, the ring takes the wheel again
+    driver.execute_script("window.activityhubHost.people.close()")
+    wheel_at(driver, x, y)
+    wait_for(driver, f"{SELECTED} !== '{selected}'")
 
 
 def tab_to_a_hover_join(driver):

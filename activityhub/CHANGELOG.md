@@ -1,5 +1,18 @@
 # ActivityHub Changelog
 
+## 0.6.1
+
+- In the Orb menu, a long **Who's here** panel scrolls with the mouse wheel and a finger. Before, the wheel, a slide or the arrow keys in it moved the games behind it instead, and the panel stayed stuck at the top.
+- Saving settings right after the bot restarted keeps your changes: the menu logs in again by itself and saves them. Before, the panel closed and the changes were lost.
+- When the bot can't be reached at all (a dropped network, or the bot is down), the menu and the included games say "Couldn't reach the bot. Check your connection and try again." instead of the browser's own words, like "Failed to fetch".
+- In the Standard theme, the list of who's playing a game moves with its card when the page scrolls, instead of staying behind.
+- Closing the **Who's here** panel in the menu puts keyboard focus back where it was, like the row of faces in the header. Opening Settings moves keyboard focus into it, and closing Settings puts it back on the gear (or the Settings pod in the Orb).
+- In a DM call, the menu's header shows your display name instead of your account handle.
+
+For game developers:
+
+- `hub.api()` throws a `HubError` with status `0` and a plain message when no answer comes back at all, instead of the browser's own `TypeError`. `REFERENCE.md` says so.
+
 ## 0.6.0
 
 - The menu's **Payouts** settings tab is gone. Server admins now set each included game's payouts from a gear button in that game's own top bar, the way Marble Munch does it. The gear sits in the bar between rounds: before a round's first move, and on the results screen. During a round, paused or not, an admin's bar is the same as everyone's. Only people who can change the payouts see the gear: server admins, or only the bot owner when the bank is global.

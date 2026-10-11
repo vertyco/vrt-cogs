@@ -255,6 +255,17 @@ def test_a_reply_that_isnt_json_is_an_error(driver, live):
     assert caught == [True, 200, "The bot's reply wasn't valid JSON."]
 
 
+def test_a_request_that_gets_no_answer_says_so_in_plain_words(driver, live):
+    # A dropped network or a bot that is down: the browser's own words for it differ ("Failed to fetch", "Load failed")
+    open_game_in_host(driver, live)
+    caught = in_game(
+        driver,
+        "window.fetch = async () => { throw new TypeError('Failed to fetch'); };"
+        "hub.api('echo').then(() => done('resolved'), (e) => done([e instanceof HubError, e.status, e.message]));",
+    )
+    assert caught == [True, 0, "Couldn't reach the bot. Check your connection and try again."]
+
+
 def test_a_live_message_json_cant_send_is_refused(driver, live):
     open_game_in_host(driver, live)
     caught = in_game(

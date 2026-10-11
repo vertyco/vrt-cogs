@@ -284,7 +284,8 @@ function renderHeader() {
     name = player.guildName;
     image = player.guildIcon;
   } else if (player) {
-    name = player.username;
+    // The name Discord shows for them, not their account handle
+    name = player.displayName || player.username;
     image = player.avatar;
   }
   $("who-name").textContent = name;
@@ -665,6 +666,12 @@ function focusSelected() {
   }
 }
 
+// The ring takes the arrow keys, the wheel and slides only while nothing covers it: a game, Settings or the people
+// panel. A panel over it scrolls the usual way, and its keys stay its own
+function ringFree() {
+  return orbTheme() && page.staged === null && !page.host.frame && !page.host.people.isOpen();
+}
+
 // Up and down, the scroll wheel, or a swipe move between the pills like a controller. A tap opens a game without
 // the move sound.
 function bindOrb() {
@@ -693,7 +700,7 @@ function bindOrb() {
   document.addEventListener("keydown", (event) => {
     page.touch = false;
     const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
-    if (!step || !orbTheme() || page.staged !== null || page.host.frame) {
+    if (!step || !ringFree()) {
       return;
     }
     event.preventDefault();
@@ -704,7 +711,7 @@ function bindOrb() {
   document.addEventListener(
     "wheel",
     (event) => {
-      if (!orbTheme() || page.staged !== null || page.host.frame) {
+      if (!ringFree()) {
         return;
       }
       event.preventDefault();
@@ -744,8 +751,8 @@ function layoutOrb() {
 function bindSwipe() {
   let swipe = null;
   document.addEventListener("pointerdown", (event) => {
-    const ring = orbTheme() && page.staged === null && !page.host.frame;
-    swipe = ring && event.pointerType === "touch" ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
+    const touch = ringFree() && event.pointerType === "touch";
+    swipe = touch ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
   });
   document.addEventListener("pointermove", (event) => {
     if (!swipe || event.pointerId !== swipe.id) {
@@ -965,6 +972,17 @@ function bindHover() {
       hideHover();
     }
   });
+  // The list is placed on the screen, so when the page scrolls (a long Standard menu) it moves with its card instead
+  // of staying behind
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (page.hoverKey) {
+        showHover(page.hoverKey);
+      }
+    },
+    { passive: true },
+  );
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       hideHover();
@@ -1254,15 +1272,22 @@ function closeByPlayer() {
   }
   sounds.play("back");
   closePanel();
-  focusSelected();
+  // Keyboard focus goes back to what opened Settings: its pod in the Orb, the gear in the Standard theme
+  if (orbTheme()) {
+    focusSelected();
+  } else {
+    $("gear").focus({ preventScroll: true });
+  }
 }
 
+// Keyboard focus moves into the panel, so Tab doesn't wander through the menu behind it first
 function openPanel() {
   selectTab(page.state.tabs[0]);
   turnMenu(1);
   document.body.classList.add("panel-open");
   $("panel").inert = false;
   $("panel").setAttribute("aria-hidden", "false");
+  $("tabs").querySelector('[aria-selected="true"]')?.focus({ preventScroll: true });
 }
 
 // Closing drops unsaved edits: the menu goes back to the saved state
@@ -1582,10 +1607,28 @@ function saveBody() {
   return body;
 }
 
+// A bot restart forgets every login. The save goes again once with a fresh login, like a game's request does, so
+// the edits on screen aren't thrown away
+async function sendSettings(body) {
+  try {
+    return await request("/hub/api/settings", { body, session: page.host.login?.session });
+  } catch (e) {
+    if (e.status !== 401 || !page.host.inDiscord) {
+      throw e;
+    }
+    // Without a fresh login the refusal stands, and the menu says the session expired
+    const login = await page.host.relogin().catch((failed) => {
+      console.error(failed);
+      throw e;
+    });
+    return request("/hub/api/settings", { body, session: login.session });
+  }
+}
+
 async function save() {
   status("Saving…");
   try {
-    page.state = await request("/hub/api/settings", { body: saveBody(), session: page.host.login?.session });
+    page.state = await sendSettings(saveBody());
   } catch (e) {
     if (e.status === 401) {
       await sessionExpired();

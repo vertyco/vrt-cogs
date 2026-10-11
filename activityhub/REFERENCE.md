@@ -196,7 +196,7 @@ These are the three things you use from it:
 |---|---|
 | `connect()` | Returns a promise of the `hub` object below. Inside Discord it waits for the menu's login first. It rejects, with Discord's message, if Discord didn't accept the login: catch it and show `e.message` next to your Back button, like the quick start does. |
 | `backToMenu()` | Closes your game and shows the menu. |
-| `HubError` | The error type `hub.api()` and `hub.socket()` throw. `e.message` is readable text. `e.status` is `400` for your own `{"error"}` replies (the same as the hub's "Bad request."), the HTTP status for the hub's other errors (the number a web server answers with, like `401` or `413`), the close code for live connections, and `0` offline. |
+| `HubError` | The error type `hub.api()` and `hub.socket()` throw. `e.message` is readable text. `e.status` is `400` for your own `{"error"}` replies (the same as the hub's "Bad request."), the HTTP status for the hub's other errors (the number a web server answers with, like `401` or `413`), the close code for live connections, and `0` offline or when no answer came at all (a dropped network, or the bot is down), with the message "Couldn't reach the bot. Check your connection and try again." |
 
 A red "400 (Bad Request)" line in the browser console is normal for `{"error"}` replies: that is how they travel.
 
@@ -255,7 +255,7 @@ Editors like VS Code then autocomplete `hub.` and flag typos, in plain JavaScrip
 declare module "activityhub" {
   /** The error hub.api() and hub.socket() throw. */
   export class HubError extends Error {
-    /** 400 for your own {"error"} replies, the HTTP status for the hub's other errors, the close code for live connections, 0 offline. */
+    /** 400 for your own {"error"} replies, the HTTP status for the hub's other errors, the close code for live connections, 0 offline or when the bot couldn't be reached. */
     status: number;
   }
 

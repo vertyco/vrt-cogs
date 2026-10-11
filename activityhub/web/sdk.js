@@ -4,6 +4,8 @@
 import { buttonWrap, fillButton, PREVIEW_TEXT, useStyles } from "./people.js";
 
 const GAME_PATH = /^\/games\/([a-z0-9-]+)\//;
+// Each browser has its own words for a request that never got an answer ("Failed to fetch", "Load failed")
+const UNREACHABLE = "Couldn't reach the bot. Check your connection and try again.";
 
 export class HubError extends Error {
   constructor(message, status) {
@@ -25,8 +27,15 @@ export async function request(path, { body, session, keepalive = false } = {}) {
     headers["Content-Type"] = "application/json";
     options.body = JSON.stringify(body);
   }
-  const resp = await fetch(path, options);
-  const text = await resp.text();
+  let resp;
+  let text;
+  try {
+    resp = await fetch(path, options);
+    text = await resp.text();
+  } catch (e) {
+    console.warn(`ActivityHub: no answer from ${path}`, e);
+    throw new HubError(UNREACHABLE, 0);
+  }
   let data;
   try {
     data = JSON.parse(text);

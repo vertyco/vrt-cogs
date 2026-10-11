@@ -328,8 +328,9 @@ export class PeopleUI {
     this.noted = [];
     this.noteStarted = 0;
     this.answer = null;
-    // The rows the panel shows now
+    // The rows the panel shows now, and what had keyboard focus before it opened
     this.shown = null;
+    this.opener = null;
     this.scrim = make(document, "div", "hub-people-scrim");
     this.scrim.hidden = true;
     this.scrim.addEventListener("click", () => this.dismiss());
@@ -399,6 +400,10 @@ export class PeopleUI {
   }
 
   open() {
+    // Where keyboard focus goes back to in the menu, like the header's row of faces. Over a game it goes to the game
+    if (!this.isOpen()) {
+      this.opener = document.activeElement;
+    }
     this.render();
     this.panel.hidden = false;
     this.scrim.hidden = false;
@@ -415,7 +420,11 @@ export class PeopleUI {
     this.panel.hidden = true;
     this.scrim.hidden = this.confirmBox.hidden;
     document.body.classList.remove("people-open");
-    this.host.frame?.focus();
+    const back = this.host.frame || this.opener;
+    this.opener = null;
+    if (back?.isConnected) {
+      back.focus({ preventScroll: true });
+    }
   }
 
   // Escape or a tap outside: the Join question counts it as Stay, otherwise the panel closes
