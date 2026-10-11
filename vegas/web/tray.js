@@ -1,6 +1,7 @@
 // The chip tray: chips add up to a bet within the table's range, the game's call (heads, a cup, low), and the
 // Bet and Go buttons. All In swaps the chips for a multiplier, since it always bets the whole balance.
 import { chipLabel, make, money } from "./format.js";
+import { confirmBox } from "./panels.js";
 
 export const DENOMINATIONS = [1, 5, 10, 25, 100, 500, 1000, 5000, 10000, 50000, 100000];
 // The calls a game needs before a bet, in the order the buttons show
@@ -47,19 +48,26 @@ export class Tray {
     this.blocked = "";
     this.range = null;
     this.bound = [];
+    this.closed = false;
+    // Set while All In's "are you sure?" box is up, so a second tap doesn't open another
+    this.confirming = false;
     this.bind();
     this.renderChoices();
     $("multiplier").hidden = game !== "allin";
+    $("all-in-warning").hidden = game !== "allin";
     $("chips").hidden = game === "allin";
     $("bet-line").hidden = game === "allin";
     $("place").textContent = game === "allin" ? "Pull" : "Bet";
+    // All In's button spends the whole balance, so it is red instead of gold
+    $("place").classList.toggle("danger", game === "allin");
+    $("place").classList.toggle("primary", game !== "allin");
   }
 
   // Buttons in the page are shared by every table, so each tray removes its handlers when it closes
-  listen(id, handler) {
+  listen(id, handler, event = "click") {
     const node = $(id);
-    node.addEventListener("click", handler);
-    this.bound.push([node, handler]);
+    node.addEventListener(event, handler);
+    this.bound.push([node, handler, event]);
   }
 
   bind() {
@@ -71,11 +79,13 @@ export class Tray {
     this.listen("go", () => this.onGo());
     this.listen("mult-down", () => this.stepMultiplier(-1));
     this.listen("mult-up", () => this.stepMultiplier(1));
+    this.listen("mult-value", () => this.showAllIn(), "input");
   }
 
   close() {
-    for (const [node, handler] of this.bound) {
-      node.removeEventListener("click", handler);
+    this.closed = true;
+    for (const [node, handler, event] of this.bound) {
+      node.removeEventListener(event, handler);
     }
     $("choices").replaceChildren();
     $("chips").replaceChildren();
@@ -164,6 +174,18 @@ export class Tray {
   stepMultiplier(by) {
     $("mult-value").value = String(Math.max(2, this.multiplier() + by));
     this.sound.play("click");
+    this.showAllIn();
+  }
+
+  // All In's warning and button: how much a pull bets, its chance, and what a win pays
+  showAllIn() {
+    const multiplier = this.multiplier();
+    $("all-in-stake").textContent = `Bets your whole balance: ${money(this.balance)}`;
+    $("all-in-odds").textContent =
+      multiplier < 2
+        ? "The multiplier must be 2 or higher."
+        : `1 in ${multiplier + 2} chance to win ${money(this.balance * multiplier)}. Lose and your balance is 0.`;
+    $("place").textContent = `Bet all ${money(this.balance)}`;
   }
 
   showAmount() {
@@ -181,8 +203,7 @@ export class Tray {
       return;
     }
     if (this.game === "allin") {
-      const multiplier = this.multiplier();
-      this.onBet({ t: "pull", multiplier });
+      this.pull();
       return;
     }
     const bet = { t: "bet", amount: this.amount };
@@ -192,6 +213,28 @@ export class Tray {
     this.last = { amount: this.amount, choice: this.choice };
     this.sound.play("bet");
     this.onBet(bet);
+  }
+
+  // A pull bets the whole balance, so every pull asks first. A multiplier under 2 goes straight to the bot, which
+  // refuses it and says why
+  async pull() {
+    if (this.confirming) {
+      return;
+    }
+    const multiplier = this.multiplier();
+    if (multiplier >= 2) {
+      this.confirming = true;
+      const sure = await confirmBox(
+        `Bet your whole balance of ${money(this.balance)}? You have a 1 in ${multiplier + 2} chance to win ` +
+          `${money(this.balance * multiplier)}. If you lose, your balance goes to 0.`,
+        "Yes, go all in",
+      );
+      this.confirming = false;
+      if (!sure || this.closed || this.blocked) {
+        return;
+      }
+    }
+    this.onBet({ t: "pull", multiplier });
   }
 
   // blocked: why the player can't bet now ("" when they can). canGo: they bet, and others are still betting
@@ -205,6 +248,9 @@ export class Tray {
     $("place").hidden = canGo || Boolean(blocked);
     for (const chip of $("chips").querySelectorAll(".chip")) {
       chip.disabled = Number(chip.dataset.value) > balance;
+    }
+    if (this.game === "allin") {
+      this.showAllIn();
     }
     if (!blocked) {
       this.showAmount();

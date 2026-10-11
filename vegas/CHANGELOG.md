@@ -1,5 +1,10 @@
 # Vegas Changelog
 
+## 0.2.1
+
+- All In makes it plain that a pull bets your whole balance. The tray says how much in red, along with the chance and what a win pays, the button reads "Bet all 1,000" instead of "Pull", and every pull, from the button or the machine's lever, asks first.
+- The yes or no box no longer runs into the edges of a phone screen.
+
 ## 0.2.0
 
 Needs ActivityHub 0.5.0 or later.

@@ -88,9 +88,10 @@ export async function ask(name, data = {}) {
 }
 
 // A yes or no question over the panel. Resolves true for yes
-export function confirmBox(text) {
+export function confirmBox(text, yes = "Yes") {
   const box = $("confirm");
   $("confirm-text").textContent = text;
+  $("confirm-yes").textContent = yes;
   box.showModal();
   return new Promise((resolve) => {
     const finish = (answer) => {

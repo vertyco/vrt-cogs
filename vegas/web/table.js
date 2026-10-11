@@ -376,7 +376,7 @@ export class TableView {
       return "Walking up to the table...";
     }
     if (state.phase === "idle") {
-      return this.game === "allin" ? "Pick a multiplier and pull the lever." : "Place your bets.";
+      return this.game === "allin" ? "Each pull bets your whole balance. Pick a multiplier and pull." : "Place your bets.";
     }
     if (state.phase === "betting") {
       return this.myRow()?.bet != null ? "Waiting for bets. Press Go to start now." : "Betting is open.";

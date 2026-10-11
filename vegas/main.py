@@ -37,7 +37,7 @@ class Vegas(VegasCommands, VegasSetCommands, Actions, Sockets, commands.Cog, met
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     def __init__(self, bot: Red):
         super().__init__()

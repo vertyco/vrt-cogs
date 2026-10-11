@@ -541,7 +541,8 @@ h3,
 .tray.blocked .chips,
 .tray.blocked .bet-line,
 .tray.blocked .choices,
-.tray.blocked .multiplier {
+.tray.blocked .multiplier,
+.tray.blocked .all-in-warning {
   opacity: 0.4;
   pointer-events: none;
 }
@@ -564,6 +565,23 @@ h3,
   text-align: center;
   font: 800 22px "Playfair Display", Georgia, serif;
   color: var(--gold-light);
+}
+
+/* All In bets the whole balance, so the tray says how much in red, next to the button that spends it */
+.all-in-warning {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #ff8a8a;
+}
+
+.all-in-warning strong {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.all-in-warning span {
+  font-size: 13px;
 }
 
 .chips {
@@ -1089,7 +1107,9 @@ input[type="checkbox"] {
   cursor: pointer;
 }
 
+/* Its padding and border count inside the width, so on a phone it keeps a gap from the screen edges */
 .confirm {
+  box-sizing: border-box;
   width: min(420px, calc(100% - 32px));
   padding: 18px;
 }

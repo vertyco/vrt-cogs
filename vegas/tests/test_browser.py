@@ -120,6 +120,9 @@ def test_every_game_plays_a_round(driver, live, game):
         choice[0].click()
     browser.wait_for(driver, "!document.getElementById('place').disabled && !document.getElementById('place').hidden")
     driver.find_element(By.ID, "place").click()
+    if game == "allin":
+        browser.wait_for(driver, "document.getElementById('confirm').open")
+        driver.find_element(By.ID, "confirm-yes").click()
     # Press the quickest move whenever the bot asks, until the result shows
     for _ in range(120):
         if driver.execute_script("return !document.getElementById('result').hidden"):
@@ -201,6 +204,30 @@ def test_a_player_short_of_the_minimum_bet_is_told_why(driver, live):
     browser.wait_for(driver, "!document.getElementById('why').hidden")
     assert driver.find_element(By.ID, "why").text == "You don't have enough credits for the minimum bet."
     assert not driver.find_element(By.ID, "place").is_displayed()
+
+
+def test_all_in_says_it_bets_everything_and_asks_first(driver, live):
+    open_casino(driver, live)
+    walk_up(driver, "allin")
+    browser.wait_for(driver, "document.getElementById('place').textContent === 'Bet all 1,000'")
+    assert driver.find_element(By.ID, "all-in-stake").text == "Bets your whole balance: 1,000"
+    assert driver.find_element(By.ID, "all-in-odds").text == "1 in 4 chance to win 2,000. Lose and your balance is 0."
+    driver.find_element(By.ID, "mult-up").click()
+    assert driver.find_element(By.ID, "all-in-odds").text.startswith("1 in 5 chance to win 3,000.")
+    driver.find_element(By.ID, "place").click()
+    browser.wait_for(driver, "document.getElementById('confirm').open")
+    assert "whole balance of 1,000" in driver.find_element(By.ID, "confirm-text").text
+    assert driver.find_element(By.ID, "confirm-yes").text == "Yes, go all in"
+    driver.find_element(By.ID, "confirm-no").click()
+    # Saying no sends nothing: no result, and the balance is untouched
+    driver.execute_script("return new Promise((resolve) => setTimeout(resolve, 500))")
+    assert live.cog.bank.balances.get(fakes.MEMBER_ID) == 1000
+    assert driver.find_element(By.ID, "result").get_attribute("hidden") is not None
+    driver.find_element(By.ID, "place").click()
+    browser.wait_for(driver, "document.getElementById('confirm').open")
+    driver.find_element(By.ID, "confirm-yes").click()
+    browser.wait_for(driver, "!document.getElementById('result').hidden", timeout=15)
+    assert not problems(driver)
 
 
 def test_the_membership_form_keeps_a_deleted_role_and_warns_about_open_memberships(driver, live):
