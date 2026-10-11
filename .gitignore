@@ -166,6 +166,7 @@ tests/
 !ageofwar/tests/
 !vegas/tests/
 !farmcord/tests/
+!botarena3/tests/
 /levelup/data/backgrounds/Thumbs.db
 testcog/
 /reqbackup.txt

@@ -1,0 +1,1256 @@
+{
+ "weapons": [
+  {
+   "name": "ZINTEK \"LP\"",
+   "kind": "WEAPON: BASIC GUN",
+   "weight": 2,
+   "cost": 250,
+   "gun": 10,
+   "damage": 10,
+   "refire": 50,
+   "max_range": 170,
+   "min_range": 25,
+   "spread": 3,
+   "streak": 1,
+   "spark": 1,
+   "discharge": 1,
+   "sound": "gun04",
+   "rico_min": 1,
+   "rico_max": 3,
+   "hostile": true,
+   "level": 1,
+   "description": ""
+  },
+  {
+   "name": "KEDRON \"SPKL-D4\"",
+   "kind": "WEAPON: FIREWORKS",
+   "weight": 3,
+   "cost": 450,
+   "gun": 14,
+   "damage": 9,
+   "refire": 190,
+   "max_range": 120,
+   "min_range": 0,
+   "spread": 35,
+   "streak": 7,
+   "spark": 7,
+   "discharge": 7,
+   "sound": "fwork",
+   "rico_min": 4,
+   "rico_max": 4,
+   "hostile": true,
+   "level": 1,
+   "description": ""
+  },
+  {
+   "name": "RAPTOR \"DT-01\"",
+   "kind": "WEAPON: BLASTER",
+   "weight": 3,
+   "cost": 500,
+   "gun": 1,
+   "damage": 35,
+   "refire": 40,
+   "max_range": 150,
+   "min_range": 50,
+   "spread": 10,
+   "streak": 2,
+   "spark": 2,
+   "discharge": 2,
+   "sound": "gun02",
+   "rico_min": 1,
+   "rico_max": 3,
+   "hostile": true,
+   "level": 1,
+   "description": ""
+  },
+  {
+   "name": "RAPTOR \"DT-02\"",
+   "kind": "WEAPON: BLASTER",
+   "weight": 5,
+   "cost": 700,
+   "gun": 2,
+   "damage": 50,
+   "refire": 45,
+   "max_range": 140,
+   "min_range": 50,
+   "spread": 12,
+   "streak": 2,
+   "spark": 3,
+   "discharge": 3,
+   "sound": "gun02",
+   "rico_min": 4,
+   "rico_max": 5,
+   "hostile": true,
+   "level": 3,
+   "description": ""
+  },
+  {
+   "name": "TORRIKA \"KJ-557\"",
+   "kind": "WEAPON: JACKHAMMER",
+   "weight": 7,
+   "cost": 900,
+   "gun": 12,
+   "damage": 39,
+   "refire": 100,
+   "max_range": 50,
+   "min_range": 0,
+   "spread": 0,
+   "streak": 8,
+   "spark": 9,
+   "discharge": 8,
+   "sound": "pact",
+   "rico_min": 1,
+   "rico_max": 3,
+   "hostile": true,
+   "level": 3,
+   "description": ""
+  },
+  {
+   "name": "DARSIJ \"A101-1\"",
+   "kind": "WEAPON: MACHINE-GUN",
+   "weight": 8,
+   "cost": 1100,
+   "gun": 3,
+   "damage": 40,
+   "refire": 100,
+   "max_range": 130,
+   "min_range": 25,
+   "spread": 16,
+   "streak": 3,
+   "spark": 1,
+   "discharge": 1,
+   "sound": "gun04",
+   "rico_min": 4,
+   "rico_max": 5,
+   "hostile": true,
+   "level": 5,
+   "description": ""
+  },
+  {
+   "name": "TORRIKA \"KR-2\"",
+   "kind": "WEAPON: NAILGUN",
+   "weight": 10,
+   "cost": 1600,
+   "gun": 4,
+   "damage": 45,
+   "refire": 120,
+   "max_range": 140,
+   "min_range": 30,
+   "spread": 16,
+   "streak": 3,
+   "spark": 2,
+   "discharge": 2,
+   "sound": "gun03",
+   "rico_min": 1,
+   "rico_max": 3,
+   "hostile": true,
+   "level": 7,
+   "description": ""
+  },
+  {
+   "name": "ZENI \"PRS\"",
+   "kind": "TOOL: DISTRIBUTER",
+   "weight": 10,
+   "cost": 2000,
+   "gun": 7,
+   "damage": -65,
+   "refire": 60,
+   "max_range": 125,
+   "min_range": 0,
+   "spread": 5,
+   "streak": 4,
+   "spark": 4,
+   "discharge": 4,
+   "sound": "heal02",
+   "rico_min": 1,
+   "rico_max": 3,
+   "hostile": false,
+   "level": 9,
+   "description": ""
+  },
+  {
+   "name": "DARSIK \"B301-1\"",
+   "kind": "WEAPON: MACHINE-GUN",
+   "weight": 11,
+   "cost": 2200,
+   "gun": 5,
+   "damage": 48,
+   "refire": 140,
+   "max_range": 140,
+   "min_range": 30,
+   "spread": 16,
+   "streak": 2,
+   "spark": 3,
+   "discharge": 3,
+   "sound": "gun01",
+   "rico_min": 4,
+   "rico_max": 5,
+   "hostile": true,
+   "level": 10,
+   "description": ""
+  },
+  {
+   "name": "PORANTIS \"R33\"",
+   "kind": "WEAPON: CANNON",
+   "weight": 13,
+   "cost": 2500,
+   "gun": 15,
+   "damage": 145,
+   "refire": 50,
+   "max_range": 160,
+   "min_range": 40,
+   "spread": 2,
+   "streak": 8,
+   "spark": 10,
+   "discharge": 10,
+   "sound": "cshot",
+   "rico_min": 7,
+   "rico_max": 7,
+   "hostile": true,
+   "level": 10,
+   "description": ""
+  },
+  {
+   "name": "CIRCES \"XT\"",
+   "kind": "WEAPON: PLASMA GUN",
+   "weight": 15,
+   "cost": 3300,
+   "gun": 6,
+   "damage": 260,
+   "refire": 30,
+   "max_range": 200,
+   "min_range": 50,
+   "spread": 10,
+   "streak": 5,
+   "spark": 5,
+   "discharge": 6,
+   "sound": "laser",
+   "rico_min": 6,
+   "rico_max": 6,
+   "hostile": true,
+   "level": 11,
+   "description": ""
+  },
+  {
+   "name": "ZENI \"PRZ-2\"",
+   "kind": "TOOL: DISTRIBUTER",
+   "weight": 18,
+   "cost": 4000,
+   "gun": 8,
+   "damage": -80,
+   "refire": 80,
+   "max_range": 135,
+   "min_range": 10,
+   "spread": 5,
+   "streak": 4,
+   "spark": 4,
+   "discharge": 4,
+   "sound": "heal01",
+   "rico_min": 1,
+   "rico_max": 3,
+   "hostile": false,
+   "level": 12,
+   "description": ""
+  },
+  {
+   "name": "DEVENGE \"STK\"",
+   "kind": "WEAPON: RIFLE",
+   "weight": 20,
+   "cost": 5000,
+   "gun": 11,
+   "damage": 320,
+   "refire": 30,
+   "max_range": 200,
+   "min_range": 70,
+   "spread": 2,
+   "streak": 2,
+   "spark": 3,
+   "discharge": 3,
+   "sound": "snipe",
+   "rico_min": 1,
+   "rico_max": 3,
+   "hostile": true,
+   "level": 13,
+   "description": ""
+  },
+  {
+   "name": "DARSIK \"R200-7\"",
+   "kind": "WEAPON: ASSULT RIFLE",
+   "weight": 22,
+   "cost": 6100,
+   "gun": 13,
+   "damage": 65,
+   "refire": 150,
+   "max_range": 140,
+   "min_range": 30,
+   "spread": 5,
+   "streak": 2,
+   "spark": 3,
+   "discharge": 3,
+   "sound": "gun02",
+   "rico_min": 1,
+   "rico_max": 3,
+   "hostile": true,
+   "level": 14,
+   "description": ""
+  },
+  {
+   "name": "THEMODIN \"CEREBUS\"",
+   "kind": "WEAPON: TESLACOIL",
+   "weight": 25,
+   "cost": 7500,
+   "gun": 9,
+   "damage": 220,
+   "refire": 50,
+   "max_range": 220,
+   "min_range": 5,
+   "spread": 0,
+   "streak": 6,
+   "spark": 6,
+   "discharge": 5,
+   "sound": "biglaser",
+   "rico_min": 7,
+   "rico_max": 7,
+   "hostile": true,
+   "level": 14,
+   "description": ""
+  },
+  {
+   "name": "SCREAM SHARD",
+   "kind": "WEAPON: LASER",
+   "weight": 30,
+   "cost": 10000,
+   "gun": 17,
+   "damage": 105,
+   "refire": 120,
+   "max_range": 200,
+   "min_range": 5,
+   "spread": 0,
+   "streak": 8,
+   "spark": 8,
+   "discharge": 9,
+   "sound": "plas",
+   "rico_min": 5,
+   "rico_max": 5,
+   "hostile": true,
+   "level": 16,
+   "description": ""
+  },
+  {
+   "name": "NEVERLAX \"SDW\"",
+   "kind": "WEAPON: LAZOR",
+   "weight": 15,
+   "cost": 2000,
+   "gun": 16,
+   "damage": 9001,
+   "refire": 10,
+   "max_range": 220,
+   "min_range": 5,
+   "spread": 0,
+   "streak": 6,
+   "spark": 6,
+   "discharge": 5,
+   "sound": "biglaser",
+   "rico_min": 7,
+   "rico_max": 7,
+   "hostile": true,
+   "level": 18,
+   "description": ""
+  },
+  {
+   "name": "PRIZE DARSIK \"R200-Z\"",
+   "kind": "WEAPON: MACHINE-GUN",
+   "weight": 11,
+   "cost": 10000,
+   "gun": 18,
+   "damage": 70,
+   "refire": 160,
+   "max_range": 150,
+   "min_range": 20,
+   "spread": 10,
+   "streak": 2,
+   "spark": 3,
+   "discharge": 3,
+   "sound": "gun01",
+   "rico_min": 4,
+   "rico_max": 5,
+   "hostile": true,
+   "level": 30,
+   "description": ""
+  }
+ ],
+ "platings": [
+  {
+   "name": "SANTRIN \"AURO\"",
+   "kind": "PLATING: FIBERGLASS",
+   "weight": 3,
+   "cost": 300,
+   "graphic": 9,
+   "shielding": 200,
+   "level": 1,
+   "description": "LIGHTWEIGHT AND PORTABLE, THE 'AURO' DELIVERS BASIC PROTECTION AGAINST WEAPONS AND VERSATILITY AT A VERY AFFORDABLE PRICE."
+  },
+  {
+   "name": "CHROMETEK \"LIGHT\"",
+   "kind": "PLATING: DEFLECTOR",
+   "weight": 4,
+   "cost": 550,
+   "graphic": 1,
+   "shielding": 300,
+   "level": 1,
+   "description": "THE CHROMETEK STEEL RECYCLING COMPANY HAVE ONLY RECENTLY REALISED THE PROFITABLE VENTURE OF SELLING LOW-END PLATING FOR BOTARENA PARTICIPANTS."
+  },
+  {
+   "name": "OVERWATCH \"R200\"",
+   "kind": "PLATING: DEFLECTOR",
+   "weight": 6,
+   "cost": 800,
+   "graphic": 2,
+   "shielding": 500,
+   "level": 2,
+   "description": "THE OVERWATCH \"R200\" IS A SUITABLE CHOICE FOR THOSE NEW TO STEPPING INTO BOTARENA, BECAUSE OF ITS COST-EFFICIENCY AND PROTECTION RATING."
+  },
+  {
+   "name": "GAIACORP \"LB-MK2\"",
+   "kind": "PLATING: DEFLECTOR",
+   "weight": 8,
+   "cost": 1200,
+   "graphic": 6,
+   "shielding": 700,
+   "level": 4,
+   "description": "INSPIRED BY THE EXTINCT LADYBUGS OF NATURE, THIS PLATING IS ACLAIMED AS ONE OF THE MOST RELIABLE IN IT'S CLASS."
+  },
+  {
+   "name": "OVERWATCH \"R760\"",
+   "kind": "PLATING: SHIELDING",
+   "weight": 9,
+   "cost": 1600,
+   "graphic": 3,
+   "shielding": 900,
+   "level": 6,
+   "description": "THE OVERWATCH \"R760\" IS A SUPERIOR SHEILDING CHOICE FOR THOSE WITH A MORE EXPENSIVE TASTE. 'PEACE OF MIND FOR THE COMPETITIVE MINDED'."
+  },
+  {
+   "name": "GAIACORP \"SC-RS\"",
+   "kind": "PLATING: SHIELDING",
+   "weight": 12,
+   "cost": 3000,
+   "graphic": 4,
+   "shielding": 1300,
+   "level": 8,
+   "description": "THE TRILICON CORPERATION HAS ACCEPTED A BID TO MERGE WITH GAIACORP, WITH A VISION TO CORNER THE 'TRENDY' YOUTH PLATING MARKET."
+  },
+  {
+   "name": "GAIACORP \"EG-PR\"",
+   "kind": "PLATING: SENTINEL",
+   "weight": 15,
+   "cost": 4500,
+   "graphic": 7,
+   "shielding": 1700,
+   "level": 10,
+   "description": "STYLISH AND POWERFUL, THE \"EG-PR\" PROVES TO THE USER'S COMPETITION THAT LOOKS DON'T ALWAYS COMPROMISE PERFORMANCE."
+  },
+  {
+   "name": "OVERWATCH \"Z\"",
+   "kind": "PLATING: SENTINEL",
+   "weight": 19,
+   "cost": 6000,
+   "graphic": 5,
+   "shielding": 2000,
+   "level": 12,
+   "description": "RECENTLY SURPASSED BY NEWER 'GUARDIAN' CLASS PLATING, THE OVERWATCH \"Z\" STILL MANAGES TO KEEP IT'S COMPETITIVE HOLD ON THE PLATING MARKET."
+  },
+  {
+   "name": "GAIACORP \"EG-SR\"",
+   "kind": "PLATING: GUARDIAN",
+   "weight": 22,
+   "cost": 7800,
+   "graphic": 8,
+   "shielding": 2450,
+   "level": 13,
+   "description": "CONCENTRATING ON IMPROVING THE COMPANY'S GROWING REPUTATION, GAIACORP HAVE SPENT MONTHS DEVELOPING THE \"EG-SR\" INTO ONE OF THE STRONGEST PLATING AVAILIBLE."
+  },
+  {
+   "name": "KURON \"SHRED-MK3\"",
+   "kind": "PLATING: GUARDIAN",
+   "weight": 25,
+   "cost": 9500,
+   "graphic": 10,
+   "shielding": 2950,
+   "level": 15,
+   "description": "BREATHTAKING IN BOTH LOOKS AND DURABILITY, THE \"SHRED-MK3\" IS HAILED AS THE MOST IMPRESSIVE PLATING CURRENTLY AVAILABLE."
+  },
+  {
+   "name": "PRIZE OVERWATCH \"R760\"",
+   "kind": "PLATING: SHIELDING",
+   "weight": 9,
+   "cost": 4500,
+   "graphic": 11,
+   "shielding": 2000,
+   "level": 30,
+   "description": "AS THE WINNER OF BOT ARENA, YOU HAVE WON THIS GOLDEN PLATING, AND OTHER GOLDEN ITEMS. CONGRATS!"
+  }
+ ],
+ "chassis": [
+  {
+   "name": "AKAUMIN \"DLZ-100\"",
+   "kind": "CHASSIS: LIGHT",
+   "weight": 5,
+   "cost": 3000,
+   "max_load": 16,
+   "graphic": 1,
+   "shielding": 50,
+   "level": 1,
+   "description": "THE AKAUMIN CORPERATION ARE WELL KNOWN FOR THEIR RELIABLE CIRCUITBOARDS AND VEHICLES. COMBINING THE TWO FOR USE IN BOTARENA IS A NEW CONCEPT FOR AKAUMIN."
+  },
+  {
+   "name": "AKAUMIN \"DLZ-250\"",
+   "kind": "CHASSIS: MEDIUM",
+   "weight": 8,
+   "cost": 4000,
+   "max_load": 22,
+   "graphic": 2,
+   "shielding": 100,
+   "level": 4,
+   "description": "PROVIDING ADDITIONAL WEIGHT HANDLING AND STABILITY, THE \"DLZ-250\" IS A VERY IDEAL CHOICE FOR MEDIUM LEVEL BOTAREA CONTESTANTS."
+  },
+  {
+   "name": "KHACOR \"SMARTMOVE\"",
+   "kind": "CHASSIS: HEAVY",
+   "weight": 10,
+   "cost": 5500,
+   "max_load": 30,
+   "graphic": 3,
+   "shielding": 200,
+   "level": 6,
+   "description": "KHACOR HOLD A REPUTATION AS ONE OF THE LEADERS IN BOTARENA CHASSIS DEVELOPMENT. THE \"SMARTMOVE\" PROVIDES EFFICIENCY AT AN AFFORDABLE PRICE."
+  },
+  {
+   "name": "XEROI \"CLR-Z050\"",
+   "kind": "CHASSIS: ULTRA",
+   "weight": 15,
+   "cost": 7500,
+   "max_load": 50,
+   "graphic": 4,
+   "shielding": 400,
+   "level": 8,
+   "description": "AN HONORABLE NAME IN CHASSIS DEVELOPMENT, YOU CAN TRUST THAT ANYTHING FROM XEROI WILL BE SUPIRIOR FROM ALL OTHERS, FOR THE RIGHT PRICE OF COURSE..."
+  },
+  {
+   "name": "KHACOR \"ELECTRON\"",
+   "kind": "CHASSIS: ULTRA",
+   "weight": 19,
+   "cost": 8000,
+   "max_load": 64,
+   "graphic": 5,
+   "shielding": 550,
+   "level": 11,
+   "description": "AN HONORABLE NAME IN CHASSIS DEVELOPMENT, YOU CAN TRUST THAT ANYTHING FROM XEROI WILL BE SUPIRIOR FROM ALL OTHERS, FOR THE RIGHT PRICE OF COURSE..."
+  },
+  {
+   "name": "NTECH \"DURICHAS\"",
+   "kind": "CHASSIS: ULTRA",
+   "weight": 26,
+   "cost": 12000,
+   "max_load": 70,
+   "graphic": 6,
+   "shielding": 1200,
+   "level": 12,
+   "description": "AN HONORABLE NAME IN CHASSIS DEVELOPMENT, YOU CAN TRUST THAT ANYTHING FROM XEROI WILL BE SUPIRIOR FROM ALL OTHERS, FOR THE RIGHT PRICE OF COURSE..."
+  },
+  {
+   "name": "XEROI \"DELIVERANCE\"",
+   "kind": "CHASSIS: ULTRA",
+   "weight": 30,
+   "cost": 13000,
+   "max_load": 85,
+   "graphic": 7,
+   "shielding": 1000,
+   "level": 15,
+   "description": "AN HONORABLE NAME IN CHASSIS DEVELOPMENT, YOU CAN TRUST THAT ANYTHING FROM XEROI WILL BE SUPIRIOR FROM ALL OTHERS, FOR THE RIGHT PRICE OF COURSE..."
+  },
+  {
+   "name": "PRIZE XEROI \"DELIVERANCE\"",
+   "kind": "CHASSIS: ULTRA",
+   "weight": 30,
+   "cost": 25000,
+   "max_load": 85,
+   "graphic": 8,
+   "shielding": 1200,
+   "level": 30,
+   "description": "AS THE WINNER OF BOT ARENA, YOU HAVE WON THIS GOLDEN CHASSIS, AND OTHER GOLDEN ITEMS. CONGRATS!"
+  }
+ ],
+ "weight_classes": [
+  [
+   "ORIENTATION",
+   35
+  ],
+  [
+   "LIGHTWEIGHT",
+   45
+  ],
+  [
+   "MIDDLEWEIGHT",
+   70
+  ],
+  [
+   "HEAVYWEIGHT",
+   95
+  ],
+  [
+   "MEGAWEIGHT",
+   120
+  ],
+  [
+   "SUPER MEGAWEIGHT",
+   150
+  ]
+ ],
+ "arenas": [
+  {
+   "name": "ROXTAN PARK ARENA",
+   "weight_class": "ORIENTATION",
+   "prize": 200,
+   "fee": 0,
+   "level": 1,
+   "win_level": 2,
+   "background": 1,
+   "opponents": [
+    {
+     "name": "WRECKER",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "SANTRIN \"AURO\"",
+     "weapon": "ZINTEK \"LP\""
+    },
+    {
+     "name": "STEELHEART",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "ZINTEK \"LP\""
+    }
+   ]
+  },
+  {
+   "name": "TORY'S JUNKYARD",
+   "weight_class": "ORIENTATION",
+   "prize": 650,
+   "fee": 100,
+   "level": 2,
+   "win_level": 3,
+   "background": 1,
+   "opponents": [
+    {
+     "name": "CRASH",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "RAPTOR \"DT-01\""
+    },
+    {
+     "name": "BURN",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "KEDRON \"SPKL-D4\""
+    }
+   ]
+  },
+  {
+   "name": "CHROMETEK RALLY",
+   "weight_class": "LIGHTWEIGHT",
+   "prize": 1750,
+   "fee": 300,
+   "level": 3,
+   "win_level": 4,
+   "background": 3,
+   "opponents": [
+    {
+     "name": "PYRON",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "RAPTOR \"DT-02\""
+    },
+    {
+     "name": "MANIXX",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "OVERWATCH \"R200\"",
+     "weapon": "RAPTOR \"DT-01\""
+    }
+   ]
+  },
+  {
+   "name": "METALMASH 2059",
+   "weight_class": "LIGHTWEIGHT",
+   "prize": 3000,
+   "fee": 750,
+   "level": 4,
+   "win_level": 5,
+   "background": 1,
+   "opponents": [
+    {
+     "name": "SABERTOOTH",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "OVERWATCH \"R200\"",
+     "weapon": "DARSIJ \"A101-1\""
+    },
+    {
+     "name": "MAMMOTH",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "OVERWATCH \"R200\"",
+     "weapon": "RAPTOR \"DT-01\""
+    }
+   ]
+  },
+  {
+   "name": "SPADE'S BATTLE ROYALE",
+   "weight_class": "LIGHTWEIGHT",
+   "prize": 4500,
+   "fee": 1500,
+   "level": 5,
+   "win_level": 6,
+   "background": 2,
+   "opponents": [
+    {
+     "name": "JACK",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "OVERWATCH \"R200\"",
+     "weapon": "RAPTOR \"DT-01\""
+    },
+    {
+     "name": "KING",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "OVERWATCH \"R200\"",
+     "weapon": "RAPTOR \"DT-02\""
+    },
+    {
+     "name": "QUEEN",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "OVERWATCH \"R200\"",
+     "weapon": "RAPTOR \"DT-01\""
+    }
+   ]
+  },
+  {
+   "name": "GAIACORP PROMOTION",
+   "weight_class": "MIDDLEWEIGHT",
+   "prize": 6500,
+   "fee": 2000,
+   "level": 6,
+   "win_level": 7,
+   "background": 3,
+   "opponents": [
+    {
+     "name": "SPLENDOUR",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "GAIACORP \"LB-MK2\"",
+     "weapon": "RAPTOR \"DT-02\""
+    },
+    {
+     "name": "CHAOS",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "RAPTOR \"DT-01\""
+    },
+    {
+     "name": "BEAUTY",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "GAIACORP \"LB-MK2\"",
+     "weapon": "RAPTOR \"DT-02\""
+    }
+   ]
+  },
+  {
+   "name": "THE WORKSHOP",
+   "weight_class": "MIDDLEWEIGHT",
+   "prize": 9250,
+   "fee": 3200,
+   "level": 7,
+   "win_level": 8,
+   "background": 2,
+   "opponents": [
+    {
+     "name": "SINGULARITY",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KR-2\""
+    },
+    {
+     "name": "PARADIGM",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "GAIACORP \"LB-MK2\"",
+     "weapon": "TORRIKA \"KR-2\""
+    }
+   ]
+  },
+  {
+   "name": "SCRAPTORIA 2059",
+   "weight_class": "MIDDLEWEIGHT",
+   "prize": 12000,
+   "fee": 4800,
+   "level": 8,
+   "win_level": 9,
+   "background": 1,
+   "opponents": [
+    {
+     "name": "SLAYER",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "OVERWATCH \"R200\"",
+     "weapon": "ZINTEK \"LP\""
+    },
+    {
+     "name": "REAPER",
+     "chassis": "XEROI \"CLR-Z050\"",
+     "plating": "GAIACORP \"SC-RS\"",
+     "weapon": "TORRIKA \"KR-2\""
+    },
+    {
+     "name": "SLAYER",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "OVERWATCH \"R200\"",
+     "weapon": "ZINTEK \"LP\""
+    }
+   ]
+  },
+  {
+   "name": "THE COLOSSEUM",
+   "weight_class": "HEAVYWEIGHT",
+   "prize": 15000,
+   "fee": 6000,
+   "level": 9,
+   "win_level": 10,
+   "background": 2,
+   "opponents": [
+    {
+     "name": "ASKLEPIOS",
+     "chassis": "XEROI \"CLR-Z050\"",
+     "plating": "GAIACORP \"SC-RS\"",
+     "weapon": "ZENI \"PRS\""
+    },
+    {
+     "name": "NEMESIS",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    },
+    {
+     "name": "HEPHAISTOS",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    }
+   ]
+  },
+  {
+   "name": "SKIRMESH",
+   "weight_class": "HEAVYWEIGHT",
+   "prize": 18000,
+   "fee": 8000,
+   "level": 10,
+   "win_level": 11,
+   "background": 1,
+   "opponents": [
+    {
+     "name": "SABRE",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "GAIACORP \"SC-RS\"",
+     "weapon": "RAPTOR \"DT-02\""
+    },
+    {
+     "name": "RAPIER",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "GAIACORP \"SC-RS\"",
+     "weapon": "RAPTOR \"DT-02\""
+    },
+    {
+     "name": "CUTLASS",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "DARSIK \"B301-1\""
+    }
+   ]
+  },
+  {
+   "name": "VULCANDOME ARENA",
+   "weight_class": "HEAVYWEIGHT",
+   "prize": 22000,
+   "fee": 10050,
+   "level": 11,
+   "win_level": 12,
+   "background": 2,
+   "opponents": [
+    {
+     "name": "PULSE",
+     "chassis": "XEROI \"CLR-Z050\"",
+     "plating": "OVERWATCH \"Z\"",
+     "weapon": "CIRCES \"XT\""
+    },
+    {
+     "name": "SURGE",
+     "chassis": "XEROI \"CLR-Z050\"",
+     "plating": "GAIACORP \"EG-PR\"",
+     "weapon": "CIRCES \"XT\""
+    }
+   ]
+  },
+  {
+   "name": "THE FOUNDRY",
+   "weight_class": "MEGAWEIGHT",
+   "prize": 26000,
+   "fee": 12000,
+   "level": 12,
+   "win_level": 13,
+   "background": 3,
+   "opponents": [
+    {
+     "name": "GUARDIAN",
+     "chassis": "XEROI \"CLR-Z050\"",
+     "plating": "GAIACORP \"SC-RS\"",
+     "weapon": "DARSIK \"B301-1\""
+    },
+    {
+     "name": "EMPEROR",
+     "chassis": "XEROI \"CLR-Z050\"",
+     "plating": "GAIACORP \"SC-RS\"",
+     "weapon": "ZENI \"PRS\""
+    },
+    {
+     "name": "GUARDIAN",
+     "chassis": "XEROI \"CLR-Z050\"",
+     "plating": "GAIACORP \"SC-RS\"",
+     "weapon": "DARSIK \"B301-1\""
+    }
+   ]
+  },
+  {
+   "name": "THE KAMIKAZE-DOME",
+   "weight_class": "MEGAWEIGHT",
+   "prize": 30000,
+   "fee": 14000,
+   "level": 13,
+   "win_level": 14,
+   "background": 2,
+   "opponents": [
+    {
+     "name": "KAMI",
+     "chassis": "NTECH \"DURICHAS\"",
+     "plating": "GAIACORP \"EG-SR\"",
+     "weapon": "DARSIK \"B301-1\""
+    },
+    {
+     "name": "KAZE",
+     "chassis": "NTECH \"DURICHAS\"",
+     "plating": "GAIACORP \"EG-SR\"",
+     "weapon": "DARSIK \"B301-1\""
+    }
+   ]
+  },
+  {
+   "name": "EXECUTE 2059",
+   "weight_class": "MEGAWEIGHT",
+   "prize": 35000,
+   "fee": 16500,
+   "level": 14,
+   "win_level": 15,
+   "background": 1,
+   "opponents": [
+    {
+     "name": "THRASH",
+     "chassis": "KHACOR \"ELECTRON\"",
+     "plating": "GAIACORP \"EG-PR\"",
+     "weapon": "THEMODIN \"CEREBUS\""
+    },
+    {
+     "name": "TREMOR",
+     "chassis": "KHACOR \"ELECTRON\"",
+     "plating": "KURON \"SHRED-MK3\"",
+     "weapon": "CIRCES \"XT\""
+    }
+   ]
+  },
+  {
+   "name": "THE FINAL HOUR",
+   "weight_class": "SUPER MEGAWEIGHT",
+   "prize": 50000,
+   "fee": 22000,
+   "level": 15,
+   "win_level": 16,
+   "background": 2,
+   "opponents": [
+    {
+     "name": "S C R E A M",
+     "chassis": "XEROI \"DELIVERANCE\"",
+     "plating": "KURON \"SHRED-MK3\"",
+     "weapon": "SCREAM SHARD"
+    },
+    {
+     "name": "D E S P A I R",
+     "chassis": "KHACOR \"ELECTRON\"",
+     "plating": "OVERWATCH \"Z\"",
+     "weapon": "THEMODIN \"CEREBUS\""
+    }
+   ]
+  }
+ ],
+ "challenges": [
+  {
+   "name": "TRAINING: INTRODUCTION",
+   "background": 1,
+   "players": [
+    {
+     "name": "BULLYBOY",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "RAPTOR \"DT-01\""
+    },
+    {
+     "name": "SCRUFF",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "RAPTOR \"DT-01\""
+    },
+    {
+     "name": "BUTCH",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "RAPTOR \"DT-01\""
+    }
+   ],
+   "opponents": [
+    {
+     "name": "ROUGHOUSE",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "RAPTOR \"DT-01\""
+    },
+    {
+     "name": "TOUGHGUY",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "RAPTOR \"DT-01\""
+    },
+    {
+     "name": "BRUISER",
+     "chassis": "AKAUMIN \"DLZ-250\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "RAPTOR \"DT-01\""
+    }
+   ],
+   "description": "GIVING EFFECTIVE ORDERS IS ONE OF THE KEY ELEMENTS TO WINNING BOT ARENA. IN THIS EVEN-SIDED SCENARIO, 'GANGING UP' ON A TARGET IS AN IDEAL STRATEGY TO WINNING THIS MATCH. READ THE GAME INSTRUCTIONS FOR INFORMATION ON GIVING ORDERS TO YOUR BOTS."
+  },
+  {
+   "name": "TRAINING: EVASION",
+   "background": 2,
+   "players": [
+    {
+     "name": "PUPPY",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "CHROMETEK \"LIGHT\"",
+     "weapon": "RAPTOR \"DT-01\""
+    }
+   ],
+   "opponents": [
+    {
+     "name": "SLAMMER",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    },
+    {
+     "name": "POUNDER",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    },
+    {
+     "name": "THUMPER",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    },
+    {
+     "name": "PUNCHER",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    }
+   ],
+   "description": "YOU ARE AN INNOCENT LITTLE PUPPY IN A ROOM FULL OF JACKHAMMER WEILDING MANIACS. EVADE YOUR OPPONENTS FOR LONG ENOUGH AND THEY WILL GET TIRED AND CEASE CHASING YOU."
+  },
+  {
+   "name": "TRAINING: STRATEGY",
+   "background": 2,
+   "players": [
+    {
+     "name": "QUEEN",
+     "chassis": "KHACOR \"ELECTRON\"",
+     "plating": "OVERWATCH \"R200\"",
+     "weapon": "DEVENGE \"STK\""
+    }
+   ],
+   "opponents": [
+    {
+     "name": "BISHOP",
+     "chassis": "KHACOR \"ELECTRON\"",
+     "plating": "OVERWATCH \"R200\"",
+     "weapon": "ZENI \"PRZ-2\""
+    },
+    {
+     "name": "KNIGHT",
+     "chassis": "KHACOR \"ELECTRON\"",
+     "plating": "OVERWATCH \"Z\"",
+     "weapon": "DARSIJ \"A101-1\""
+    },
+    {
+     "name": "PAWN",
+     "chassis": "KHACOR \"ELECTRON\"",
+     "plating": "OVERWATCH \"Z\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    }
+   ],
+   "description": "CHESS IS A VERY STRATEGIC GAME, AND THE LOSER IS TYPICALLY THE ONE WHO IS LESS STRATIGICALLY ABLED. USE STRATEGY TO SOLVE THIS SITUATION."
+  },
+  {
+   "name": "TRAINING: DISTRACTING",
+   "background": 3,
+   "players": [
+    {
+     "name": "SHIELD",
+     "chassis": "NTECH \"DURICHAS\"",
+     "plating": "KURON \"SHRED-MK3\"",
+     "weapon": null
+    },
+    {
+     "name": "SWORD",
+     "chassis": "XEROI \"CLR-Z050\"",
+     "plating": "SANTRIN \"AURO\"",
+     "weapon": "DEVENGE \"STK\""
+    }
+   ],
+   "opponents": [
+    {
+     "name": "DRAGON",
+     "chassis": "NTECH \"DURICHAS\"",
+     "plating": "OVERWATCH \"Z\"",
+     "weapon": "DEVENGE \"STK\""
+    }
+   ],
+   "description": "THE GREATEST OF WARRIORS HAVE ALWAYS UNDERSTOOD THAT THE SWORD IS EQUALLY IMPORTANT AS THE SHIELD, AND THAT ONE IS USELESS WITHOUT THE OTHER. SLAY THE DRAGON BY MAINTAINING THIS BALANCE."
+  },
+  {
+   "name": "TRAINING: RANGED",
+   "background": 1,
+   "players": [
+    {
+     "name": "SNIPER",
+     "chassis": "AKAUMIN \"DLZ-100\"",
+     "plating": "SANTRIN \"AURO\"",
+     "weapon": "DEVENGE \"STK\""
+    }
+   ],
+   "opponents": [
+    {
+     "name": "GUARD",
+     "chassis": "NTECH \"DURICHAS\"",
+     "plating": "KURON \"SHRED-MK3\"",
+     "weapon": "KEDRON \"SPKL-D4\""
+    },
+    {
+     "name": "GUARD",
+     "chassis": "NTECH \"DURICHAS\"",
+     "plating": "KURON \"SHRED-MK3\"",
+     "weapon": "KEDRON \"SPKL-D4\""
+    },
+    {
+     "name": "GUARD",
+     "chassis": "NTECH \"DURICHAS\"",
+     "plating": "KURON \"SHRED-MK3\"",
+     "weapon": "KEDRON \"SPKL-D4\""
+    }
+   ],
+   "description": "BOTS ARMED WITH LONG RANGE WEAPONS SHOULD STAY AS FAR AWAY FROM THE ENEMY AS POSSIBLE WHILE STILL BEING USEFUL. DEMONSTRATE THIS PRACTISE BY AVOIDING AND INFLICTING DAMAGE."
+  },
+  {
+   "name": "TRAINING: PROTECTION",
+   "background": 2,
+   "players": [
+    {
+     "name": "MEDIC",
+     "chassis": "XEROI \"CLR-Z050\"",
+     "plating": "SANTRIN \"AURO\"",
+     "weapon": "ZENI \"PRZ-2\""
+    },
+    {
+     "name": "SOLDIER",
+     "chassis": "KHACOR \"ELECTRON\"",
+     "plating": "GAIACORP \"LB-MK2\"",
+     "weapon": "RAPTOR \"DT-02\""
+    }
+   ],
+   "opponents": [
+    {
+     "name": "COMMANDER",
+     "chassis": "NTECH \"DURICHAS\"",
+     "plating": "GAIACORP \"EG-SR\"",
+     "weapon": "DARSIK \"B301-1\""
+    }
+   ],
+   "description": "BOTS ARMED WITH LONG RANGE WEAPONS SHOULD STAY AS FAR AWAY FROM THE ENEMY AS POSSIBLE WHILE STILL BEING USEFUL. DEMONSTRATE THIS PRACTISE BY AVOIDING AND INFLICTING DAMAGE."
+  },
+  {
+   "name": "FUN: HAMMERTIME",
+   "background": 3,
+   "players": [
+    {
+     "name": "HAMMERHEAD",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    },
+    {
+     "name": "HAMMERHEAD",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    },
+    {
+     "name": "HAMMERHEAD",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    },
+    {
+     "name": "HAMMERHEAD",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    }
+   ],
+   "opponents": [
+    {
+     "name": "HAMMERHEAD",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    },
+    {
+     "name": "HAMMERHEAD",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    },
+    {
+     "name": "HAMMERHEAD",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    },
+    {
+     "name": "HAMMERHEAD",
+     "chassis": "KHACOR \"SMARTMOVE\"",
+     "plating": "OVERWATCH \"R760\"",
+     "weapon": "TORRIKA \"KJ-557\""
+    }
+   ],
+   "description": "STOP. HAMMERTIME!"
+  }
+ ]
+}
