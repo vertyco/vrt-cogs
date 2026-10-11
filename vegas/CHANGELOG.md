@@ -1,5 +1,14 @@
 # Vegas Changelog
 
+## 0.2.0
+
+Needs ActivityHub 0.5.0 or later.
+
+- The casino floor shows who's where: each table's sign shows the pictures of the people at it instead of a number, and the people standing in the lobby show as a row of faces along the bottom. Hover a face to see who it is and what they're doing.
+- Joining someone from the hub's people list walks you straight to their table.
+- The hub's people button sits in the top bar, and the menu and people panel show what you're doing: "In the lobby", "Blackjack · bet 200", "Craps · has the dice".
+- Join from the hub's people list asks first while you have a bet riding.
+
 ## 0.1.1
 
 - Renamed from Casino to Vegas so it can be loaded next to Redjumpman's Casino. Install and load it as `vegas`; the commands are now `[p]vegas`, `[p]vegasset` and `/vegas`. Its data folder changes with the name, so it starts with an empty database.

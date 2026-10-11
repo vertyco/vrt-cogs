@@ -82,15 +82,17 @@ class Floor:
     def conns_of(self, user_id: int) -> list:
         return [conn for conn in self.where if conn.ctx.author.id == user_id]
 
-    def counts(self) -> dict[str, int]:
-        people: dict[str, set[int]] = {}
+    def faces(self) -> dict[str, list[dict]]:
+        """Who is where on the floor, each person once per spot, with "lobby" for people at no table"""
+        spots: dict[str, dict[int, dict]] = {}
         for conn, game in self.where.items():
-            if game is not None:
-                people.setdefault(game, set()).add(conn.ctx.author.id)
-        return {game: len(users) for game, users in people.items()}
+            member = conn.ctx.author
+            face = {"id": str(member.id), "name": member.display_name, "avatar": member.display_avatar.url}
+            spots.setdefault(game or "lobby", {})[member.id] = face
+        return {spot: list(people.values()) for spot, people in spots.items()}
 
     async def send_lobby(self) -> None:
-        await self.room.broadcast({"t": "lobby", "counts": self.counts()})
+        await self.room.broadcast({"t": "lobby", "faces": self.faces()})
 
     async def arrive(self, conn) -> None:
         self.where[conn] = None

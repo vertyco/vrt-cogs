@@ -27,7 +27,13 @@ const page = {
   currency: "credits",
   canManage: false,
   owner: false,
-  counts: {},
+  // Who is at each table and in the lobby, as the bot last sent it
+  faces: {},
+  // Whether the walk to a friend's table (Join) has been done, which it is at most once
+  followed: false,
+  // The last status line, data and busy flag given to the hub, and whether the live connection is gone for good
+  reported: "",
+  closed: false,
   // When each game is ready again, as performance.now() times, from the seconds the bot sent
   readyAt: {},
   game: null,
@@ -44,7 +50,7 @@ function $(id) {
 
 async function start() {
   page.lobby = new Lobby($("lobby"), $("floor"), enter);
-  page.lobby.render(null, {}, null);
+  page.lobby.render(null, null);
   bindTopBar();
   panels.setup({
     api: (name, data) => page.hub.api(name, data),
@@ -59,6 +65,10 @@ async function start() {
     toast(e.message);
     return;
   }
+  document.querySelector(".tools").prepend(page.hub.peopleButton());
+  page.hub.onPeople(() => drawLobby());
+  // A tap on a face in the lobby says who it is, for phones
+  $("app").addEventListener("face", (event) => toast(event.detail));
   if (page.hub.offline) {
     toast("This is a preview. Open the casino from Discord to play.");
     return;
@@ -71,6 +81,7 @@ async function goLive() {
     page.conn = await page.hub.socket();
   } catch (e) {
     toast(CLOSED_BECAUSE[e.status] || e.message);
+    leaveCasino();
     return;
   }
   page.conn.on(receive);
@@ -83,6 +94,7 @@ async function goLive() {
   page.conn.onClose((code) => {
     $("banner").hidden = true;
     toast(CLOSED_BECAUSE[code] || CLOSED_OTHERWISE, true);
+    leaveCasino();
   });
 }
 
@@ -117,8 +129,10 @@ function receive(data) {
       hello(data);
       break;
     case "lobby":
-      page.counts = data.counts || {};
-      page.lobby.render(page.casino, page.counts, page.me);
+      page.faces = data.faces || {};
+      drawLobby();
+      followFriend();
+      report();
       break;
     case "casino":
       page.casino = data.casino;
@@ -167,7 +181,7 @@ function refresh() {
   tier.textContent = me ? me.membership.name : "";
   tier.style.setProperty("--tier-color", me ? tierColor(me.membership.color) : "");
   $("open-settings").hidden = !page.canManage && !page.owner;
-  page.lobby.render(page.casino, page.counts, me);
+  drawLobby();
   page.table?.update();
 }
 
@@ -203,8 +217,10 @@ function enter(game) {
     readyIn,
     showPlayer: (id) => panels.showStats(id),
     toast,
+    changed: report,
   });
   send({ t: "enter", game });
+  report();
 }
 
 function back() {
@@ -221,6 +237,79 @@ function back() {
   $("lobby").hidden = false;
   $("back").setAttribute("aria-label", "Back to the menu");
   page.lobby.layout();
+  report();
+}
+
+// ---------- Who's here ----------
+
+// The lobby with who is where, and what the hub's people list says about each of them
+function drawLobby() {
+  const rows = new Map((page.hub?.people || []).map((person) => [person.id, person]));
+  page.lobby.render(
+    page.casino,
+    page.me,
+    page.faces,
+    (id) => rows.get(id)?.status ?? "",
+    (id) => Boolean(rows.get(id)?.away),
+  );
+}
+
+// Join from the hub's people list: on the first floor update, walk to the friend's table as if it were picked.
+// A friend in the lobby, or already gone, leaves this player in the lobby
+function followFriend() {
+  const follow = page.hub?.follow;
+  if (!follow || page.followed || !page.conn) {
+    return;
+  }
+  page.followed = true;
+  const table = Object.keys(page.faces).find(
+    (spot) => spot !== "lobby" && page.faces[spot].some((person) => person.id === follow.id),
+  );
+  if (table && !page.game) {
+    enter(table);
+  }
+}
+
+// What the rest of the window sees this player doing, and whether a bet is riding on a round
+function activity() {
+  if (!page.game) {
+    return ["In the lobby", null, false];
+  }
+  const name = page.casino?.games?.[page.game]?.name || page.game;
+  const table = page.table;
+  const row = table?.myRow();
+  const phase = table?.state?.phase || "idle";
+  const inRound = Boolean(row && row.bet != null && row.outcome == null && phase !== "idle");
+  let text = `At ${name}`;
+  if (inRound && page.game === "craps" && table.state.shooter === table.myId()) {
+    text = `${name} · has the dice`;
+  } else if (inRound) {
+    text = `${name} · bet ${money(row.bet)}`;
+  }
+  return [text, { table: page.game }, inRound];
+}
+
+// The hub passes on whatever it is told, even when nothing changed, so only changes go to it
+function tell(text, data, busy) {
+  const look = JSON.stringify([text, data, busy]);
+  if (look === page.reported) {
+    return;
+  }
+  page.reported = look;
+  page.hub.status(text, data);
+  page.hub.busy(busy);
+}
+
+function report() {
+  if (!page.closed) {
+    tell(...activity());
+  }
+}
+
+// The live connection is gone for good, so a friend's Join has nothing to interrupt
+function leaveCasino() {
+  page.closed = true;
+  tell("Not connected", null, false);
 }
 
 function toast(text, stay = false) {

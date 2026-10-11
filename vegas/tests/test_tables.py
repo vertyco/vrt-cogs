@@ -81,12 +81,13 @@ async def test_closing_mid_round_refunds_every_open_bet(seat):
 
 
 @pytest.mark.asyncio
-async def test_the_lobby_counts_people_at_each_table(seat):
+async def test_the_lobby_names_people_at_each_table(seat):
     host, floor, table, (sam, ana) = await seat("dice", 7, 8)
     await floor.enter(ana, "coin")
-    assert sam.last("lobby")["counts"] == {"dice": 1, "coin": 1}
+    faces = sam.last("lobby")["faces"]
+    assert {spot: [p["id"] for p in people] for spot, people in faces.items()} == {"dice": ["7"], "coin": ["8"]}
     await floor.depart(sam)
-    assert ana.last("lobby")["counts"] == {"coin": 1}
+    assert {spot: [p["id"] for p in people] for spot, people in ana.last("lobby")["faces"].items()} == {"coin": ["8"]}
 
 
 @pytest.mark.asyncio

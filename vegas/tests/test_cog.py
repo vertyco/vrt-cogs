@@ -65,7 +65,54 @@ async def test_joining_says_hello_then_shows_the_lobby(cog):
     assert hello["t"] == "hello" and hello["me"]["balance"] == 1000 and hello["me"]["membership"]["name"] == "Basic"
     assert hello["casino"]["name"] == "Redjumpman's" and hello["casino"]["games"]["coin"]["min"] == 10
     assert hello["can_manage"] is False and hello["currency"] == "credits"
-    assert sam.last("lobby") == {"t": "lobby", "counts": {}}
+    who = sam.ctx.author
+    face = {"id": str(who.id), "name": who.display_name, "avatar": who.display_avatar.url}
+    assert sam.last("lobby") == {"t": "lobby", "faces": {"lobby": [face]}}
+
+
+@pytest.mark.asyncio
+async def test_the_lobby_names_who_is_where(cog):
+    room = FakeRoom()
+    sam = await joined(cog, PLAYER, room)
+    ana = await joined(cog, ADMIN, room)
+    await cog.message(ana.ctx, ana, {"t": "enter", "game": "coin"})
+    faces = sam.last("lobby")["faces"]
+    assert [p["id"] for p in faces["lobby"]] == [str(PLAYER)]
+    assert [p["id"] for p in faces["coin"]] == [str(ADMIN)]
+
+
+@pytest.mark.asyncio
+async def test_a_face_is_only_an_id_a_name_and_a_picture(cog):
+    sam = await joined(cog, PLAYER, FakeRoom())
+    await cog.message(sam.ctx, sam, {"t": "enter", "game": "dice"})
+    face = sam.last("lobby")["faces"]["dice"][0]
+    assert set(face) == {"id", "name", "avatar"}
+    assert "lobby" not in sam.last("lobby")["faces"]
+
+
+@pytest.mark.asyncio
+async def test_a_person_on_two_devices_is_one_face_per_spot(cog):
+    room = FakeRoom()
+    phone, pc = await joined(cog, PLAYER, room), await joined(cog, PLAYER, room)
+    await cog.message(pc.ctx, pc, {"t": "enter", "game": "dice"})
+    assert [p["id"] for p in pc.last("lobby")["faces"]["lobby"]] == [str(PLAYER)]
+    assert [p["id"] for p in pc.last("lobby")["faces"]["dice"]] == [str(PLAYER)]
+    await cog.message(phone.ctx, phone, {"t": "enter", "game": "dice"})
+    faces = pc.last("lobby")["faces"]
+    assert "lobby" not in faces and [p["id"] for p in faces["dice"]] == [str(PLAYER)]
+
+
+@pytest.mark.asyncio
+async def test_a_face_goes_when_its_player_leaves_the_floor_or_the_table(cog):
+    room = FakeRoom()
+    sam, ana = await joined(cog, PLAYER, room), await joined(cog, ADMIN, room)
+    await cog.message(ana.ctx, ana, {"t": "enter", "game": "coin"})
+    await cog.message(ana.ctx, ana, {"t": "lobby"})
+    faces = sam.last("lobby")["faces"]
+    assert "coin" not in faces and {p["id"] for p in faces["lobby"]} == {str(PLAYER), str(ADMIN)}
+    ana.drop()
+    await cog.leave(ana.ctx, ana)
+    assert [p["id"] for p in sam.last("lobby")["faces"]["lobby"]] == [str(PLAYER)]
 
 
 @pytest.mark.asyncio
@@ -81,7 +128,7 @@ async def test_a_round_played_over_the_connection(cog):
     cog.rng = Rigged(picks=["tails"])
     sam = await joined(cog, PLAYER, FakeRoom())
     await cog.message(sam.ctx, sam, {"t": "enter", "game": "coin"})
-    assert sam.last("lobby")["counts"] == {"coin": 1}
+    assert [p["id"] for p in sam.last("lobby")["faces"]["coin"]] == [str(PLAYER)]
     table = cog.floors["window"].tables["coin"]
     table.speed = 0
     await cog.message(sam.ctx, sam, {"t": "bet", "amount": 10, "choice": "tails"})

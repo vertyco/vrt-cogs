@@ -159,6 +159,9 @@ h3,
 /* ---------- Top bar ---------- */
 
 .top {
+  /* Over the page under it, so the hub's arrival notes, which slide down out of the people button, can be seen */
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -365,17 +368,23 @@ h3,
   }
 }
 
-/* Under a floor bigger than the screen: stays put along the bottom while the floor pans above it */
-.swipe-hint {
-  position: sticky;
-  left: 0;
-  bottom: 0;
+/* Under the lobby: the people standing in it, then the swipe hint under a floor bigger than the screen. It stays put
+   while the floor pans above it, and goes with the lobby when a table opens */
+.lobby-foot {
+  flex: none;
   box-sizing: border-box;
-  width: 100%;
-  margin: 0;
-  padding: 8px 8px calc(8px + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
   border-top: 1px solid #3a2a1a;
   background: #1a0d06;
+}
+
+.lobby[hidden] + .lobby-foot {
+  display: none;
+}
+
+.swipe-hint {
+  margin: 0;
+  padding: 8px;
   font: 600 12px/1.2 "Segoe UI", system-ui, sans-serif;
   color: var(--cream-dim);
   text-align: center;
@@ -421,22 +430,6 @@ h3,
 
 .station.blocked .medallion {
   filter: grayscale(0.85) brightness(0.7) drop-shadow(0 6px 6px rgba(0, 0, 0, 0.6));
-}
-
-.count {
-  position: absolute;
-  top: -4px;
-  right: -6px;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 5px;
-  box-sizing: border-box;
-  border: 2px solid #0b2a17;
-  border-radius: 999px;
-  background: var(--win);
-  color: #062312;
-  font: 800 13px/18px "Segoe UI", system-ui, sans-serif;
-  text-align: center;
 }
 
 /* ---------- A table ---------- */
@@ -850,6 +843,12 @@ h3,
 
 .toast {
   bottom: calc(18px + var(--safe-bottom));
+  pointer-events: none;
+}
+
+/* In the lobby it stands on the strip under the floor, so it never covers the faces in it */
+.app[data-view="lobby"] .toast {
+  bottom: calc(10px + var(--lobby-foot, var(--safe-bottom)));
 }
 
 .banner {
@@ -1114,4 +1113,130 @@ input[type="checkbox"] {
 
 .who b {
   font-size: 18px;
+}
+
+/* ---------- Who's here ---------- */
+
+/* The people standing in the lobby, in a row of their own so no table is under them. They stand at the right, since
+   the hub's frame rate counter sits in the bottom left corner */
+.lobby-crowd {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 5px calc(10px + var(--safe-right)) 5px calc(10px + var(--safe-left));
+}
+
+.lobby-crowd .face,
+.medallion .faces .face {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--cream-dim);
+  border-radius: 50%;
+  background: #3a2a1a;
+  color: #ffffff;
+  font: 700 13px/1 "Segoe UI", system-ui, sans-serif;
+}
+
+.lobby-crowd .face {
+  cursor: pointer;
+}
+
+.lobby-crowd .face img,
+.medallion .faces .face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.face.away {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+/* At the medallion's top right corner, the faces overlapping, with the rest counted after them */
+.medallion .faces {
+  position: absolute;
+  top: -10%;
+  right: -55%;
+  display: flex;
+  align-items: center;
+}
+
+.medallion .faces .face {
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+}
+
+/* Where a neighbouring table is close on one side, the faces hang the other way so they stay over their own table */
+.station[data-faces="left"] .medallion .faces {
+  right: -6px;
+}
+
+.station[data-faces="right"] .medallion .faces {
+  right: auto;
+  left: -6px;
+}
+
+.medallion .faces .face + .face {
+  margin-left: -7px;
+}
+
+.lobby-crowd .more,
+.medallion .faces .more {
+  color: var(--cream);
+  font: 700 12px/1 "Segoe UI", system-ui, sans-serif;
+}
+
+.lobby-crowd .more {
+  margin-left: 4px;
+}
+
+.medallion .faces .more {
+  margin-left: 3px;
+  padding: 3px 5px;
+  border-radius: 999px;
+  background: rgba(18, 10, 6, 0.85);
+}
+
+.tools .hub-people {
+  --hub-people-size: 32px;
+}
+
+/* Where there is room across, the crowd and the hint share one row, which leaves more of the floor in view */
+@media (min-width: 600px), (max-height: 500px) {
+  .lobby-foot {
+    display: flex;
+    align-items: center;
+  }
+
+  .lobby-crowd {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .swipe-hint {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* A sideways phone has no height to spare, so its faces are smaller */
+@media (max-height: 500px) {
+  .lobby-crowd {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+
+  .lobby-crowd .face {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
 }

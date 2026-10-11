@@ -64,7 +64,8 @@ export function resultView(result, game) {
 }
 
 export class TableView {
-  // page: send(message), sound, casino(), me(), readyIn(game), showPlayer(id), toast(text)
+  // page: send(message), sound, casino(), me(), readyIn(game), showPlayer(id), toast(text), changed()
+  // changed() is called whenever the bot sends the table's state, for the page to report what the player is doing
   constructor(game, page) {
     this.game = game;
     this.page = page;
@@ -198,6 +199,7 @@ export class TableView {
       }
       this.scene?.show(message);
       this.update();
+      this.page.changed?.();
     } else if (message.t === "event") {
       await this.animate(message);
     } else if (message.t === "result") {
