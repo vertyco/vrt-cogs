@@ -1,5 +1,9 @@
 # Age of War Changelog
 
+## 0.2.1
+
+- Opening the game shows the original's black loading screen, with its bar filling as the art downloads, instead of a half-built setup screen with a broken logo. The setup screen fades in once everything is ready.
+
 ## 0.2.0
 
 Changes to make the game feel like the original Flash game:

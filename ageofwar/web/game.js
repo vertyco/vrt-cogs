@@ -23,6 +23,8 @@ const CORNER_ROOM = 230;
 const SMALL_CORNER_ROOM = 180;
 // The menu button whose hover picture is the sword that marks a line
 const SWORD = 1032;
+// The original's loading bar is 288 long when full
+const LOADING_BAR = 288;
 const sound = new Sound();
 const page = {
   hub: null,
@@ -48,7 +50,7 @@ function $(id) {
 async function start() {
   bindButtons();
   try {
-    page.scene = await createScene($("field"));
+    page.scene = await createScene($("field"), showLoaded);
   } catch (e) {
     console.error("Age of War: couldn't start drawing", e);
     showOverlay("Sorry!", "This device couldn't start the game's graphics.");
@@ -81,6 +83,16 @@ async function start() {
   bindInput();
   setInterval(showRate, 1000);
   await goLive();
+}
+
+// The original's loading bar showed how much of the game had come; here, how much of the art has
+function showLoaded(part) {
+  $("loading-bar").setAttribute("width", String(LOADING_BAR * part));
+}
+
+// The loading screen fades once there is something to show: the bot's first state, the preview, or a problem
+function doneLoading() {
+  $("loading").classList.add("done");
 }
 
 async function goLive() {
@@ -118,6 +130,7 @@ function showRate() {
 
 // Outside Discord the page plays a recording of two computers fighting, made by the bot's own battle code
 async function showPreview() {
+  doneLoading();
   page.preview = true;
   $("setup").hidden = true;
   showToast("Preview: open Age of War in Discord to play.", 0);
@@ -175,6 +188,7 @@ function mySide() {
 }
 
 function applyState(state) {
+  doneLoading();
   const before = page.stage;
   page.state = state;
   page.stage = state.stage;
@@ -432,6 +446,7 @@ function layout(scale) {
 // ---------- Overlays ----------
 
 function showOverlay(big, small, resume = false) {
+  doneLoading();
   $("overlay").hidden = false;
   $("overlay-big").textContent = big;
   $("overlay-small").textContent = small;

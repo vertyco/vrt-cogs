@@ -3,11 +3,11 @@
 // animation on that same clock, so legs and positions move together like the original's one step per frame.
 import {
   Application,
-  Assets,
   Container,
   Graphics,
   Rectangle,
   Text,
+  Texture,
 } from "./vendor/pixi.min.mjs";
 import { Library } from "./flash.js";
 import { Particles } from "./particles.js";
@@ -928,9 +928,49 @@ export class Scene {
   }
 }
 
-export async function createScene(host) {
-  const data = await (await fetch("art/flash.json")).json();
-  const pages = await Promise.all(data.atlas.pages.map((page) => Assets.load(`art/${page}`)));
+// A file's contents, telling onPart how much of it has come so far (0 to 1). A server that doesn't say the size, or
+// sends it packed, only gets a 1 at the end
+async function download(url, onPart) {
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(`${url}: ${resp.status}`);
+  }
+  const size = resp.headers.has("Content-Encoding") ? 0 : Number(resp.headers.get("Content-Length"));
+  if (!size || !resp.body) {
+    const blob = await resp.blob();
+    onPart(1);
+    return blob;
+  }
+  const reader = resp.body.getReader();
+  const chunks = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    chunks.push(value);
+    got += value.length;
+    onPart(Math.min(got / size, 1));
+  }
+  onPart(1);
+  return new Blob(chunks, { type: resp.headers.get("Content-Type") || "" });
+}
+
+// onProgress hears how much of the art has loaded, 0 to 1: the timelines are the first half, the atlas pages the rest
+export async function createScene(host, onProgress) {
+  const data = JSON.parse(await (await download("art/flash.json", (part) => onProgress(part / 2))).text());
+  const parts = data.atlas.pages.map(() => 0);
+  const pages = await Promise.all(
+    data.atlas.pages.map(async (page, index) => {
+      const blob = await download(`art/${page}`, (part) => {
+        parts[index] = part;
+        onProgress(0.5 + parts.reduce((sum, done) => sum + done, 0) / parts.length / 2);
+      });
+      // Decoded as Pixi decodes the files it loads itself: it puts the colors over the see-through parts on upload
+      return Texture.from(await createImageBitmap(blob, { premultiplyAlpha: "none" }));
+    }),
+  );
   // The original's labels draw once, so their font has to be ready before the first one is made
   try {
     await document.fonts.load('bold 19px "AoW Arial"');

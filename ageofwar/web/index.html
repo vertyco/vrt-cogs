@@ -25,6 +25,34 @@
         <p class="toast" id="toast" role="status" hidden></p>
       </main>
 
+      <!-- The original's loading screen: its "Loading" lettering over a bar that fills as the art comes, reflected -->
+      <div class="loading" id="loading" role="status" aria-label="Loading">
+        <svg viewBox="-150 -13 300 44" aria-hidden="true">
+          <defs>
+            <g id="loading-mark">
+              <g fill="#ffffff" fill-rule="evenodd">
+              <path transform="translate(-59.7 9.9) scale(0.031)" d="M145.15 -678.0 L0.0 -678.0 0.0 0.0 435.45 0.0 435.45 -145.15 145.15 -145.15 145.15 -678.0" />
+              <path transform="translate(-41.7 9.9) scale(0.031)" d="M145.15 -339.0 L145.15 -145.15 290.75 -145.15 290.75 -339.0 145.15 -339.0 M0.0 -96.9 L0.0 -387.25 96.9 -484.15 339.0 -484.15 435.9 -387.25 435.9 -96.9 339.0 0.0 96.9 0.0 0.0 -96.9" />
+              <path transform="translate(-23.7 9.9) scale(0.031)" d="M290.3 -145.15 L290.3 -169.25 145.15 -169.25 145.15 -145.15 290.3 -145.15 M0.0 -217.5 L96.9 -314.4 290.3 -314.4 290.3 -339.0 0.0 -339.0 0.0 -387.25 96.9 -484.15 339.0 -484.15 435.9 -387.25 435.9 0.0 387.25 0.0 339.0 -48.25 290.3 0.0 96.9 0.0 0.0 -96.9 0.0 -217.5" />
+              <path transform="translate(-5.7 9.9) scale(0.031)" d="M290.75 -145.15 L290.75 -339.0 145.15 -339.0 145.15 -145.15 290.75 -145.15 M0.0 -387.25 L96.9 -484.15 242.1 -484.15 290.75 -435.9 290.75 -678.0 435.9 -678.0 435.9 0.0 339.0 0.0 290.75 -48.25 242.55 0.0 96.9 0.0 0.0 -96.9 0.0 -387.25" />
+              <path transform="translate(12.3 9.9) scale(0.031)" d="M72.8 -677.55 L72.8 -532.4 217.95 -532.4 217.95 -677.55 72.8 -677.55 M217.95 -484.15 L217.95 0.0 72.8 0.0 72.8 -339.0 0.0 -339.0 0.0 -484.15 217.95 -484.15" />
+              <path transform="translate(23.55 9.9) scale(0.031)" d="M290.75 0.0 L435.9 0.0 435.9 -387.25 339.0 -484.15 193.85 -484.15 145.15 -435.9 145.15 -484.15 0.0 -484.15 0.0 0.0 145.15 0.0 145.15 -339.0 290.75 -339.0 290.75 0.0" />
+              <path transform="translate(41.55 9.9) scale(0.031)" d="M145.15 -145.15 L290.75 -145.15 290.75 -339.0 145.15 -339.0 145.15 -145.15 M96.9 0.0 L0.0 -96.9 0.0 -387.25 96.9 -484.15 242.55 -484.15 290.75 -435.9 339.0 -484.15 435.9 -484.15 435.9 96.45 339.0 193.4 96.9 193.4 0.0 96.45 0.0 24.1 145.15 24.1 145.15 48.25 290.75 48.25 290.75 0.0 96.9 0.0" />
+              </g>
+              <rect id="loading-bar" x="-144" y="17" width="0" height="4" fill="#ffffff" />
+              <rect x="-144" y="17" width="288" height="4" fill="none" stroke="#ffffff" stroke-width="1" />
+            </g>
+            <linearGradient id="loading-fade" x1="0" y1="22.2" x2="0" y2="28" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#000000" stop-opacity="0.36" />
+              <stop offset="1" stop-color="#000000" />
+            </linearGradient>
+          </defs>
+          <use href="#loading-mark" />
+          <use href="#loading-mark" transform="matrix(1 0 0 -0.2787 0 26.55)" />
+          <rect x="-150" y="21" width="300" height="11" fill="url(#loading-fade)" />
+        </svg>
+      </div>
+
       <nav class="corner" aria-label="Game controls">
         <button type="button" class="icon-button" id="back" aria-label="Back to the menu" title="Back to the menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 L8 12 L15 19" /></svg>

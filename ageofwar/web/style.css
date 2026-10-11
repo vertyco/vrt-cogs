@@ -239,6 +239,39 @@ button.art:active {
   font: bold 14px Arial, Helvetica, sans-serif;
 }
 
+/* ---------- Loading ---------- */
+
+/* Black like the original's, until the art has loaded and the bot has sent the game's state. The corner buttons stay
+   over it, so the player can always go back */
+.loading {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: #000000;
+  transition:
+    opacity 0.25s ease-out,
+    visibility 0s linear 0.25s;
+}
+
+/* The original's picture was 289 of its 650 by 450 view */
+.loading svg {
+  width: min(44vw, 64vh);
+}
+
+.loading.done {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading {
+    transition: none;
+  }
+}
+
 /* ---------- The corner buttons ---------- */
 
 .corner {
