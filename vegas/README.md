@@ -9,7 +9,7 @@ Redjumpman's Casino rebuilt as a Discord Activity for [ActivityHub](../activityh
 
 ## Setup
 
-Vegas needs ActivityHub 0.5.0 or later, loaded and set up (see its README). Then:
+Vegas needs ActivityHub 0.7.0 or later, loaded and set up (see its README). Then:
 
 ```
 [p]cog install vrt-cogs vegas

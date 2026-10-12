@@ -417,3 +417,10 @@ async def test_revoking_takes_back_any_membership(cog):
     player = await cog.store.player(GUILD_ID, PLAYER)
     assert player.membership is None and player.by_hand is False
     assert said.sent[-1] == "Player7 is Basic until the next membership update."
+
+
+@pytest.mark.asyncio
+async def test_the_menu_line_says_it_bets_the_servers_currency(cog):
+    game = await pytest.importorskip("activityhub.common.games").validate_game(cog)
+    assert game.economy == cog.economy_line
+    assert await cog.economy_line(guild_of(cog)) == "Bet credits at the tables"

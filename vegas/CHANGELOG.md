@@ -1,5 +1,11 @@
 # Vegas Changelog
 
+## 0.3.0
+
+Needs ActivityHub 0.7.0 or later.
+
+- Vegas's card in the ActivityHub menu says it bets the server's currency, like "Bet credits at the tables".
+
 ## 0.2.2
 
 - Changing a game's cooldown now reaches players already waiting on it. Lowering All In's cooldown to 0 frees everyone at once instead of leaving them on the old 12 hour wait, and raising it makes everyone's wait longer.
