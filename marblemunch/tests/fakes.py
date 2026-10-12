@@ -23,6 +23,15 @@ class FakeRoom:
             conn.sent.append(data)
 
 
+def answer(value):
+    """An async method that always answers value, like ctx.is_admin()"""
+
+    async def ask():
+        return value
+
+    return ask
+
+
 def member_ctx(user_id, instance_id="window", author=None):
     """ActivityHub's ctx for a member of the test server"""
     guild = SimpleNamespace(id=GUILD_ID, owner_id=0)
@@ -30,15 +39,19 @@ def member_ctx(user_id, instance_id="window", author=None):
     author.guild = guild
     author.guild_permissions = SimpleNamespace(manage_guild=user_id == ADMIN_ID)
     guild.get_member = lambda member_id: author if member_id == user_id else None
-    return SimpleNamespace(author=author, guild=guild, guild_id=GUILD_ID, instance_id=instance_id)
+    return SimpleNamespace(
+        author=author,
+        guild=guild,
+        guild_id=GUILD_ID,
+        instance_id=instance_id,
+        # The bot owner and Manage Server count, like the hub's own check
+        is_admin=answer(user_id in (OWNER_ID, ADMIN_ID)),
+    )
 
 
 class FakeBot:
     async def is_owner(self, user):
         return user.id == OWNER_ID
-
-    async def is_admin(self, member):
-        return False
 
 
 class FakeBank:

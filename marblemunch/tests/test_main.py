@@ -6,7 +6,7 @@ import pytest_asyncio
 from marblemunch.common.leaderboard import Result
 from marblemunch.common.payouts import BALANCE_FULL, NONE_LEFT, NOTHING_EARNED, PAYOUTS_OFF
 from marblemunch.main import NOT_AN_ADMIN, NOTHING_TO_CASH, MarbleMunch
-from marblemunch.tests.fakes import ADMIN_ID, OWNER_ID, FakeBank, FakeBot, FakeConn, FakeRoom, Today, member_ctx
+from marblemunch.tests.fakes import ADMIN_ID, OWNER_ID, FakeBank, FakeBot, FakeConn, FakeRoom, Today, answer, member_ctx
 
 
 @pytest.mark.asyncio
@@ -195,10 +195,17 @@ async def test_with_a_global_bank_only_the_owner_sets_payouts_for_every_server(p
 
 
 @pytest.mark.asyncio
+async def test_the_settings_follow_the_hubs_admin_check(paying):
+    ctx = member_ctx(1)
+    ctx.is_admin = answer(True)
+    assert (await paying.payout_settings(ctx, {}))["settings"] is not None
+
+
+@pytest.mark.asyncio
 async def test_the_menu_line_follows_the_payouts_switch(paying):
-    guild = SimpleNamespace(id=500)
+    ctx = member_ctx(1)
     game = await pytest.importorskip("activityhub.common.games").validate_game(paying)
     assert game.economy == paying.economy_line
-    assert await paying.economy_line(guild) is None
+    assert await paying.economy_line(ctx) is None
     await turn_on(paying, cap=2500)
-    assert await paying.economy_line(guild) == "Cash in up to 2,500 credits"
+    assert await paying.economy_line(ctx) == "Cash in up to 2,500 credits"
