@@ -36,6 +36,8 @@ const GAS_SCALE = 1.5;
 const GAS_X = 480;
 const GAS_Y = 98;
 const GAS_WORDS = "GAS MASKS";
+const GAS_WORDS_ON = "MASKS ON";
+const MASK_FLAGS = 6; // view.py: bit 1 masks on, bit 2 masks going on or off
 const GAS_FADE = 0.3;
 // The help panels in the original's order (helpArray), shown one at a time
 const HELP_KEY = "warfare1917:help";
@@ -404,9 +406,21 @@ export class Panels {
       if (this.canPress(e) && this.gasShown) {
         sound.play(CLICK);
         this.page.send({ masks: true });
+        this.page.quickMessage("GAS MASKS ON");
       }
     });
     this.gas = button;
+  }
+
+  // The button reads "MASKS ON" while any of the player's squads wears masks or is putting them on
+  paintGasWords(squads) {
+    const mine = SIDES.indexOf(this.side);
+    const worn = [...squads.values()].some((row) => row[1] === mine && row[4] & MASK_FLAGS);
+    const words = worn ? GAS_WORDS_ON : GAS_WORDS;
+    const text = this.gas.child("buttonText");
+    if (text.text !== words) {
+      text.text = words;
+    }
   }
 
   paintGas(on) {
@@ -610,5 +624,8 @@ export class Panels {
       this.paintTrench(entry, state.t[entry.index], squads);
     }
     this.paintGas(Boolean(state.h[this.side][2]));
+    if (this.gas && this.gasShown) {
+      this.paintGasWords(squads);
+    }
   }
 }

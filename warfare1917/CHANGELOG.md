@@ -1,5 +1,9 @@
 # Warfare 1917 Changelog
 
+## 0.1.1
+
+- Pressing the Gas Masks button now shows a "GAS MASKS ON" message, and the button reads "MASKS ON" while your squads wear masks.
+
 ## 0.1.0
 
 First release. Warfare 1917, the 2008 Flash game by Con Artist Games and Armor Games, with its original art, sounds and music.
