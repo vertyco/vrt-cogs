@@ -1,0 +1,14 @@
+# Warfare 1917 Changelog
+
+## 0.1.0
+
+First release. Warfare 1917, the 2008 Flash game by Con Artist Games and Armor Games, with its original art, sounds and music.
+
+- Lead the British or German army across the trenches of 1917. Deploy riflemen, machine guns, officers, tanks and more, call in fire support, take the enemy's trenches and keep your morale up.
+- Both campaigns: nine missions as the British and nine as the Germans. Win to move on, lose to retry. Finish the ninth for the newspaper and your campaign stats.
+- Earn experience from kills and spend it on the original's upgrade trees. The upgrades that were broken in the original now work as described.
+- Custom Battle: choose your side, difficulty, units, supports, map size, trenches, wire and mines.
+- Play alone, watch other battles in the same Activity, or fight a friend in a 1 vs 1 battle.
+- One campaign save per Discord account, kept across servers and devices.
+- Works on desktop and on phones held upright or sideways. The sponsor intros, ads and links are gone.
+- No Red currency payouts.

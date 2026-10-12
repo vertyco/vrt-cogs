@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Warfare 1917 for ActivityHub, ported from the Flash game published by Armor Games in 2008, with its original art, sounds and music. Lead the British or German army across the trenches through two nine-mission campaigns, or set up a Custom Battle: deploy units, call in fire support, take trenches and win the morale war, then spend experience on the two upgrade trees. Play alone, watch other battles in the Activity, or fight a friend 1 vs 1. Each player has one campaign save across all servers. The bot runs every battle. Works on desktop and on phones held either way. Needs ActivityHub 0.5.0 or later.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores each player's Discord user ID with their Warfare 1917 campaign save (current mission, experience, level, upgrades and campaign stats).",
+  "hidden": true,
+  "install_msg": "Thank you for installing Warfare 1917!\n\nWarfare 1917 is a game for ActivityHub, which must be installed and set up first:\n`[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`\n`[p]cog install vrt-cogs activityhub`\n`[p]load activityhub`\nThen follow ActivityHub's README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nOnce both are loaded, Warfare 1917 shows up in the hub's menu.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Lead the British or German army across the trenches, an ActivityHub port of the Flash game Warfare 1917",
+  "tags": ["activity", "games", "fun", "multiplayer", "vert"],
+  "type": "COG"
+}
