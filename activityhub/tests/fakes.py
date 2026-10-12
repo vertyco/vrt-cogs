@@ -61,7 +61,14 @@ class FakeConfig:
     """Dict-backed stand-in for Red's Config with ActivityHub's defaults"""
 
     def __init__(self):
-        self.globals = {"host": "127.0.0.1", "port": 8742, "look": {}, "disabled": [], "payouts": {}}
+        self.globals = {
+            "host": "127.0.0.1",
+            "port": 8742,
+            "look": {},
+            "disabled": [],
+            "payouts": {},
+            "economy_labels": True,
+        }
         self.guilds: dict[int, dict] = {}
         self.users: dict[int, dict] = {}
         self.members: dict[int, dict[int, dict]] = {}
@@ -72,7 +79,8 @@ class FakeConfig:
         return FakeValue(self.globals, name)
 
     def guild_from_id(self, guild_id: int) -> FakeGroup:
-        return FakeGroup(self.guilds.setdefault(guild_id, {"look": {}, "disabled": [], "payouts": {}}))
+        defaults = {"look": {}, "disabled": [], "payouts": {}, "economy_labels": True}
+        return FakeGroup(self.guilds.setdefault(guild_id, defaults))
 
     def guild(self, guild) -> FakeGroup:
         return self.guild_from_id(guild.id)
@@ -303,13 +311,16 @@ def write_demo_web(folder: Path) -> Path:
 class DemoCog:
     """A game cog using every hook, recording what the hub hands it"""
 
-    def __init__(self, web_dir: Path, key="demo", name="Demo", cog_name="Demo", with_socket=True, thumbnail=None):
+    def __init__(
+        self, web_dir: Path, key="demo", name="Demo", cog_name="Demo", with_socket=True, thumbnail=None, economy=None
+    ):
         self.qualified_name = cog_name
         self.web_dir = web_dir
         self.key = key
         self.name = name
         self.with_socket = with_socket
         self.thumbnail = thumbnail
+        self.economy = economy
         self.events: list[tuple] = []
         self.join_error = False
         self.result: t.Any = None  # what the "give" action returns
@@ -342,6 +353,8 @@ class DemoCog:
             desc["thumbnail"] = self.thumbnail
         if self.with_socket:
             desc["socket"] = {"join": self.on_join, "message": self.on_message, "leave": self.on_leave}
+        if self.economy is not None:
+            desc["economy"] = self.economy
         return desc
 
     async def echo(self, ctx, data):

@@ -235,6 +235,43 @@ function gameClosed() {
   sounds.play("back");
   sounds.playFile("menu");
   focusSelected();
+  refreshBadges();
+}
+
+// A game's currency line can change while it is open (an admin turns its payouts on or off), and inside Discord the
+// menu never loads again. So coming back asks once more, and changes only the badges, in place, so a click already
+// on its way to a card isn't lost
+async function refreshBadges() {
+  let fresh;
+  try {
+    fresh = await request("/hub/api/menu?launch=skip", { session: page.host.login?.session });
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+  const lines = new Map(fresh.games.map((game) => [game.key, game.economy ?? null]));
+  for (const game of page.state.games) {
+    const line = lines.has(game.key) ? lines.get(game.key) : (game.economy ?? null);
+    if ((game.economy ?? null) !== line) {
+      game.economy = line;
+      placeBadges(game.key, line);
+    }
+  }
+}
+
+// The badge on a game's card, and on the Orb's screen while that game is the one shown
+function placeBadges(key, line) {
+  const texts = [...document.querySelectorAll(`#games .card[data-key="${CSS.escape(key)}"] .text`)];
+  const people = document.querySelector(`#orb-screen .screen-people[data-key="${CSS.escape(key)}"]`);
+  if (people) {
+    texts.push(people.parentElement);
+  }
+  for (const text of texts) {
+    text.querySelector(".economy")?.remove();
+    if (line) {
+      text.insertBefore(economyBadge(line), text.querySelector(".screen-people"));
+    }
+  }
 }
 
 // ---------- The menu ----------
@@ -314,11 +351,26 @@ function renderGames(games) {
   updateBubbles();
 }
 
+// A game's currency line: a coin, then the game's own words as plain text. The words also go in the tooltip and
+// the accessible name, since compact cards and hidden details show only the coin
+function economyBadge(line) {
+  const badge = el("span", "economy");
+  badge.title = line;
+  badge.setAttribute("aria-label", line);
+  const coin = el("span", "coin");
+  coin.setAttribute("aria-hidden", "true");
+  badge.append(coin, el("span", "economy-text", line));
+  return badge;
+}
+
 function cardText(game) {
   const text = el("span", "text");
   text.append(el("span", "name", game.name));
   if (game.description) {
     text.append(el("span", "desc", game.description));
+  }
+  if (game.economy) {
+    text.append(economyBadge(game.economy));
   }
   return text;
 }
@@ -605,6 +657,9 @@ function screenFace(item) {
   text.append(el("h2", "screen-name", item.name));
   if (item.description) {
     text.append(el("p", "screen-desc", item.description));
+  }
+  if (item.economy) {
+    text.append(economyBadge(item.economy));
   }
   if (item.key) {
     const people = el("div", "screen-people");
@@ -1320,6 +1375,9 @@ function stagedFrom(tab) {
   if (tab in SWITCHES) {
     staged.disabled = state[SWITCHES[tab].list].filter((game) => !game.on).map((game) => game.key);
   }
+  if (labelsTab(tab)) {
+    staged.economyLabels = state.economyLabels.on;
+  }
   return staged;
 }
 
@@ -1352,7 +1410,11 @@ function renderPanel() {
   if (page.tab === "order") {
     body.replaceChildren(orderEditor());
   } else {
-    body.replaceChildren(...lookEditor(), ...(page.tab in SWITCHES ? [switchEditor()] : []));
+    body.replaceChildren(
+      ...lookEditor(),
+      ...(page.tab in SWITCHES ? [switchEditor()] : []),
+      ...(labelsTab(page.tab) ? [labelsEditor()] : []),
+    );
   }
   preview();
 }
@@ -1590,6 +1652,26 @@ function switchEditor() {
   return box;
 }
 
+// The tab holding the currency labels switch: the server tab, or the owner's defaults tab with a global bank
+function labelsTab(tab) {
+  return page.state.economyLabels?.tab === tab;
+}
+
+function labelsEditor() {
+  const input = el("input");
+  input.type = "checkbox";
+  input.id = "economy-labels";
+  input.checked = page.staged.economyLabels;
+  input.addEventListener("change", () => {
+    page.staged.economyLabels = input.checked;
+  });
+  const label = el("label", "switch");
+  label.append(input, el("span", "", "Show currency labels"));
+  const box = el("fieldset", "switches");
+  box.append(el("legend", "field-label", "Games that use currency"), label);
+  return box;
+}
+
 // ---------- Save and reset ----------
 
 function saveBody() {
@@ -1603,6 +1685,9 @@ function saveBody() {
   }
   if (page.tab in SWITCHES) {
     body.disabled = page.staged.disabled;
+  }
+  if (labelsTab(page.tab)) {
+    body.economyLabels = page.staged.economyLabels;
   }
   return body;
 }

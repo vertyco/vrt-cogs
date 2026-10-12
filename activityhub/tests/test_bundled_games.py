@@ -324,3 +324,14 @@ async def test_a_refused_cash_in_can_be_tried_again(client, hub, clock):
     assert await cash(client, hub, run) == (400, {"error": PAYOUTS_OFF})
     await turn_on(hub)
     assert (await cash(client, hub, run))[0] == 200
+
+
+@pytest.mark.asyncio
+async def test_a_bundled_game_shows_a_currency_line_only_while_it_pays(hub, clock):
+    guild = hub.bot.get_guild(GUILD_ID)
+    snake = hub.registry.games["snake"]
+    assert snake.economy == snake.cog.economy_line
+    assert await snake.cog.economy_line(guild) is None
+    await hub.config.guild_from_id(GUILD_ID).payouts.set({"snake": {"on": True, "rate": 25, "cap": 1500, "plays": 3}})
+    assert await snake.cog.economy_line(guild) == "Cash in up to 1,500 credits"
+    assert await hub.registry.games["2048"].cog.economy_line(guild) is None

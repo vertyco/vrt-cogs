@@ -145,13 +145,19 @@ class Payouts:
         cashed = await (await self.ledger(member))()
         return cashed.get("counts", {}).get(key, 0) if cashed.get("day") == self.today() else 0
 
+    async def guild_settings(self, guild: t.Any, key: str) -> dict | None:
+        """The game's payout settings in this server, or None when it doesn't pay out there"""
+        game = self.games.get(key)
+        if game is None:
+            return None
+        settings = game_settings(await self.saved(guild), game)
+        return settings if settings["on"] else None
+
     async def settings_for(self, member: t.Any, key: str) -> dict | None:
         """The game's payout settings where the player is, or None when it doesn't pay out there"""
-        game = self.games.get(key)
-        if game is None or getattr(member, "guild", None) is None:
+        if getattr(member, "guild", None) is None:
             return None
-        settings = game_settings(await self.saved(member.guild), game)
-        return settings if settings["on"] else None
+        return await self.guild_settings(member.guild, key)
 
     async def offer(self, member: t.Any, key: str, score: int) -> dict | None:
         """What cashing in this score would pay, or None when the game doesn't pay out where the player is"""

@@ -9,7 +9,9 @@ from activityhub.tests.fakes import (
     MANAGER_ID,
     MEMBER_ID,
     OWNER_ID,
+    DemoCog,
     session_headers,
+    write_demo_web,
 )
 
 LOOK_LIST = {"layout": "list", "accent": None, "background": None, "details": None}
@@ -262,7 +264,12 @@ async def test_manager_saves_server_look_and_switches(client, hub, demo, second)
     headers = session_headers(hub, user_id=MANAGER_ID)
     status, state = await save(client, headers, {"tab": "server", "look": LOOK_LIST, "disabled": ["demo"]})
     assert status == 200
-    assert hub.config.guilds[GUILD_ID] == {"look": {"layout": "list"}, "disabled": ["demo"], "payouts": {}}
+    assert hub.config.guilds[GUILD_ID] == {
+        "look": {"layout": "list"},
+        "disabled": ["demo"],
+        "payouts": {},
+        "economy_labels": True,
+    }
     assert keys(state) == ["second"]
 
 
@@ -297,7 +304,7 @@ async def test_bad_server_save_changes_nothing(client, hub, demo):
     headers = session_headers(hub, user_id=MANAGER_ID)
     status, body = await save(client, headers, {"tab": "server", "look": {"layout": "x"}, "disabled": ["demo"]})
     assert status == 400
-    assert hub.config.guilds[GUILD_ID] == {"look": {}, "disabled": [], "payouts": {}}
+    assert hub.config.guilds[GUILD_ID] == {"look": {}, "disabled": [], "payouts": {}, "economy_labels": True}
 
 
 @pytest.mark.asyncio
@@ -333,3 +340,160 @@ async def test_only_the_owner_gets_global_switches(client, hub, demo):
     assert state["globalSwitches"] == []
     assert (await save(client, headers, {"tab": "defaults", "disabled": ["demo"]}))[0] == 403
     assert hub.config.globals["disabled"] == []
+
+
+async def add_priced(hub, tmp_path, economy, key="priced"):
+    cog = DemoCog(write_demo_web(tmp_path / key), key=key, name="Priced", cog_name=key.title(), economy=economy)
+    assert await hub.registry.add(cog) is not None
+    return cog
+
+
+def lines(state):
+    return {game["key"]: game["economy"] for game in state["games"]}
+
+
+@pytest.mark.asyncio
+async def test_menu_cards_carry_each_games_line(client, hub, demo, tmp_path):
+    seen = []
+
+    async def answer(guild):
+        seen.append(guild.id)
+        return "Cash in up to 500 credits"
+
+    await add_priced(hub, tmp_path, "Bet credits", key="fixed")
+    await add_priced(hub, tmp_path, answer, key="asked")
+    status, state = await menu(client, session_headers(hub))
+    assert lines(state) == {"asked": "Cash in up to 500 credits", "demo": None, "fixed": "Bet credits"}
+    assert seen == [GUILD_ID]
+
+
+@pytest.mark.asyncio
+async def test_no_lines_outside_a_server_or_in_the_preview(client, hub, tmp_path):
+    await add_priced(hub, tmp_path, "Bet credits")
+    status, state = await menu(client, session_headers(hub, guild_id=None))
+    assert lines(state) == {"priced": None}
+    status, state = await menu(client)
+    assert lines(state) == {"priced": None}
+
+
+@pytest.mark.asyncio
+async def test_a_failing_line_still_loads_the_menu(client, hub, demo, tmp_path):
+    async def broken(guild):
+        raise RuntimeError("no bank")
+
+    await add_priced(hub, tmp_path, broken)
+    status, state = await menu(client, session_headers(hub))
+    assert status == 200 and lines(state) == {"demo": None, "priced": None}
+
+
+@pytest.mark.asyncio
+async def test_games_turned_off_here_are_not_asked(client, hub, tmp_path):
+    asked = []
+
+    async def answer(guild):
+        asked.append(guild.id)
+        return "Earn credits"
+
+    await add_priced(hub, tmp_path, answer)
+    await hub.config.guild_from_id(GUILD_ID).disabled.set(["priced"])
+    await menu(client, session_headers(hub))
+    assert asked == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "user_id, switch",
+    [
+        (MEMBER_ID, None),
+        (MANAGER_ID, {"tab": "server", "on": True}),
+        (OWNER_ID, {"tab": "server", "on": True}),
+    ],
+)
+async def test_the_labels_switch_sits_in_the_server_tab(client, hub, demo, user_id, switch):
+    status, state = await menu(client, session_headers(hub, user_id=user_id))
+    assert state["economyLabels"] == switch
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("user_id, switch", [(MANAGER_ID, None), (OWNER_ID, {"tab": "defaults", "on": True})])
+async def test_with_a_global_bank_the_labels_switch_is_the_owners(client, hub, demo, user_id, switch):
+    hub.payouts.bank.global_bank = True
+    status, state = await menu(client, session_headers(hub, user_id=user_id))
+    assert state["economyLabels"] == switch
+
+
+@pytest.mark.asyncio
+async def test_the_preview_has_no_labels_switch(client, demo):
+    status, state = await menu(client)
+    assert state["economyLabels"] is None
+
+
+@pytest.mark.asyncio
+async def test_a_server_turns_labels_off(client, hub, tmp_path):
+    asked = []
+
+    async def answer(guild):
+        asked.append(guild.id)
+        return "Earn credits"
+
+    await add_priced(hub, tmp_path, answer)
+    headers = session_headers(hub, user_id=MANAGER_ID)
+    status, state = await save(client, headers, {"tab": "server", "economyLabels": False})
+    assert status == 200 and hub.config.guilds[GUILD_ID]["economy_labels"] is False
+    assert state["economyLabels"] == {"tab": "server", "on": False}
+    assert lines(state) == {"priced": None} and asked == []
+
+
+@pytest.mark.asyncio
+async def test_a_server_save_without_the_key_keeps_the_switch(client, hub, demo):
+    await hub.config.guild_from_id(GUILD_ID).economy_labels.set(False)
+    await save(client, session_headers(hub, user_id=MANAGER_ID), {"tab": "server", "disabled": []})
+    assert hub.config.guilds[GUILD_ID]["economy_labels"] is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value", ["no", 0, None, []])
+async def test_the_switch_must_be_on_or_off(client, hub, demo, value):
+    headers = session_headers(hub, user_id=MANAGER_ID)
+    status, body = await save(client, headers, {"tab": "server", "economyLabels": value})
+    assert status == 400 and body["error"] == "Currency labels must be on or off."
+    assert hub.config.guilds[GUILD_ID]["economy_labels"] is True
+
+
+@pytest.mark.asyncio
+async def test_the_owner_turns_labels_off_everywhere_with_a_global_bank(client, hub, tmp_path):
+    hub.payouts.bank.global_bank = True
+    await add_priced(hub, tmp_path, "Earn credits")
+    headers = session_headers(hub, user_id=OWNER_ID)
+    status, state = await save(client, headers, {"tab": "defaults", "economyLabels": False})
+    assert status == 200 and hub.config.globals["economy_labels"] is False
+    assert lines(state) == {"priced": None}
+
+
+@pytest.mark.asyncio
+async def test_a_global_bank_reads_the_global_switch(client, hub, tmp_path):
+    # A server turned labels off before the bank went global: the owner's switch rules now
+    await add_priced(hub, tmp_path, "Earn credits")
+    await hub.config.guild_from_id(GUILD_ID).economy_labels.set(False)
+    hub.payouts.bank.global_bank = True
+    status, state = await menu(client, session_headers(hub))
+    assert lines(state) == {"priced": "Earn credits"}
+
+
+@pytest.mark.asyncio
+async def test_the_switch_key_in_the_wrong_mode_is_ignored(client, hub, demo):
+    # A page opened before the bank changed mode may still send it from the old tab
+    hub.payouts.bank.global_bank = True
+    headers = session_headers(hub, user_id=OWNER_ID)
+    status, state = await save(client, headers, {"tab": "server", "economyLabels": False})
+    assert status == 200 and hub.config.guilds[GUILD_ID]["economy_labels"] is True
+    assert hub.config.globals["economy_labels"] is True
+
+
+@pytest.mark.asyncio
+async def test_a_badge_refresh_leaves_a_remembered_launch_alone(client, hub, demo):
+    hub.launches.remember(MEMBER_ID, "demo")
+    headers = session_headers(hub)
+    resp = await client.get("/hub/api/menu?launch=skip", headers=headers)
+    assert (await resp.json())["launch"] is None
+    assert (await menu(client, headers))[1]["launch"] == "demo"

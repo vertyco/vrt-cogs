@@ -672,6 +672,16 @@ body[data-theme="orb"] .notice {
   white-space: nowrap;
 }
 
+/* The pill keeps the currency line for screen readers; the screen shows it for the selected game */
+.orb-menu .pill .economy {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Shown when there are pills above or below the ones on the ring; a click moves one pill */
 .orb-arrow {
   position: fixed;

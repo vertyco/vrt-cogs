@@ -80,9 +80,10 @@ def test_game_json():
         "description": "Middle desc",
         "icon": "/games/mid/abc123/art/icon%20one.png",
         "thumbnail": "/games/mid/abc123/art/wide.png",
+        "economy": None,
     }
-    plain = game_json(game("mid", "Middle"), "abc123")
-    assert plain["icon"] is None and plain["thumbnail"] is None
+    plain = game_json(game("mid", "Middle"), "abc123", "Bet credits")
+    assert plain["icon"] is None and plain["thumbnail"] is None and plain["economy"] == "Bet credits"
 
 
 def test_player_json_in_a_server_and_in_a_dm():

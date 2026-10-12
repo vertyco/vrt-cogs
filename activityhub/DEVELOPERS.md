@@ -673,6 +673,49 @@ Marble Munch is a full example to copy:
 - Its page has a settings dialog that only server admins see.
 - With a global bank (one balance shared by every server), only the bot owner can change the settings, and each player's cash-ins are counted across servers.
 
+### Currency labels on the menu
+
+Players can see which games use the server's currency before they open one. Add `"economy"` to `activityhub_game()`, and the menu shows your line on your game's card, next to a coin. Leave it out and your card looks the same as always.
+
+- **A game that always uses currency** passes a fixed line: `"economy": "Bet credits at the tables"`.
+- **A game that only sometimes does** passes an `async def` that takes the server and returns a line, or `None` for no badge. The hub calls it each time a player opens the menu in a server, so the badge follows your settings without you telling the hub anything.
+
+Here the badge shows only while an admin has payouts on. It assumes your cog saves the switch and the most per cash-in in server Config:
+
+```python
+# in __init__:
+self.config.register_guild(payouts_on=False, cap=1000)
+
+
+async def activityhub_game(self) -> dict:
+    return {
+        "key": "space-race",
+        "name": "Space Race",
+        "web_dir": Path(__file__).parent / "web",
+        "economy": self.economy_line,
+    }
+
+
+async def economy_line(self, guild) -> str | None:
+    settings = self.config.guild(guild)
+    if not await settings.payouts_on():
+        return None
+    currency = await bank.get_currency_name(guild)
+    return f"Cash in up to {await settings.cap():,} {currency}"
+```
+
+With a global bank, read the bot owner's settings instead of the server's, the same way your payouts do. Marble Munch's `economy_line` in `marblemunch/main.py` is a full example.
+
+Rules for the line:
+
+- **Plain text, at most 40 characters.** A fixed line that's longer is refused when your game registers. A longer answer from your function is cut to 40, with a warning in the bot log.
+- **Write the whole line yourself,** currency name included. The hub fills nothing in.
+- **Answer within 2 seconds.** A slower answer, an error, or something that isn't text or `None` means your card has no badge that time. The menu still opens, and the bot log says why.
+- **There's no badge outside a server,** since a server's bank is what the line is about.
+- **Server admins can hide every badge** with **Show currency labels** in the menu's server settings. With a global bank, that switch is the bot owner's, in the **Defaults** tab.
+
+`economy` needs ActivityHub 0.7.0 or later. An older hub refuses a game that passes it, so say so in your cog's description.
+
 ## 6. Multiplayer with live connections
 
 **In short:** a live connection lets players see each other's moves right away. Your Python gets three methods: `join` when a player connects, `message` when their page sends something, and `leave` when they go.
@@ -1564,6 +1607,9 @@ Your game still registers, but something will likely break:
 | `web_dir has a node_modules folder` (or `more than 2000 files`) | `web_dir` is your project folder, not your built page. | Point `web_dir` at your build output, like `dist/`. |
 | `the game frame went to ..., which isn't a file in web_dir` | Your page went to an address that isn't a file: an `href="#"` link, a router path, a reload after `history.pushState`, or a typo. The player saw "This page isn't part of the game." | See [Files and caching](#11-files-and-caching): use buttons, and memory or hash routing. |
 | `the page opened a live connection, but activityhub_game() has no "socket"` | The page called `hub.socket()`. | Add `"socket"` to `activityhub_game()` and `[p]reload yourcog`, or don't call `hub.socket()`. |
+| `economy took longer than 2 seconds, so its card has no currency label` | Your `economy` function didn't answer in time when a player opened the menu. | Answer from memory or one Config read. Don't call outside services in it. |
+| `economy failed, so its card has no currency label` | Your `economy` function raised. The error follows in the log. | Fix the error. The menu still opens meanwhile. |
+| `economy returned 45 characters, so its label was cut to 40` | The line from your `economy` function was longer than the badge fits. | Return a line of 40 characters or fewer. |
 
 ### Your page doesn't work
 
@@ -1666,6 +1712,7 @@ Your users need ActivityHub too, and Red doesn't install required cogs by itself
 - [ ] The page works inside Discord, in a server and (if you support it) in a DM.
 - [ ] Every action checks what the page sent, and never trusts a score or amount from it.
 - [ ] Payouts use `ctx.author` and have limits.
+- [ ] If your game uses the server's currency, `economy` says how in one short line.
 - [ ] Your actions return `{"error": "..."}` with friendly text for every expected problem.
 - [ ] The page has a way back to the menu (`backToMenu()`).
 - [ ] Every file the page needs is inside `web_dir`, loaded with a relative path.

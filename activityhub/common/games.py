@@ -24,8 +24,22 @@ HANDLER_ARGS = {
     "message": ("ctx", "conn", "data"),
     "leave": ("ctx", "conn"),
 }
-FIELDS = {"key", "name", "description", "icon", "thumbnail", "web_dir", "actions", "socket", "routes", "scopes"}
+FIELDS = {
+    "key",
+    "name",
+    "description",
+    "icon",
+    "thumbnail",
+    "web_dir",
+    "actions",
+    "socket",
+    "routes",
+    "scopes",
+    "economy",
+}
 REQUIRED = ("key", "name", "web_dir")
+# The most characters a game's currency line can have, so the badge fits a card on a phone
+ECONOMY_LIMIT = 40
 SCOPE_NAME = re.compile(r"[a-z0-9_.]+")
 # These add a bot or a webhook to a server, which isn't something a player approves while logging in
 NOT_LOGIN_SCOPES = ("bot", "webhook.incoming")
@@ -66,6 +80,8 @@ class Game:
     socket: dict[str, t.Callable] = field(default_factory=dict)
     routes: dict[tuple[str, str], t.Callable] = field(default_factory=dict)
     scopes: list[str] = field(default_factory=list)
+    # None, a fixed line, or an async def taking the server and returning a line or None
+    economy: str | t.Callable | None = None
 
 
 async def read_description(cog: t.Any) -> dict:
@@ -242,6 +258,36 @@ def check_scopes(value: t.Any, cog: t.Any) -> list[str]:
     return list(value)
 
 
+def check_economy(value: t.Any) -> str | t.Callable | None:
+    """None, a fixed line (None when blank), or an async def the hub calls with the server"""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        line = value.strip()
+        if len(line) > ECONOMY_LIMIT:
+            raise GameError(
+                f"economy is {len(line)} characters long, but the menu's badge fits {ECONOMY_LIMIT}. Shorten it."
+            )
+        return line or None
+    if inspect.iscoroutine(value):
+        # Closed here, so Python doesn't also warn that it was never awaited
+        value.close()
+        raise GameError(f"economy is a coroutine, not a method: write self.{value.__name__} without ()")
+    if not callable(value) or not is_async(value):
+        raise GameError("economy must be None, a string, or an async def that takes the server")
+    try:
+        signature = inspect.signature(value)
+    except (TypeError, ValueError):
+        # Some callables have no signature Python can read. Those fail when they are called instead
+        return value
+    try:
+        signature.bind(None)
+    except TypeError:
+        shown = signature.replace(return_annotation=inspect.Signature.empty)
+        raise GameError(f"economy takes {shown}, but the hub calls it with (guild).")
+    return value
+
+
 def check_picture(desc: dict, field_name: str, web_dir: Path) -> str | None:
     picture = desc.get(field_name)
     if picture is None:
@@ -312,6 +358,7 @@ async def validate_game(cog: t.Any) -> Game:
         socket=check_handlers("socket", desc.get("socket", {}), check_socket_name),
         routes=parse_routes(desc.get("routes", {})),
         scopes=scopes,
+        economy=check_economy(desc.get("economy")),
     )
     warn_about_page(key, web_dir, html)
     return game

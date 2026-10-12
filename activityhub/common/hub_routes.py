@@ -6,11 +6,20 @@ import typing as t
 import discord
 from aiohttp import web
 
+from . import economy
 from .files import file_response, inject_head, resolve_inside
 from .game_routes import first_message, pump, session_pass
 from .games import Game
 from .looks import BUILTIN_LOOK, SettingsError, apply_look_change, effective_look
-from .menu import allowed_tabs, games_json, merge_disabled, merge_order, ordered_games, player_json
+from .menu import (
+    allowed_tabs,
+    check_labels,
+    games_json,
+    merge_disabled,
+    merge_order,
+    ordered_games,
+    player_json,
+)
 from .replies import (
     BAD_REQUEST,
     INSTANCE_FAILED,
@@ -150,6 +159,9 @@ class HubRoutes:
         ctx = self.server.request_context(request)
         if ctx is None:
             return error(SESSION_EXPIRED, 401)
+        # The menu's badge refresh after a game asks with launch=skip, so a remembered launch waits for a real load
+        if request.query.get("launch") == "skip":
+            return web.json_response(await self.player_state(ctx))
         return web.json_response(await self.full_state(ctx))
 
     async def full_state(self, ctx: ActivityContext) -> dict:
@@ -169,6 +181,7 @@ class HubRoutes:
             "tabs": [],
             "switches": [],
             "globalSwitches": [],
+            "economyLabels": None,
             "launch": None,
         }
 
@@ -180,14 +193,16 @@ class HubRoutes:
         looks = await self.player_looks(ctx)
         tabs = await self.player_tabs(ctx)
         switches = [{"key": g.key, "name": g.name, "on": g.key not in disabled} for g in ordered_games(installed, [])]
+        shown = ordered_games(visible, order)
         return {
             "player": player_json(ctx),
-            "games": games_json(ordered_games(visible, order)),
+            "games": games_json(shown, await self.economy_lines(ctx, shown)),
             "look": effective_look(looks["global"], looks["guild"], looks["user"]),
             "looks": looks,
             "tabs": tabs,
             "switches": switches if "server" in tabs else [],
             "globalSwitches": await self.global_switches() if "defaults" in tabs else [],
+            "economyLabels": await self.labels_switch(ctx, tabs),
             "launch": None,
         }
 
@@ -195,6 +210,23 @@ class HubRoutes:
         blocked = await self.hub.config.disabled()
         games = ordered_games(self.hub.registry.games.values(), [])
         return [{"key": g.key, "name": g.name, "on": g.key not in blocked} for g in games]
+
+    async def labels_group(self, guild: discord.Guild | None) -> t.Any:
+        """Where the currency labels switch is saved: once for every server when they share one balance"""
+        return self.hub.config if await self.hub.payouts.bank.is_global() else self.hub.config.guild(guild)
+
+    async def labels_switch(self, ctx: ActivityContext, tabs: list[str]) -> dict | None:
+        """The currency labels switch and the tab holding it, or None when this player has no such tab"""
+        tab = "defaults" if await self.hub.payouts.bank.is_global() else "server"
+        if tab not in tabs:
+            return None
+        return {"tab": tab, "on": await (await self.labels_group(ctx.guild)).economy_labels()}
+
+    async def economy_lines(self, ctx: ActivityContext, games: list[Game]) -> dict[str, str | None]:
+        """Each shown game's currency line. None outside a server, since a server's bank is what it ties into"""
+        if ctx.guild is None or not await (await self.labels_group(ctx.guild)).economy_labels():
+            return {}
+        return await economy.lines(games, ctx.guild)
 
     async def allowed_games(self) -> list[Game]:
         """Installed games the bot owner hasn't turned off everywhere"""
@@ -253,28 +285,36 @@ class HubRoutes:
             await self.save_defaults(body)
 
     async def save_defaults(self, body: dict) -> None:
-        """Save the owner's defaults tab. A missing look or disabled key keeps its saved value"""
+        """Save the owner's defaults tab. A missing look, disabled or economyLabels key keeps its saved value"""
         config = self.hub.config
-        look, disabled = await config.look(), await config.disabled()
+        look, disabled, labels = await config.look(), await config.disabled(), await config.economy_labels()
         if "look" in body:
             look = apply_look_change(look, body["look"])
         if "disabled" in body:
             disabled = merge_disabled(disabled, body["disabled"], self.hub.registry.games)
+        # The switch is only here when every server shares one balance
+        if await self.hub.payouts.bank.is_global():
+            labels = check_labels(body, labels)
         await config.look.set(look)
         await config.disabled.set(disabled)
+        await config.economy_labels.set(labels)
         await self.server.rooms.close_games(disabled)
 
     async def save_server(self, guild: discord.Guild, body: dict) -> None:
-        """Save the server tab. A missing look or disabled key keeps its saved value"""
+        """Save the server tab. A missing look, disabled or economyLabels key keeps its saved value"""
         group = self.hub.config.guild(guild)
-        look, disabled = await group.look(), await group.disabled()
-        # Check both halves before saving either, so a bad half can't leave a half-saved change
+        look, disabled, labels = await group.look(), await group.disabled(), await group.economy_labels()
+        # Check every part before saving any, so a bad part can't leave a half-saved change
         if "look" in body:
             look = apply_look_change(look, body["look"])
         if "disabled" in body:
             # Games the owner turned off have no switch, so they count as uninstalled and keep this server's choice
             allowed = [game.key for game in await self.allowed_games()]
             disabled = merge_disabled(disabled, body["disabled"], allowed)
+        # With a global bank the switch is the owner's, in the defaults tab
+        if not await self.hub.payouts.bank.is_global():
+            labels = check_labels(body, labels)
         await group.look.set(look)
         await group.disabled.set(disabled)
+        await group.economy_labels.set(labels)
         await self.server.rooms.close_off(guild.id, disabled)

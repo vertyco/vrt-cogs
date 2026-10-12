@@ -1,5 +1,6 @@
 import logging
 import secrets
+import typing as t
 from pathlib import Path
 
 from ..common.looks import SettingsError
@@ -56,6 +57,7 @@ class BundledGame:
             "web_dir": WEB_DIR / self.key,
             "icon": "icon.svg",
             "thumbnail": "thumb.svg",
+            "economy": self.economy_line,
             "actions": {
                 "start": self.start,
                 "finish": self.finish,
@@ -133,6 +135,13 @@ class BundledGame:
             log.debug("Refused a %s payout save: %s", self.key, e)
             return {"error": str(e)}
         return await self.payout_settings(ctx, {})
+
+    async def economy_line(self, guild: t.Any) -> str | None:
+        """The menu card's currency line while this game pays out in the server"""
+        settings = await self.payouts.guild_settings(guild, self.key)
+        if settings is None:
+            return None
+        return f"Cash in up to {settings['cap']:,} {await self.payouts.bank.get_currency_name(guild)}"
 
     def score(self, run: Run, data: dict, elapsed: float) -> int | None:
         """The round's real score, or None when what the page sent can't have happened"""

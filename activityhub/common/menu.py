@@ -51,6 +51,15 @@ def merge_disabled(saved: list[str], value: t.Any, installed: t.Collection[str])
     return list(dict.fromkeys(kept + sent))
 
 
+def check_labels(body: dict, saved: bool) -> bool:
+    """The currency labels switch to save: the sent value, or the saved one when the body leaves it out"""
+    if "economyLabels" not in body:
+        return saved
+    if not isinstance(body["economyLabels"], bool):
+        raise SettingsError("Currency labels must be on or off.")
+    return body["economyLabels"]
+
+
 def allowed_tabs(server_admin: bool, is_owner: bool) -> list[str]:
     """Settings panel tabs a player may see and save"""
     tabs = ["look", "order"]
@@ -65,18 +74,21 @@ def picture_url(game: Game, build: str, picture: str | None) -> str | None:
     return f"/games/{game.key}/{build}/{quote(picture)}" if picture else None
 
 
-def game_json(game: Game, build: str) -> dict:
+def game_json(game: Game, build: str, line: str | None = None) -> dict:
     return {
         "key": game.key,
         "name": game.name,
         "description": game.description,
         "icon": picture_url(game, build, game.icon),
         "thumbnail": picture_url(game, build, game.thumbnail),
+        # The game's currency line for its badge, or None for no badge
+        "economy": line,
     }
 
 
-def games_json(games: t.Iterable[Game]) -> list[dict]:
-    return [game_json(game, build_id(game.web_dir)) for game in games]
+def games_json(games: t.Iterable[Game], lines: dict[str, str | None] | None = None) -> list[dict]:
+    lines = lines or {}
+    return [game_json(game, build_id(game.web_dir), lines.get(game.key)) for game in games]
 
 
 def player_json(ctx: t.Any) -> dict:

@@ -1,5 +1,15 @@
 # ActivityHub Changelog
 
+## 0.7.0
+
+- Games that use the server's currency can say so on their menu card: a coin and a short line, like "Cash in up to 1,000 credits". Snake, 2048 and Brick Breaker show it while their payouts are on.
+- The labels catch up when you come back to the menu from a game, so turning a game's payouts on or off shows on its card right away.
+- Server admins can hide these labels with **Show currency labels** in the menu's server settings. With a global bank, the switch is the bot owner's, in the **Defaults** tab.
+
+For game developers:
+
+- New optional `economy` field in `activityhub_game()`: `None`, a fixed line, or an `async def` that takes the server and returns a line or `None`. At most 40 characters. See "Currency labels on the menu" in DEVELOPERS.md.
+
 ## 0.6.1
 
 - In the Orb menu, a long **Who's here** panel scrolls with the mouse wheel and a finger. Before, the wheel, a slide or the arrow keys in it moved the games behind it instead, and the panel stayed stuck at the top.

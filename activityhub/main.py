@@ -29,14 +29,16 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.6.1"
+    __version__ = "0.7.0"
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
         self.config = Config.get_conf(self, identifier=117, force_registration=True)
-        self.config.register_global(host=DEFAULT_HOST, port=DEFAULT_PORT, look={}, disabled=[], payouts={})
-        self.config.register_guild(look={}, disabled=[], payouts={})
+        self.config.register_global(
+            host=DEFAULT_HOST, port=DEFAULT_PORT, look={}, disabled=[], payouts={}, economy_labels=True
+        )
+        self.config.register_guild(look={}, disabled=[], payouts={}, economy_labels=True)
         self.config.register_user(look={}, order=[], cashed={})
         self.config.register_member(best={}, cashed={})
         self.registry = GameRegistry()

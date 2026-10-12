@@ -1650,3 +1650,92 @@ def test_focus_goes_to_the_list_when_the_person_it_was_on_leaves(driver, live):
     time.sleep(0.5)
     assert driver.execute_script("return document.activeElement.id") == "hover-people"
     assert driver.execute_script(f"return !{HOVER}.hidden")
+
+
+PRICED_BADGE = "document.querySelector('.card[data-key=\"priced\"] .economy')"
+# Whether the priced card's badge stays inside the card, as on a phone
+BADGE_INSIDE = f"""
+const card = document.querySelector('.card[data-key="priced"]').getBoundingClientRect();
+const badge = {PRICED_BADGE}.getBoundingClientRect();
+return badge.left >= card.left - 0.5 && badge.right <= card.right + 0.5;
+"""
+
+
+def test_currency_badges_show_and_the_server_switch_hides_them(driver, live, tmp_path):
+    folder = write_demo_web(tmp_path / "priced")
+    line = "Win <b>coins</b> & more in every round"
+    register(live.hub, DemoCog(folder, key="priced", name="Priced", cog_name="Priced", economy=line))
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    live.user_id = MANAGER_ID
+    open_menu(driver, live, DISCORD_QUERY)
+    assert driver.execute_script(f"return {PRICED_BADGE}.querySelector('.economy-text').textContent") == line
+    assert not driver.find_elements(By.CSS_SELECTOR, '.card[data-key="priced"] .economy b')
+    assert not driver.find_elements(By.CSS_SELECTOR, '.card[data-key="demo"] .economy')
+    driver.execute_cdp_cmd(
+        "Emulation.setDeviceMetricsOverride", {"width": 375, "height": 740, "deviceScaleFactor": 1, "mobile": True}
+    )
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        assert driver.execute_script(BADGE_INSIDE) and no_sideways_scroll(driver)
+    finally:
+        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+    open_menu(driver, live, DISCORD_QUERY)
+    open_settings(driver)
+    pick_tab(driver, "server")
+    driver.find_element(By.ID, "economy-labels").click()
+    save(driver)
+    assert live.hub.config.guilds[GUILD_ID]["economy_labels"] is False
+    driver.find_element(By.ID, "close").click()
+    assert not driver.find_elements(By.CSS_SELECTOR, "#games .economy")
+
+
+def test_the_orb_screen_shows_the_selected_games_badge(driver, live, tmp_path):
+    folder = write_demo_web(tmp_path / "priced")
+    register(live.hub, DemoCog(folder, key="priced", name="Priced", cog_name="Priced", economy="Bet credits"))
+    open_menu(driver, live, DISCORD_QUERY)
+    assert driver.execute_script("return document.body.dataset.theme") == "orb"
+    # Focus selects a pill, like pointing at it; a click would open the game
+    driver.execute_script("document.querySelector('#games .pill[data-key=\"priced\"]').focus()")
+    wait_for(driver, "document.querySelector('#orb-screen .screen-face .economy-text')?.textContent === 'Bet credits'")
+
+
+def test_badges_refresh_after_coming_back_from_a_game(driver, live, tmp_path):
+    answer = {"line": "Cash in up to 500 credits"}
+
+    async def economy_line(guild):
+        return answer["line"]
+
+    folder = write_demo_web(tmp_path / "priced")
+    register(live.hub, DemoCog(folder, key="priced", name="Priced", cog_name="Priced", economy=economy_line))
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "list"}
+    open_menu(driver, live, DISCORD_QUERY)
+    badge = "(document.querySelector('.card[data-key=\"priced\"] .economy-text')?.textContent ?? null)"
+    assert driver.execute_script(f"return {badge}") == "Cash in up to 500 credits"
+    driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').click()
+    wait_for(driver, "document.body.classList.contains('playing')")
+    # An admin turns the game's payouts off while away from the menu
+    answer["line"] = None
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    wait_for(driver, "window.demo && window.demo.done")
+    driver.find_element(By.ID, "back").click()
+    driver.switch_to.default_content()
+    wait_for(driver, f"{badge} === null")
+    answer["line"] = "Cash in up to 900 credits"
+    driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').click()
+    wait_for(driver, "document.body.classList.contains('playing')")
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    wait_for(driver, "window.demo && window.demo.done")
+    driver.find_element(By.ID, "back").click()
+    driver.switch_to.default_content()
+    wait_for(driver, f"{badge} === 'Cash in up to 900 credits'")
+
+
+@pytest.mark.parametrize("look", [{"layout": "compact"}, {"layout": "list", "details": False}])
+def test_every_layout_shows_the_badges_words(driver, live, tmp_path, look):
+    folder = write_demo_web(tmp_path / "priced")
+    register(live.hub, DemoCog(folder, key="priced", name="Priced", cog_name="Priced", economy="Bet credits"))
+    live.hub.config.globals["look"] = {"theme": "standard", **look}
+    open_menu(driver, live, DISCORD_QUERY)
+    words = driver.find_element(By.CSS_SELECTOR, '.card[data-key="priced"] .economy-text')
+    assert words.is_displayed() and words.text == "Bet credits"
+    assert no_sideways_scroll(driver)

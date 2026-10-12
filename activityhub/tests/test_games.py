@@ -634,3 +634,69 @@ async def test_registry_remembers_which_key_a_refused_cog_wanted(web_dir):
     second.changes["key"] = "other"
     await registry.add(second)
     assert registry.games["other"].cog is second and registry.clashes == {}
+
+
+class EconomyCog(GameCog):
+    async def line(self, guild):
+        return "Earn credits"
+
+    async def no_args(self):
+        return None
+
+    def sync_line(self, guild):
+        return "Earn credits"
+
+
+@pytest.mark.asyncio
+async def test_economy_defaults_to_none(web_dir):
+    assert (await validate_game(GameCog(web_dir))).economy is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value, kept", [(None, None), ("  Earn credits  ", "Earn credits"), ("   ", None)])
+async def test_economy_fixed_lines(web_dir, value, kept):
+    assert (await validate_game(GameCog(web_dir, economy=value))).economy == kept
+
+
+@pytest.mark.asyncio
+async def test_economy_function_is_kept(web_dir):
+    cog = EconomyCog(web_dir)
+    cog.changes["economy"] = cog.line
+    assert (await validate_game(cog)).economy == cog.line
+
+
+@pytest.mark.asyncio
+async def test_economy_line_over_the_limit_is_refused(web_dir):
+    with pytest.raises(GameError, match="economy is 41 characters long, but the menu's badge fits 40"):
+        await validate_game(GameCog(web_dir, economy="x" * 41))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value", [True, 5, ["Earn"], {"text": "Earn"}])
+async def test_economy_of_the_wrong_type_is_refused(web_dir, value):
+    with pytest.raises(GameError, match="economy must be None, a string, or an async def that takes the server"):
+        await validate_game(GameCog(web_dir, economy=value))
+
+
+@pytest.mark.asyncio
+async def test_economy_function_must_be_async(web_dir):
+    cog = EconomyCog(web_dir)
+    cog.changes["economy"] = cog.sync_line
+    with pytest.raises(GameError, match="economy must be None, a string, or an async def"):
+        await validate_game(cog)
+
+
+@pytest.mark.asyncio
+async def test_economy_function_must_take_the_server(web_dir):
+    cog = EconomyCog(web_dir)
+    cog.changes["economy"] = cog.no_args
+    with pytest.raises(GameError, match=r"economy takes \(\), but the hub calls it with \(guild\)"):
+        await validate_game(cog)
+
+
+@pytest.mark.asyncio
+async def test_economy_called_by_mistake_is_refused(web_dir):
+    cog = EconomyCog(web_dir)
+    cog.changes["economy"] = cog.line(None)
+    with pytest.raises(GameError, match=r"economy is a coroutine, not a method: write self.line without \(\)"):
+        await validate_game(cog)

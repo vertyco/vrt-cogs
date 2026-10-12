@@ -263,6 +263,56 @@ input:focus-visible {
   display: none;
 }
 
+/* A game's currency line: a gold coin and the game's own words, kept inside the card */
+.economy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 2px 8px 2px 3px;
+  border-radius: 999px;
+  background: rgb(245 197 24 / 0.16);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.economy .coin {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff3b0, #f5c518 55%, #b8860b);
+}
+
+.economy-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grid .economy {
+  align-self: center;
+}
+
+/* Compact rows keep their one-line height: the badge sits beside the name */
+.compact .text {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.compact .name {
+  flex: none;
+}
+
+.compact .economy {
+  min-width: 0;
+  margin-top: 0;
+}
+
 .empty {
   grid-column: 1 / -1;
   padding: 48px 16px;
