@@ -6,7 +6,7 @@ from abc import ABC
 from datetime import datetime, timedelta, timezone
 
 import discord
-from redbot.core import bank, modlog
+from redbot.core import Config, bank, modlog
 
 from .abc import MixinMeta
 from .common.ask_views import AskOperatorView
@@ -48,6 +48,9 @@ class RPCMethods(MixinMeta, ABC):
             self.rpc_quickpull,
             self.rpc_master,
             self.rpc_setattr,
+            self.rpc_config_get,
+            self.rpc_config_set,
+            self.rpc_config_clear,
             self.rpc_casino_set_raw,
             self.rpc_voice_members,
             self.rpc_get_balance,
@@ -755,6 +758,143 @@ class RPCMethods(MixinMeta, ABC):
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
         return {"ok": True, "set": path, "call_after": ran}
+
+    # ----------------------------------------------------------- config bridge
+
+    def config_group(self, cog: str, scope: str, ids: list, attr: str) -> tuple:
+        """-> (cog_obj, group, error_dict). Exactly one of group/error is None.
+
+        ids arrive as strings (JS mangles snowflakes past 2**53). The built-in
+        scopes go through Config's public accessors, which want ints and need
+        every primary key, so a partial key (all members of a guild) is refused
+        rather than handed to the unsafe _get_base_group. Any other scope is a
+        custom group, whose accessor takes the ids as strings.
+        """
+        target = self.bot.get_cog(cog)
+        if target is None:
+            match = next((c for c in self.bot.cogs if c.lower() == cog.lower()), None)
+            target = self.bot.get_cog(match) if match else None
+        if target is None:
+            return None, None, {"ok": False, "error": f"cog not loaded: {cog}", "loaded_cogs": sorted(self.bot.cogs)}
+        config = getattr(target, attr, None)
+        if not isinstance(config, Config):
+            configs = sorted(name for name, value in vars(target).items() if isinstance(value, Config))
+            return target, None, {"ok": False, "error": f"{cog}.{attr} is not a Config", "config_attrs": configs}
+        ids = [str(i) for i in (ids or [])]
+        accessors = {
+            "GLOBAL": (0, lambda: config),
+            "GUILD": (1, lambda: config.guild_from_id(int(ids[0]))),
+            "USER": (1, lambda: config.user_from_id(int(ids[0]))),
+            "CHANNEL": (1, lambda: config.channel_from_id(int(ids[0]))),
+            "ROLE": (1, lambda: config.role_from_id(int(ids[0]))),
+            "MEMBER": (2, lambda: config.member_from_ids(int(ids[0]), int(ids[1]))),
+        }
+        scope_key = scope.upper()
+        if scope_key in accessors:
+            needed, accessor = accessors[scope_key]
+            if len(ids) != needed:
+                return target, None, {"ok": False, "error": f"scope {scope_key} takes {needed} id(s), got {len(ids)}"}
+            try:
+                return target, accessor(), None
+            except ValueError:
+                return target, None, {"ok": False, "error": f"ids must be whole numbers: {ids}"}
+        if scope not in config.custom_groups:
+            scopes = [*accessors, *sorted(config.custom_groups)]
+            return target, None, {"ok": False, "error": f"unknown scope: {scope}", "scopes": scopes}
+        needed = config.custom_groups[scope]
+        if len(ids) != needed:
+            return target, None, {"ok": False, "error": f"custom group {scope} takes {needed} id(s), got {len(ids)}"}
+        return target, config.custom(scope, *ids), None
+
+    @staticmethod
+    async def config_read(group, path: list) -> tuple:
+        """-> (found, value). A missing key is (False, None), never a raise."""
+        try:
+            return True, await group.get_raw(*path) if path else await group.all()
+        except KeyError:
+            return False, None
+
+    async def rpc_config_get(
+        self, cog: str, scope: str, ids: list = None, path: list = None, attr: str = "config"
+    ) -> dict:
+        """Read any Red Config value of a loaded cog. NoA config bridge, read side.
+
+        scope: GLOBAL, GUILD, MEMBER, USER, CHANNEL, ROLE, or a custom group name.
+        ids: that scope's primary keys as strings. path: keys below the group,
+        read with get_raw (registered defaults included); empty returns the
+        whole group.
+        """
+        path = [str(p) for p in (path or [])]
+        _, group, err = self.config_group(cog, scope, ids, attr)
+        if err:
+            return err
+        found, value = await self.config_read(group, path)
+        if not found:
+            return {"ok": False, "error": f"no key at path {path}"}
+        return {"ok": True, "value": value}
+
+    async def rpc_config_set(
+        self,
+        cog: str,
+        scope: str,
+        ids: list = None,
+        path: list = None,
+        value=None,
+        attr: str = "config",
+        call_after: list = None,
+    ) -> dict:
+        """Write one Red Config value with set_raw, then await no-arg cog methods.
+
+        Refuses an empty path, so a whole group is never overwritten. Writes go
+        straight to Config and skip the cog's own validation, so the caller must
+        send a value the cog accepts. Returns the old value (null when the key
+        was missing) and the value read back after the write. NoA write bridge.
+        """
+        path = [str(p) for p in (path or [])]
+        if not path:
+            return {"ok": False, "error": "empty path: refusing to overwrite a whole group"}
+        target, group, err = self.config_group(cog, scope, ids, attr)
+        if err:
+            return err
+        try:
+            _, before = await self.config_read(group, path)
+            await group.set_raw(*path, value=value)
+            _, after = await self.config_read(group, path)
+            ran = []
+            for name in call_after or []:
+                res = getattr(target, name)()
+                if inspect.isawaitable(res):
+                    await res
+                ran.append(name)
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        log.info("config set %s %s %s %s: %r -> %r", cog, scope, ids, path, before, after)
+        return {"ok": True, "before": before, "after": after, "call_after": ran}
+
+    async def rpc_config_clear(
+        self, cog: str, scope: str, ids: list = None, path: list = None, attr: str = "config"
+    ) -> dict:
+        """Clear one Red Config value with clear_raw, so it falls back to its default.
+
+        Refuses an empty path. Returns the old value and the value read back
+        afterwards (the registered default, or null when there is none).
+        """
+        path = [str(p) for p in (path or [])]
+        if not path:
+            return {"ok": False, "error": "empty path: refusing to clear a whole group"}
+        _, group, err = self.config_group(cog, scope, ids, attr)
+        if err:
+            return err
+        found, before = await self.config_read(group, path)
+        if not found:
+            return {"ok": False, "error": f"no key at path {path}"}
+        try:
+            await group.clear_raw(*path)
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        _, after = await self.config_read(group, path)
+        log.info("config clear %s %s %s %s: %r -> %r", cog, scope, ids, path, before, after)
+        return {"ok": True, "before": before, "after": after}
 
     async def rpc_casino_set_raw(self, guild_id: int, game: str, key: str, value) -> dict:
         """Set one Games.<game>.<key> value in the Casino (Redjumpman) cog's config.
