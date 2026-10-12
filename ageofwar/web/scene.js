@@ -230,8 +230,13 @@ export class Scene {
         // The page's own pointer (the original's arrow) shows over the spots too
         button.cursor = "inherit";
         const spot = index + 1;
-        button.on("pointerover", () => {
-          button.show("o");
+        button.on("pointerover", (event) => {
+          // A finger's "over" comes in the same frame as its press. Showing the over state then swaps in pictures
+          // the field hasn't placed yet, so the press misses the button and the tap never comes. Only a mouse or
+          // pen hovers, so only they get the over state
+          if (event.pointerType !== "touch") {
+            button.show("o");
+          }
           this.onSpotHover?.(kind, spot);
         });
         button.on("pointerout", () => {

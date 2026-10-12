@@ -18,6 +18,7 @@ fakes = pytest.importorskip("activityhub.tests.fakes")
 
 CARD = '#games .card[data-key="ageofwar"]'
 UPRIGHT_PHONE = {"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": True}
+SIDEWAYS_PHONE = {"width": 780, "height": 360, "deviceScaleFactor": 3, "mobile": True}
 HUD_BUTTONS = "#hud .row:not([hidden]) button.art"
 
 
@@ -137,6 +138,30 @@ def test_dragging_the_field_from_a_spot_button_does_not_press_it(driver, live):
     # The view slid back to the base, and a plain press still sells, for half the price
     ActionChains(driver).move_to_element_with_offset(canvas, x, y).pause(0.3).click().perform()
     browser.wait_for(driver, cash_is(125), timeout=5)
+
+
+def test_a_finger_tap_on_a_spot_places_the_turret(driver, live):
+    driver.execute_cdp_cmd("Emulation.setDeviceMetricsOverride", SIDEWAYS_PHONE)
+    driver.execute_cdp_cmd("Emulation.setTouchEmulationEnabled", {"enabled": True, "maxTouchPoints": 5})
+    try:
+        start_against_the_computer(driver, live)
+        browser.wait_for(driver, cash_is(175))
+        press(driver, 1)
+        press(driver, 0)
+        canvas, x, y = first_spot(driver)
+        # A real touch, in the page's coordinates: the game's frame, then the canvas's center, then the spot
+        left, top = driver.execute_script(
+            "const f = window.frameElement.getBoundingClientRect(), c = arguments[0].getBoundingClientRect();"
+            "return [f.x + c.x + c.width / 2, f.y + c.y + c.height / 2];",
+            canvas,
+        )
+        point = [{"x": left + x, "y": top + y}]
+        driver.execute_cdp_cmd("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": point})
+        driver.execute_cdp_cmd("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+        browser.wait_for(driver, cash_is(75), timeout=5)
+    finally:
+        driver.execute_cdp_cmd("Emulation.setTouchEmulationEnabled", {"enabled": False})
+        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
 
 
 def test_giving_up_shows_the_originals_defeat_screen(driver, live):

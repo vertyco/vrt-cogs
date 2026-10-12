@@ -1,5 +1,9 @@
 # Age of War Changelog
 
+## 0.3.2
+
+- On a phone or other touch screen, tapping a turret spot places the turret. Before, the tap did nothing, and only a mouse could place one.
+
 ## 0.3.1
 
 - On an upright phone, a battle now shows the field straight away. Before, the field could show only sky until the window changed size.
