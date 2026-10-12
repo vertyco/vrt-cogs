@@ -20,6 +20,9 @@ KEY = "warfare1917"
 BUSY = "You already have a battle running."
 # Requests for the player's own battle, which the window checks and passes to the battle
 BATTLE_REQUESTS = ("deploy", "support", "trench", "masks", "pause", "surrender", "quit", "camera")
+# Problems a page reports, logged at most this many per player until the cog reloads, and cut to this length
+MOST_REPORTS = 100
+REPORT_LENGTH = 1000
 
 
 class Warfare1917(commands.Cog):
@@ -31,7 +34,7 @@ class Warfare1917(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -48,6 +51,8 @@ class Warfare1917(commands.Cog):
         self.retry: set[int] = set()
         # Result saves in progress, kept so a task isn't garbage collected halfway
         self.saving: set[asyncio.Task] = set()
+        # Problems each player's pages have reported, so one page can't flood the log
+        self.reports: dict[int, int] = {}
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -160,7 +165,19 @@ class Warfare1917(commands.Cog):
             "versus": self.open_versus,
             "cancelVersus": self.cancel_versus,
             "takeVersus": self.take_versus,
+            "report": self.report,
         }
+
+    async def report(self, conn: t.Any, value: t.Any) -> None:
+        """A problem the page hit on the player's device (an error, the graphics lost, the drawing stopped)"""
+        if not isinstance(value, str):
+            return
+        user_id = conn.ctx.author.id
+        count = self.reports.get(user_id, 0)
+        if count >= MOST_REPORTS:
+            return
+        self.reports[user_id] = count + 1
+        log.warning("Page problem for player %s: %s", user_id, value[:REPORT_LENGTH])
 
     # ---------- Campaign ----------
 

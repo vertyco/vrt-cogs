@@ -1,5 +1,9 @@
 # Warfare 1917 Changelog
 
+## 0.1.3
+
+- The game now writes problems on a player's device to the bot's log: page errors, the graphics being lost or coming back, and the drawing stopping. This helps track down a black screen after the Activity shrinks into its small window.
+
 ## 0.1.2
 
 - Fixed the battle freezing for good when a tank was destroyed. Some wrecks hid one of their fires, and the drawing crashed as the wreck faded in.

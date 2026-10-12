@@ -53,6 +53,11 @@ const CLOSED_BECAUSE = {
 };
 const FONT_FAMILIES = ["DIN", "DIN-Bold", "DIN-Black", "Arno Pro", "Arno Pro Caption", "AlternateGothic2 BT", "Courier New"];
 const NOT_CONNECTED = "Not connected";
+// Problems sent to the bot's log, at most this many per page and this long each
+const MOST_REPORTS = 20;
+const REPORT_LENGTH = 1000;
+// How often the page checks that the drawing still runs
+const STALL_CHECK_MS = 2000;
 // playIncomingSound (F5:3445-3451) plays a whistle one time in this many calls, one of this many
 const INCOMING_ONE_IN = 6;
 const INCOMING_KINDS = 3;
@@ -103,6 +108,8 @@ const page = {
   failedTries: 0,
   // Where the people button sits now: "plate" or "frame"
   peopleSpot: null,
+  // Problems sent to the bot's log so far, and ones waiting for a connection
+  reports: { sent: 0, waiting: [] },
 };
 
 function $(id) {
@@ -113,7 +120,11 @@ function $(id) {
 
 async function start() {
   $("back").addEventListener("click", backToMenu);
-  window.warfare1917 = { page, find, tweens, sound, field, hud: field.hud, results: field.results, cutName };
+  window.addEventListener("error", (e) =>
+    reportProblem(`error: ${e.message} at ${e.filename}:${e.lineno} ${e.error?.stack ?? ""}`),
+  );
+  window.addEventListener("unhandledrejection", (e) => reportProblem(`rejection: ${e.reason?.stack ?? e.reason}`));
+  window.warfare1917 ={ page, find, tweens, sound, field, hud: field.hud, results: field.results, cutName };
   const hubReady = connect().then(
     (hub) => {
       // Placed at once, so the hub's floating button never shows
@@ -189,6 +200,7 @@ async function buildStage() {
   });
   page.app = app;
   skipUnbatchedMasks(app.renderer);
+  watchDrawing(app);
   $("stage").appendChild(app.canvas);
   app.stage.eventMode = "static";
   app.stage.hitArea = app.screen;
@@ -226,6 +238,43 @@ function skipUnbatchedMasks(renderer) {
       update(sprite);
     }
   };
+}
+
+// A problem on a player's device that nobody sees there, sent to the bot's log. Ones from before the connection wait
+// for it
+function reportProblem(text) {
+  if (page.reports.sent >= MOST_REPORTS) {
+    return;
+  }
+  page.reports.sent += 1;
+  const message = { report: String(text).slice(0, REPORT_LENGTH) };
+  if (!send(message)) {
+    page.reports.waiting.push(message);
+  }
+}
+
+// Reports the graphics going and coming back, and the drawing stopping while the page shows: Pixi's ticker asks for
+// its next frame only after its listeners return, so one that throws stops it for good, black once the window redraws
+function watchDrawing(app) {
+  const state = () => {
+    const gl = app.renderer.gl;
+    const canvas = app.canvas;
+    const graphics = gl?.isContextLost() ? "graphics lost" : "graphics ok";
+    return `screen ${page.screen}, canvas ${canvas.width}x${canvas.height}, ${graphics}, battle paused ${field.paused}`;
+  };
+  app.canvas.addEventListener("webglcontextlost", () => reportProblem(`graphics lost (${state()})`));
+  app.canvas.addEventListener("webglcontextrestored", () => reportProblem(`graphics restored (${state()})`));
+  let last = null;
+  let stalled = false;
+  setInterval(() => {
+    const now = app.ticker.lastTime;
+    const stopped = now === last && !document.hidden;
+    if (stopped && !stalled) {
+      reportProblem(`drawing stopped (${state()})`);
+    }
+    stalled = stopped;
+    last = now;
+  }, STALL_CHECK_MS);
 }
 
 // The original's stage, as big as the room between Discord's buttons allows, with black bars around it. A phone held
@@ -439,6 +488,9 @@ async function goLive() {
 
 function useConnection(conn) {
   page.conn = conn;
+  for (const message of page.reports.waiting.splice(0)) {
+    conn.send(message);
+  }
   conn.on(receive);
   conn.onReconnecting(() => toast(RECONNECTING, 0));
   conn.onReconnected(hideToast);
