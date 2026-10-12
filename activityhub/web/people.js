@@ -641,6 +641,33 @@ export class PeopleUI {
     });
   }
 
+  // A message with one OK button, drawn over everything like Join's question. Escape or a tap outside closes it too
+  tell(text) {
+    this.answer?.(false);
+    const back = document.activeElement;
+    this.confirmText.textContent = text;
+    this.leaveButton.hidden = true;
+    this.stayButton.textContent = "OK";
+    this.confirmBox.hidden = false;
+    this.scrim.hidden = false;
+    this.stayButton.focus();
+    return new Promise((resolve) => {
+      this.answer = () => {
+        this.answer = null;
+        this.confirmBox.hidden = true;
+        this.scrim.hidden = !this.isOpen();
+        // Join's question uses the same box, with both its buttons
+        this.leaveButton.hidden = false;
+        this.stayButton.textContent = "Stay";
+        if (back?.isConnected) {
+          back.focus({ preventScroll: true });
+        }
+        resolve();
+      };
+      this.stayButton.onclick = () => this.answer();
+    });
+  }
+
   // After Stay, keyboard focus goes back to the Join button that asked, or the panel if the list has moved on
   refocus(person) {
     if (!this.isOpen()) {

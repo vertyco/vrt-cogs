@@ -44,6 +44,7 @@ You don't need to know anything about Discord Activities, web servers or Discord
 | Open my game from my own command or button | [10. Opening your game from a command or button](#10-opening-your-game-from-a-command-or-button) |
 | Use a bundler (Vite, esbuild) or a game engine (Godot, Unity) | [11. Files and caching](#11-files-and-caching) and [14. Discord's limits](#14-discords-limits) |
 | Test my Python without Discord | [Testing your Python without Discord](#testing-your-python-without-discord) |
+| Copy ready-made files: the quick start cog, type hints, test stand-ins | [ActivityHub's `devkit` folder](devkit/) |
 | Fix an error message | [13. Common problems](#13-common-problems) |
 | Share my game with other bots | [15. Checklist before you share your game](#15-checklist-before-you-share-your-game) |
 | Read the code of a real, finished game | [16. Bigger examples](#16-bigger-examples-the-included-games) |
@@ -230,6 +231,8 @@ It is small, but it has every basic piece:
 
 Make this folder layout. `clickcounter` is the cog. `web` holds the page.
 
+The finished files are also in ActivityHub's folder, under `devkit/template/clickcounter/`, ready to copy.
+
 ```
 clickcounter/
   __init__.py
@@ -262,7 +265,7 @@ async def setup(bot):
 {
   "author": ["Your name"],
   "short": "Click a button, earn a credit",
-  "description": "A tiny ActivityHub game: click a button, earn a credit.",
+  "description": "A tiny ActivityHub game: click a button, earn a credit. Needs ActivityHub 0.8.0 or later.",
   "end_user_data_statement": "This cog stores how many times each player clicked today.",
   "install_msg": "Click Counter is an ActivityHub game. It needs the ActivityHub cog: [p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs, then [p]cog install vrt-cogs activityhub and [p]load activityhub.",
   "requirements": [],
@@ -300,6 +303,8 @@ class ClickCounter(commands.Cog):
             "description": "One click, one credit",
             "web_dir": Path(__file__).parent / "web",
             "actions": {"click": self.click},
+            # The oldest ActivityHub this game works with
+            "requires": "0.8.0",
         }
 
     async def click(self, ctx, data: dict) -> dict:
@@ -333,6 +338,7 @@ What this code does:
   - `name` and `description` show in the menu.
   - `web_dir` is the folder that holds your page.
   - `actions` lists what the page is allowed to call. Here, the page's `hub.api("click")` runs `self.click`.
+  - `requires` is the oldest ActivityHub your game works with. A bot with an older hub says to update ActivityHub, instead of failing in a confusing way.
 - **`click()` runs each time the page calls `hub.api("click")`.**
   - `ctx` says who clicked and in which server. The hub checked it with Discord, so you can trust it.
   - `ctx` is not the `ctx` of a Red command. It has no `ctx.send()`, because the player isn't typing a command. It has `ctx.author`, `ctx.guild`, `ctx.channel` and `ctx.instance_id` (the full list is in [REFERENCE.md](REFERENCE.md#2-ctx)). Use `self.bot` for the bot.
@@ -670,7 +676,7 @@ Marble Munch is a full example to copy:
 
 - `common/payouts.py` holds the settings, the daily count and the bank deposit.
 - `main.py` offers each player their last round, and lets it cash in only once.
-- Its page has a settings dialog that only server admins see.
+- Its page has a settings dialog that only server admins see. The action behind that dialog checks `await ctx.is_admin()` on every save, because a hidden button in the page is not a lock.
 - With a global bank (one balance shared by every server), only the bot owner can change the settings, and each player's cash-ins are counted across servers.
 
 ### Currency labels on the menu
@@ -678,7 +684,7 @@ Marble Munch is a full example to copy:
 Players can see which games use the server's currency before they open one. Add `"economy"` to `activityhub_game()`, and the menu shows your line on your game's card, next to a coin. Leave it out and your card looks the same as always.
 
 - **A game that always uses currency** passes a fixed line: `"economy": "Bet credits at the tables"`.
-- **A game that only sometimes does** passes an `async def` that takes the server and returns a line, or `None` for no badge. The hub calls it each time a player opens the menu in a server, so the badge follows your settings without you telling the hub anything.
+- **A game that only sometimes does** passes an `async def` that takes the player's `ctx` and returns a line, or `None` for no badge. The hub calls it each time a player opens the menu in a server, so the badge follows your settings without you telling the hub anything. `ctx.guild` is that server, and is never `None` there. Since it gets the player, the badge can differ from one player to the next.
 
 Here the badge shows only while an admin has payouts on. It assumes your cog saves the switch and the most per cash-in in server Config:
 
@@ -696,11 +702,11 @@ async def activityhub_game(self) -> dict:
     }
 
 
-async def economy_line(self, guild) -> str | None:
-    settings = self.config.guild(guild)
+async def economy_line(self, ctx) -> str | None:
+    settings = self.config.guild(ctx.guild)
     if not await settings.payouts_on():
         return None
-    currency = await bank.get_currency_name(guild)
+    currency = await bank.get_currency_name(ctx.guild)
     return f"Cash in up to {await settings.cap():,} {currency}"
 ```
 
@@ -710,11 +716,11 @@ Rules for the line:
 
 - **Plain text, at most 40 characters.** A fixed line that's longer is refused when your game registers. A longer answer from your function is cut to 40, with a warning in the bot log.
 - **Write the whole line yourself,** currency name included. The hub fills nothing in.
-- **Answer within 2 seconds.** A slower answer, an error, or something that isn't text or `None` means your card has no badge that time. The menu still opens, and the bot log says why.
+- **Answer quickly, within 2 seconds at most.** Your function runs for every player each time they open the menu, so answer from memory or one Config read. A slower answer, an error, or something that isn't text or `None` means your card has no badge that time. The menu still opens, and the bot log says why.
 - **There's no badge outside a server,** since a server's bank is what the line is about.
 - **Server admins can hide every badge** with **Show currency labels** in the menu's server settings. With a global bank, that switch is the bot owner's, in the **Defaults** tab.
 
-`economy` needs ActivityHub 0.7.0 or later. An older hub refuses a game that passes it, so say so in your cog's description.
+A fixed `economy` line needs ActivityHub 0.7.0 or later. A function needs 0.8.0 or later, since 0.7.0 passed it the server instead of `ctx`. Set [`requires`](REFERENCE.md#1-activityhub_game) to match.
 
 ## 6. Multiplayer with live connections
 
@@ -1246,7 +1252,7 @@ from redbot.core.data_manager import cog_data_path
 
 # in activityhub_game(): "routes": {"POST avatar": self.upload_avatar}
 
-async def upload_avatar(self, request: web.Request, ctx) -> web.Response:
+async def upload_avatar(self, ctx, request: web.Request) -> web.Response:
     if ctx is None:
         return web.json_response({"error": "Open this from Discord first."}, status=401)
     body = await request.read()  # read() refuses bodies of 1 MB or more
@@ -1256,8 +1262,6 @@ async def upload_avatar(self, request: web.Request, ctx) -> web.Response:
     return web.json_response({"saved": len(body)})
 ```
 
-Watch the order: a raw route takes **`request` first, then `ctx`**. Actions are the other way round.
-
 For bigger files, read `request.content` yourself, counting as you go. The hub doesn't limit it, so your route must:
 
 ```python
@@ -1265,7 +1269,7 @@ UPLOAD_LIMIT = 8 * 1024 * 1024
 
 # in activityhub_game(): "routes": {"POST replay": self.upload_replay}
 
-async def upload_replay(self, request: web.Request, ctx) -> web.Response:
+async def upload_replay(self, ctx, request: web.Request) -> web.Response:
     if ctx is None:
         return web.json_response({"error": "Open this from Discord first."}, status=401)
     chunks, size = [], 0
@@ -1331,7 +1335,7 @@ await hub.discord.commands.setActivity({ activity: { details: "Level 3", state: 
 Things to know:
 
 - **Every scope that any installed game lists is asked for at login,** for every game. Adding a scope makes Discord ask every player to approve again, so only list what you use.
-- **One wrong scope stops every game.** A scope Discord doesn't accept stops every game on the bot from logging in. Copy names exactly from Discord's OAuth2 scope list (Discord's list of every permission a login can ask for). The hub refuses names that can't be scopes (like `"identify guilds"` in one string) and scopes a login can't ask for (`bot`, `webhook.incoming`). It warns in the bot log about names it doesn't know. `[p]activityhub games` shows which game asks for what.
+- **One wrong scope drops the extra permissions for everyone.** When Discord refuses the login (a scope it doesn't accept, or a player pressing Cancel), the menu logs the player in again with only their name and avatar. Every game still opens, but `hub.discord` calls that need a dropped scope fail with Discord's own error. The bot log names the scopes and the games that asked for them. Copy names exactly from Discord's OAuth2 scope list (Discord's list of every permission a login can ask for). The hub refuses names that can't be scopes (like `"identify guilds"` in one string) and scopes a login can't ask for (`bot`, `webhook.incoming`). It warns in the bot log about names it doesn't know. `[p]activityhub games` shows which game asks for what.
 - **Only scopes used through `hub.discord` help.** Neither your page nor your Python gets the player's Discord access token.
 - **Scopes are read when the Activity opens.** Reopen it after adding one.
 
@@ -1415,7 +1419,7 @@ The hub serves every file in your `web_dir`. A few rules keep that working.
 - **Keep `web_dir` to your built page.** Point it at your build output (for example `dist/`), not a project folder with `node_modules`. Every file in it is public and is fingerprinted (checked for changes) each time the game opens, so the bot log warns about a `node_modules` folder or more than 2000 files.
 - **`index.html` should have a `<head>` tag.** The hub puts two tags right after it: a `<base>` tag that points relative paths at your versioned folder, and the import map that tells the browser where `"activityhub"` is. Without a `<head>`, it puts them right after the doctype.
 - **Single-page app routers must use memory or hash mode.** A router is a library that switches screens by changing the address, like React Router or Vue Router. Use its memory or hash mode (for example `createMemoryRouter`, `createMemoryHistory` or `createWebHashHistory`). Your page lives at `/games/<key>/`, and a reload of any other path misses. When the game frame does land on an address that isn't a file, it shows "This page isn't part of the game." with a Back button, and the bot log names the address.
-- **Using a bundler** (a tool that packs your code into a few files)? Mark `activityhub` as external (esbuild `--external:activityhub`; Vite `build.rollupOptions.external: [/^activityhub/]` plus `base: './'`), output ES modules (JavaScript files that use `import` and `export`), and point `web_dir` at the build output folder.
+- **Using a bundler** (a tool that packs your code into a few files)? Mark `activityhub` as external (esbuild `--external:activityhub`; Vite `build.rollupOptions.external: ["activityhub"]` plus `base: './'`), output ES modules (JavaScript files that use `import` and `export`), and point `web_dir` at the build output folder.
 - **File types are set for you.** The hub serves `.html`, `.js`, `.mjs`, `.css`, `.json`, `.wasm`, `.svg`, `.woff2` and `.mp3` with the exact type browsers require. Other files get their usual type. Files ending in `.gz` or `.br` are sent compressed: see [engine builds](#14-discords-limits).
 
 ## 12. Testing and debugging
@@ -1442,11 +1446,12 @@ Don't open the game frame's own address, the one with `?frame_id=...`, in a tab 
 
 ### Testing your Python without Discord
 
-Your handlers are plain async methods, so tests can call them directly with stand-ins for `ctx` and `conn`. Nothing here imports ActivityHub.
+Your handlers are plain async methods, so tests can call them directly with stand-ins for `ctx` and `conn`. ActivityHub has those stand-ins ready in `devkit/fakes.py`, which imports nothing from ActivityHub.
 
 1. Install `pytest` and `pytest-asyncio` in the bot's Python environment.
-2. Put the files below in a `tests` folder next to `clickcounter/`.
-3. Run `python -m pytest tests` from the folder that holds both.
+2. Make a `tests` folder next to `clickcounter/`, and copy `fakes.py` from ActivityHub's `devkit` folder into it.
+3. Put the two files below in the same folder.
+4. Run `python -m pytest tests` from the folder that holds both.
 
 `tests/conftest.py` borrows Red's own test fixtures (ready-made test helpers):
 
@@ -1457,13 +1462,11 @@ from redbot.pytest.core import *  # Red's own fixtures: a temporary data folder,
 `tests/test_clickcounter.py` tests the quick start's action, and the live connection handlers from [multiplayer](#6-multiplayer-with-live-connections):
 
 ```python
-import json
-from types import SimpleNamespace
-
 import pytest
 from redbot.core import bank
 
 from clickcounter.clickcounter import ClickCounter
+from fakes import FakeConn, FakeContext, FakeRoom, player
 
 
 @pytest.mark.asyncio
@@ -1471,54 +1474,8 @@ async def test_click_pays_one_credit(member_factory):
     await bank._init()  # how Red's own tests set up the bank (redbot/pytest/economy.py)
     member = member_factory.get()
     cog = ClickCounter(bot=None)
-    ctx = SimpleNamespace(
-        author=member, guild=member.guild, guild_id=member.guild.id, channel=None, channel_id=None, instance_id="test"
-    )
+    ctx = FakeContext(member, guild=member.guild)
     assert (await cog.click(ctx, {}))["clicks"] == 1
-
-
-class FakeRoom:
-    """Stands in for conn.room: everyone in one window"""
-
-    def __init__(self, instance_id="test"):
-        self.instance_id, self.connections = instance_id, []
-
-    async def broadcast(self, data):
-        for conn in list(self.connections):
-            await conn.send(data)
-
-
-class FakeConn:
-    """Stands in for a live connection. Keeps what was sent, and refuses what the hub would refuse"""
-
-    def __init__(self, ctx, room, follow=None):
-        self.ctx, self.room, self.sent, self.closed = ctx, room, [], None
-        # The friend's user id when this player came in with Join, like the real conn.follow
-        self.follow = follow
-        room.connections.append(self)
-
-    async def send(self, data):
-        self.sent.append(json.loads(json.dumps(data, allow_nan=False)))
-
-    async def broadcast(self, data, include_self=False):
-        for conn in list(self.room.connections):
-            if include_self or conn is not self:
-                await conn.send(data)
-
-    def peers(self):
-        return [conn for conn in self.room.connections if conn is not self]
-
-    async def close(self, code=1000):
-        if 4000 <= code <= 4099:
-            raise ValueError(f"Close code {code} is reserved for ActivityHub")
-        self.closed = code
-
-
-def player(user_id, instance_id="test"):
-    author = SimpleNamespace(id=user_id, name=f"player{user_id}", display_name=f"Player {user_id}")
-    return SimpleNamespace(
-        author=author, guild=None, guild_id=None, channel=None, channel_id=None, instance_id=instance_id
-    )
 
 
 @pytest.mark.asyncio
@@ -1536,9 +1493,16 @@ async def test_a_bump_reaches_everyone():
     assert bob.sent[-1] == {"players": 1}
 ```
 
+What `fakes.py` gives you:
+
+- `FakeContext(author, guild=None, ...)` stands in for `ctx`. Pass `admin=True` or `mod=True` to set what `await ctx.is_admin()` and `await ctx.is_mod()` answer.
+- `player(user_id)` is a `FakeContext` for a made-up player outside a server. It takes `guild`, `admin` and `mod` too.
+- `FakeConn(ctx, room)` stands in for `conn`. It keeps what was sent in `conn.sent`, and refuses a message the hub would refuse for NaN, Infinity or a top-level `activityhub` field. It checks nothing else about a message.
+- `FakeRoom()` stands in for `conn.room`.
+
 The hub's own tests (`activityhub/tests/fakes.py`) use the same kind of stand-ins for Discord's users and servers.
 
-**Python errors** go to the bot's log, like any other cog's. Look for lines starting with `Action <key>.<name>` (followed by "failed", "returned ... instead of a dict", "returned something that isn't JSON", "returned an empty error" or "returned an error that isn't text"), `Live connection ... handler of <key> failed`, or `Raw route ... of <key>` (followed by "failed" or "returned ..., not a response"). When you test as the bot owner, "Something went wrong." on the page also includes the reason, like "(Only you see this, as the bot owner: KeyError: 'points'. The bot's log has the full error.)". Other players only see "Something went wrong."
+**Python errors** go to the bot's log, like any other cog's. Look for lines starting with `Action <key>.<name>` (followed by "failed", "returned ... instead of a dict", "returned something that isn't JSON", "returned an empty error", "returned an error that isn't text" or "returned the reserved field 'activityhub'"), `Live connection ... handler of <key> failed`, or `Raw route ... of <key>` (followed by "failed" or "returned ..., not a response"). When you test as the bot owner, "Something went wrong." on the page also includes the reason, like "(Only you see this, as the bot owner: KeyError: 'points'. The bot's log has the full error.)". Other players only see "Something went wrong."
 
 **Is my game loaded?** `[p]activityhub games` lists every game the hub knows with the Discord scopes it asks for, marks games the owner turned off with `[turned off]`, and lists refused cogs under "Refused:" with the reason.
 
@@ -1575,6 +1539,8 @@ The tables, by where you see the problem:
 | `activityhub_game must return one dict (one game per cog), got ...` | The method returns several games, in a list or a tuple. | One cog gives one game. Make a cog for each. |
 | `Unknown field 'action' (did you mean 'actions'?)` | A field name in your dict has a typo. | Use the field it suggests. |
 | `Unknown fields: ...` | A field name isn't a real field, or the game was made for a newer ActivityHub. | Use only the fields in [the table](REFERENCE.md#1-activityhub_game), or update ActivityHub with `[p]cog update`. |
+| `requires must be a version like "0.8.0", got 'latest'` | `requires` isn't two or three whole numbers with dots between them. | Write it as text, like `"0.8.0"`. |
+| `This game needs ActivityHub 0.9.0 or newer, and this bot has 0.8.0. Update it: [p]cog update activityhub` | The bot's ActivityHub is older than your game's `requires`. | The bot owner runs `[p]cog update activityhub`. If your game works on the older hub, lower `requires`. |
 | `Missing fields: ...` | `key`, `name` or `web_dir` is missing. | Add them. |
 | `key must be 2-32 characters of a-z, 0-9 and hyphens, got 'Click_Counter' (try 'click-counter')` | The key has capitals, spaces or `_`. | Use the key it suggests. |
 | `<field> must be ...`, like `name must be a non-empty string` | A field has the wrong type. | See the types in [the table](REFERENCE.md#1-activityhub_game). |
@@ -1587,11 +1553,14 @@ The tables, by where you see the problem:
 | `routes has 'x' twice (paths ignore leading and trailing /)` | Two routes differ only by a leading or trailing `/`. | Keep one. |
 | `actions handler 'x' must be an async def` | One of your handlers is a plain `def`. | Make it `async def`. |
 | `actions 'x' is a coroutine, not a method: write self.x without ()` | You wrote `self.click()` in the dict. | Write `self.click`. |
-| `actions handler 'x' takes (ctx), but the hub calls it with (ctx, data).` | The handler has the wrong parameters. | Add the missing one. Actions are `(ctx, data)`, socket handlers `(ctx, conn)` and `(ctx, conn, data)`, raw routes `(request, ctx)`. If the message ends with "Use self.x, not ClassName.x.", write `self.x` in the dict. |
-| `routes handler 'x' takes (ctx, request), but raw routes get (request, ctx): request first` | The parameters are swapped. | Swap them: `(self, request, ctx)`. |
+| `actions handler 'x' takes (ctx), but the hub calls it with (ctx, data).` | The handler has the wrong parameters. | Add the missing one. Actions are `(ctx, data)`, socket handlers `(ctx, conn)` and `(ctx, conn, data)`, raw routes `(ctx, request)`. If the message ends with "Use self.x, not ClassName.x.", write `self.x` in the dict. |
+| `routes handler 'x' takes (request, ctx), but raw routes get (ctx, request): ctx first` | The parameters are swapped. | Swap them: `(self, ctx, request)`. |
 | `scopes has 'identify guilds', which isn't a Discord scope name.` | Several scopes in one string. | One scope per string: `["identify", "guilds"]`. |
 | `scopes can't include 'bot': it isn't a permission an Activity login can ask for` | `bot` and `webhook.incoming` add a bot or a webhook to a server, which a player can't approve while logging in. | Remove it. |
 | `The key 'x' is already used by OtherCog` | Another loaded cog took that key first. | Pick a different key. If the other cog unloads, yours gets the key by itself. |
+| `keys starting with 'hub-' are kept for ActivityHub's own games` | Your key starts with `hub-`. | Pick a key that doesn't. |
+| `platforms can only hold "desktop" and "mobile" (all Discord tells the hub), got ...` | A platform name Discord doesn't use, like `"ios"`. Discord only says whether a player is on desktop or mobile. | Use `["desktop"]` or `["mobile"]`, or leave `platforms` out. |
+| `platforms can't be empty: leave it out to run everywhere` | `platforms` is `[]`. | Leave it out, or list where your game works. |
 | `activityhub_game() raised ...` | Your method crashed. | The bot's log has the full error. |
 | Listed, but not in the menu in one server | A server admin turned it off there. | The server's **This server** settings tab turns it back on. |
 | Listed with `[turned off]` | The bot owner turned it off everywhere. | The owner's **Defaults** settings tab turns it back on. |
@@ -1602,7 +1571,8 @@ Your game still registers, but something will likely break:
 
 | What you see | Why | Fix |
 |---|---|---|
-| `asks for the scope 'x', which ActivityHub doesn't know` | A scope name the hub doesn't know, often a typo. Every installed game's scopes go into one login, so a wrong one stops every game from logging in. | Copy the name exactly from Discord's OAuth2 scope list. |
+| `asks for the scope 'x', which ActivityHub doesn't know` | A scope name the hub doesn't know, often a typo. Every installed game's scopes go into one login, so a wrong one makes every player log in without the extra permissions. | Copy the name exactly from Discord's OAuth2 scope list. |
+| `Discord refused a login that asked for extra permissions, so player ... logged in with identify only.` | Discord didn't accept one of the scopes, or the player pressed Cancel on Discord's prompt. The line names each scope and the games that ask for it. The player's games still open. | Check the scope's spelling against Discord's OAuth2 scope list. If players pressed Cancel, nothing is broken. |
 | `index.html refers to ... with an absolute path, which the hub can't serve` | A `src` or `href` starts with `/`. | Use relative paths. Built with Vite? Set `base: './'`. To go back to the menu, call `backToMenu()`. |
 | `web_dir has a node_modules folder` (or `more than 2000 files`) | `web_dir` is your project folder, not your built page. | Point `web_dir` at your build output, like `dist/`. |
 | `the game frame went to ..., which isn't a file in web_dir` | Your page went to an address that isn't a file: an `href="#"` link, a router path, a reload after `history.pushState`, or a typo. The player saw "This page isn't part of the game." | See [Files and caching](#11-files-and-caching): use buttons, and memory or hash routing. |
@@ -1618,6 +1588,7 @@ Your game still registers, but something will likely break:
 | A blank page, and the console says the module specifier `"activityhub"` can't be resolved | The page wasn't served by the hub. You opened `index.html` as a file, or from another web server. | Open it through the hub's address, for example `http://127.0.0.1:8742/`, and pick your game. |
 | `Uncaught SyntaxError: Cannot use import statement outside a module` | The `<script>` tag has no `type="module"`. | `<script type="module" src="game.js"></script>` |
 | `does not provide an export named 'api'` (or `'default'`) | The helper only exports `connect`, `backToMenu` and `HubError`. | `import { connect } from "activityhub";`, then `const hub = await connect();` and `hub.api(...)`. |
+| `Uncaught TypeError: Failed to resolve module specifier "activityhub/..."` | Only `"activityhub"` itself can be imported. The menu's other files aren't part of the API. | Import from `"activityhub"`, and copy anything else you need into `web_dir`. |
 | `hub.api is not a function` | `connect()` returns a promise. | `const hub = await connect();` |
 | Files your page loads give 404 (not found) | A path starts with `/`, the file isn't in `web_dir`, its name or a folder's name starts with a dot, or it's a link to a file outside `web_dir`. | Use relative paths like `art/ship.png`, and copy the file into `web_dir`. |
 | The page is blank, the console shows 404 for `/assets/...`, and the bot log warns about an absolute path | Your bundler wrote paths from the site's root. | Vite: `base: './'`. webpack: `output.publicPath: './'`. |
@@ -1636,6 +1607,7 @@ Your game still registers, but something will likely break:
 | `hub.socket()` throws "The live connection closed (1006)." | A proxy in front of the bot blocks WebSockets, the network dropped, or your game isn't loaded. | Ask the bot owner to allow WebSockets through the proxy. Check `[p]activityhub games`. |
 | The page never gets a message, and the bot console says `coroutine 'Connection.send' was never awaited` | `conn.send()` was called without `await`. | `await conn.send(...)`. |
 | The bot log shows `ValueError: Out of range float values are not JSON compliant` (or `The 'activityhub' field is reserved for the hub's own messages`) from a socket handler | You sent NaN or Infinity, or an object with an `activityhub` field. | Send finite numbers, and use another field name. |
+| `hub.api()` throws "Something went wrong.", and the bot log says `Action <key>.<name> returned the reserved field 'activityhub'` | Your action's reply has a top-level `activityhub` key. That name is kept for the hub's own fields. | Use another name for that field. |
 | An id from Python is off by a few | JavaScript rounds whole numbers above 2\*\*53. | Send ids as text: `str(ctx.author.id)`. |
 | `sdk.ready()` never finishes, and the console says "this game created its own DiscordSDK" | Your page made its own `DiscordSDK`. Inside the hub, only the menu talks to Discord. | Use `hub.discord` from `connect()`. |
 | The menu says "Discord hasn't answered yet" | You opened the game's address with `?frame_id=...` in a tab of its own. It only works inside Discord. | For the preview, open `/` without the `?frame_id=...` part. |
@@ -1682,6 +1654,7 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
   }
   ```
 
+- **Desktop only or mobile only.** If your game can't work on one of them (say it needs a keyboard), set `"platforms": ["desktop"]` in `activityhub_game()`. On a phone the menu then dims your card with a "Desktop only" note, and the hub shows a message instead of opening your game, whether the player taps your card, presses Join, or comes from a launch button. Discord only tells the hub "desktop" or "mobile", so there is no way to pick iOS or Android. A game that runs everywhere can read `hub.platform` to adapt, like showing touch buttons on phones.
 - **Service workers can't register.** (A service worker is a background script some web apps use for offline caching.)
 - **Clean up when your game closes.** Your page is removed when the player goes back to the menu, and `pagehide` is the last event it gets. Listeners you added with `hub.discord.subscribe()` are removed for you. Undo anything else you changed on Discord there, like `setActivity` or `setOrientationLockState`, so it doesn't carry into the next game.
 - **Pause when the game loses the keyboard.** Clicking Discord's chat or another window takes the keyboard away from your game. Pause real-time games when the window loses focus and when the page is hidden. The included games do this (`activityhub/web/arcade.js`, `listen()`):
@@ -1702,12 +1675,13 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
 Your users need ActivityHub too, and Red doesn't install required cogs by itself. Say how to get it in `info.json`'s `install_msg`, like the quick start does, and in your README: `[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`, then `[p]cog install vrt-cogs activityhub` and `[p]load activityhub`.
 
 - ActivityHub is hidden from `[p]cog list` while it's in beta, but `[p]cog install` still finds it.
-- A field added in a later ActivityHub is refused by older ones. So say which version your game needs. `[p]help ActivityHub` shows the version, and so does `bot.get_cog("ActivityHub").__version__`.
+- A field added in a later ActivityHub is refused by older ones. So set `requires` in `activityhub_game()` to the oldest ActivityHub your game works with, like `"requires": "0.8.0"`, and say the same in your cog's description. A bot with an older hub then refuses your game with a message saying to update ActivityHub. `[p]help ActivityHub` shows the version a bot has.
 
 ### The checklist
 
 - [ ] `[p]activityhub games` lists your game, with no "Refused" line.
 - [ ] The key is final.
+- [ ] `requires` names the oldest ActivityHub your game works with.
 - [ ] The page works in the browser preview, and shows a sensible message when `hub.offline` is `true`.
 - [ ] The page works inside Discord, in a server and (if you support it) in a DM.
 - [ ] Every action checks what the page sent, and never trusts a score or amount from it.
@@ -1718,7 +1692,7 @@ Your users need ActivityHub too, and Red doesn't install required cogs by itself
 - [ ] Every file the page needs is inside `web_dir`, loaded with a relative path.
 - [ ] Nothing secret is in `web_dir`.
 - [ ] `web_dir` holds only page files: not your cog's `.py` files, `.env` or `node_modules`.
-- [ ] Your page works on a phone-sized screen and with touch, since Activities run on Discord's phone apps too, and nothing you tap sits under Discord's buttons at the top ([safe areas](#14-discords-limits)).
+- [ ] Your page works on a phone-sized screen and with touch, since Activities run on Discord's phone apps too, and nothing you tap sits under Discord's buttons at the top ([safe areas](#14-discords-limits)). If it can't work on phones, `"platforms": ["desktop"]` says so.
 - [ ] If you use a live connection: the page shows when it's reconnecting (`conn.onReconnecting`), `join` sends the full state, and the page says something useful in `conn.onClose`.
 - [ ] Your game sets a status line (`hub.status`), and `hub.busy(true)` while a round is on.
 - [ ] The people button doesn't cover anything, on a computer and on a phone.
@@ -1741,7 +1715,9 @@ Snake and 2048 show a stronger anti-cheat pattern than checking against the cloc
 
 A changed page can't fake a score that way, because the bot never uses the page's score. The cost is that the rules exist twice, once in JavaScript and once in Python, and must match exactly.
 
-The included pages also import `"activityhub/arcade.js"`, the hub's shared title, pause, results and leaderboard frame. That is the file `activityhub/web/arcade.js` in the cog's folder, the same one [Who's here](#7-whos-here) points to: any import starting with `"activityhub/"` reaches a file in the hub's `web` folder. `arcade.js` isn't part of the API yet and may change: copy what you need instead of importing it.
+The random number generator is the same on both sides too. `devkit/rng.py` and `devkit/rng.js` are that pair, ready to copy: the same seed gives the same numbers on the bot and on the page.
+
+The included pages also import `"activityhub/arcade.js"`, the hub's shared title, pause, results and leaderboard frame. That is the file `activityhub/web/arcade.js` in the cog's folder, the same one [Who's here](#7-whos-here) points to. Only the included games can import it, because it isn't part of the API yet and may change. Copy what you need instead.
 
 Read them for ideas. Their internals are not part of the API and may change.
 
@@ -1808,10 +1784,11 @@ Boulder Bash is a cog in the same repo (`boulderbash/`): a remake of Neopets' De
 | **People button** | The hub's button in your game that opens the people panel. It floats in the top-right corner unless you place it with `hub.peopleButton()`. |
 | **People panel** | The hub's list of everyone in the window, grouped by where they are, with Join and Invite buttons. |
 | **Preview** | The menu and your game opened in a normal browser, outside Discord. `hub.offline` is `true` there. |
-| **Raw route** | A handler that gets the raw web request and returns any response. Used for uploads and anything actions can't do. |
+| **Raw route** | A handler that gets `ctx` and the raw web request, and returns any response. Used for uploads and anything actions can't do. |
 | **Room** | Everyone playing your game in one Activity window, as `conn.room`. Its `broadcast` reaches all of them. |
 | **Scope** | One extra Discord permission the player approves at login, like changing their Discord status. |
-| **Server admin** | A server's owner, or a member with the Manage Server permission or Red's admin role. They can turn games on or off in their own server. |
+| **Server admin** | The bot owner, a server's owner, or a member with the Manage Server permission or Red's admin role. They can turn games on or off in their own server. `await ctx.is_admin()` checks it. |
+| **Server mod** | A server admin, or a member with Red's mod role (set with `[p]set roles addmodrole`). `await ctx.is_mod()` checks it. The hub itself gives mods nothing extra. |
 | **Session** | The player's login with the hub. The page carries a session pass with every request. It lasts up to 12 hours and ends when the bot restarts or ActivityHub reloads; `hub.api()`, `hub.fetch()` and `hub.socket()` then log the player in again by themselves. |
 | **Status line** | A short text your game sets for its player with `hub.status()`, like `Wave 4 · 1,230`. Everyone in the window sees it. |
 | **web_dir** | The folder holding your page: `index.html` and everything it loads. |

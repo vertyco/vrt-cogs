@@ -356,15 +356,15 @@ def lines(state):
 async def test_menu_cards_carry_each_games_line(client, hub, demo, tmp_path):
     seen = []
 
-    async def answer(guild):
-        seen.append(guild.id)
+    async def answer(ctx):
+        seen.append((ctx.author.id, ctx.guild.id))
         return "Cash in up to 500 credits"
 
     await add_priced(hub, tmp_path, "Bet credits", key="fixed")
     await add_priced(hub, tmp_path, answer, key="asked")
     status, state = await menu(client, session_headers(hub))
     assert lines(state) == {"asked": "Cash in up to 500 credits", "demo": None, "fixed": "Bet credits"}
-    assert seen == [GUILD_ID]
+    assert seen == [(MEMBER_ID, GUILD_ID)]
 
 
 @pytest.mark.asyncio
@@ -378,7 +378,7 @@ async def test_no_lines_outside_a_server_or_in_the_preview(client, hub, tmp_path
 
 @pytest.mark.asyncio
 async def test_a_failing_line_still_loads_the_menu(client, hub, demo, tmp_path):
-    async def broken(guild):
+    async def broken(ctx):
         raise RuntimeError("no bank")
 
     await add_priced(hub, tmp_path, broken)
@@ -390,8 +390,8 @@ async def test_a_failing_line_still_loads_the_menu(client, hub, demo, tmp_path):
 async def test_games_turned_off_here_are_not_asked(client, hub, tmp_path):
     asked = []
 
-    async def answer(guild):
-        asked.append(guild.id)
+    async def answer(ctx):
+        asked.append(ctx.guild.id)
         return "Earn credits"
 
     await add_priced(hub, tmp_path, answer)
@@ -432,8 +432,8 @@ async def test_the_preview_has_no_labels_switch(client, demo):
 async def test_a_server_turns_labels_off(client, hub, tmp_path):
     asked = []
 
-    async def answer(guild):
-        asked.append(guild.id)
+    async def answer(ctx):
+        asked.append(ctx.guild.id)
         return "Earn credits"
 
     await add_priced(hub, tmp_path, answer)
@@ -497,3 +497,15 @@ async def test_a_badge_refresh_leaves_a_remembered_launch_alone(client, hub, dem
     resp = await client.get("/hub/api/menu?launch=skip", headers=headers)
     assert (await resp.json())["launch"] is None
     assert (await menu(client, headers))[1]["launch"] == "demo"
+
+
+@pytest.mark.asyncio
+async def test_a_line_can_differ_per_player(client, hub, tmp_path):
+    async def answer(ctx):
+        return f"Player {ctx.author.id}"
+
+    await add_priced(hub, tmp_path, answer)
+    _, member = await menu(client, session_headers(hub))
+    _, manager = await menu(client, session_headers(hub, user_id=MANAGER_ID))
+    assert lines(member) == {"priced": f"Player {MEMBER_ID}"}
+    assert lines(manager) == {"priced": f"Player {MANAGER_ID}"}

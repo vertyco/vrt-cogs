@@ -1,0 +1,10 @@
+{
+  "author": ["Your name"],
+  "short": "Click a button, earn a credit",
+  "description": "A tiny ActivityHub game: click a button, earn a credit. Needs ActivityHub 0.8.0 or later.",
+  "end_user_data_statement": "This cog stores how many times each player clicked today.",
+  "install_msg": "Click Counter is an ActivityHub game. It needs the ActivityHub cog: [p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs, then [p]cog install vrt-cogs activityhub and [p]load activityhub.",
+  "requirements": [],
+  "tags": ["activityhub", "games"],
+  "type": "COG"
+}

@@ -1,6 +1,5 @@
 import logging
 import secrets
-import typing as t
 from pathlib import Path
 
 from ..common.looks import SettingsError
@@ -136,12 +135,12 @@ class BundledGame:
             return {"error": str(e)}
         return await self.payout_settings(ctx, {})
 
-    async def economy_line(self, guild: t.Any) -> str | None:
-        """The menu card's currency line while this game pays out in the server"""
-        settings = await self.payouts.guild_settings(guild, self.key)
+    async def economy_line(self, ctx: ActivityContext) -> str | None:
+        """The menu card's currency line while this game pays out in the player's server"""
+        settings = await self.payouts.guild_settings(ctx.guild, self.key)
         if settings is None:
             return None
-        return f"Cash in up to {settings['cap']:,} {await self.payouts.bank.get_currency_name(guild)}"
+        return f"Cash in up to {settings['cap']:,} {await self.payouts.bank.get_currency_name(ctx.guild)}"
 
     def score(self, run: Run, data: dict, elapsed: float) -> int | None:
         """The round's real score, or None when what the page sent can't have happened"""

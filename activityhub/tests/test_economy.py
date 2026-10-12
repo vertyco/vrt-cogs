@@ -7,7 +7,7 @@ import pytest
 from activityhub.common import economy
 from activityhub.common.games import Game
 
-GUILD = object()
+CTX = object()
 
 
 def game(key, value):
@@ -37,32 +37,32 @@ def test_a_non_string_is_dropped_and_logged(caplog, value):
 
 @pytest.mark.asyncio
 async def test_fixed_lines_and_none_need_no_call():
-    assert await economy.line(game("a", "Bet credits"), GUILD) == "Bet credits"
-    assert await economy.line(game("b", None), GUILD) is None
+    assert await economy.line(game("a", "Bet credits"), CTX) == "Bet credits"
+    assert await economy.line(game("b", None), CTX) is None
 
 
 @pytest.mark.asyncio
-async def test_a_function_gets_the_server():
+async def test_a_function_gets_the_players_ctx():
     seen = []
 
-    async def answer(guild):
-        seen.append(guild)
+    async def answer(ctx):
+        seen.append(ctx)
         return "Cash in up to 500 credits"
 
-    assert await economy.line(game("a", answer), GUILD) == "Cash in up to 500 credits"
-    assert seen == [GUILD]
+    assert await economy.line(game("a", answer), CTX) == "Cash in up to 500 credits"
+    assert seen == [CTX]
 
 
 @pytest.mark.asyncio
 async def test_a_broken_line_only_loses_its_own_badge(caplog):
-    async def broken(guild):
+    async def broken(ctx):
         raise RuntimeError("no bank")
 
-    async def fine(guild):
+    async def fine(ctx):
         return "Earn credits"
 
     with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.economy"):
-        lines = await economy.lines([game("a", broken), game("b", fine)], GUILD)
+        lines = await economy.lines([game("a", broken), game("b", fine)], CTX)
     assert lines == {"a": None, "b": "Earn credits"}
     assert "a: economy failed, so its card has no currency label" in caplog.text
 
@@ -71,17 +71,17 @@ async def test_a_broken_line_only_loses_its_own_badge(caplog):
 async def test_a_slow_line_is_dropped_without_holding_the_menu(monkeypatch, caplog):
     monkeypatch.setattr(economy, "WAIT", 0.05)
 
-    async def slow(guild):
+    async def slow(ctx):
         await asyncio.sleep(10)
         return "Too late"
 
-    async def fine(guild):
+    async def fine(ctx):
         return "Earn credits"
 
     loop = asyncio.get_running_loop()
     started = loop.time()
     with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.economy"):
-        lines = await economy.lines([game("a", slow), game("b", fine)], GUILD)
+        lines = await economy.lines([game("a", slow), game("b", fine)], CTX)
     assert loop.time() - started < 1
     assert lines == {"a": None, "b": "Earn credits"}
     assert "a: economy took longer than 0.05 seconds, so its card has no currency label" in caplog.text

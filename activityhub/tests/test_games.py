@@ -8,10 +8,14 @@ from pathlib import Path
 
 import pytest
 
+from activityhub.bundled.games import WEB_DIR, Snake
 from activityhub.common import games
-from activityhub.common.games import GameError, GameRegistry, validate_game
+from activityhub.common.games import VERSION_PATTERN, GameError, GameRegistry, validate_game
+from activityhub.main import ActivityHub
+from activityhub.tests.fakes import make_hub
 
 REMOVE = object()
+HUB_VERSION = "0.8.0"
 
 
 class GameCog:
@@ -28,7 +32,7 @@ class GameCog:
     async def join(self, ctx, conn):
         return None
 
-    async def upload(self, request, ctx):
+    async def upload(self, ctx, request):
         return None
 
     async def activityhub_game(self):
@@ -170,7 +174,7 @@ async def test_hook_must_return_a_dict(web_dir, returned, reason):
 
 @pytest.mark.asyncio
 async def test_registry_adds_games_and_ignores_plain_cogs(web_dir):
-    registry = GameRegistry()
+    registry = GameRegistry(HUB_VERSION)
     assert await registry.add(PlainCog()) is None
     assert registry.failed == {}
     game = await registry.add(GameCog(web_dir, scopes=["b.scope", "a.scope"]))
@@ -180,7 +184,7 @@ async def test_registry_adds_games_and_ignores_plain_cogs(web_dir):
 
 @pytest.mark.asyncio
 async def test_registry_records_refusals(web_dir):
-    registry = GameRegistry()
+    registry = GameRegistry(HUB_VERSION)
     cog = GameCog(web_dir, key="NOPE")
     assert await registry.add(cog) is None
     assert registry.failed["FakeGame"][0] is cog
@@ -193,7 +197,7 @@ async def test_registry_records_a_raising_hook(web_dir, caplog):
         async def activityhub_game(self):
             raise RuntimeError("boom")
 
-    registry = GameRegistry()
+    registry = GameRegistry(HUB_VERSION)
     assert await registry.add(BrokenCog(web_dir)) is None
     assert registry.failed["FakeGame"][1] == "activityhub_game() raised RuntimeError: boom"
     assert "boom" in caplog.text
@@ -201,7 +205,7 @@ async def test_registry_records_a_raising_hook(web_dir, caplog):
 
 @pytest.mark.asyncio
 async def test_first_cog_keeps_a_duplicate_key(web_dir):
-    registry = GameRegistry()
+    registry = GameRegistry(HUB_VERSION)
     first = await registry.add(GameCog(web_dir, cog_name="First"))
     assert await registry.add(GameCog(web_dir, cog_name="Second")) is None
     assert registry.games["fake"] is first
@@ -210,7 +214,7 @@ async def test_first_cog_keeps_a_duplicate_key(web_dir):
 
 @pytest.mark.asyncio
 async def test_reload_remove_then_add(web_dir):
-    registry = GameRegistry()
+    registry = GameRegistry(HUB_VERSION)
     old, new = GameCog(web_dir), GameCog(web_dir)
     await registry.add(old)
     registry.remove(old)
@@ -220,7 +224,7 @@ async def test_reload_remove_then_add(web_dir):
 
 @pytest.mark.asyncio
 async def test_reload_add_before_remove_keeps_new_copy(web_dir):
-    registry = GameRegistry()
+    registry = GameRegistry(HUB_VERSION)
     old, new = GameCog(web_dir), GameCog(web_dir)
     await registry.add(old)
     await registry.add(new)
@@ -230,7 +234,7 @@ async def test_reload_add_before_remove_keeps_new_copy(web_dir):
 
 @pytest.mark.asyncio
 async def test_reload_with_a_new_key_drops_the_old_key(web_dir):
-    registry = GameRegistry()
+    registry = GameRegistry(HUB_VERSION)
     await registry.add(GameCog(web_dir))
     await registry.add(GameCog(web_dir, key="renamed"))
     assert list(registry.games) == ["renamed"]
@@ -238,7 +242,7 @@ async def test_reload_with_a_new_key_drops_the_old_key(web_dir):
 
 @pytest.mark.asyncio
 async def test_failed_new_copy_survives_old_copy_removal(web_dir):
-    registry = GameRegistry()
+    registry = GameRegistry(HUB_VERSION)
     old, broken = GameCog(web_dir), GameCog(web_dir, key="BAD")
     await registry.add(old)
     await registry.add(broken)
@@ -249,7 +253,7 @@ async def test_failed_new_copy_survives_old_copy_removal(web_dir):
 
 @pytest.mark.asyncio
 async def test_removing_a_cog_clears_its_failure(web_dir):
-    registry = GameRegistry()
+    registry = GameRegistry(HUB_VERSION)
     broken = GameCog(web_dir, key="BAD")
     await registry.add(broken)
     registry.remove(broken)
@@ -348,7 +352,7 @@ class HandlerCog(GameCog):
     async def message_without_data(self, ctx, conn):
         return None
 
-    async def swapped_route(self, ctx, request):
+    async def swapped_route(self, request, ctx):
         return None
 
 
@@ -393,7 +397,7 @@ async def test_handlers_the_hub_can_call_are_accepted(web_dir):
             "routes",
             "GET a",
             "swapped_route",
-            "routes handler 'GET a' takes (ctx, request), but raw routes get (request, ctx): request first",
+            "routes handler 'GET a' takes (request, ctx), but raw routes get (ctx, request): ctx first",
         ),
     ],
 )
@@ -621,7 +625,7 @@ async def test_a_hidden_picture_is_refused(web_dir):
 
 @pytest.mark.asyncio
 async def test_registry_remembers_which_key_a_refused_cog_wanted(web_dir):
-    registry = GameRegistry()
+    registry = GameRegistry(HUB_VERSION)
     await registry.add(GameCog(web_dir, cog_name="First"))
     second = GameCog(web_dir, cog_name="Second")
     await registry.add(second)
@@ -637,13 +641,13 @@ async def test_registry_remembers_which_key_a_refused_cog_wanted(web_dir):
 
 
 class EconomyCog(GameCog):
-    async def line(self, guild):
+    async def line(self, ctx):
         return "Earn credits"
 
     async def no_args(self):
         return None
 
-    def sync_line(self, guild):
+    def sync_line(self, ctx):
         return "Earn credits"
 
 
@@ -674,7 +678,7 @@ async def test_economy_line_over_the_limit_is_refused(web_dir):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("value", [True, 5, ["Earn"], {"text": "Earn"}])
 async def test_economy_of_the_wrong_type_is_refused(web_dir, value):
-    with pytest.raises(GameError, match="economy must be None, a string, or an async def that takes the server"):
+    with pytest.raises(GameError, match="economy must be None, a string, or an async def that takes ctx"):
         await validate_game(GameCog(web_dir, economy=value))
 
 
@@ -687,10 +691,10 @@ async def test_economy_function_must_be_async(web_dir):
 
 
 @pytest.mark.asyncio
-async def test_economy_function_must_take_the_server(web_dir):
+async def test_economy_function_must_take_ctx(web_dir):
     cog = EconomyCog(web_dir)
     cog.changes["economy"] = cog.no_args
-    with pytest.raises(GameError, match=r"economy takes \(\), but the hub calls it with \(guild\)"):
+    with pytest.raises(GameError, match=r"economy takes \(\), but the hub calls it with \(ctx\)"):
         await validate_game(cog)
 
 
@@ -700,3 +704,113 @@ async def test_economy_called_by_mistake_is_refused(web_dir):
     cog.changes["economy"] = cog.line(None)
     with pytest.raises(GameError, match=r"economy is a coroutine, not a method: write self.line without \(\)"):
         await validate_game(cog)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("requires", ["0.8", "0.8.0", "0.7.9", "0.0.1"])
+async def test_a_game_for_this_hub_or_an_older_one_registers(web_dir, requires):
+    registry = GameRegistry("0.8.0")
+    assert await registry.add(GameCog(web_dir, requires=requires)) is not None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "requires, hub_version", [("0.9.0", "0.8.0"), ("0.8.1", "0.8.0"), ("0.10", "0.9.5"), ("1.0", "0.8.0")]
+)
+async def test_a_game_for_a_newer_hub_says_to_update(web_dir, requires, hub_version):
+    with pytest.raises(GameError) as refused:
+        await validate_game(GameCog(web_dir, requires=requires), hub_version)
+    assert str(refused.value) == (
+        f"This game needs ActivityHub {requires} or newer, and this bot has {hub_version}. "
+        "Update it: [p]cog update activityhub"
+    )
+
+
+@pytest.mark.asyncio
+async def test_the_version_is_checked_before_unknown_fields(web_dir):
+    # A game made for a newer hub may use fields this hub doesn't know yet
+    cog = GameCog(web_dir, requires="9.0.0", leaderboard=True)
+    with pytest.raises(GameError, match="This game needs ActivityHub 9.0.0 or newer"):
+        await validate_game(cog, "0.8.0")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("requires", ["latest", "0.8.", "v0.8", "0.8.0.1", "8", "", "０.８", 0.8, None, ["0", "8"]])
+async def test_a_requires_that_isnt_a_version_is_refused(web_dir, requires):
+    with pytest.raises(GameError) as refused:
+        await validate_game(GameCog(web_dir, requires=requires), "0.8.0")
+    assert str(refused.value) == f'requires must be a version like "0.8.0", got {requires!r}'
+
+
+def test_the_hubs_own_version_is_one_requires_can_be_compared_with():
+    # Only plain numbers compare. A version like 0.9.0b1 would make every game with requires fail to load
+    assert VERSION_PATTERN.fullmatch(ActivityHub.__version__) is not None
+
+
+@pytest.mark.asyncio
+async def test_without_a_hub_version_only_the_shape_is_checked(web_dir):
+    # Game cogs' own tests call validate_game like this, to check their description
+    assert await validate_game(GameCog(web_dir, requires="99.0")) is not None
+
+
+@pytest.mark.asyncio
+async def test_a_misspelt_requires_gets_a_suggestion(web_dir):
+    with pytest.raises(GameError, match=re.escape("Unknown field 'require' (did you mean 'requires'?)")):
+        await validate_game(GameCog(web_dir, require="0.8.0"), "0.8.0")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("key", ["hub-", "hub-snake"])
+async def test_hub_keys_are_kept_for_the_included_games(web_dir, key):
+    with pytest.raises(GameError) as refused:
+        await validate_game(GameCog(web_dir, key=key))
+    assert str(refused.value) == "keys starting with 'hub-' are kept for ActivityHub's own games"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("key", ["hub", "hubble", "my-hub-game"])
+async def test_keys_that_only_look_like_hub_keys_are_fine(web_dir, key):
+    assert (await validate_game(GameCog(web_dir, key=key))).key == key
+
+
+class HubSnake(Snake):
+    """An included game on a hub- key, like the ones ActivityHub will add"""
+
+    async def activityhub_game(self) -> dict:
+        return {**await super().activityhub_game(), "key": "hub-snake", "web_dir": WEB_DIR / "snake"}
+
+
+@pytest.mark.asyncio
+async def test_an_included_game_can_use_a_hub_key():
+    hub = make_hub()
+    assert (await validate_game(HubSnake(hub.scores, hub.payouts))).key == "hub-snake"
+
+
+@pytest.mark.asyncio
+async def test_platforms_default_to_both(web_dir):
+    assert (await validate_game(GameCog(web_dir))).platforms == ["desktop", "mobile"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "value, kept",
+    [(["desktop"], ["desktop"]), (["mobile", "mobile"], ["mobile"]), (["mobile", "desktop"], ["mobile", "desktop"])],
+)
+async def test_platforms_are_kept_once_each(web_dir, value, kept):
+    assert (await validate_game(GameCog(web_dir, platforms=value))).platforms == kept
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value", [["ios"], ["Desktop"], ["web"], "desktop", None, [1], ("desktop",)])
+async def test_platforms_only_know_desktop_and_mobile(web_dir, value):
+    with pytest.raises(GameError) as refused:
+        await validate_game(GameCog(web_dir, platforms=value))
+    assert str(refused.value) == (
+        f'platforms can only hold "desktop" and "mobile" (all Discord tells the hub), got {value!r}'
+    )
+
+
+@pytest.mark.asyncio
+async def test_platforms_cant_be_empty(web_dir):
+    with pytest.raises(GameError, match="platforms can't be empty: leave it out to run everywhere"):
+        await validate_game(GameCog(web_dir, platforms=[]))

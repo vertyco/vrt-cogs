@@ -1,7 +1,10 @@
+import json
 import math
+import re
 
 import pytest
 
+from activityhub.bundled.games import bundled_games
 from activityhub.common.files import build_id
 from activityhub.common.replies import SESSION_EXPIRED
 from activityhub.tests.fakes import GUILD_ID, MEMBER_ID, OWNER_ID, session_headers
@@ -11,6 +14,11 @@ async def turn_off(hub, key="demo"):
     await hub.config.guild_from_id(GUILD_ID).disabled.set([key])
 
 
+def page_imports(text):
+    """The import map the hub wrote into a page"""
+    return json.loads(re.search(r'<script type="importmap">(.*?)</script>', text)[1])["imports"]
+
+
 @pytest.mark.asyncio
 async def test_game_page_gets_base_and_import_map(client, server, demo):
     resp = await client.get("/games/demo/")
@@ -18,8 +26,8 @@ async def test_game_page_gets_base_and_import_map(client, server, demo):
     assert resp.status == 200 and resp.headers["Cache-Control"] == "no-cache"
     assert f'<base href="/games/demo/{build_id(demo.web_dir)}/" />' in text
     hub_root = f"/hub/{server.hub_build()}/"
-    imports = f'{{"activityhub": "{hub_root}sdk.js", "activityhub/": "{hub_root}"}}'
-    assert f'<script type="importmap">{{"imports": {imports}}}</script>' in text
+    # Only the helper: the menu's other files aren't part of the API
+    assert page_imports(text) == {"activityhub": f"{hub_root}sdk.js"}
     assert text.index("<base") < text.index('<meta charset="utf-8" />')
     assert '<script type="module" src="game.js"></script>' in text
 
@@ -32,11 +40,12 @@ async def test_unknown_games_are_404(client, demo):
 
 
 @pytest.mark.asyncio
-async def test_page_of_an_unloaded_game_leads_back_to_the_menu(client, demo):
+async def test_page_of_an_unloaded_game_leads_back_to_the_menu(client, server, demo):
     # The menu may still list a game whose cog unloaded a moment ago, so its frame needs a way out
     resp = await client.get("/games/nope/?frame_id=f")
     text = await resp.text()
     assert resp.status == 404 and "isn&#x27;t installed" in text
+    assert page_imports(text) == {"activityhub": f"/hub/{server.hub_build()}/sdk.js"}
     assert 'id="back"' in text and '"activityhub": "/hub/' in text
     # A frame that reloads on another address under the game, like a router path, gets the same way out
     resp = await client.get("/games/nope/b/play", headers={"Sec-Fetch-Dest": "iframe"})
@@ -327,3 +336,34 @@ async def test_unloaded_games_disappear(client, hub, demo):
     hub.registry.remove(demo)
     assert (await client.get("/games/demo/")).status == 404
     assert (await client.post("/games/demo/api/echo", json={}, headers=session_headers(hub))).status == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "result", [{"activityhub": 1}, {"activityhub": None, "score": 3}, {"error": "No.", "activityhub": {}}]
+)
+async def test_the_activityhub_field_is_kept_for_the_hub(client, hub, demo, caplog, result):
+    demo.result = result
+    resp = await client.post("/games/demo/api/give", json={}, headers=session_headers(hub))
+    assert resp.status == 500 and await resp.json() == {"error": "Something went wrong."}
+    assert "Action demo.give returned the reserved field 'activityhub'" in caplog.text
+    owner = await client.post("/games/demo/api/give", json={}, headers=session_headers(hub, user_id=OWNER_ID))
+    assert "returned the reserved field 'activityhub'" in (await owner.json())["error"]
+
+
+@pytest.mark.asyncio
+async def test_an_activityhub_field_deeper_in_a_reply_is_fine(client, hub, demo):
+    demo.result = {"data": {"activityhub": 1}}
+    resp = await client.post("/games/demo/api/give", json={}, headers=session_headers(hub))
+    assert resp.status == 200 and await resp.json() == {"data": {"activityhub": 1}}
+
+
+@pytest.mark.asyncio
+async def test_an_included_games_page_also_gets_the_shared_frame(client, server, hub):
+    for game in bundled_games(hub.scores, hub.payouts):
+        await hub.registry.add(game)
+    text = await (await client.get("/games/snake/")).text()
+    hub_root = f"/hub/{server.hub_build()}/"
+    assert page_imports(text) == {"activityhub": f"{hub_root}sdk.js", "activityhub/arcade.js": f"{hub_root}arcade.js"}
+    # A link to index.html itself gets the same page
+    assert page_imports(await (await client.get("/games/snake/b/index.html")).text()) == page_imports(text)

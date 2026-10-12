@@ -24,6 +24,9 @@ DISCORD_QUERY = f"?frame_id=f&instance_id=i-1&guild_id={GUILD_ID}&channel_id=77&
 # Its state is private, like a real class's, so a method called on anything but the toolkit itself throws.
 # With &silent=1 in the address, ready() waits until the test calls window.answerDiscord(), like a page
 # opened outside Discord. window.fakeDiscordBus plays Discord's events to the subscribed listeners.
+# window.fakeAsked lists the scopes of every login asked for. With &badscope=1 in the address, Discord refuses
+# any login asking for more than identify, like a game listing a scope Discord doesn't accept. Setting
+# window.fakeDiscord.refuseNextExtra = true makes only the next login that asks for more than identify fail.
 FAKE_SDK = """export class DiscordSDK {
   #listeners = new Map();
   #answered = new URLSearchParams(location.search).has("silent")
@@ -40,10 +43,19 @@ FAKE_SDK = """export class DiscordSDK {
     this.clientId = clientId;
     this.instanceId = new URLSearchParams(location.search).get("instance_id");
     this.commands = {
-      authorize: async () => {
+      authorize: async ({ scope }) => {
+        (window.fakeAsked = window.fakeAsked || []).push(scope.join(" "));
         // Real Discord refuses a second authorize in the same frame; tests switch this on to match
         if (calls.failAuthorize) {
           throw new Error("Already authenticated");
+        }
+        const extra = scope.some((name) => name !== "identify");
+        if (new URLSearchParams(location.search).has("badscope") && extra) {
+          throw new Error("Invalid scope");
+        }
+        if (calls.refuseNextExtra && extra) {
+          calls.refuseNextExtra = false;
+          throw new Error("Invalid scope");
         }
         calls.authorize += 1;
         return { code: `code-${calls.authorize}` };

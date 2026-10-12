@@ -29,6 +29,14 @@ const DATA_MAX = 1024;
 // Half an emoji in JSON text: JSON.stringify writes a lone surrogate as an escape like \ud83d, which the bot can't
 // turn back into text. A backslash that is itself escaped (\\ud83d) is only text, so the escapes are paired off
 const LONE_SURROGATE = /(?:^|[^\\])(?:\\\\)*\\u[dD][89a-fA-F]/;
+// What Discord says a device is, in the platform part of the Activity's address
+const PLATFORMS = ["desktop", "mobile"];
+// A game's card note, and the message shown instead of opening it, on a device the game doesn't work on
+const ONLY_ON = { desktop: "Desktop only", mobile: "Mobile only" };
+const WORKS_ON = {
+  desktop: "only works on desktop: Discord's computer app or discord.com in a browser.",
+  mobile: "only works on mobile: Discord's phone and tablet app.",
+};
 
 // An invisible box padded by the room Discord's own buttons (the back pill and Leave) and the phone's notch take
 // at each edge. Discord sets --discord-safe-area-inset-* on this page only; iOS gives only the browser's env()
@@ -65,7 +73,7 @@ async function loginConfig() {
   return tag ? JSON.parse(tag.textContent) : request("/hub/api/config");
 }
 
-async function getLogin(sdk, scopes) {
+async function authorize(sdk, scopes) {
   const { code } = await sdk.commands.authorize({
     client_id: sdk.clientId,
     response_type: "code",
@@ -73,8 +81,32 @@ async function getLogin(sdk, scopes) {
     prompt: "none",
     scope: scopes,
   });
+  return code;
+}
+
+// Every game's scopes share this one login, so one scope Discord refuses (or the player pressing Cancel) would stop
+// every game from logging in. The login is then tried once more with identify alone, which stays for later logins
+// too. Only the first login tells the bot what was dropped, so its log can name the games that asked. A later login
+// (after a bot restart) never calls authenticate again, so the toolkit keeps the permissions of the first one, and
+// reporting a refusal then would make the bot's log say something untrue
+async function getLogin(host, first = false) {
+  const extra = host.scopes.filter((scope) => scope !== "identify");
+  let code;
+  let dropped = null;
+  try {
+    code = await authorize(host.sdk, host.scopes);
+  } catch (e) {
+    if (!extra.length) {
+      throw e;
+    }
+    console.warn(`ActivityHub: Discord refused the login with ${extra.join(", ")}, so it asks for identify only`, e);
+    dropped = first ? { scopes: extra, reason: String(e?.message ?? e) } : null;
+    host.scopes = ["identify"];
+    code = await authorize(host.sdk, host.scopes);
+  }
   mark("Discord authorized the login");
-  const login = await request("/hub/api/token", { body: { code, instance_id: sdk.instanceId } });
+  const body = { code, instance_id: host.sdk.instanceId, ...(dropped ? { dropped } : {}) };
+  const login = await request("/hub/api/token", { body });
   mark("the bot logged the player in");
   return { session: login.session, accessToken: login.access_token, player: login.player, menu: login.menu };
 }
@@ -108,6 +140,9 @@ export class Host {
   constructor(params, events) {
     this.events = events;
     this.inDiscord = params.has("frame_id");
+    // "desktop" or "mobile" inside Discord. The preview has none, so every game opens there
+    const platform = params.get("platform");
+    this.platform = this.inDiscord && PLATFORMS.includes(platform) ? platform : null;
     this.sdk = null;
     this.scopes = ["identify"];
     this.login = null;
@@ -152,7 +187,7 @@ export class Host {
       clearTimeout(warning);
     }
     mark("Discord toolkit ready");
-    this.login = await getLogin(this.sdk, this.scopes);
+    this.login = await getLogin(this, true);
     return this.login;
   }
 
@@ -214,7 +249,7 @@ export class Host {
   // Several requests can find the session expired at once, so they share one login.
   relogin() {
     if (!this.relogging) {
-      this.relogging = getLogin(this.sdk, this.scopes)
+      this.relogging = getLogin(this)
         .then((login) => {
           delete login.accessToken;
           this.login = login;
@@ -330,6 +365,22 @@ export class Host {
     return this.games.get(key)?.icon || null;
   }
 
+  // Whether this device can open the game
+  canOpen(key) {
+    const platforms = this.games.get(key)?.platforms;
+    return !this.platform || !platforms || platforms.includes(this.platform);
+  }
+
+  // "Desktop only" or "Mobile only" for a game this device can't open, else null
+  onlyOn(key) {
+    return this.canOpen(key) ? null : ONLY_ON[this.games.get(key).platforms[0]];
+  }
+
+  // Shown instead of opening a game this device can't run. The player stays where they are
+  refuseOpen(key) {
+    this.people.tell(`${this.gameName(key)} ${WORKS_ON[this.games.get(key).platforms[0]]}`);
+  }
+
   // hub.status(): the open game's line about its player, and data for its own pages. Cut by whole characters, so an
   // emoji at the limit is kept or dropped as one, never split
   setStatus(text, data = null) {
@@ -354,6 +405,11 @@ export class Host {
 
   // Join from a people list: open the game they're in, with them as the follow. Mid-round, ask first
   async join(person) {
+    // Before the leave question, since nobody leaves for a game this device can't open
+    if (!this.canOpen(person.game)) {
+      this.refuseOpen(person.game);
+      return;
+    }
     if (this.frame && this.presence.state.busy && !(await this.people.confirmLeave(person))) {
       return;
     }

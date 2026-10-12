@@ -5,6 +5,7 @@ import typing as t
 
 from aiohttp import WSMsgType, web
 
+from ..bundled.games import BundledGame
 from .files import build_id, file_response, inject_head, resolve_inside
 from .games import Game
 from .replies import (
@@ -183,14 +184,19 @@ class GameRoutes:
             return await self.raw(request, game, rest)
         return await self.file(request, game, rest)
 
-    def importmap_tag(self) -> str:
-        # "activityhub/..." reaches the hub's own files, which the bundled games share
+    def importmap_tag(self, game: Game | None) -> str:
+        """
+        The names a page can import: the helper, and for the included games the shared frame they use, which isn't
+        part of the API yet. No page reaches the menu's other files
+        """
         hub_root = f"/hub/{self.server.hub_build()}/"
-        importmap = json.dumps({"imports": {"activityhub": f"{hub_root}sdk.js", "activityhub/": hub_root}})
-        return f'<script type="importmap">{importmap}</script>'
+        imports = {"activityhub": f"{hub_root}sdk.js"}
+        if game is not None and isinstance(game.cog, BundledGame):
+            imports["activityhub/arcade.js"] = f"{hub_root}arcade.js"
+        return f'<script type="importmap">{json.dumps({"imports": imports})}</script>'
 
     def notice(self, message: str, status: int) -> web.Response:
-        text = inject_head(notice_page(message), self.importmap_tag())
+        text = inject_head(notice_page(message), self.importmap_tag(None))
         return web.Response(text=text, content_type="text/html", status=status, headers=NO_CACHE)
 
     async def something_wrong(self, ctx: ActivityContext | None, reason: str) -> web.Response:
@@ -213,7 +219,7 @@ class GameRoutes:
             # The notice page keeps the frame's button back to the menu, which aiohttp's own 500 page wouldn't
             log.error("Couldn't read index.html of %s", game.key, exc_info=e)
             return self.notice(SOMETHING_WRONG, 500)
-        tags = f'<base href="/games/{game.key}/{build}/" />{self.importmap_tag()}'
+        tags = f'<base href="/games/{game.key}/{build}/" />{self.importmap_tag(game)}'
         return web.Response(text=inject_head(html, tags), content_type="text/html", headers=NO_CACHE)
 
     async def turned_off_here(self, request: web.Request, game: Game) -> bool:
@@ -271,6 +277,11 @@ class GameRoutes:
             kind = type(result).__name__
             log.error("Action %s.%s returned %s instead of a dict", game.key, name, kind)
             return await self.something_wrong(ctx, f"returned {kind} instead of a dict")
+        if "activityhub" in result:
+            # Kept for the hub's own fields in replies, like the live messages' field of the same name, so a later
+            # version can add them without clashing with a game's
+            log.error("Action %s.%s returned the reserved field 'activityhub'", game.key, name)
+            return await self.something_wrong(ctx, "returned the reserved field 'activityhub'")
         message = result.get("error")
         if isinstance(message, str) and message.strip():
             return error(message, 400)
@@ -298,7 +309,7 @@ class GameRoutes:
         if ctx is not None and await self.server.game_off(ctx.guild_id, game.key):
             return error(TURNED_OFF, 403)
         try:
-            response = await handler(request, ctx)
+            response = await handler(ctx, request)
         except web.HTTPException:
             # aiohttp handlers send ready-made responses (redirects, 403s) by raising them
             raise

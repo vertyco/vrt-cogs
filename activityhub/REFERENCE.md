@@ -8,6 +8,7 @@
 2. [`ctx`](#2-ctx): who is playing and where
 3. [Handlers](#3-handlers): your Python methods the hub calls, and `conn` and `room`
 4. [The page side](#4-the-page-side): `connect()`, the `hub` object and a live connection's `conn`
+5. [The hub cog from Python](#5-the-hub-cog-from-python): the one call your Python can rely on
 
 ## 1. `activityhub_game()`
 
@@ -24,7 +25,7 @@ These are the fields the dict can have. Any other field name is refused, so a ty
 
 | Field | Type | Required | What it does |
 |---|---|---|---|
-| `key` | `str` | yes | Your game's id: 2 to 32 characters of `a-z`, `0-9` and `-`. Your game lives at the address `/games/<key>/`. **Pick it once:** server switches and players' menu order remember games by key, so a new key counts as a new game, and servers that turned your game off would see it on again. `snake`, `2048` and `brickbreaker` belong to the included games, even when they are turned off. Two cogs can't share a key: the first one registered keeps it, and the second is refused until the first unloads. It then gets the key by itself (so reloading the first cog hands the key to the second). |
+| `key` | `str` | yes | Your game's id: 2 to 32 characters of `a-z`, `0-9` and `-`. Your game lives at the address `/games/<key>/`. **Pick it once:** server switches and players' menu order remember games by key, so a new key counts as a new game, and servers that turned your game off would see it on again. `snake`, `2048` and `brickbreaker` belong to the included games, even when they are turned off, and keys starting with `hub-` are kept for ActivityHub's own games. Two cogs can't share a key: the first one registered keeps it, and the second is refused until the first unloads. It then gets the key by itself (so reloading the first cog hands the key to the second). |
 | `name` | `str` | yes | The name shown in the menu. Can't be empty. |
 | `web_dir` | `str` or `pathlib.Path` | yes | The folder holding `index.html` and every file your page uses. `Path(__file__).parent / "web"` is the usual way to write it. A relative path starts at the folder of the file that defines your cog class, and `~` means your home folder. It can't be your cog's own folder (or a folder above it), since everything in it would be public. `index.html` must be saved as UTF-8. |
 | `description` | `str` | no | One line shown under the name. Defaults to `""`. |
@@ -34,7 +35,9 @@ These are the fields the dict can have. Any other field name is refused, so a ty
 | `socket` | `dict[str, handler]` | no | Handlers for a live connection. The keys can only be `"join"`, `"message"` and `"leave"`. See [multiplayer](DEVELOPERS.md#6-multiplayer-with-live-connections). |
 | `routes` | `dict[str, handler]` | no | Raw requests, keyed `"METHOD path"`, for example `"POST avatar"`. `METHOD` is one of `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, in capitals. The path uses letters, digits, `_`, `.`, `-` and `/`, with no `.` or `..` parts. Paths match exactly, so there are no `{parameters}`, and each route can be listed once (leading and trailing `/` don't count). See [raw requests](DEVELOPERS.md#8-uploads-and-other-raw-requests). |
 | `scopes` | `list[str]` | no | Extra Discord permissions to ask the player for at login, one scope name per string. See [permissions](DEVELOPERS.md#9-extra-discord-permissions). |
-| `economy` | `None`, `str`, or `async def (guild)` | no | How your game ties into the server's currency, shown as a badge with a coin on its menu card. `None` (or leaving it out) means no tie and no badge. A string is a fixed line, like `"Bet credits at the tables"`. An `async def` taking the server returns a line or `None`, so the badge can follow your settings (say, only while payouts are on). At most 40 characters, plain text. Needs ActivityHub 0.7.0 or later. See [currency labels](DEVELOPERS.md#currency-labels-on-the-menu). |
+| `economy` | `None`, `str`, or `async def (ctx)` | no | How your game ties into the server's currency, shown as a badge with a coin on its menu card. `None` (or leaving it out) means no tie and no badge. A string is a fixed line, like `"Bet credits at the tables"`. An `async def` taking the player's `ctx` returns a line or `None`, so the badge can follow your settings (say, only while payouts are on), and can differ from one player to the next. It runs each time a player opens the menu in a server, so `ctx.guild` is never `None` there, and it must answer quickly. At most 40 characters, plain text. A fixed line needs ActivityHub 0.7.0 or later, and a function 0.8.0 or later. See [currency labels](DEVELOPERS.md#currency-labels-on-the-menu). |
+| `requires` | `str` | no | The oldest ActivityHub your game works with, as two or three whole numbers, like `"0.8.0"` or `"0.8"`. A bot with an older hub refuses your game with a message saying to update ActivityHub. Hubs older than 0.8.0 don't know this field, so they refuse it as unknown, which also says to update. |
+| `platforms` | `list[str]` | no | Where your game works: `"desktop"` (Discord's computer app, or discord.com in a browser), `"mobile"` (Discord's phone and tablet app), or both. Leaving it out means both. On the other platform the menu dims your card with a "Desktop only" or "Mobile only" note, and the hub shows a message instead of opening your game. Those two are all Discord tells the hub, so there's no iOS or Android. Needs ActivityHub 0.8.0 or later. |
 
 Every handler (in `actions`, `socket` and `routes`) must be an `async def` that takes the arguments [the hub passes](#3-handlers). The hub checks both when your game registers, so a mistake shows up in `[p]activityhub games` right away, not when a player first presses a button. Put the method itself in the dict, `self.click`, not `self.click()`.
 
@@ -65,10 +68,12 @@ Every handler gets a `ctx` that says who is playing and where. The hub proved it
 | `ctx.channel` | server channel, thread or `None` | The channel the Activity runs in, when it's in a server the bot can see. `None` otherwise. |
 | `ctx.channel_id` | `int` or `None` | The channel's id, also in a DM. |
 | `ctx.instance_id` | `str` | The id of this Activity window. Everyone in the same Activity window (for example, the same voice channel) has the same one. Use it to group players into one game. |
+| **`await`** `ctx.is_admin()` | `bool` | Whether the player is a server admin where the Activity runs: the bot owner, the server's owner, or a member with the Manage Server permission or Red's admin role. Checked fresh on each call. `False` outside a server. Anyone else who is no longer in the server (not in the bot's member cache) gets `False`. Needs ActivityHub 0.8.0 or later. |
+| **`await`** `ctx.is_mod()` | `bool` | Whether the player is a server mod there: everyone `ctx.is_admin()` counts, and members with Red's mod role. No Discord permission counts on its own. `False` outside a server, and for anyone else who is no longer in the server, like `is_admin()`. Needs ActivityHub 0.8.0 or later. |
 
 `if ctx.guild is None` is the check for "not in a server". When it's false, `ctx.author` is a `discord.Member`, ready for the bank and for member Config.
 
-`ctx` has only the attributes above. It isn't Red's `commands.Context`: there is no `ctx.send`, `ctx.reply`, `ctx.message` or `ctx.bot`, because the player is in an Activity, not typing a command. Use `self.bot` for the bot, and `ctx.channel.send(...)` to post in the channel when `ctx.channel` isn't `None`, with a cooldown (see [What to trust](DEVELOPERS.md#5-what-to-trust-and-paying-out)).
+`ctx` has only the attributes and methods above. It isn't Red's `commands.Context`: there is no `ctx.send`, `ctx.reply` or `ctx.message`, because the player is in an Activity, not typing a command. Use `self.bot` for the bot, and `ctx.channel.send(...)` to post in the channel when `ctx.channel` isn't `None`, with a cooldown (see [What to trust](DEVELOPERS.md#5-what-to-trust-and-paying-out)).
 
 `ctx` can't be a dict key or a set member. Key per-player state by `ctx.author.id`, per-window state by `ctx.instance_id`, and per-connection state by `conn`.
 
@@ -82,13 +87,14 @@ A handler is one of your `async def` methods that the hub calls. There are three
 | Socket `join` | `async def join(self, ctx, conn) -> None` | `conn`: this player's live connection. | Nothing. If it raises, the connection closes with code `1011`. |
 | Socket `message` | `async def message(self, ctx, conn, data) -> None` | `data`: any JSON value the page sent (dict, list, str, number, bool or `None`). | Nothing. If it raises, the error is logged and the connection stays open. |
 | Socket `leave` | `async def leave(self, ctx, conn) -> None` | `conn`: the connection that just closed. It is already out of its room, so `conn.peers()` lists only the players still connected. When that is empty, this was the last connection in this instance: clean up there. | Nothing. Not called when `join` raised. |
-| Raw route | `async def name(self, request: aiohttp.web.Request, ctx) -> aiohttp.web.StreamResponse` | **`request` first, then `ctx`** (actions are the other way round). `request`: the raw request from aiohttp (the web library the hub uses). `ctx`: `None` when the request carries no login. You decide what that means. | Any aiohttp response, for example `web.json_response(...)`. |
+| Raw route | `async def name(self, ctx, request: aiohttp.web.Request) -> aiohttp.web.StreamResponse` | `ctx`: `None` when the request carries no login. You decide what that means. `request`: the raw request from aiohttp (the web library the hub uses). | Any aiohttp response, for example `web.json_response(...)`. Needs ActivityHub 0.8.0 or later: older hubs call raw routes with `request` first and refuse this order. |
 
 **What an action can return:**
 
 - A dict. The page gets it as a JavaScript object.
 - `{"error": "text"}` makes `hub.api()` throw with that text. The text can't be empty. `{"error": None}` counts as no error, and the dict reaches the page as it is.
 - Only the error text reaches the page: other keys in an error reply are dropped. To let the page react to a kind of problem, return a normal dict like `{"ok": False, "reason": "no_funds", "need": 50}`.
+- `activityhub` is kept for the hub as a top-level key. A reply with one fails like a crash: the page gets "Something went wrong." and the bot log says `Action <key>.<name> returned the reserved field 'activityhub'`. The name is fine deeper inside, like `{"data": {"activityhub": 1}}`.
 - Numbers must be finite. NaN and Infinity aren't JSON, so a reply holding them fails like a crash.
 - Send Discord ids as strings. JavaScript rounds whole numbers above 2\*\*53, so write `{"user_id": str(ctx.author.id)}`.
 
@@ -128,64 +134,11 @@ Rules the hub enforces for you:
 | `room.connections` | `list` of connections | Everyone in the room right now. A copy, so it's safe to loop over while players leave. Empty once everyone has left. |
 | `room.instance_id` | `str` | The window's id, the same as `ctx.instance_id`. |
 
-**Type hints.** Don't import from `activityhub` in your cog. Red loads cogs by folder name, so the import fails whenever your cog loads before ActivityHub, and `isinstance` checks go stale after ActivityHub reloads. For your editor, copy these descriptions of `ctx` and `conn` instead, and write `async def click(self, ctx: HubContext, data: dict) -> dict:`.
-
-```python
-from typing import Any, Protocol, Sequence
-
-import discord
-
-
-class HubContext(Protocol):
-    """ActivityHub's ctx"""
-
-    author: discord.Member | discord.User
-    guild: discord.Guild | None
-    channel_id: int | None
-    instance_id: str
-
-    @property
-    def guild_id(self) -> int | None: ...
-
-    @property
-    def channel(self) -> discord.abc.GuildChannel | discord.Thread | None: ...
-
-
-class HubRoom(Protocol):
-    """Everyone playing your game in one Activity window"""
-
-    instance_id: str
-
-    @property
-    def connections(self) -> Sequence["HubConnection"]: ...
-
-    async def broadcast(self, data: Any) -> None: ...
-
-
-class HubConnection(Protocol):
-    """A live connection, as socket handlers get it"""
-
-    @property
-    def ctx(self) -> HubContext: ...
-
-    @property
-    def room(self) -> HubRoom: ...
-
-    @property
-    def follow(self) -> int | None: ...
-
-    async def send(self, data: Any) -> None: ...
-
-    async def broadcast(self, data: Any, include_self: bool = False) -> None: ...
-
-    def peers(self) -> Sequence["HubConnection"]: ...
-
-    async def close(self, code: int = 1000) -> None: ...
-```
+**Type hints.** Don't import from `activityhub` in your cog. Red loads cogs by folder name, so the import fails whenever your cog loads before ActivityHub, and `isinstance` checks go stale after ActivityHub reloads. For your editor, copy [`devkit/hubtypes.py`](devkit/hubtypes.py) into your cog instead. It describes `ctx`, `conn` and `room`, so after `from .hubtypes import HubContext` you can write `async def click(self, ctx: HubContext, data: dict) -> dict:`.
 
 ## 4. The page side
 
-Your page talks to the hub through a small helper script. Import it by the name `"activityhub"`:
+Your page talks to the hub through a small helper script. Import it by the name `"activityhub"`, the only name your page can import from the hub:
 
 ```js
 import { backToMenu, connect, HubError } from "activityhub";
@@ -201,11 +154,14 @@ These are the three things you use from it:
 
 A red "400 (Bad Request)" line in the browser console is normal for `{"error"}` replies: that is how they travel.
 
+The helper has a few other exports that the menu itself uses. They aren't part of the API and may change in any release.
+
 **The `hub` object** is what `connect()` gives you:
 
 | Member | Type | What it is |
 |---|---|---|
 | `hub.offline` | `boolean` | `true` outside Discord, for example in the browser preview. `hub.api()` and `hub.socket()` then throw "Open this activity from Discord to use this." |
+| `hub.platform` | `"desktop"`, `"mobile"` or `null` | Where the player is: `"desktop"` (Discord's computer app, or discord.com in a browser) or `"mobile"` (Discord's phone and tablet app). `null` in the preview. Use it to adapt a game that runs everywhere, like showing touch buttons on phones. Needs ActivityHub 0.8.0 or later. |
 | `hub.player` | object or `null` | `{ id, username, displayName, avatar, guildId, guildName, guildIcon }`, all strings. `displayName` is the name Discord shows for the player in that server; `username` is their account handle. The `guild` ones are `null` outside a server, and `guildIcon` is `null` for a server without an icon. `null` when offline. It's for showing, not for trusting. |
 | `hub.api(name, data, options)` | `Promise<object>` | Calls your action `name` with `data` (an object, default `{}`). Resolves with what the action returned. If the player's login expired (a bot restart, an ActivityHub reload), it logs in again and retries once by itself. `options` is optional: `{ keepalive: true }` lets the request reach the bot even after your page is gone, for saving on `pagehide` (the browser's event for a page going away) when Join or closing the Activity removes your game's frame. Once the page is gone, the log-in-again retry can't run. A keepalive request can carry at most 64 KB of data: the browser refuses a bigger one. |
 | `hub.fetch(path, options)` | `Promise<Response>` | Calls a raw route, like the browser's own `fetch`, with the player's login attached. `path` is the route path, for example `"avatar"` or `"item?id=7"`. When the hub says the login expired, it logs in again and sends the request once more (a streamed body can't be sent twice, so that one gets the 401). Works offline too, without a login. |
@@ -244,7 +200,7 @@ try {
 | `conn.latency` | The latest round trip to the bot and back, in whole milliseconds, or `null` before the first one and while reconnecting. The helper times one every 2 seconds, and the hub's frame rate counter shows it too, like `60 FPS · 85 ms`. |
 | `conn.close()` | Closes it, with code `1000`. |
 
-**Type hints for your editor.** The page imports `"activityhub"` by a name the hub sets up when it serves your page, so your editor can't find the helper on its own and has nothing to autocomplete. Save the declarations below as `activityhub.d.ts` next to your `game.js`, and put this line at the top of `game.js`:
+**Type hints for your editor.** The page imports `"activityhub"` by a name the hub sets up when it serves your page, so your editor can't find the helper on its own and has nothing to autocomplete. Copy [`devkit/activityhub.d.ts`](devkit/activityhub.d.ts) next to your `game.js`, and put this line at the top of `game.js`:
 
 ```js
 /// <reference path="activityhub.d.ts" />
@@ -252,81 +208,8 @@ try {
 
 Editors like VS Code then autocomplete `hub.` and flag typos, in plain JavaScript, with no build step. The file is only read by your editor, never by the browser, so it's harmless in `web_dir`.
 
-```ts
-declare module "activityhub" {
-  /** The error hub.api() and hub.socket() throw. */
-  export class HubError extends Error {
-    /** 400 for your own {"error"} replies, the HTTP status for the hub's other errors, the close code for live connections, 0 offline or when the bot couldn't be reached. */
-    status: number;
-  }
+## 5. The hub cog from Python
 
-  export interface HubPlayer {
-    id: string;
-    username: string;
-    displayName: string;
-    avatar: string;
-    guildId: string | null;
-    guildName: string | null;
-    guildIcon: string | null;
-  }
+`bot.get_cog("ActivityHub").launch(...)` is the one Python method of the hub cog your code can rely on. It opens the Activity with your game for whoever pressed a button or ran a command: see [Opening your game from a command or button](DEVELOPERS.md#10-opening-your-game-from-a-command-or-button).
 
-  export interface HubPerson {
-    id: string;
-    name: string;
-    avatar: string;
-    game: string | null;
-    gameName: string | null;
-    status: string;
-    data: unknown;
-    busy: boolean;
-    away: boolean;
-    you: boolean;
-    here: boolean;
-  }
-
-  /** A live connection, page side. */
-  export interface HubConnection {
-    /** The latest round trip to the bot and back in milliseconds, or null before the first one and while reconnecting. */
-    readonly latency: number | null;
-    /** Returns false without sending while the helper reconnects or after the connection closed. */
-    send(data: unknown): boolean;
-    on(handler: (data: any) => void): void;
-    onClose(handler: (code: number) => void): void;
-    onReconnecting(handler: (code: number) => void): void;
-    onReconnected(handler: () => void): void;
-    close(): void;
-  }
-
-  export interface Hub {
-    readonly offline: boolean;
-    readonly player: HubPlayer | null;
-    /** Discord's Embedded App SDK object, or null outside Discord. */
-    readonly discord: any;
-    readonly follow: { id: string; name: string } | null;
-    /** Everyone in the window, the player included. A new array on each read. */
-    readonly people: HubPerson[];
-    /** Calls your action `name` with `data`. */
-    api(
-      name: string,
-      data?: object,
-      options?: {
-        /** The request still reaches the bot after the page is gone, for a save on pagehide. At most 64 KB. */
-        keepalive?: boolean;
-      },
-    ): Promise<any>;
-    fetch(path: string, options?: RequestInit): Promise<Response>;
-    socket(): Promise<HubConnection>;
-    stat(text: string): void;
-    status(text: string, data?: unknown): void;
-    busy(on: boolean): void;
-    /** Returns a function that stops it. */
-    onPeople(fn: (people: HubPerson[]) => void): () => void;
-    peopleButton(): HTMLElement;
-    openPeople(): void;
-    backToMenu(): void;
-  }
-
-  export function connect(): Promise<Hub>;
-  export function backToMenu(): void;
-}
-```
+Every other attribute and method of the hub cog may change in any release, without notice. Your game talks to the hub through `activityhub_game()` and the handlers it lists.

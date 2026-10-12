@@ -179,9 +179,8 @@ async function loadState() {
   }
   render();
   mark("menu shown");
-  if (page.state.launch) {
-    openGame(page.state.launch);
-  } else {
+  // A launch this device can't open says why, and the menu's music plays as usual
+  if (!page.state.launch || !openGame(page.state.launch)) {
     sounds.playFile("menu");
   }
 }
@@ -220,12 +219,19 @@ function hideNotice() {
   layoutOrb();
 }
 
+// The cards, the pills, Join and a launch all come here. A game this device can't run says so instead, and false
+// comes back
 function openGame(key, follow = null) {
+  if (!page.host.canOpen(key)) {
+    page.host.refuseOpen(key);
+    return false;
+  }
   closePanel();
   hideHover();
   page.selected = key;
   sounds.setInMenu(false);
   page.host.openGame(key, follow);
+  return true;
 }
 
 function gameClosed() {
@@ -372,6 +378,10 @@ function cardText(game) {
   if (game.economy) {
     text.append(economyBadge(game.economy));
   }
+  const note = page.host.onlyOn(game.key);
+  if (note) {
+    text.append(el("span", "platform-note", note));
+  }
   return text;
 }
 
@@ -380,6 +390,7 @@ function gameCard(game) {
   const card = el("button", "card");
   card.type = "button";
   card.dataset.key = game.key;
+  card.classList.toggle("wrong-platform", Boolean(page.host.onlyOn(game.key)));
   if (game.thumbnail) {
     card.classList.add("has-thumb");
     card.append(thumbnail(game, () => card.classList.remove("has-thumb")));
@@ -463,6 +474,7 @@ function orbPill(item) {
   const pill = el("button", item.key ? "card pill" : "pill settings-pill");
   pill.type = "button";
   pill.dataset.key = item.key;
+  pill.classList.toggle("wrong-platform", Boolean(item.key && page.host.onlyOn(item.key)));
   const pod = el("span", "pod");
   pod.append(item.key ? gameIcon(item) : gearIcon());
   const plate = el("span", "plate");
@@ -660,6 +672,10 @@ function screenFace(item) {
   }
   if (item.economy) {
     text.append(economyBadge(item.economy));
+  }
+  const note = item.key ? page.host.onlyOn(item.key) : null;
+  if (note) {
+    text.append(el("p", "platform-note", note));
   }
   if (item.key) {
     const people = el("div", "screen-people");

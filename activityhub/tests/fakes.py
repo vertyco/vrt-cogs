@@ -13,6 +13,7 @@ from redbot.core.errors import BalanceTooHigh
 from activityhub.common.games import GameRegistry
 from activityhub.common.payouts import Payouts
 from activityhub.common.sessions import ActivityContext, LaunchMemory, SessionStore
+from activityhub.main import ActivityHub
 
 APP_ID = 1000
 OWNER_ID = 1
@@ -23,6 +24,7 @@ OUTSIDER_ID = 5  # a Discord user who isn't in the test server
 GUILD_ID = 500
 UNKNOWN_GUILD_ID = 600  # a server the bot isn't in
 GUILD_OWNER_ID = 6  # owns the test server, with no Manage Server role permission or Red admin role
+MOD_ID = 7  # holds Red's mod role in the test server, and no admin rights
 
 
 def not_found(what: str) -> discord.NotFound:
@@ -150,14 +152,16 @@ class FakeBot:
                 (ADMIN_ID, "admin"),
                 (OUTSIDER_ID, "outsider"),
                 (GUILD_OWNER_ID, "guildowner"),
+                (MOD_ID, "mod"),
             ]
         }
         guild = FakeGuild(GUILD_ID, "Test Server")
-        for user_id in (OWNER_ID, MEMBER_ID, ADMIN_ID, GUILD_OWNER_ID):
+        for user_id in (OWNER_ID, MEMBER_ID, ADMIN_ID, GUILD_OWNER_ID, MOD_ID):
             guild.members[user_id] = fake_member(self.users[user_id], guild)
         guild.members[MANAGER_ID] = fake_member(self.users[MANAGER_ID], guild, manage=True)
         self.guilds = {GUILD_ID: guild}
         self.admins = {ADMIN_ID}  # members holding Red's admin role
+        self.mods = {MOD_ID}  # members holding Red's mod role
         self.tokens = {"client_secret": "secret"}
 
     def get_user(self, user_id: int):
@@ -176,6 +180,10 @@ class FakeBot:
 
     async def is_admin(self, member) -> bool:
         return member.id in self.admins
+
+    async def is_mod(self, member) -> bool:
+        # Red's own is_mod counts its admin role too
+        return member.id in self.mods or member.id in self.admins
 
     async def get_shared_api_tokens(self, service: str) -> dict:
         return dict(self.tokens) if service == "activityhub" else {}
@@ -224,7 +232,7 @@ def make_hub() -> SimpleNamespace:
     return SimpleNamespace(
         bot=bot,
         config=config,
-        registry=GameRegistry(),
+        registry=GameRegistry(ActivityHub.__version__),
         sessions=SessionStore(),
         launches=LaunchMemory(),
         scores=ScoreBoard(config),
@@ -238,7 +246,7 @@ def context_for(
     user = hub.bot.get_user(user_id)
     guild = hub.bot.get_guild(guild_id) if guild_id else None
     member = guild.get_member(user_id) if guild else None
-    return ActivityContext(author=member or user, guild=guild, channel_id=77, instance_id=instance_id)
+    return ActivityContext(author=member or user, guild=guild, channel_id=77, instance_id=instance_id, bot=hub.bot)
 
 
 def session_headers(hub, **kwargs) -> dict:
@@ -312,7 +320,15 @@ class DemoCog:
     """A game cog using every hook, recording what the hub hands it"""
 
     def __init__(
-        self, web_dir: Path, key="demo", name="Demo", cog_name="Demo", with_socket=True, thumbnail=None, economy=None
+        self,
+        web_dir: Path,
+        key="demo",
+        name="Demo",
+        cog_name="Demo",
+        with_socket=True,
+        thumbnail=None,
+        economy=None,
+        platforms=None,
     ):
         self.qualified_name = cog_name
         self.web_dir = web_dir
@@ -321,6 +337,7 @@ class DemoCog:
         self.with_socket = with_socket
         self.thumbnail = thumbnail
         self.economy = economy
+        self.platforms = platforms
         self.events: list[tuple] = []
         self.join_error = False
         self.result: t.Any = None  # what the "give" action returns
@@ -355,6 +372,8 @@ class DemoCog:
             desc["socket"] = {"join": self.on_join, "message": self.on_message, "leave": self.on_leave}
         if self.economy is not None:
             desc["economy"] = self.economy
+        if self.platforms is not None:
+            desc["platforms"] = self.platforms
         return desc
 
     async def echo(self, ctx, data):
@@ -378,17 +397,17 @@ class DemoCog:
     async def give(self, ctx, data):
         return self.result
 
-    async def hello(self, request, ctx):
+    async def hello(self, ctx, request):
         self.events.append(("hello", ctx.author.id if ctx else None))
         return web.json_response({"user": ctx.author.id if ctx else None})
 
-    async def teapot(self, request, ctx):
+    async def teapot(self, ctx, request):
         raise web.HTTPForbidden(text="no tea")
 
-    async def raw_crash(self, request, ctx):
+    async def raw_crash(self, ctx, request):
         raise RuntimeError("raw broke")
 
-    async def not_a_response(self, request, ctx):
+    async def not_a_response(self, ctx, request):
         return {"oops": True}
 
     async def on_join(self, ctx, conn):

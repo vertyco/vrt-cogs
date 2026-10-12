@@ -1,8 +1,8 @@
 """
 Each game's currency line for its menu card: how it ties into the server's economy, in the game's own words.
 
-A game passes None, a fixed line, or an async def the hub calls with the server each time the menu loads there. A
-slow or broken game only loses its own badge: the menu never waits long or fails because of it.
+A game passes None, a fixed line, or an async def the hub calls with the player's ctx each time the menu loads in a
+server. A slow or broken game only loses its own badge: the menu never waits long or fails because of it.
 """
 
 import asyncio
@@ -35,11 +35,11 @@ def clean(key: str, value: t.Any) -> str | None:
     return line or None
 
 
-async def line(game: Game, guild: t.Any) -> str | None:
+async def line(game: Game, ctx: t.Any) -> str | None:
     if game.economy is None or isinstance(game.economy, str):
         return game.economy
     try:
-        value = await asyncio.wait_for(game.economy(guild), WAIT)
+        value = await asyncio.wait_for(game.economy(ctx), WAIT)
     except TimeoutError:
         log.warning("%s: economy took longer than %s seconds, so its card has no currency label", game.key, WAIT)
         return None
@@ -49,7 +49,7 @@ async def line(game: Game, guild: t.Any) -> str | None:
     return clean(game.key, value)
 
 
-async def lines(games: list[Game], guild: t.Any) -> dict[str, str | None]:
-    """Every game's line in this server, asked all at once"""
-    answers = await asyncio.gather(*(line(game, guild) for game in games))
+async def lines(games: list[Game], ctx: t.Any) -> dict[str, str | None]:
+    """Every game's line for this player, asked all at once"""
+    answers = await asyncio.gather(*(line(game, ctx) for game in games))
     return {game.key: answer for game, answer in zip(games, answers, strict=True)}

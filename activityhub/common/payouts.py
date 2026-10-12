@@ -22,7 +22,7 @@ from redbot.core import bank
 from redbot.core.errors import BalanceTooHigh
 
 from .looks import SettingsError
-from .sessions import ActivityContext, server_admin
+from .sessions import ActivityContext
 
 DEFAULT_CAP = 1000
 MAX_RATE = 1_000_000
@@ -112,7 +112,7 @@ class Payouts:
         """
         if await self.bank.is_global():
             return await self.bot.is_owner(ctx.author)
-        return await server_admin(self.bot, ctx)
+        return await ctx.is_admin()
 
     async def dialog(self, guild: t.Any, game: t.Any) -> dict:
         """What a game's payout settings dialog shows"""

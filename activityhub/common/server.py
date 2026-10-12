@@ -174,5 +174,9 @@ class HubServer:
                     log.info("User %s isn't in %s: %s", user_id, guild.id, e)
                     return None
         return ActivityContext(
-            author=member or user, guild=guild, channel_id=location["channel_id"], instance_id=instance_id
+            author=member or user,
+            guild=guild,
+            channel_id=location["channel_id"],
+            instance_id=instance_id,
+            bot=self.bot,
         )

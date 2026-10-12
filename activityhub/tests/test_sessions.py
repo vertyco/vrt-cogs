@@ -1,6 +1,19 @@
 from types import SimpleNamespace
 
+import pytest
+
 from activityhub.common.sessions import LAUNCH_TTL, SESSION_TTL, LaunchMemory, ActivityContext, SessionStore
+from activityhub.tests.fakes import (
+    ADMIN_ID,
+    GUILD_ID,
+    GUILD_OWNER_ID,
+    MANAGER_ID,
+    MEMBER_ID,
+    MOD_ID,
+    OWNER_ID,
+    context_for,
+    make_hub,
+)
 
 
 class Clock:
@@ -82,3 +95,47 @@ def test_launch_memory_keeps_the_latest_choice_and_forgets_users():
     memory.forget_user(2)
     assert memory.take(1) == "b"
     assert memory.take(2) is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "user_id, admin, mod",
+    [
+        (OWNER_ID, True, True),
+        (GUILD_OWNER_ID, True, True),
+        (MANAGER_ID, True, True),
+        (ADMIN_ID, True, True),
+        (MOD_ID, False, True),
+        (MEMBER_ID, False, False),
+    ],
+)
+async def test_who_counts_as_a_server_admin_or_mod(user_id, admin, mod):
+    ctx = context_for(make_hub(), user_id=user_id)
+    assert await ctx.is_admin() is admin
+    assert await ctx.is_mod() is mod
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("user_id", [OWNER_ID, MANAGER_ID, ADMIN_ID, MOD_ID])
+async def test_nobody_is_an_admin_or_mod_outside_a_server(user_id):
+    ctx = context_for(make_hub(), user_id=user_id, guild_id=None)
+    assert await ctx.is_admin() is False
+    assert await ctx.is_mod() is False
+
+
+@pytest.mark.asyncio
+async def test_a_member_who_left_loses_their_rights_but_the_owners_keep_theirs():
+    hub = make_hub()
+    everyone = (MANAGER_ID, ADMIN_ID, MOD_ID, OWNER_ID, GUILD_OWNER_ID)
+    contexts = {user_id: context_for(hub, user_id=user_id) for user_id in everyone}
+    hub.bot.guilds[GUILD_ID].members.clear()
+    for user_id in (MANAGER_ID, ADMIN_ID, MOD_ID):
+        assert await contexts[user_id].is_admin() is False
+        assert await contexts[user_id].is_mod() is False
+    for user_id in (OWNER_ID, GUILD_OWNER_ID):
+        assert await contexts[user_id].is_admin() is True
+        assert await contexts[user_id].is_mod() is True
+
+
+def test_the_bot_stays_out_of_the_ctx_repr():
+    assert "bot=" not in repr(context_for(make_hub()))

@@ -1,5 +1,23 @@
 # ActivityHub Changelog
 
+## 0.8.0
+
+- A game asking for a Discord permission that Discord refuses no longer stops everyone from logging in. The menu logs the player in without the extra permissions, every game still opens, and the bot log names the permissions and the games that asked for them. Pressing Cancel on Discord's permission prompt works the same way.
+- A game made only for computers (or only for phones) shows "Desktop only" (or "Mobile only") on its card on the other one, dimmed. Tapping it, or Join and launch buttons for it, show a message instead of opening it, and you stay where you were.
+
+For game developers:
+
+- `await ctx.is_admin()` and `await ctx.is_mod()` say whether the player is a server admin or a server mod where the Activity runs. Admins are the bot owner, the server's owner, and members with Manage Server or Red's admin role. Mods are admins plus members with Red's mod role.
+- **Breaking:** raw routes take `(ctx, request)`, like every other handler. A route still written `(request, ctx)` is refused with a message saying to swap them.
+- New optional `requires` field: the oldest ActivityHub your game works with, like `"0.8.0"`. A bot with an older hub refuses the game with a message saying to update ActivityHub.
+- Keys starting with `hub-` are kept for ActivityHub's own games.
+- **Breaking:** a game's `economy` function gets the player's `ctx` instead of the server. Read the server from `ctx.guild`. The badge can now differ from one player to the next.
+- An action reply with a top-level `activityhub` key fails like a broken reply. The name is kept for the hub's own fields.
+- **Breaking:** a game's page can only import `"activityhub"` from the hub. Other `"activityhub/..."` names no longer reach the hub's files.
+- New `devkit/` folder with files to copy: the quick start's Click Counter cog, type hints for your Python (`hubtypes.py`) and your page (`activityhub.d.ts`), test stand-ins (`fakes.py`), and the random number generator the included games share between the bot and the page (`rng.py` and `rng.js`).
+- New optional `platforms` field: `["desktop"]`, `["mobile"]` or both (the default). Pages get `hub.platform`, `"desktop"` or `"mobile"` inside Discord and `null` in the preview.
+- REFERENCE.md says which Python call on the hub cog is promised: `launch()`. Everything else on it may change in any release.
+
 ## 0.7.0
 
 - Games that use the server's currency can say so on their menu card: a coin and a short line, like "Cash in up to 1,000 credits". Snake, 2048 and Brick Breaker show it while their payouts are on.

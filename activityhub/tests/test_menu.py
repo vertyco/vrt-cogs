@@ -81,6 +81,7 @@ def test_game_json():
         "icon": "/games/mid/abc123/art/icon%20one.png",
         "thumbnail": "/games/mid/abc123/art/wide.png",
         "economy": None,
+        "platforms": ["desktop", "mobile"],
     }
     plain = game_json(game("mid", "Middle"), "abc123", "Bet credits")
     assert plain["icon"] is None and plain["thumbnail"] is None and plain["economy"] == "Bet credits"
@@ -119,3 +120,9 @@ def test_merge_order_with_none_resets_to_alphabetical():
 def test_merge_order_with_an_empty_list_keeps_the_saved_order():
     # What the menu sends from a server with every game off: the order still applies in other servers
     assert merge_order(["c", "a", "b"], [], {"a", "b", "c"}) == ["c", "a", "b"]
+
+
+def test_the_menu_data_carries_each_games_platforms(tmp_path):
+    desk = Game(key="desk", name="Desk", web_dir=tmp_path, cog=None, platforms=["desktop"])
+    assert game_json(desk, "b")["platforms"] == ["desktop"]
+    assert game_json(Game(key="any", name="Any", web_dir=tmp_path, cog=None), "b")["platforms"] == ["desktop", "mobile"]

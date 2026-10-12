@@ -173,6 +173,7 @@ makereqs.py
 __pycache__/
 scratch*.py
 template/
+!activityhub/devkit/template/
 migrate.py
 stonks/
 custom-functions/

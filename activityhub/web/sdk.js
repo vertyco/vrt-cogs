@@ -133,6 +133,7 @@ function offlineHub(host) {
     player: null,
     discord: null,
     offline: true,
+    platform: null,
     api: unavailable,
     socket: unavailable,
     fetch: (path, options = {}) => fetch(`${gameRoot()}raw/${path}`, options),
@@ -472,6 +473,7 @@ function onlineHub(host, login) {
     player: login.player,
     discord: frameDiscord(host.sdk),
     offline: false,
+    platform: host.platform,
     // { keepalive: true } lets a save sent on pagehide reach the bot after the game's frame is gone
     async api(name, data, options) {
       const keepalive = options?.keepalive === true;

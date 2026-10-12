@@ -29,7 +29,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.7.0"
+    __version__ = "0.8.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -41,7 +41,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.config.register_guild(look={}, disabled=[], payouts={}, economy_labels=True)
         self.config.register_user(look={}, order=[], cashed={})
         self.config.register_member(best={}, cashed={})
-        self.registry = GameRegistry()
+        self.registry = GameRegistry(self.__version__)
         self.sessions = SessionStore()
         self.launches = LaunchMemory()
         self.scores = ScoreBoard(self.config)

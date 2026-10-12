@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .files import hidden, resolve_inside, served_files
+from ..bundled.games import BundledGame
 
 log = logging.getLogger("red.vrt.activityhub.games")
 
@@ -19,7 +20,7 @@ SOCKET_EVENTS = ("join", "message", "leave")
 # What the hub passes to each kind of handler, in order
 HANDLER_ARGS = {
     "actions": ("ctx", "data"),
-    "routes": ("request", "ctx"),
+    "routes": ("ctx", "request"),
     "join": ("ctx", "conn"),
     "message": ("ctx", "conn", "data"),
     "leave": ("ctx", "conn"),
@@ -36,10 +37,15 @@ FIELDS = {
     "routes",
     "scopes",
     "economy",
+    "requires",
+    "platforms",
 }
 REQUIRED = ("key", "name", "web_dir")
 # The most characters a game's currency line can have, so the badge fits a card on a phone
 ECONOMY_LIMIT = 40
+# What Discord says a device is, in the platform part of the Activity's address: its computer app or a browser, or its
+# phone and tablet app. Discord says nothing finer, like iOS or Android
+PLATFORMS = ("desktop", "mobile")
 SCOPE_NAME = re.compile(r"[a-z0-9_.]+")
 # These add a bot or a webhook to a server, which isn't something a player approves while logging in
 NOT_LOGIN_SCOPES = ("bot", "webhook.incoming")
@@ -61,6 +67,8 @@ KNOWN_SCOPES = frozenset(
 ABSOLUTE_PATH = re.compile(r"\b(?:src|href)\s*=\s*[\"'](/(?!/)[^\"']*)", re.IGNORECASE)
 # More files than any page needs, which usually means web_dir is the project folder rather than the built page
 MANY_FILES = 2000
+# "requires": the oldest ActivityHub a game works with, as two or three whole numbers like "0.8" or "0.8.0"
+VERSION_PATTERN = re.compile(r"[0-9]+\.[0-9]+(?:\.[0-9]+)?")
 
 
 class GameError(ValueError):
@@ -80,11 +88,37 @@ class Game:
     socket: dict[str, t.Callable] = field(default_factory=dict)
     routes: dict[tuple[str, str], t.Callable] = field(default_factory=dict)
     scopes: list[str] = field(default_factory=list)
-    # None, a fixed line, or an async def taking the server and returning a line or None
+    # None, a fixed line, or an async def taking the player's ctx and returning a line or None
     economy: str | t.Callable | None = None
+    # Where the game works. The menu marks it, and won't open it, on the other one
+    platforms: list[str] = field(default_factory=lambda: list(PLATFORMS))
 
 
-async def read_description(cog: t.Any) -> dict:
+def version_numbers(text: str) -> tuple[int, int, int]:
+    """'0.8' or '0.8.0' as (0, 8, 0), so versions compare by number and 0.10 comes after 0.9"""
+    numbers = [int(part) for part in text.split(".")]
+    major, minor, patch = numbers + [0] * (3 - len(numbers))
+    return major, minor, patch
+
+
+def check_requires(desc: dict, hub_version: str | None) -> None:
+    """
+    Refuse a game made for a newer hub with a message saying so. Without a hub version only the shape is checked,
+    since there is nothing to compare against
+    """
+    if "requires" not in desc:
+        return
+    requires = desc["requires"]
+    if not isinstance(requires, str) or VERSION_PATTERN.fullmatch(requires) is None:
+        raise GameError(f'requires must be a version like "0.8.0", got {requires!r}')
+    if hub_version is not None and version_numbers(requires) > version_numbers(hub_version):
+        raise GameError(
+            f"This game needs ActivityHub {requires} or newer, and this bot has {hub_version}. "
+            "Update it: [p]cog update activityhub"
+        )
+
+
+async def read_description(cog: t.Any, hub_version: str | None) -> dict:
     hook = cog.activityhub_game
     if not inspect.iscoroutinefunction(hook):
         raise GameError("activityhub_game must be an async def")
@@ -93,6 +127,8 @@ async def read_description(cog: t.Any) -> dict:
         raise GameError(f"activityhub_game must return one dict (one game per cog), got {type(desc).__name__}")
     if not isinstance(desc, dict):
         raise GameError(f"activityhub_game must return a dict, got {type(desc).__name__}")
+    # Before the unknown fields, which a game made for a newer hub may well have
+    check_requires(desc, hub_version)
     unknown = sorted(str(name) for name in desc if name not in FIELDS)
     for name in unknown:
         close = difflib.get_close_matches(name, sorted(FIELDS), n=1)
@@ -158,10 +194,8 @@ def check_signature(label: str, name: str, handler: t.Callable, args: tuple[str,
     # Swapped arguments still bind, so the names are the only clue
     kinds = (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
     positional = [param.name for param in signature.parameters.values() if param.kind in kinds]
-    if args[0] == "request" and positional[:2] == ["ctx", "request"]:
-        raise GameError(
-            f"routes handler {name!r} takes (ctx, request), but raw routes get (request, ctx): request first"
-        )
+    if args == HANDLER_ARGS["routes"] and positional[:2] == ["request", "ctx"]:
+        raise GameError(f"routes handler {name!r} takes (request, ctx), but raw routes get (ctx, request): ctx first")
 
 
 def check_handlers(label: str, value: t.Any, check_name: t.Callable[[t.Any], None]) -> dict[str, t.Callable]:
@@ -221,7 +255,7 @@ def check_web_dir(value: t.Any, cog: t.Any) -> tuple[Path, str]:
     return web_dir, html
 
 
-def check_text(desc: dict) -> tuple[str, str, str]:
+def check_text(desc: dict, cog: t.Any) -> tuple[str, str, str]:
     key, name, description = desc["key"], desc["name"], desc.get("description", "")
     if not isinstance(key, str) or KEY_PATTERN.fullmatch(key) is None:
         reason = f"key must be 2-32 characters of a-z, 0-9 and hyphens, got {key!r}"
@@ -229,6 +263,8 @@ def check_text(desc: dict) -> tuple[str, str, str]:
         if KEY_PATTERN.fullmatch(suggestion):
             reason += f" (try {suggestion!r})"
         raise GameError(reason)
+    if key.startswith("hub-") and not isinstance(cog, BundledGame):
+        raise GameError("keys starting with 'hub-' are kept for ActivityHub's own games")
     if not isinstance(name, str) or not name.strip():
         raise GameError("name must be a non-empty string")
     if not isinstance(description, str):
@@ -251,7 +287,7 @@ def check_scopes(value: t.Any, cog: t.Any) -> list[str]:
             # Only a warning, so scopes Discord adds later still work
             log.warning(
                 "%s asks for the scope %r, which ActivityHub doesn't know. Every installed game's scopes go into one "
-                "Discord login, so a wrong one stops every game from logging in.",
+                "Discord login, so a wrong one makes every player log in without the extra permissions.",
                 cog.qualified_name,
                 scope,
             )
@@ -259,7 +295,7 @@ def check_scopes(value: t.Any, cog: t.Any) -> list[str]:
 
 
 def check_economy(value: t.Any) -> str | t.Callable | None:
-    """None, a fixed line (None when blank), or an async def the hub calls with the server"""
+    """None, a fixed line (None when blank), or an async def the hub calls with the player's ctx"""
     if value is None:
         return None
     if isinstance(value, str):
@@ -274,7 +310,7 @@ def check_economy(value: t.Any) -> str | t.Callable | None:
         value.close()
         raise GameError(f"economy is a coroutine, not a method: write self.{value.__name__} without ()")
     if not callable(value) or not is_async(value):
-        raise GameError("economy must be None, a string, or an async def that takes the server")
+        raise GameError("economy must be None, a string, or an async def that takes ctx")
     try:
         signature = inspect.signature(value)
     except (TypeError, ValueError):
@@ -284,8 +320,17 @@ def check_economy(value: t.Any) -> str | t.Callable | None:
         signature.bind(None)
     except TypeError:
         shown = signature.replace(return_annotation=inspect.Signature.empty)
-        raise GameError(f"economy takes {shown}, but the hub calls it with (guild).")
+        raise GameError(f"economy takes {shown}, but the hub calls it with (ctx).")
     return value
+
+
+def check_platforms(value: t.Any) -> list[str]:
+    """The platforms a game works on, each once"""
+    if not isinstance(value, list) or not all(isinstance(item, str) and item in PLATFORMS for item in value):
+        raise GameError(f'platforms can only hold "desktop" and "mobile" (all Discord tells the hub), got {value!r}')
+    if not value:
+        raise GameError("platforms can't be empty: leave it out to run everywhere")
+    return list(dict.fromkeys(value))
 
 
 def check_picture(desc: dict, field_name: str, web_dir: Path) -> str | None:
@@ -340,10 +385,10 @@ def warn_about_page(key: str, web_dir: Path, html: str) -> None:
         )
 
 
-async def validate_game(cog: t.Any) -> Game:
+async def validate_game(cog: t.Any, hub_version: str | None = None) -> Game:
     """Turn a cog's activityhub_game() description into a Game, or raise GameError saying what is wrong"""
-    desc = await read_description(cog)
-    key, name, description = check_text(desc)
+    desc = await read_description(cog, hub_version)
+    key, name, description = check_text(desc, cog)
     web_dir, html = check_web_dir(desc["web_dir"], cog)
     scopes = check_scopes(desc.get("scopes", []), cog)
     game = Game(
@@ -359,6 +404,7 @@ async def validate_game(cog: t.Any) -> Game:
         routes=parse_routes(desc.get("routes", {})),
         scopes=scopes,
         economy=check_economy(desc.get("economy")),
+        platforms=check_platforms(desc.get("platforms", list(PLATFORMS))),
     )
     warn_about_page(key, web_dir, html)
     return game
@@ -367,7 +413,9 @@ async def validate_game(cog: t.Any) -> Game:
 class GameRegistry:
     """Games from loaded cogs by key, plus each refused cog with the reason"""
 
-    def __init__(self):
+    def __init__(self, hub_version: str):
+        # ActivityHub's own version, which a game's "requires" is checked against
+        self.hub_version = hub_version
         self.games: dict[str, Game] = {}
         self.failed: dict[str, tuple[t.Any, str]] = {}
         # Cog name to the key it was refused because another cog held it, so it can have another go once that frees
@@ -385,7 +433,7 @@ class GameRegistry:
         self.clashes.pop(cog_name, None)
         game, reason = None, ""
         try:
-            game = await validate_game(cog)
+            game = await validate_game(cog, self.hub_version)
         except GameError as e:
             reason = str(e)
         except Exception as e:

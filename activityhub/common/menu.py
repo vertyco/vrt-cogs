@@ -83,6 +83,8 @@ def game_json(game: Game, build: str, line: str | None = None) -> dict:
         "thumbnail": picture_url(game, build, game.thumbnail),
         # The game's currency line for its badge, or None for no badge
         "economy": line,
+        # Where the game works, so the menu can mark it on the other platform
+        "platforms": game.platforms,
     }
 
 

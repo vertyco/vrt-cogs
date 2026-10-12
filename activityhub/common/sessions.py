@@ -1,7 +1,7 @@
 import secrets
 import time
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import discord
 
@@ -18,6 +18,8 @@ class ActivityContext:
     guild: discord.Guild | None = None
     channel_id: int | None = None
     instance_id: str = ""
+    # For is_admin and is_mod. Games use their own self.bot, so the docs leave it out
+    bot: t.Any = field(default=None, repr=False, compare=False)
 
     @property
     def guild_id(self) -> int | None:
@@ -30,22 +32,28 @@ class ActivityContext:
             return None
         return self.guild.get_channel_or_thread(self.channel_id)
 
+    async def is_admin(self) -> bool:
+        """
+        The bot owner, the server's owner, and members with Manage Server or Red's admin role in the activity's
+        server, checked fresh each time. Nobody outside a server. Anyone else who is no longer in the server (not in
+        the member cache) has no rights there
+        """
+        if self.guild is None:
+            return False
+        # The server's owner can't leave without handing the server over, so neither owner needs a member cache lookup
+        if self.author.id == self.guild.owner_id or await self.bot.is_owner(self.author):
+            return True
+        member = self.guild.get_member(self.author.id)
+        if member is None:
+            return False
+        return member.guild_permissions.manage_guild or await self.bot.is_admin(member)
 
-async def server_admin(bot: t.Any, ctx: ActivityContext) -> bool:
-    """
-    The bot owner, the server's owner, and members with Manage Server or Red's admin role in the activity's
-    server, checked fresh each time. Nobody outside a server. Anyone else who is no longer in the server (not in
-    the member cache) has no rights there.
-    """
-    if ctx.guild is None:
-        return False
-    # The server's owner can't leave without handing the server over, so neither owner needs a member cache lookup
-    if ctx.author.id == ctx.guild.owner_id or await bot.is_owner(ctx.author):
-        return True
-    member = ctx.guild.get_member(ctx.author.id)
-    if member is None:
-        return False
-    return member.guild_permissions.manage_guild or await bot.is_admin(member)
+    async def is_mod(self) -> bool:
+        """Everyone is_admin counts, and members with Red's mod role. No Discord permission counts on its own"""
+        if await self.is_admin():
+            return True
+        member = self.guild.get_member(self.author.id) if self.guild is not None else None
+        return member is not None and await self.bot.is_mod(member)
 
 
 @dataclass

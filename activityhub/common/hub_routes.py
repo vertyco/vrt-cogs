@@ -33,13 +33,16 @@ from .replies import (
     error,
     read_object,
 )
-from .sessions import ActivityContext, server_admin
+from .sessions import ActivityContext
 from .sockets import CLOSE_SESSION, READY, Connection
 
 if t.TYPE_CHECKING:
     from .server import HubServer
 
 log = logging.getLogger("red.vrt.activityhub.hub_routes")
+
+# The most of Discord's error text the log keeps when a login left scopes out. The page sends it, so it is cut
+REASON_LIMIT = 200
 
 
 class HubRoutes:
@@ -142,6 +145,7 @@ class HubRoutes:
             return error(LOGIN_FAILED, 502)
         if ctx is None:
             return error(NOT_IN_SERVER, 403)
+        self.log_dropped(user_id, body.get("dropped"))
         session = self.hub.sessions.create(ctx)
         # The menu comes back with the login, which saves the page a second request before it can show anything
         return web.json_response(
@@ -151,6 +155,31 @@ class HubRoutes:
                 "player": player_json(ctx),
                 "menu": await self.full_state(ctx),
             }
+        )
+
+    def log_dropped(self, user_id: int, dropped: t.Any) -> None:
+        """
+        Log the extra scopes Discord refused at this player's login, and the games that ask for each. Only the page
+        says what it left out, so only scopes an installed game asks for are named
+        """
+        if not isinstance(dropped, dict) or not isinstance(dropped.get("scopes"), list):
+            return
+        asked = set(self.hub.registry.scopes())
+        games = list(self.hub.registry.games.values())
+        named = [
+            f"{scope} (asked for by {', '.join(sorted(game.key for game in games if scope in game.scopes))})"
+            for scope in dict.fromkeys(item for item in dropped["scopes"] if isinstance(item, str))
+            if scope in asked
+        ]
+        if not named:
+            return
+        reason = dropped.get("reason")
+        log.warning(
+            "Discord refused a login that asked for extra permissions, so player %s logged in with identify only. "
+            "Games still open, but hub.discord calls that need these fail: %s. Discord said: %r",
+            user_id,
+            "; ".join(named),
+            reason[:REASON_LIMIT] if isinstance(reason, str) else None,
         )
 
     async def menu_state(self, request: web.Request) -> web.Response:
@@ -223,10 +252,13 @@ class HubRoutes:
         return {"tab": tab, "on": await (await self.labels_group(ctx.guild)).economy_labels()}
 
     async def economy_lines(self, ctx: ActivityContext, games: list[Game]) -> dict[str, str | None]:
-        """Each shown game's currency line. None outside a server, since a server's bank is what it ties into"""
+        """
+        Each shown game's currency line for this player. None outside a server, since a server's bank is what it
+        ties into
+        """
         if ctx.guild is None or not await (await self.labels_group(ctx.guild)).economy_labels():
             return {}
-        return await economy.lines(games, ctx.guild)
+        return await economy.lines(games, ctx)
 
     async def allowed_games(self) -> list[Game]:
         """Installed games the bot owner hasn't turned off everywhere"""
@@ -243,7 +275,7 @@ class HubRoutes:
         }
 
     async def player_tabs(self, ctx: ActivityContext) -> list[str]:
-        return allowed_tabs(await server_admin(self.bot, ctx), await self.bot.is_owner(ctx.author))
+        return allowed_tabs(await ctx.is_admin(), await self.bot.is_owner(ctx.author))
 
     async def take_launch(self, ctx: ActivityContext) -> str | None:
         key = self.hub.launches.take(ctx.author.id)

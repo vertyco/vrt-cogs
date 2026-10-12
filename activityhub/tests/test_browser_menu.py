@@ -1,3 +1,4 @@
+import logging
 import time
 
 import pytest
@@ -31,6 +32,12 @@ from activityhub.tests.fakes import (
 CARDS = "[...document.querySelectorAll('#games .card')].map((card) => card.dataset.key)"
 PILLS = "[...document.querySelectorAll('#games .pill')].map((pill) => pill.dataset.key)"
 SELECTED = "document.querySelector('#games .pill.selected').dataset.key"
+# The demo games ask for guilds.members.read, which this fake Discord refuses
+BAD_SCOPE_QUERY = f"{DISCORD_QUERY}&badscope=1"
+# The same Discord address, on Discord's phone and tablet app
+PHONE_QUERY = DISCORD_QUERY.replace("platform=desktop", "platform=mobile")
+CONFIRM = "document.querySelector('.hub-confirm')"
+WORKS_ON_DESKTOP = "Desk Game only works on desktop: Discord's computer app or discord.com in a browser."
 # Records the pitch of every tone the menu starts, so a test can tell the move, select and back sounds apart
 SOUND_SPY = """
 window.soundLog = [];
@@ -343,6 +350,45 @@ def test_logins_needed_at_once_share_one_authorize(driver, live):
     assert driver.execute_script("return window.fakeDiscord.authorize") == 2
 
 
+def test_a_refused_extra_scope_login_retries_with_identify_only(driver, live, caplog):
+    with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.hub_routes"):
+        open_menu(driver, live, BAD_SCOPE_QUERY)
+        wait_for(driver, "window.fakeDiscord.authenticate === 1")
+    assert driver.execute_script("return window.fakeAsked") == ["identify guilds.members.read", "identify"]
+    assert "guilds.members.read (asked for by demo, second)" in caplog.text
+    # The games still open and reach the bot
+    driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').click()
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    try:
+        wait_for(driver, "window.demo && window.demo.done")
+        assert driver.execute_script("return window.demo.echo.user") == MEMBER_ID
+    finally:
+        driver.switch_to.default_content()
+
+
+def test_after_a_refused_extra_scope_a_relogin_asks_for_identify_only(driver, live):
+    open_menu(driver, live, BAD_SCOPE_QUERY)
+    wait_for(driver, "window.fakeDiscord.authenticate === 1")
+    driver.execute_async_script("const done = arguments[0]; window.activityhubHost.relogin().then(() => done());")
+    assert driver.execute_script("return window.fakeAsked") == ["identify guilds.members.read", "identify", "identify"]
+
+
+def test_a_relogin_refused_for_an_extra_scope_is_not_reported_as_dropped_scopes(driver, live, caplog):
+    # The first login (test_a_refused_extra_scope_login_retries_with_identify_only) reports what it dropped. A relogin
+    # never authenticates again, so the toolkit keeps the first login's permissions and the bot has nothing to log
+    with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.hub_routes"):
+        open_menu(driver, live, DISCORD_QUERY)
+        wait_for(driver, "window.fakeDiscord.authenticate === 1")
+        driver.execute_script("window.fakeDiscord.refuseNextExtra = true")
+        driver.execute_async_script("const done = arguments[0]; window.activityhubHost.relogin().then(() => done());")
+    assert driver.execute_script("return window.fakeAsked") == [
+        "identify guilds.members.read",
+        "identify guilds.members.read",
+        "identify",
+    ]
+    assert "identify only" not in caplog.text
+
+
 def test_restart_when_discord_refuses_a_second_authorize_shows_the_notice(driver, live):
     open_menu(driver, live, DISCORD_QUERY)
     driver.execute_script("window.fakeDiscord.failAuthorize = true; window.noReload = 'still here';")
@@ -419,6 +465,11 @@ def add_thumbnail_game(live, tmp_path):
     folder = write_demo_web(tmp_path / "third")
     register(live.hub, DemoCog(folder, key="third", name="Third", cog_name="Third", thumbnail="thumb.svg"))
     return folder
+
+
+def add_desktop_game(live, tmp_path):
+    folder = write_demo_web(tmp_path / "desk")
+    register(live.hub, DemoCog(folder, key="desk", name="Desk Game", cog_name="Desk", platforms=["desktop"]))
 
 
 def touch_device(driver, width, height):
@@ -1702,7 +1753,7 @@ def test_the_orb_screen_shows_the_selected_games_badge(driver, live, tmp_path):
 def test_badges_refresh_after_coming_back_from_a_game(driver, live, tmp_path):
     answer = {"line": "Cash in up to 500 credits"}
 
-    async def economy_line(guild):
+    async def economy_line(ctx):
         return answer["line"]
 
     folder = write_demo_web(tmp_path / "priced")
@@ -1739,3 +1790,138 @@ def test_every_layout_shows_the_badges_words(driver, live, tmp_path, look):
     words = driver.find_element(By.CSS_SELECTOR, '.card[data-key="priced"] .economy-text')
     assert words.is_displayed() and words.text == "Bet credits"
     assert no_sideways_scroll(driver)
+
+
+# A card's height, and how far its currency line and platform note reach, against where its people bubble starts
+ROW_SHAPE = """
+const card = document.querySelector(arguments[0]);
+const right = (selector) => card.querySelector(selector)?.getBoundingClientRect().right;
+return {
+  height: card.getBoundingClientRect().height,
+  economy: right(".economy"),
+  note: right(".platform-note"),
+  bubble: card.querySelector(".bubble")?.getBoundingClientRect().left,
+};
+"""
+
+
+def test_a_compact_row_marked_for_the_other_platform_keeps_its_one_line_height_and_stays_inside_the_card(
+    driver, live, tmp_path
+):
+    folder = write_demo_web(tmp_path / "desk")
+    register(
+        live.hub,
+        DemoCog(
+            folder,
+            key="desk",
+            name="Kingdom Rush Frontiers",
+            cog_name="Desk",
+            economy="Cash in up to 1,000 credits",
+            platforms=["desktop"],
+        ),
+    )
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "compact"}
+    touch_device(driver, 360, 780)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        live.add_person(MANAGER_ID, where="desk")
+        live.add_person(ADMIN_ID, where="desk")
+        wait_for(driver, "document.querySelector('.card[data-key=\"desk\"] .bubble')")
+        row = driver.execute_script(ROW_SHAPE, '.card[data-key="desk"]')
+        normal_row = driver.execute_script(ROW_SHAPE, '.card[data-key="demo"]')
+        assert row["note"] is not None and row["economy"] is not None
+        # One line like any other row, with the note and the currency line clear of the people bubble
+        assert row["height"] == normal_row["height"]
+        assert row["note"] <= row["bubble"] and row["economy"] <= row["bubble"]
+        assert no_sideways_scroll(driver)
+    finally:
+        plain_device(driver)
+
+
+def test_on_a_phone_a_desktop_only_game_is_marked_and_says_why_instead_of_opening(driver, live, tmp_path):
+    add_desktop_game(live, tmp_path)
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    open_menu(driver, live, PHONE_QUERY)
+    card = driver.find_element(By.CSS_SELECTOR, '.card[data-key="desk"]')
+    assert "wrong-platform" in card.get_attribute("class") and "Desktop only" in card.text
+    assert "wrong-platform" not in driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').get_attribute("class")
+    card.click()
+    wait_for(driver, f"!{CONFIRM}.hidden")
+    assert driver.find_element(By.CSS_SELECTOR, ".hub-confirm-text").text == WORKS_ON_DESKTOP
+    assert driver.find_elements(By.ID, "game-frame") == []
+    assert driver.execute_script("return window.activityhubHost.presence.state.where") is None
+    driver.find_element(By.CSS_SELECTOR, ".hub-confirm-stay").click()
+    assert driver.execute_script(f"return {CONFIRM}.hidden")
+    # The Join question gets its own two buttons back
+    assert driver.find_element(By.CSS_SELECTOR, ".hub-confirm-stay").get_attribute("textContent") == "Stay"
+    assert driver.execute_script("return document.querySelector('.hub-confirm-leave').hidden") is False
+
+
+def test_on_desktop_and_in_the_preview_nothing_is_marked(driver, live, tmp_path):
+    add_desktop_game(live, tmp_path)
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    for query in (DISCORD_QUERY, ""):
+        open_menu(driver, live, query)
+        assert driver.find_elements(By.CSS_SELECTOR, ".wrong-platform") == []
+
+
+def test_in_the_orb_theme_the_pill_is_marked_and_the_screen_says_so(driver, live, tmp_path):
+    add_desktop_game(live, tmp_path)
+    live.hub.config.globals["look"] = {"theme": "orb"}
+    open_menu(driver, live, PHONE_QUERY)
+    pill = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="desk"]')
+    assert "wrong-platform" in pill.get_attribute("class")
+    driver.execute_script("arguments[0].focus()", pill)
+    wait_for(driver, "document.querySelector('#orb-screen .platform-note')?.textContent === 'Desktop only'")
+
+
+def test_a_launch_into_a_desktop_only_game_on_a_phone_says_why(driver, live, tmp_path):
+    add_desktop_game(live, tmp_path)
+    live.hub.launches.remember(MEMBER_ID, "desk")
+    open_menu(driver, live, PHONE_QUERY)
+    wait_for(driver, f"!{CONFIRM}.hidden")
+    assert driver.find_element(By.CSS_SELECTOR, ".hub-confirm-text").text == WORKS_ON_DESKTOP
+    assert driver.find_elements(By.ID, "game-frame") == []
+
+
+def test_join_into_a_desktop_only_game_on_a_phone_keeps_the_player_in_their_game(driver, live, tmp_path):
+    add_desktop_game(live, tmp_path)
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    open_menu(driver, live, PHONE_QUERY)
+    driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').click()
+    wait_for(driver, "window.activityhubHost.presence.state.where === 'demo'")
+    live.add_person(MANAGER_ID, where="desk")
+    wait_for(driver, "window.activityhubHost.presence.people.some((p) => p.game === 'desk')")
+    # Mid-round, so a Join that went ahead would ask its "Leave ...?" question first
+    driver.execute_script(
+        "const host = window.activityhubHost; host.setBusy(true);"
+        "host.join(host.presence.people.find((p) => p.game === 'desk'));"
+    )
+    wait_for(driver, f"!{CONFIRM}.hidden")
+    assert driver.find_element(By.CSS_SELECTOR, ".hub-confirm-text").text == WORKS_ON_DESKTOP
+    assert not driver.find_element(By.CSS_SELECTOR, ".hub-confirm-leave").is_displayed()
+    assert driver.execute_script(
+        "return [window.activityhubHost.gameKey, window.activityhubHost.presence.state.where]"
+    ) == [
+        "demo",
+        "demo",
+    ]
+
+
+PAGE_PLATFORM = (
+    "const done = arguments[0];"
+    "import('activityhub').then(({ connect }) => connect()).then((hub) => done(hub.platform));"
+)
+
+
+@pytest.mark.parametrize("query, platform", [(PHONE_QUERY, "mobile"), (DISCORD_QUERY, "desktop"), ("", None)])
+def test_a_game_page_reads_the_platform(driver, live, query, platform):
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    open_menu(driver, live, query)
+    driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').click()
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    try:
+        wait_for(driver, "window.demo && window.demo.done")
+        assert driver.execute_async_script(PAGE_PLATFORM) == platform
+    finally:
+        driver.switch_to.default_content()

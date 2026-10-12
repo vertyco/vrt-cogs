@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import pytest
 from aiohttp.test_utils import make_mocked_request
@@ -9,6 +10,7 @@ from activityhub.common.replies import LOGIN_FAILED
 from activityhub.tests.fakes import (
     APP_ID,
     GUILD_ID,
+    MANAGER_ID,
     MEMBER_ID,
     OUTSIDER_ID,
     UNKNOWN_GUILD_ID,
@@ -214,3 +216,50 @@ async def test_game_off_everywhere(server, hub):
     assert await server.game_off(GUILD_ID, "demo") is True
     assert await server.game_off(None, "demo") is True
     assert await server.game_off(GUILD_ID, "other") is False
+
+
+@pytest.mark.asyncio
+async def test_a_logged_in_players_ctx_can_check_its_rights(client, hub, discord_answers):
+    discord_answers["login"] = ("access-token", MANAGER_ID)
+    resp = await client.post("/hub/api/token", json=TOKEN_BODY)
+    ctx = hub.sessions.get((await resp.json())["session"]).ctx
+    assert await ctx.is_admin() is True
+    assert await ctx.is_mod() is True
+
+
+DROPPED = {"scopes": ["guilds.members.read", "made.up", 5, ["x"], {"a": 1}, "guilds.members.read"], "reason": "Bad"}
+
+
+@pytest.mark.asyncio
+async def test_a_login_that_dropped_scopes_names_the_games_that_asked(client, discord_answers, demo, second, caplog):
+    with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.hub_routes"):
+        resp = await client.post("/hub/api/token", json={**TOKEN_BODY, "dropped": DROPPED})
+    assert resp.status == 200
+    assert f"so player {MEMBER_ID} logged in with identify only" in caplog.text
+    assert "guilds.members.read (asked for by demo, second). Discord said: 'Bad'" in caplog.text
+    assert "made.up" not in caplog.text
+    assert caplog.text.count("guilds.members.read") == 1
+
+
+@pytest.mark.asyncio
+async def test_discords_text_is_cut_in_the_log(client, discord_answers, demo, caplog):
+    dropped = {"scopes": ["guilds.members.read"], "reason": "x" * 10_000}
+    with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.hub_routes"):
+        await client.post("/hub/api/token", json={**TOKEN_BODY, "dropped": dropped})
+    assert "x" * 200 in caplog.text and "x" * 201 not in caplog.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("dropped", [None, "guilds", {"scopes": "guilds"}, {"scopes": ["made.up"]}, {"reason": "x"}])
+async def test_a_login_with_nothing_real_dropped_logs_nothing(client, discord_answers, demo, caplog, dropped):
+    with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.hub_routes"):
+        resp = await client.post("/hub/api/token", json={**TOKEN_BODY, "dropped": dropped})
+    assert resp.status == 200 and "identify only" not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_a_refused_login_logs_no_dropped_scopes(client, discord_answers, demo, caplog):
+    discord_answers["login"] = None
+    with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.hub_routes"):
+        resp = await client.post("/hub/api/token", json={**TOKEN_BODY, "dropped": DROPPED})
+    assert resp.status == 401 and "identify only" not in caplog.text
