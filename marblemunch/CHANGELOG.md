@@ -1,5 +1,11 @@
 # Marble Munch Changelog
 
+## 0.4.0
+
+Needs ActivityHub 0.7.0 or later.
+
+- While payouts are on in a server, Marble Munch's card in the ActivityHub menu says how much a cash-in can pay, like "Cash in up to 1,000 credits".
+
 ## 0.3.0
 
 Needs ActivityHub 0.5.0 or later.

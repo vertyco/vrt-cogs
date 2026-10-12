@@ -9,7 +9,7 @@ A hungry-hippos style marble game for [ActivityHub](../activityhub/README.md). U
 
 ## Setup
 
-Marble Munch needs ActivityHub 0.5.0 or later, loaded and set up (see its README). Then:
+Marble Munch needs ActivityHub 0.7.0 or later, loaded and set up (see its README). Then:
 
 ```
 [p]cog install vrt-cogs marblemunch

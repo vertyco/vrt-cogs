@@ -25,7 +25,7 @@ class MarbleMunch(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.0"
+    __version__ = "0.4.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -70,6 +70,7 @@ class MarbleMunch(commands.Cog):
             "web_dir": Path(__file__).parent / "web",
             "icon": "icon.svg",
             "thumbnail": "thumb.png",
+            "economy": self.economy_line,
             "actions": {
                 "leaderboard": self.leaderboard,
                 "payouts": self.payout_settings,
@@ -77,6 +78,13 @@ class MarbleMunch(commands.Cog):
             },
             "socket": {"join": self.join, "message": self.message, "leave": self.leave},
         }
+
+    async def economy_line(self, guild: t.Any) -> str | None:
+        """The ActivityHub menu card's currency line while payouts are on in the server"""
+        settings = await self.payouts.settings(guild)
+        if not settings["on"]:
+            return None
+        return f"Cash in up to {settings['cap']:,} {await self.payouts.bank.get_currency_name(guild)}"
 
     def match_for(self, conn: t.Any) -> Match:
         """The window's match, started when its first player arrives, or again after a round failed"""

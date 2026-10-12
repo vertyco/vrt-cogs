@@ -192,3 +192,13 @@ async def test_with_a_global_bank_only_the_owner_sets_payouts_for_every_server(p
     assert await cog.config.payouts() == ON
     await cog.payouts.cash_in(member_ctx(1).author, 1)
     assert (await cog.config.user_from_id(1).cashed())["count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_the_menu_line_follows_the_payouts_switch(paying):
+    guild = SimpleNamespace(id=500)
+    game = await pytest.importorskip("activityhub.common.games").validate_game(paying)
+    assert game.economy == paying.economy_line
+    assert await paying.economy_line(guild) is None
+    await turn_on(paying, cap=2500)
+    assert await paying.economy_line(guild) == "Cash in up to 2,500 credits"
