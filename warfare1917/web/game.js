@@ -188,6 +188,7 @@ async function buildStage() {
     useBackBuffer: true,
   });
   page.app = app;
+  skipUnbatchedMasks(app.renderer);
   $("stage").appendChild(app.canvas);
   app.stage.eventMode = "static";
   app.stage.hitArea = app.screen;
@@ -211,6 +212,20 @@ async function buildStage() {
   app.stage.addChild(page.world);
   fit();
   app.ticker.add((ticker) => tick(ticker.deltaMS));
+}
+
+// PixiJS puts a mask picture in a batch only while something under the mask is shown. A mask whose parts are all
+// hidden (a wreck's fire that didn't light) is in no batch, yet Pixi still updates it when a parent changes (the wreck
+// fading in), which throws inside the ticker and stops all drawing for good. Such a mask draws nothing, so its update
+// is skipped; the next rebuild that shows it batches it again
+function skipUnbatchedMasks(renderer) {
+  const pipe = renderer.renderPipes.sprite;
+  const update = pipe.updateRenderable.bind(pipe);
+  pipe.updateRenderable = (sprite) => {
+    if (pipe._getGpuSprite(sprite)._batcher) {
+      update(sprite);
+    }
+  };
 }
 
 // The original's stage, as big as the room between Discord's buttons allows, with black bars around it. A phone held

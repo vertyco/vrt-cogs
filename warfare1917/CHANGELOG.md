@@ -1,5 +1,10 @@
 # Warfare 1917 Changelog
 
+## 0.1.2
+
+- Fixed the battle freezing for good when a tank was destroyed. Some wrecks hid one of their fires, and the drawing crashed as the wreck faded in.
+- Fixed reopening a battle that has a destroyed tank in it. The battle no longer shows only the empty field.
+
 ## 0.1.1
 
 - Pressing the Gas Masks button now shows a "GAS MASKS ON" message, and the button reads "MASKS ON" while your squads wear masks.

@@ -584,6 +584,8 @@ export class Units {
     unit.engine = null;
     unit.wrecked = false;
     this.catchUp(clip, n - created);
+    // wreck() draws on unit.clip, which make() only sets once this returns
+    unit.clip = clip;
     if (row[6]) {
       unit.wrecked = true;
       this.wreck(unit, true);
