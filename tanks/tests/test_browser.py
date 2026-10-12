@@ -147,6 +147,22 @@ def test_on_an_upright_phone_the_field_is_only_as_tall_as_it_needs(driver, live,
         driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
 
 
+def test_on_an_upright_phone_a_long_shop_fits_the_screen_and_scrolls(driver, live):
+    open_game(driver, live)
+    sit_down_and_start(driver)
+    driver.execute_cdp_cmd("Emulation.setDeviceMetricsOverride", UPRIGHT_PHONE)
+    try:
+        browser.wait_for(driver, "document.getElementById('shop').getBoundingClientRect().bottom <= innerHeight")
+        client, scroll = driver.execute_script(
+            "const shop = document.getElementById('shop'); return [shop.clientHeight, shop.scrollHeight]"
+        )
+        assert scroll > client
+        driver.execute_script("document.getElementById('done').scrollIntoView()")
+        assert driver.execute_script("return document.getElementById('done').getBoundingClientRect().bottom <= innerHeight")
+    finally:
+        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+
+
 def run(live, coro):
     """Run a coroutine on the server's own event loop, where the match lives"""
     return asyncio.run_coroutine_threadsafe(coro, live.loop).result(5)

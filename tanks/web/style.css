@@ -764,11 +764,13 @@ select.button {
 @media (orientation: portrait) {
   /* The field is as wide as the screen and only as tall as that needs, with the cards right under it. The rest of
      the height goes above the turn's controls, which sit at the bottom within thumb reach. On a short screen the
-     field gives up height first */
+     field gives up height first. The last row's minimum is auto, not max-content: the setup, shop and results panels
+     span down to it, and a max-content minimum would let a long panel stretch that row past the screen, so the panel
+     would never scroll */
   .app {
     gap: 6px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, max-content) auto minmax(max-content, 1fr);
+    grid-template-rows: auto minmax(0, max-content) auto minmax(auto, 1fr);
     grid-template-areas: "top" "play" "side" "controls";
   }
 

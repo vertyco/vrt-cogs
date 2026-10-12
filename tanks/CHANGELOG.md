@@ -1,5 +1,9 @@
 # Tanks Changelog
 
+## 0.2.1
+
+- On a phone held upright, the shop, setup and results screens scroll again. A long shop ran off the bottom of the screen with no way to reach the items below or the Done button.
+
 ## 0.2.0
 
 Needs ActivityHub 0.5.0 or later.
