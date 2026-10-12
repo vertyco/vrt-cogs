@@ -25,7 +25,7 @@ const HASH_STEPS = 120;
 const CURSOR_MS = 100;
 // A preview whose stroke never came back (dropped on the way) is let go after this long
 const PREVIEW_MS = 3000;
-const OWNER_ONLY = new Set([STROKE.SET, STROKE.CLEAR]);
+const OWNER_ONLY = new Set([STROKE.SET, STROKE.CLEAR, STROKE.RESET]);
 const PREVIEWED = new Set([STROKE.PAINT, STROKE.LINE, STROKE.BOX, STROKE.FILL]);
 
 function strokeKey(stroke) {

@@ -1,5 +1,9 @@
 # Sandfall Changelog
 
+## 0.2.0
+
+- Reset to start: a button in the world menu, beside Clear, puts back the scene every new world starts with (the dunes, the pond and waterfall, the tree, the candle and the slug), with its settings. In a shared world only the owner can use it. In a private world Undo brings back what was there.
+
 ## 0.1.0
 
 Needs ActivityHub 0.5.0 or later.

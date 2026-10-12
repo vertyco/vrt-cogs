@@ -83,13 +83,13 @@ const state = {
   help: null,
   saver: null,
   // Every stroke, painted or from a menu, leaves the page through here: to the bot in a shared world, to the page's
-  // own clock otherwise. Clearing a private world can be undone too.
+  // own clock otherwise. Clearing or resetting a private world can be undone too.
   sendStroke(stroke) {
     if (state.shared?.inWorld) {
       state.shared.sendStroke(stroke);
       return;
     }
-    if (stroke[0] === STROKE.CLEAR) {
+    if (stroke[0] === STROKE.CLEAR || stroke[0] === STROKE.RESET) {
       state.undo.push();
     }
     runner.queueStroke(stroke);

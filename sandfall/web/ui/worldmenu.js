@@ -1,6 +1,6 @@
 // The world menu: the dropdown under the bar's world button. It holds what belongs to the whole world rather than to
 // the brush, in groups: Sharing, Spigots, Simulation (speed, the bottom edge, the creatures) and Appearance (the
-// backdrop and the heat view), with Clear set apart at the bottom. Every change is a SET or CLEAR stroke sent the same
+// backdrop and the heat view), with Reset and Clear set apart at the bottom. Every change is a stroke sent the same
 // way painting is, so a shared world applies it at the same step on every screen.
 import { ELEMENTS, STROKE, TABS } from "../sim/index.js";
 import { icon } from "./icons.js";
@@ -12,8 +12,8 @@ const SET = { floor: 8, slug: 9, zombies: 10, backdrop: 11 };
 const SPIGOT_COUNT = 4;
 const SPIGOT_MAX = 5;
 const ZOMBIE_COUNTS = [0, 10, 20, 30];
-// [title, first row order, column]: a row joins the last group whose first order is at or below its own. Clear sits
-// alone at 90. The columns only show on a short sideways screen; elsewhere the groups run in one column, in this order.
+// [title, first row order, column]: a row joins the last group whose first order is at or below its own. Reset and
+// Clear sit alone at 90. The columns only show on a short sideways screen; elsewhere the groups run in one column, in this order.
 const GROUPS = [
   ["Sharing", 0, 0],
   ["Spigots", 10, 0],
@@ -21,6 +21,12 @@ const GROUPS = [
   ["Appearance", 60, 1],
 ];
 const END = 90;
+
+function pair(...buttons) {
+  const node = make("div", "menu-pair");
+  node.append(...buttons);
+  return node;
+}
 
 function make(tag, className, text) {
   const node = document.createElement(tag);
@@ -221,10 +227,14 @@ export function buildWorldMenu(state) {
     [3, "Cave"],
   ]);
 
+  const reset = make("button", "menu-action menu-danger", "Reset to start");
+  reset.type = "button";
+  reset.title = "Puts back the scene every new world starts with";
+  reset.addEventListener("click", () => send([STROKE.RESET]));
   const clear = make("button", "menu-action menu-danger", "Clear the world");
   clear.type = "button";
   clear.addEventListener("click", () => send([STROKE.CLEAR]));
-  ownerOnly.push(addRow(END, clear));
+  ownerOnly.push(addRow(END, pair(reset, clear)));
 
   // The world button names the world on screen
   const worldName = button.querySelector(".bar-world-name");
@@ -292,9 +302,10 @@ export function buildWorldMenu(state) {
       place();
     }
   });
-  // A setting that changed (here or from the owner of a shared world) shows up once its batch has been applied
+  // A setting that changed (here, by a reset, or from the owner of a shared world) shows up once its batch has been
+  // applied
   state.runner.onBatch((batch) => {
-    if (!panel.hidden && batch[2].some(([, stroke]) => stroke[0] === STROKE.SET)) {
+    if (!panel.hidden && batch[2].some(([, stroke]) => stroke[0] === STROKE.SET || stroke[0] === STROKE.RESET)) {
       refresh();
     }
   });

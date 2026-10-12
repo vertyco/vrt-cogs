@@ -5,9 +5,9 @@ only checks their shape and sizes, so a broken or giant message can't reach the 
 
 from .worldfile import ELEMENT_COUNT, H, W
 
-PAINT, LINE, BOX, FILL, HEAT, SHOVE, HAND, BOLT, SET, CLEAR = range(1, 11)
-# Only a shared world's owner may change its settings or empty it
-OWNER_ONLY = {SET, CLEAR}
+PAINT, LINE, BOX, FILL, HEAT, SHOVE, HAND, BOLT, SET, CLEAR, RESET = range(1, 12)
+# Only a shared world's owner may change its settings, empty it or reset it
+OWNER_ONLY = {SET, CLEAR, RESET}
 # A path holds 1 to 64 points, two numbers each
 MAX_PATH = 128
 
@@ -52,8 +52,8 @@ def check_stroke(value: object) -> list | None:
     if not all(whole(item) for item in value):
         return None
     kind = value[0]
-    if kind == CLEAR:
-        return [CLEAR] if len(value) == 1 else None
+    if kind in (CLEAR, RESET):
+        return [kind] if len(value) == 1 else None
     if kind == SET:
         fits = len(value) == 3 and 0 <= value[1] < len(SETTINGS) and value[2] in SETTINGS[value[1]]
         return list(value) if fits else None

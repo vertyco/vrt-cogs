@@ -162,3 +162,21 @@ export function starterWorld(seed) {
   w.strokeCount = 0;
   return w;
 }
+
+/**
+ * RESET: puts the starter scene back in world w, settings and creatures too. The scene comes from w's own seed, so
+ * every screen rebuilds the same one. The clock and stroke count run on, so the dice after it stay in step.
+ */
+export function resetToStarter(w) {
+  const fresh = starterWorld(w.seed);
+  w.el.set(fresh.el);
+  w.shade.set(fresh.shade);
+  w.heat.set(fresh.heat);
+  w.life.set(fresh.life);
+  w.spigots = fresh.spigots;
+  w.settings = fresh.settings;
+  w.parts = fresh.parts;
+  w.slug = fresh.slug;
+  w.zombies = fresh.zombies;
+  w.grabs = fresh.grabs;
+}

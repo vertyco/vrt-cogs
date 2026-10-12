@@ -5,6 +5,7 @@ import { EL, ELEMENT_COUNT, ELEMENTS } from "./elements.js";
 import { paintCell, swap } from "./helpers.js";
 import { clearParticles, spawnBolt } from "./particles.js";
 import { electrify } from "./rules/electric.js";
+import { resetToStarter } from "./starter.js";
 import { H, HEAT_MAX, HEAT_MIN, N, ROOM, W } from "./world.js";
 import { handStroke } from "./zombies.js";
 
@@ -19,6 +20,7 @@ export const STROKE = Object.freeze({
   BOLT: 8,
   SET: 9,
   CLEAR: 10,
+  RESET: 11,
 });
 
 export const SHAPE = Object.freeze({ ROUND: 0, SQUARE: 1, SPRAY: 2 });
@@ -402,6 +404,8 @@ export function applyStroke(w, player, stroke, steps) {
     set(w, stroke);
   } else if (kind === STROKE.CLEAR) {
     clear(w);
+  } else if (kind === STROKE.RESET) {
+    resetToStarter(w);
   }
 }
 

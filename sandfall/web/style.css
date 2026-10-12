@@ -712,6 +712,15 @@ body.painting .sheet {
   border-top: 1px solid var(--glass-edge);
 }
 
+.menu-pair {
+  display: flex;
+  gap: 6px;
+}
+
+.menu-pair .menu-action {
+  flex: 1 1 0;
+}
+
 /* The two columns of a short sideways screen; elsewhere their groups sit straight in the menu */
 .menu-col {
   display: contents;
