@@ -59,7 +59,7 @@ class BoulderBash(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -126,14 +126,15 @@ class BoulderBash(commands.Cog):
             "economy": self.economy_line,
             "actions": {"scores": self.scores, "payouts": self.payout_settings, "save_payouts": self.save_payouts},
             "socket": {"join": self.join, "message": self.message, "leave": self.leave},
+            "requires": "0.8.0",
         }
 
-    async def economy_line(self, guild: t.Any) -> str | None:
-        """The ActivityHub menu card's currency line while payouts are on in the server"""
-        settings = await self.payouts.settings(guild)
+    async def economy_line(self, ctx: t.Any) -> str | None:
+        """The ActivityHub menu card's currency line while payouts are on in the player's server"""
+        settings = await self.payouts.settings(ctx.guild)
         if not settings["on"]:
             return None
-        return f"Cash in up to {settings['cap']:,} {await self.payouts.bank.get_currency_name(guild)}"
+        return f"Cash in up to {settings['cap']:,} {await self.payouts.bank.get_currency_name(ctx.guild)}"
 
     # ---------- Connections ----------
 
@@ -338,15 +339,9 @@ class BoulderBash(commands.Cog):
         Server admins set their server's payouts. With a global bank one balance is shared by every server, so
         only the bot owner does, for every server at once
         """
-        is_owner = await self.bot.is_owner(ctx.author)
         if await self.payouts.bank.is_global():
-            return is_owner
-        if ctx.guild is None:
-            return False
-        if is_owner or ctx.author.id == ctx.guild.owner_id:
-            return True
-        member = ctx.guild.get_member(ctx.author.id)
-        return member is not None and (member.guild_permissions.manage_guild or await self.bot.is_admin(member))
+            return await self.bot.is_owner(ctx.author)
+        return await ctx.is_admin()
 
     async def payout_settings(self, ctx, data: dict) -> dict:
         """The settings dialog's numbers, or {"settings": None} for players who can't change them"""

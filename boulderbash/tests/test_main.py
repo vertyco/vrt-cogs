@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 import pytest
 import pytest_asyncio
 
@@ -16,6 +14,7 @@ from boulderbash.tests.fakes import (
     FakeBot,
     FakeConn,
     Today,
+    answer,
     dm_ctx,
     member_ctx,
 )
@@ -72,7 +71,7 @@ async def test_activityhub_accepts_the_game():
 @pytest.mark.asyncio
 async def test_the_hub_lists_the_game_once_the_cog_loads():
     games = pytest.importorskip("activityhub.common.games")
-    registry = games.GameRegistry()
+    registry = games.GameRegistry("0.8.0")
     await registry.add(BoulderBash(bot=None))
     assert "boulderbash" in registry.games and registry.failed == {}
 
@@ -357,10 +356,17 @@ def test_ranking_orders_by_best_score_and_finds_your_place():
 
 
 @pytest.mark.asyncio
+async def test_the_settings_follow_the_hubs_admin_check(cog):
+    ctx = member_ctx(1)
+    ctx.is_admin = answer(True)
+    assert (await cog.payout_settings(ctx, {}))["settings"] is not None
+
+
+@pytest.mark.asyncio
 async def test_the_menu_line_follows_the_payouts_switch(cog):
-    guild = SimpleNamespace(id=500)
+    ctx = member_ctx(1)
     game = await pytest.importorskip("activityhub.common.games").validate_game(cog)
     assert game.economy == cog.economy_line
-    assert await cog.economy_line(guild) is None
+    assert await cog.economy_line(ctx) is None
     await turn_on(cog, cap=2500)
-    assert await cog.economy_line(guild) == "Cash in up to 2,500 credits"
+    assert await cog.economy_line(ctx) == "Cash in up to 2,500 credits"

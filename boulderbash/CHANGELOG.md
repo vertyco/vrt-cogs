@@ -1,5 +1,11 @@
 # Boulder Bash Changelog
 
+## 0.3.1
+
+Needs ActivityHub 0.8.0 or later.
+
+- Works with ActivityHub 0.8.0, which changed how games check for server admins and show their menu card's currency line. An older ActivityHub refuses Boulder Bash with a message saying to update it.
+
 ## 0.3.0
 
 Needs ActivityHub 0.7.0 or later.
