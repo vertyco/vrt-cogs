@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Sandfall</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main id="stage">
+      <canvas id="world" aria-label="The sand world"></canvas>
+      <canvas id="overlay" aria-hidden="true"></canvas>
+    </main>
+
+    <header class="bar" id="bar">
+      <button type="button" class="bar-button" id="back" aria-label="Back to the menu" title="Back to the menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 L8 12 L15 19" /></svg>
+      </button>
+      <h1 class="bar-title">Sandfall</h1>
+      <button type="button" class="bar-world" id="world-menu" aria-haspopup="true">
+        <span class="bar-world-name">Your world</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+      <div class="bar-right" id="bar-right"></div>
+    </header>
+
+    <p class="bar-error" id="bar-error" role="alert" hidden></p>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

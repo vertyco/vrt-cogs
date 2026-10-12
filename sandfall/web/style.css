@@ -1,0 +1,2042 @@
+@font-face {
+  font-family: "Nunito";
+  src: url("fonts/nunito.woff2") format("woff2");
+  font-weight: 200 1000;
+  font-display: swap;
+}
+
+:root {
+  --ink: #eef0ff;
+  --ink-soft: #aeb4d4;
+  --glass: rgba(18, 20, 40, 0.62);
+  --glass-strong: rgba(18, 20, 40, 0.82);
+  --glass-edge: rgba(255, 255, 255, 0.14);
+  --glass-hover: rgba(255, 255, 255, 0.14);
+  --accent: #ffb454;
+  --on-accent: #2a1606;
+  --dusk-top: #1d1b3a;
+  --dusk-bottom: #5b3a5e;
+  --radius: 14px;
+  --body: "Nunito", "Segoe UI", sans-serif;
+  --bar-h: 48px;
+  --rail-w: 124px;
+  --under-bar: calc(var(--safe-top) + 8px + var(--bar-h) + 8px);
+  --rainbow: linear-gradient(135deg, #f36 0%, #fb3 25%, #6d6 50%, #3bf 75%, #c6f 100%);
+  --hub-people-size: 38px;
+  /* An element button's height, and the search box's */
+  --el-h: 36px;
+  --field-h: 36px;
+  /* Room taken by Discord's buttons and the phone's notch. The hub copies Discord's sizes into this frame */
+  --safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  color-scheme: dark;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: linear-gradient(180deg, var(--dusk-top), var(--dusk-bottom));
+  color: var(--ink);
+  font-family: var(--body);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- The world ---------- */
+
+#stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+#stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#overlay {
+  pointer-events: none;
+}
+
+/* ---------- The top bar ---------- */
+
+.bar {
+  position: fixed;
+  z-index: 20;
+  top: calc(var(--safe-top) + 8px);
+  left: calc(var(--safe-left) + 8px);
+  right: calc(var(--safe-right) + 8px);
+  height: var(--bar-h);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: calc(var(--radius) + 4px);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+}
+
+.bar-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.bar-button {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.bar-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.bar-button:hover:not(:disabled) {
+  background: var(--glass-hover);
+}
+
+.bar-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.bar-world {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 10px 0 12px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  background: var(--glass-hover);
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.bar-world:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.bar-world-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-world svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.bar-right {
+  margin-left: auto;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* A connection that failed says so beside the Back button, which keeps working */
+.bar-error {
+  position: fixed;
+  z-index: 21;
+  top: calc(var(--safe-top) + 8px + var(--bar-h) + 8px);
+  left: calc(var(--safe-left) + 8px);
+  right: calc(var(--safe-right) + 8px);
+  margin: 0;
+  padding: 10px 14px;
+  font-weight: 700;
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+}
+
+/* ---------- Notes ---------- */
+
+/* Under the bar, on the left. The people button's arrival notes slide out under the button at the right */
+#notes {
+  position: fixed;
+  z-index: 19;
+  top: calc(var(--safe-top) + 8px + var(--bar-h) + 8px);
+  left: calc(var(--safe-left) + 8px + var(--rail-w) + 8px);
+  width: min(420px, calc(100vw - var(--safe-left) - var(--safe-right) - 16px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.note {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+  animation: note-in 0.25s ease-out;
+  transition: opacity 0.25s;
+}
+
+.note.leaving {
+  opacity: 0;
+}
+
+.note button {
+  flex: none;
+  padding: 5px 10px;
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 800;
+  background: var(--accent);
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+@keyframes note-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* ---------- Speed control ---------- */
+
+.bar-speed {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 6px;
+  margin-right: 4px;
+  border-right: 1px solid var(--glass-edge);
+}
+
+.bar-speed .bar-speed-value {
+  width: auto;
+  min-width: 44px;
+  padding: 0 8px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+/* ---------- Toolbar ---------- */
+
+.glass {
+  box-sizing: border-box;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+}
+
+.rail {
+  position: fixed;
+  z-index: 15;
+  top: var(--under-bar);
+  left: calc(var(--safe-left) + 8px);
+  width: var(--rail-w);
+  max-height: calc(100% - var(--under-bar) - var(--safe-bottom) - 8px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  scrollbar-width: none;
+}
+
+.tab {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 8px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--ink);
+  background: var(--glass-hover);
+}
+
+.tab.open {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.tab.holding:not(.open) {
+  color: var(--ink);
+}
+
+.tab-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.tab-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel {
+  position: fixed;
+  z-index: 15;
+  top: var(--under-bar);
+  left: calc(var(--safe-left) + 8px + var(--rail-w) + 8px);
+  width: 300px;
+  max-height: calc(100% - var(--under-bar) - var(--safe-bottom) - 72px);
+  overflow-y: auto;
+  padding: 10px;
+  background: var(--glass-strong);
+}
+
+.panel-title {
+  margin: 0 4px 8px;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.element {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--el-h);
+  padding: 0 8px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.element:hover {
+  background: var(--glass-hover);
+}
+
+.element.picked {
+  background: rgba(255, 180, 84, 0.22);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.swatch {
+  flex: none;
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.element-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dock {
+  position: fixed;
+  z-index: 15;
+  left: calc(var(--safe-left) + 8px + var(--rail-w) + 8px);
+  right: calc(var(--safe-right) + 8px);
+  bottom: calc(var(--safe-bottom) + 8px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.dock > * {
+  pointer-events: auto;
+}
+
+.rail,
+.dock {
+  transition: opacity 0.2s;
+}
+
+/* The controls step back while a stroke is in progress */
+body.painting .rail,
+body.painting .dock,
+body.painting .sheet {
+  opacity: 0.35;
+}
+
+.recent,
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+}
+
+.slot,
+.tool {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.slot:hover,
+.tool:hover {
+  color: var(--ink);
+  background: var(--glass-hover);
+}
+
+.slot .swatch {
+  width: 20px;
+  height: 20px;
+}
+
+.slot.picked {
+  background: rgba(255, 180, 84, 0.22);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.slot-key {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  color: var(--ink);
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 3px #000, 0 0 3px #000;
+  pointer-events: none;
+}
+
+.tool svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tool.on {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.tool:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* A thin line sets each group apart from the one before it */
+.tool-group + .tool-group::before {
+  content: "";
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin: 0 5px;
+  background: var(--glass-edge);
+}
+
+/* More only lives in the upright phone's sheet, and the tab chevron only in its sideways-scrolling tab row */
+.tool-more,
+.rail-more {
+  display: none;
+}
+
+/* The tool in hand, at the start of the size box */
+.tool-now {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 96px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.tool-now-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.tool-now-dot.rainbow {
+  background: var(--rainbow) !important;
+}
+
+.tool-now-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sizer {
+  flex: 0 1 220px;
+  min-width: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  font-weight: 800;
+}
+
+.sizer-size {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sizer-size input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+
+.sizer-value {
+  width: 2ch;
+  text-align: right;
+}
+
+.hue {
+  flex: none;
+  width: 64px;
+  height: 14px;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.hue[hidden] {
+  display: none;
+}
+
+.hue::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 22px;
+  background: #fff;
+  border: 2px solid #1c1c2c;
+  border-radius: 6px;
+}
+
+.hue::-moz-range-thumb {
+  width: 10px;
+  height: 18px;
+  background: #fff;
+  border: 2px solid #1c1c2c;
+  border-radius: 6px;
+}
+
+.search {
+  position: fixed;
+  z-index: 16;
+  top: var(--under-bar);
+  left: calc(var(--safe-left) + 8px + var(--rail-w) + 8px);
+  width: 300px;
+  max-height: calc(100% - var(--under-bar) - var(--safe-bottom) - 72px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--glass-strong);
+}
+
+.search[hidden] {
+  display: none;
+}
+
+.search-field {
+  box-sizing: border-box;
+  flex: none;
+  width: 100%;
+  height: var(--field-h);
+  padding: 0 12px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-edge);
+  border-radius: 10px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.search-none {
+  grid-column: 1 / -1;
+  margin: 6px 4px;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.stage-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: min(420px, 80vw);
+  margin: 0;
+  padding: 16px 20px;
+  font-weight: 700;
+  text-align: center;
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+}
+
+/* ---------- World menu ---------- */
+
+.worldmenu {
+  position: fixed;
+  z-index: 22;
+  top: var(--under-bar);
+  left: calc(var(--safe-left) + 8px);
+  width: min(400px, calc(100vw - var(--safe-left) - var(--safe-right) - 16px));
+  max-height: calc(100% - var(--under-bar) - var(--safe-bottom) - 8px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px;
+  background: var(--glass-strong);
+}
+
+.menu-group,
+.menu-end {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.menu-end {
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-edge);
+}
+
+/* The two columns of a short sideways screen; elsewhere their groups sit straight in the menu */
+.menu-col {
+  display: contents;
+}
+
+.menu-title {
+  margin: 0 2px 2px;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+}
+
+.menu-label {
+  flex: none;
+  width: 72px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.menu-select {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-edge);
+  border-radius: 10px;
+}
+
+.menu-range {
+  flex: none;
+  width: 96px;
+  accent-color: var(--accent);
+}
+
+.menu-value {
+  flex: none;
+  width: 3ch;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.seg {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 11px;
+}
+
+.seg button {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 4px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.85rem;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.seg button svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+.seg button:hover {
+  background: var(--glass-hover);
+}
+
+.seg button[aria-pressed="true"] {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.menu-action {
+  flex: none;
+  height: 34px;
+  padding: 0 12px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  background: var(--glass-hover);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.menu-action:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.menu-action:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.seg button:disabled,
+.menu-select:disabled,
+.menu-range:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.seg button:disabled:hover {
+  background: transparent;
+}
+
+.menu-hint {
+  margin: 0 2px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.menu-danger {
+  color: #ffb4b4;
+  background: rgba(255, 90, 90, 0.16);
+}
+
+.menu-danger:hover:not(:disabled) {
+  background: rgba(255, 90, 90, 0.3);
+}
+
+/* ---------- Sharing: world menu rows, the Worlds panel, ask cards ---------- */
+
+.menu-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.menu-share .menu-action {
+  flex: 1 1 auto;
+}
+
+.worldspanel {
+  position: fixed;
+  z-index: 22;
+  top: var(--under-bar);
+  left: calc(var(--safe-left) + 8px);
+  width: min(400px, calc(100vw - var(--safe-left) - var(--safe-right) - 16px));
+  max-height: calc(100% - var(--under-bar) - var(--safe-bottom) - 8px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--glass-strong);
+}
+
+.world-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.world-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  background: var(--glass-hover);
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.world-card:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.world-card:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.world-pic {
+  flex: none;
+  width: 96px;
+  height: 54px;
+  object-fit: cover;
+  image-rendering: pixelated;
+  background: #2b2650;
+  border-radius: 8px;
+}
+
+.world-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.world-owner {
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.world-players,
+.world-status {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.world-status {
+  color: var(--accent);
+}
+
+/* The whole card joins; this says so */
+.world-join {
+  flex: none;
+  padding: 7px 14px;
+  color: var(--on-accent);
+  font-weight: 900;
+  background: var(--accent);
+  border-radius: 10px;
+}
+
+.world-empty {
+  margin: 0 2px;
+  color: var(--ink-soft);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.note .quiet {
+  color: var(--ink);
+  background: var(--glass-hover);
+}
+
+/* ---------- Small screens ---------- */
+
+/* On a narrow screen the arrival notes use most of the width under the button, so toasts start lower */
+@media (max-width: 640px) {
+  :root {
+    --bar-h: 44px;
+    --hub-people-size: 34px;
+  }
+
+  .bar {
+    gap: 4px;
+  }
+
+  .bar-title {
+    font-size: 1rem;
+  }
+
+  .bar-button {
+    width: 34px;
+    height: 34px;
+  }
+
+  #notes {
+    top: calc(var(--safe-top) + 8px + var(--bar-h) + 76px);
+  }
+}
+
+/* A short sideways phone: smaller tabs so all eight fit beside the world */
+@media (max-height: 500px) {
+  /* The world menu runs in two columns so it needs little scrolling: Sharing, Spigots and Clear on the left,
+     Simulation and Appearance on the right. Anything that still doesn't fit scrolls down, never sideways. */
+  .worldmenu {
+    display: grid;
+    width: min(660px, calc(100vw - var(--safe-left) - var(--safe-right) - 16px));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "left right"
+      "end right";
+    align-items: start;
+    gap: 8px 18px;
+  }
+
+  .menu-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .menu-col:first-child {
+    grid-area: left;
+  }
+
+  .menu-col + .menu-col {
+    grid-area: right;
+  }
+
+  .worldmenu > .menu-end {
+    grid-area: end;
+    padding-top: 8px;
+  }
+
+  .worldmenu .menu-group {
+    gap: 4px;
+  }
+
+  .worldmenu .menu-title {
+    font-size: 0.95rem;
+  }
+
+  .menu-range {
+    width: 64px;
+  }
+
+  :root {
+    --rail-w: 104px;
+  }
+
+  .rail {
+    gap: 0;
+    padding: 4px;
+  }
+
+  .tab {
+    height: 29px;
+    font-size: 0.8rem;
+  }
+
+  .element {
+    height: 30px;
+  }
+
+  .sizer {
+    height: 38px;
+  }
+
+  /* The tool row is a strip down the right edge, in three columns, so the world keeps its height. The dock starts a
+     little right of the rail so a wide reading on the hub's frame rate counter in the corner never runs under it */
+  .dock {
+    left: calc(var(--safe-left) + 136px);
+    right: calc(var(--safe-right) + 8px + 106px + 8px);
+  }
+
+  .tools {
+    position: fixed;
+    z-index: 15;
+    top: var(--under-bar);
+    right: calc(var(--safe-right) + 8px);
+    width: 106px;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 1px;
+    padding: 4px;
+  }
+
+  .tools .tool-group {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 1px;
+  }
+
+  .tools .tool-group + .tool-group::before {
+    width: 100%;
+    height: 0;
+    margin: 3px 0;
+    background: none;
+    border-top: 1px solid var(--glass-edge);
+  }
+}
+
+/* An upright phone: the bar takes two rows (the world and speed above, the buttons below) and the toolbar becomes a
+   bottom sheet (ui/sheet.js) under the world */
+@media (orientation: portrait) and (max-width: 640px) {
+  :root {
+    --bar-h: 92px;
+  }
+
+  .bar {
+    flex-wrap: wrap;
+    align-content: center;
+    row-gap: 4px;
+  }
+
+  .bar-title {
+    display: none;
+  }
+
+  .bar-world {
+    flex: 1 1 0;
+  }
+
+  .bar-right {
+    order: 3;
+    flex: 1 1 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  /* Ten buttons share the second row, so they give way a little instead of pushing the people button off the edge */
+  .bar-right {
+    gap: 0;
+    min-width: 0;
+  }
+
+  .bar-right .bar-button {
+    flex: 0 1 34px;
+    min-width: 26px;
+  }
+
+  /* The world is a small band at the top, so notes stand above the sheet instead of over it */
+  #notes {
+    top: auto;
+    bottom: calc(var(--safe-bottom) + 8px + var(--sheet-h, 240px) + 8px);
+    left: calc(var(--safe-left) + 8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note {
+    animation: none;
+  }
+}
+
+/* ---------- Server gallery ---------- */
+
+.gallery,
+.gallery-save {
+  position: fixed;
+  z-index: 22;
+  top: var(--under-bar);
+  right: calc(var(--safe-right) + 8px);
+  width: min(480px, calc(100vw - var(--safe-left) - var(--safe-right) - 16px));
+  max-height: calc(100% - var(--under-bar) - var(--safe-bottom) - 8px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--glass-strong);
+}
+
+.gallery-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gallery-head .menu-title {
+  margin: 0 2px;
+}
+
+.gallery-close {
+  width: 34px;
+  height: 34px;
+  padding: 6px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.gallery-close:hover {
+  background: var(--glass-hover);
+}
+
+.gallery-close svg {
+  width: 100%;
+  height: 100%;
+}
+
+.gallery-tabs {
+  flex: none;
+}
+
+.gallery-message {
+  margin: 0 2px;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.gallery-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gallery-card {
+  display: flex;
+  gap: 10px;
+  padding: 8px;
+  background: var(--glass-hover);
+  border-radius: 12px;
+}
+
+.gallery-pic {
+  flex: none;
+  width: 144px;
+  height: 81px;
+  object-fit: cover;
+  image-rendering: pixelated;
+  background: #2b2650;
+  border-radius: 8px;
+}
+
+.gallery-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gallery-name {
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gallery-by {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gallery-actions,
+.gallery-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.gallery-actions .menu-action,
+.gallery-confirm .menu-action,
+.gallery-like {
+  height: 30px;
+  padding: 0 10px;
+}
+
+.gallery-question {
+  flex: 1 1 100%;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.gallery-like {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.gallery-like svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gallery-like:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.gallery-like[aria-pressed="true"] {
+  color: #ff8fa6;
+}
+
+.gallery-like[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+
+.gallery-delete svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.menu-action.accent {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.menu-action.accent:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.1);
+}
+
+.gallery-save {
+  width: min(520px, calc(100vw - var(--safe-left) - var(--safe-right) - 16px));
+}
+
+.save-body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.save-pic {
+  flex: none;
+  width: 192px;
+  height: 108px;
+  object-fit: cover;
+  image-rendering: pixelated;
+  background: #2b2650;
+  border-radius: 8px;
+}
+
+.save-fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.save-name {
+  height: 36px;
+  padding: 0 10px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-edge);
+  border-radius: 10px;
+}
+
+.save-hint {
+  margin: 0 2px;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.save-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .save-body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .save-pic {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* A short sideways phone: the picture stays beside the name and the cards are a little tighter */
+@media (max-height: 500px) {
+  .save-body {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .save-pic {
+    width: 160px;
+    height: 90px;
+    aspect-ratio: auto;
+  }
+
+  .gallery-pic {
+    width: 112px;
+    height: 63px;
+  }
+}
+
+/* ---------- Hints, help card and settings ---------- */
+
+.hint {
+  position: fixed;
+  z-index: 40;
+  max-width: min(260px, calc(100vw - 16px));
+  box-sizing: border-box;
+  padding: 7px 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.3;
+  /* Solid, so the element names under it don't show through the words */
+  background: rgb(24, 26, 48);
+  border: 1px solid var(--glass-edge);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.scrim {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 8, 20, 0.55);
+}
+
+.help {
+  width: min(420px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--glass-strong);
+}
+
+.help .menu-title {
+  font-size: 1.2rem;
+}
+
+.help-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.help-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 36px;
+  line-height: 1.35;
+}
+
+.help-step::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  color: var(--on-accent);
+  font-weight: 900;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.help-step strong {
+  font-weight: 900;
+}
+
+.help-step span {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.help-done {
+  align-self: flex-end;
+  padding: 0 18px;
+}
+
+.settings {
+  position: fixed;
+  z-index: 22;
+  top: var(--under-bar);
+  right: calc(var(--safe-right) + 8px);
+  width: min(360px, calc(100vw - var(--safe-left) - var(--safe-right) - 16px));
+  max-height: calc(100% - var(--under-bar) - var(--safe-bottom) - 8px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--glass-strong);
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+}
+
+.setting-label {
+  flex: 1;
+  min-width: 0;
+  font-weight: 800;
+}
+
+.setting-range {
+  flex: 0 1 150px;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 26px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.18);
+  border: 0;
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.switch[aria-checked="true"] {
+  background: var(--accent);
+}
+
+.switch[aria-checked="true"] .switch-knob {
+  transform: translateX(20px);
+}
+
+/* ---------- The upright phone's bottom sheet ---------- */
+
+/* The sheet's bottom strip stays empty: the hub's frame rate counter (on by default) sits in the bottom left corner */
+.sheet {
+  position: fixed;
+  z-index: 15;
+  left: calc(var(--safe-left) + 8px);
+  right: calc(var(--safe-right) + 8px);
+  bottom: calc(var(--safe-bottom) + 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px 28px;
+  overflow: hidden;
+  background: var(--glass-strong);
+  transition: opacity 0.2s;
+}
+
+/* The top row: the drag handle across the whole width, with the zoom buttons over its right end */
+.sheet-head {
+  flex: none;
+  position: relative;
+  height: 32px;
+  margin: 0 -8px;
+}
+
+.sheet-handle {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.sheet-zooms {
+  position: absolute;
+  top: 0;
+  right: 8px;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.sheet-zoom {
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.sheet-zoom:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.sheet-zoom-level {
+  min-width: 36px;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.sheet-grip {
+  width: 44px;
+  height: 5px;
+  background: var(--ink-soft);
+  border-radius: 3px;
+  opacity: 0.7;
+}
+
+/* The parts sit on the sheet's own glass, not on a pane of their own */
+.sheet .rail,
+.sheet .panel,
+.sheet .search,
+.sheet .dock {
+  position: static;
+  width: auto;
+  max-height: none;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  opacity: 1;
+}
+
+.sheet .rail {
+  flex: none;
+  flex-direction: row;
+  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Rides the right edge of the tab row while more tabs wait past it, over a fade of the sheet's own color */
+.sheet .rail-more {
+  position: sticky;
+  right: 0;
+  flex: none;
+  display: grid;
+  place-items: center end;
+  width: 44px;
+  margin-left: auto;
+  padding: 0 4px 0 0;
+  color: var(--ink);
+  background: linear-gradient(to right, rgba(22, 24, 46, 0), rgb(22, 24, 46) 60%);
+  border: 0;
+  cursor: pointer;
+}
+
+.sheet .rail-more svg {
+  width: 18px;
+  height: 18px;
+  transform: rotate(-90deg);
+}
+
+.sheet .rail.at-end .rail-more {
+  visibility: hidden;
+}
+
+.sheet .tab {
+  height: 34px;
+  padding: 0 12px 0 8px;
+}
+
+/* Open, the grid is as tall as its elements, shrinking only when the sheet runs out of room */
+.sheet .panel,
+.sheet .search {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 6px;
+}
+
+/* Small, the grid shows two rows of elements (it scrolls), and the tools only the main ones and More */
+.sheet.compact .panel {
+  flex: none;
+  height: calc(2 * var(--el-h) + 4px);
+}
+
+.sheet.compact .search {
+  flex: none;
+  height: calc(var(--field-h) + 6px + 2 * var(--el-h) + 4px);
+}
+
+.sheet.compact .recent,
+.sheet.compact .tool-tucked,
+.sheet.compact .tools-shapes,
+.sheet.compact .tools-switches {
+  display: none;
+}
+
+.sheet .tool-more {
+  display: grid;
+}
+
+.sheet .tool-more.open {
+  color: var(--ink);
+  background: var(--glass-hover);
+}
+
+.sheet .panel-title {
+  display: none;
+}
+
+.sheet .search {
+  display: flex;
+}
+
+.sheet .search[hidden] {
+  display: none;
+}
+
+.sheet .dock {
+  flex: none;
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.sheet .recent,
+.sheet .tools,
+.sheet .sizer {
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.06);
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.sheet .recent {
+  justify-content: space-between;
+}
+
+.sheet .slot {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.sheet .tools {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  row-gap: 4px;
+}
+
+.sheet .tool-group {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+/* Open, the shapes start a row of their own, so their divider would stand alone at its left end */
+.sheet .tools-shapes::before {
+  display: none;
+}
+
+.sheet .sizer {
+  flex: none;
+  height: 40px;
+}
+
+body.painting .sheet .rail,
+body.painting .sheet .dock {
+  opacity: 1;
+}
+
+/* A panel holding the sheet's place (the gallery) fills it, and the sheet's own parts step aside until it closes */
+.sheet.held > :not(.in-sheet) {
+  display: none;
+}
+
+/* In the sheet the gallery's pictures are a little smaller, so a card's buttons fit on one row beside them */
+.sheet .gallery-pic {
+  width: 112px;
+  height: 63px;
+}
+
+.sheet > .in-sheet {
+  position: static;
+  flex: 1 1 0;
+  min-height: 0;
+  width: auto;
+  max-height: none;
+  margin: 0 -8px;
+  padding: 12px 12px 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ---------- The bar's More menu (upright touch phones) ---------- */
+
+.bar-more {
+  position: fixed;
+  z-index: 23;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--glass-strong);
+}
+
+/* ---------- Touch screens: full-size buttons ---------- */
+
+@media (pointer: coarse) {
+  :root {
+    --bar-h: 52px;
+    --hub-people-size: 44px;
+    --el-h: 44px;
+    --field-h: 44px;
+  }
+
+  .bar-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .bar-world {
+    height: 44px;
+  }
+
+  .bar-speed .bar-speed-value {
+    min-width: 44px;
+  }
+
+  .tab,
+  .sheet .tab {
+    height: 44px;
+  }
+
+  .slot,
+  .tool {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+  }
+
+  .slot .swatch {
+    width: 24px;
+    height: 24px;
+  }
+
+  .tool svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .sizer {
+    height: 52px;
+  }
+
+  .gallery-close {
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+  }
+
+  .gallery-actions .menu-action,
+  .gallery-confirm .menu-action,
+  .gallery-like {
+    height: 44px;
+    padding: 0 14px;
+  }
+
+  .gallery-tabs button {
+    height: 40px;
+  }
+
+  .gallery-actions .gallery-delete {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    padding: 0;
+  }
+
+  .sheet-head {
+    height: 44px;
+  }
+
+  .sheet-zoom {
+    width: 44px;
+    height: 40px;
+  }
+
+  .sheet .sizer {
+    height: 48px;
+  }
+}
+
+/* A sideways touch phone: the eight tabs share the rail's height (leaving the corner to the hub's frame rate
+   counter), the tool strip is four buttons wide, and the size box sits under it, so the bottom row only holds the
+   recent elements */
+@media (pointer: coarse) and (max-height: 500px) {
+  :root {
+    --bar-h: 48px;
+  }
+
+  .rail {
+    max-height: calc(100% - var(--under-bar) - var(--safe-bottom) - 38px);
+  }
+
+  .tab {
+    height: clamp(34px, calc((100vh - var(--under-bar) - var(--safe-bottom) - 46px) / 8), 44px);
+  }
+
+  .element {
+    height: 40px;
+  }
+
+  .tools {
+    width: 190px;
+  }
+
+  .dock {
+    right: calc(var(--safe-right) + 8px + 190px + 8px);
+  }
+
+  .sizer {
+    position: fixed;
+    right: calc(var(--safe-right) + 8px);
+    bottom: calc(var(--safe-bottom) + 8px);
+    width: 190px;
+    height: 44px;
+    padding: 0 10px;
+  }
+
+  /* The two switches and search share a row, under one line */
+  .tools {
+    column-gap: 0;
+  }
+
+  .tools .tool-group.tools-switches,
+  .tools .tool-group.tools-find {
+    width: auto;
+    margin-top: 3px;
+    padding-top: 3px;
+    border-top: 1px solid var(--glass-edge);
+  }
+
+  .tools .tool-group.tools-find {
+    flex: 1;
+  }
+
+  .tools .tool-group.tools-switches::before {
+    display: none;
+  }
+
+  .tools .tool-group.tools-find::before {
+    width: 1px;
+    height: 20px;
+    margin: 0 5px;
+    background: var(--glass-edge);
+    border-top: 0;
+  }
+}
+
+/* An upright touch phone: both bar rows hold full-size buttons; music, sound, settings and help wait behind More */
+@media (pointer: coarse) and (orientation: portrait) and (max-width: 640px) {
+  :root {
+    --bar-h: 100px;
+  }
+
+  .bar {
+    padding: 0 4px;
+  }
+
+  .bar-right .bar-button {
+    flex: 0 0 44px;
+    min-width: 44px;
+  }
+
+  .bar-speed {
+    padding-right: 3px;
+    margin-right: 3px;
+  }
+}

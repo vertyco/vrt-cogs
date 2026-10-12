@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "A falling-sand sandbox for ActivityHub. Players paint fifty-odd materials into a small world and watch them fall, flow, burn, conduct and blow up. Each player has a private world that saves itself, friends in the same Activity window can paint in a shared world together, and every server gets a gallery where players publish worlds, browse and like each other's. Includes heat and electricity, trees, a slug and zombies, glow and backdrop options, and music and sound. No payouts and no commands, nothing to configure. Needs ActivityHub 0.5.0 or later.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores each player's private world, saved under their Discord user ID. It also stores each world a player publishes to a server's gallery: the world and its preview picture, its name, its maker's Discord user ID, and the Discord user IDs of players who liked it. Data deletion requests remove the player's private world, delete every gallery world they made on every server, and remove their likes from other players' worlds.",
+  "hidden": true,
+  "install_msg": "Thank you for installing Sandfall!\n\nSandfall is a game for ActivityHub, which must be installed and set up first:\n`[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`\n`[p]cog install vrt-cogs activityhub`\n`[p]load activityhub`\nThen follow ActivityHub's README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nOnce both are loaded, Sandfall shows up in the hub's menu. It has no commands and nothing to configure.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "A falling-sand sandbox for ActivityHub",
+  "tags": ["activity", "games", "sandbox", "fun", "vert"],
+  "type": "COG"
+}
