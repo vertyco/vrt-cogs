@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import typing as t
 from dataclasses import dataclass, field
 
@@ -43,7 +44,8 @@ def rock_color(session: RockSession) -> discord.Color:
 
 def hp_line(session: RockSession) -> str:
     ratio = max(0.0, session.current_hp / session.max_hp)
-    filled = round(ratio * constants.HP_BAR_SEGMENTS)
+    # Round up so the bar never looks lower than the HP really is (25% shows 3 of 10, not 2)
+    filled = math.ceil(max(0, session.current_hp) * constants.HP_BAR_SEGMENTS / session.max_hp)
     bar = constants.HP_BAR_FILLED * filled + constants.HP_BAR_EMPTY * (constants.HP_BAR_SEGMENTS - filled)
     return f"**HP** `{bar}` {round(100 * ratio, 1)}%"
 

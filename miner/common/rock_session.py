@@ -172,12 +172,16 @@ class RockSession:
         if crit:
             power = round(power * tool.crit_multiplier)
             self.crit_hits[user_id] += 1
-        if self.low_hp and "closer" in perks:
+        closer = self.low_hp and "closer" in perks
+        if closer:
             power = round(power * constants.CLOSER_DAMAGE_MULTIPLIER)
         damage = self.deal(user_id, power)
         self.tools[user_id] = tool.key
         self.perks[user_id] = perks
-        self.actions.append(("💥CRITICAL HIT! " if crit else "") + f"{name}: +{damage} damage!")
+        tags = ("💥CRITICAL HIT! " if crit else "") + (
+            f"🎯Closer +{constants.CLOSER_DAMAGE_MULTIPLIER - 1:.0%}! " if closer else ""
+        )
+        self.actions.append(f"{tags}{name}: +{damage} damage!")
         self.open_due_spot()
         return damage
 

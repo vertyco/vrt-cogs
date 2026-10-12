@@ -1,5 +1,10 @@
 # Miner Changelog
 
+## 1.11.4
+
+- **Change**: Hits boosted by the Closer perk now say so in the swing feed (`🎯Closer +40%!`), so you can see the boost kick in at 25% HP.
+- **Change**: The rock's HP bar now rounds up. At 25% HP it shows 3 of 10 blocks instead of 2, so the bar never looks lower than the HP really is.
+
 ## 1.11.3
 
 - **Change**: The cog now keeps the list of mining channels in memory instead of asking the database "is this a mining channel?" on every chat message in every server. Same behavior, one less database query per message.
