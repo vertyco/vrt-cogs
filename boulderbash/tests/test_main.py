@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 import pytest_asyncio
 
@@ -352,3 +354,13 @@ def test_ranking_orders_by_best_score_and_finds_your_place():
     assert [row["name"] for row in table["top"]] == ["B", "A"]
     assert table["you"] == {"rank": 2, "best": 50}
     assert rank(members, 3)["you"] is None
+
+
+@pytest.mark.asyncio
+async def test_the_menu_line_follows_the_payouts_switch(cog):
+    guild = SimpleNamespace(id=500)
+    game = await pytest.importorskip("activityhub.common.games").validate_game(cog)
+    assert game.economy == cog.economy_line
+    assert await cog.economy_line(guild) is None
+    await turn_on(cog, cap=2500)
+    assert await cog.economy_line(guild) == "Cash in up to 2,500 credits"

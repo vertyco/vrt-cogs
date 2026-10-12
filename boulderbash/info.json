@@ -1,6 +1,6 @@
 {
   "author": ["Vertyco"],
-  "description": "A Stone Age block-smashing puzzle for ActivityHub, remade from Neopets' Destruct-O-Match III with all-new art, sound and music. Tap clumps of matching stone blocks to smash them, play five modes from relaxed Zen to the rising rows of Extreme, and chase each server's high score table. Each player plays their own game, on desktop or a phone held either way. Server admins can let players cash in their scores for credits, Neopets style, with a rate, a cap per cash-in and a few cash-ins a day. Needs ActivityHub 0.5.0 or later.",
+  "description": "A Stone Age block-smashing puzzle for ActivityHub, remade from Neopets' Destruct-O-Match III with all-new art, sound and music. Tap clumps of matching stone blocks to smash them, play five modes from relaxed Zen to the rising rows of Extreme, and chase each server's high score table. Each player plays their own game, on desktop or a phone held either way. Server admins can let players cash in their scores for credits, Neopets style, with a rate, a cap per cash-in and a few cash-ins a day. Needs ActivityHub 0.7.0 or later.",
   "disabled": false,
   "end_user_data_statement": "This cog stores each player's Discord user ID, their display name and best score on each server's Boulder Bash high score table, and how many scores they cashed in today and the credits paid for them.",
   "hidden": true,
