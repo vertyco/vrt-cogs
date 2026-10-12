@@ -420,7 +420,15 @@ async def test_revoking_takes_back_any_membership(cog):
 
 
 @pytest.mark.asyncio
-async def test_the_menu_line_says_it_bets_the_servers_currency(cog):
+async def test_the_menu_line_says_it_bets_the_servers_currency(cog, monkeypatch):
+    asked = []
+
+    async def currency(guild):
+        asked.append(guild)
+        return "chips"
+
+    monkeypatch.setattr(cog.bank, "currency", currency)
     game = await pytest.importorskip("activityhub.common.games").validate_game(cog)
     assert game.economy == cog.economy_line
-    assert await cog.economy_line(guild_of(cog)) == "Bet credits at the tables"
+    assert await cog.economy_line(ctx(cog, PLAYER)) == "Bet chips at the tables"
+    assert asked == [guild_of(cog)]

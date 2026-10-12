@@ -37,7 +37,7 @@ class Vegas(VegasCommands, VegasSetCommands, Actions, Sockets, commands.Cog, met
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -127,11 +127,12 @@ class Vegas(VegasCommands, VegasSetCommands, Actions, Sockets, commands.Cog, met
             "economy": self.economy_line,
             "actions": self.action_handlers(),
             "socket": {"join": self.join, "message": self.message, "leave": self.leave},
+            "requires": "0.8.0",
         }
 
-    async def economy_line(self, guild: t.Any) -> str:
-        """The ActivityHub menu card's currency line: every table bets the server's currency"""
-        return f"Bet {await self.bank.currency(guild)} at the tables"
+    async def economy_line(self, ctx: t.Any) -> str:
+        """The ActivityHub menu card's currency line: every table bets the player's server's currency"""
+        return f"Bet {await self.bank.currency(ctx.guild)} at the tables"
 
     # ---------- Keeping open pages up to date ----------
 

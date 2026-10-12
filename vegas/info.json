@@ -1,6 +1,6 @@
 {
   "author": ["Vertyco"],
-  "description": "Blackjack, craps, war and six more casino games for ActivityHub, played inside Discord's Activity window on a Classic Vegas casino floor. Friends in the same voice channel share the tables, and every game still plays solo. Server admins tune each game's bets, payouts, cooldowns and access levels, design membership tiers, and hold big wins for review, from the casino's settings panel or with chat commands. Rebuilt for ActivityHub from Redjumpman's Casino: https://github.com/Redjumpman/Jumper-Plugins. Needs ActivityHub 0.7.0 or later.",
+  "description": "Blackjack, craps, war and six more casino games for ActivityHub, played inside Discord's Activity window on a Classic Vegas casino floor. Friends in the same voice channel share the tables, and every game still plays solo. Server admins tune each game's bets, payouts, cooldowns and access levels, design membership tiers, and hold big wins for review, from the casino's settings panel or with chat commands. Rebuilt for ActivityHub from Redjumpman's Casino: https://github.com/Redjumpman/Jumper-Plugins. Needs ActivityHub 0.8.0 or later.",
   "disabled": false,
   "end_user_data_statement": "This cog stores Discord user IDs with each player's casino stats, cooldowns, membership tier and any winnings held for review.",
   "hidden": true,
