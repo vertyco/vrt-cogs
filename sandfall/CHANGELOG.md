@@ -1,5 +1,11 @@
 # Sandfall Changelog
 
+## 0.2.1
+
+Needs ActivityHub 0.8.0 or later.
+
+- Works with ActivityHub 0.8.0, which changed how games get raw requests and check for server admins. An older ActivityHub refuses Sandfall with a message saying to update it.
+
 ## 0.2.0
 
 - Reset to start: a button in the world menu, beside Clear, puts back the scene every new world starts with (the dunes, the pond and waterfall, the tree, the candle and the slug), with its settings. In a shared world only the owner can use it. In a private world Undo brings back what was there.

@@ -27,7 +27,7 @@ class Sandfall(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -35,7 +35,7 @@ class Sandfall(commands.Cog):
         self.config = Config.get_conf(self, identifier=2026101101, force_registration=True)
         self.config.register_guild(gallery={})
         self.storage = Storage(cog_data_path(self))
-        self.gallery = Gallery(self.config, self.storage, bot)
+        self.gallery = Gallery(self.config, self.storage)
         # Each Activity window's connections and shared worlds, by instance id
         self.windows: dict[str, Window] = {}
         self.clock = time.monotonic
@@ -77,6 +77,7 @@ class Sandfall(commands.Cog):
             },
             "socket": {"join": self.join, "message": self.message, "leave": self.leave},
             "routes": {"GET thumb": self.thumb},
+            "requires": "0.8.0",
         }
 
     def forget_window(self, window: Window) -> None:
@@ -128,7 +129,7 @@ class Sandfall(commands.Cog):
     async def delete(self, ctx, data: dict) -> dict:
         return await self.gallery.delete(ctx, data.get("id"))
 
-    async def thumb(self, request: web.Request, ctx) -> web.Response:
+    async def thumb(self, ctx, request: web.Request) -> web.Response:
         if ctx is None:
             return web.json_response({"error": "Open this from Discord first."}, status=401)
         png = await self.gallery.picture(ctx, request.query.get("id"))

@@ -15,7 +15,7 @@ Sandfall is a reimagining of the falling-sand games, not a port of any one of th
 
 ## Setup
 
-Sandfall needs ActivityHub 0.5.0 or later, loaded and set up (see its README). Then:
+Sandfall needs ActivityHub 0.8.0 or later, loaded and set up (see its README). Then:
 
 ```
 [p]cog install vrt-cogs sandfall

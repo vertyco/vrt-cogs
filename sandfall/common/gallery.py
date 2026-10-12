@@ -5,7 +5,6 @@ import secrets
 import time
 
 from redbot.core import Config
-from redbot.core.bot import Red
 
 from .storage import Storage
 from .worldfile import check_png, check_world, clean_name, to_text
@@ -32,20 +31,10 @@ class Gallery:
     in Storage. Every change to the list runs under one lock, so two saves or likes at once can't undo each other.
     """
 
-    def __init__(self, config: Config, storage: Storage, bot: Red):
+    def __init__(self, config: Config, storage: Storage):
         self.config = config
         self.storage = storage
-        self.bot = bot
         self.lock = asyncio.Lock()
-
-    async def is_admin(self, ctx) -> bool:
-        """The bot owner, the server owner, and members with Manage Server or Red's admin role"""
-        if ctx.guild is None:
-            return False
-        if ctx.author.id == ctx.guild.owner_id or await self.bot.is_owner(ctx.author):
-            return True
-        member = ctx.guild.get_member(ctx.author.id)
-        return member is not None and (member.guild_permissions.manage_guild or await self.bot.is_admin(member))
 
     async def list(self, ctx, sort: object) -> dict:
         if ctx.guild is None:
@@ -54,7 +43,7 @@ class Gallery:
         user_id = ctx.author.id
         entries = await self.config.guild(ctx.guild).gallery()
         mine = sum(1 for entry in entries.values() if entry["maker"] == user_id)
-        admin = await self.is_admin(ctx)
+        admin = await ctx.is_admin()
         # Newest first to start with, so worlds made in the same second keep that order through the sort
         shown = [
             (world_id, entry)
@@ -144,7 +133,7 @@ class Gallery:
             return {"error": NOT_IN_SERVER}
         if not valid_id(world_id):
             return {"error": WORLD_GONE}
-        admin = await self.is_admin(ctx)
+        admin = await ctx.is_admin()
         async with self.lock:
             async with self.config.guild(ctx.guild).gallery() as entries:
                 entry = entries.get(world_id)
