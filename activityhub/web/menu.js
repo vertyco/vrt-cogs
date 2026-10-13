@@ -57,6 +57,8 @@ const FIT_SLACK = 4;
 const NAME_KEEP_EM = 6;
 // Under this width the invite pill is only its icon
 const COMPACT_WIDTH = 480;
+// A currency line with less room than this for its words (about two letters and the "…") shows only its coin
+const LINE_ROOM = 24;
 // The lists with Join buttons or a button to press: a card's players, the header's people, the Orb screen's players
 const PEOPLE_LISTS = "#hover-people, #people-row, .screen-people";
 
@@ -128,6 +130,9 @@ async function start() {
   bindOrb();
   page.hold = new PressHold((node) => Boolean(node.closest?.(PEOPLE_LISTS)), redrawPeople);
   bindHover();
+  bindCurrencyTip();
+  // A frame later, since a fit changes the rows' sizes and the observer would otherwise see a loop
+  new ResizeObserver(() => requestAnimationFrame(fitCurrencyLines)).observe($("games"));
   page.host.presence.listen(peopleChanged);
   // The menu shows as soon as the bot has logged the player in; Discord accepting the login finishes after
   page.host.ready.catch((e) => {
@@ -355,13 +360,29 @@ function renderGames(games) {
   }
   // Settings previews redraw the cards too, and the bubbles go back on them with the rest
   updateBubbles();
+  fitCurrencyLines();
 }
 
-// A game's currency line: a coin, then the game's own words as plain text. The words also go in the tooltip and
-// the accessible name, since compact cards and hidden details show only the coin
+// Each currency line shows only its coin when its row leaves too little room for a few of its words. Every class
+// comes off before any width is read, so the rows are measured once, at the size they take with their words
+function fitCurrencyLines() {
+  const badges = [...document.querySelectorAll("#games .card .economy")];
+  for (const badge of badges) {
+    badge.classList.remove("coin-only");
+  }
+  const short = badges.filter((badge) => {
+    const words = badge.querySelector(".economy-text");
+    return words.scrollWidth > words.clientWidth && words.clientWidth < LINE_ROOM;
+  });
+  for (const badge of short) {
+    badge.classList.add("coin-only");
+  }
+}
+
+// A game's currency line: a coin, then the game's own words as plain text. The words also go in the accessible
+// name, since a narrow card cuts them short, and showCurrencyTip shows a cut line whole
 function economyBadge(line) {
   const badge = el("span", "economy");
-  badge.title = line;
   badge.setAttribute("aria-label", line);
   const coin = el("span", "coin");
   coin.setAttribute("aria-hidden", "true");
@@ -489,7 +510,10 @@ function orbPill(item) {
   });
   pill.addEventListener("focus", () => selectPill(pill, page.touch));
   pill.addEventListener("click", () => {
-    sounds.play("select");
+    // A game this device can't open says so instead of opening, so it makes no opening sound
+    if (!item.key || page.host.canOpen(item.key)) {
+      sounds.play("select");
+    }
     if (item.key) {
       openGame(item.key);
     } else {
@@ -930,12 +954,15 @@ function redrawPeople() {
 
 // The count on each card's corner (an Orb pod's, in that theme), changed in place so nothing else redraws
 function updateBubbles() {
+  let moved = false;
   for (const card of document.querySelectorAll("#games .card[data-key]")) {
     const key = card.dataset.key;
     const count = playing(key).length;
     const holder = card.querySelector(".pod") || card;
     let bubble = holder.querySelector(".bubble");
-    // A title runs clear of the bubble in the layouts where it reaches that far
+    // A title runs clear of the bubble in the layouts where it reaches that far, which changes the room for its
+    // currency line
+    moved = moved || card.classList.contains("has-bubble") !== count > 0;
     card.classList.toggle("has-bubble", count > 0);
     if (!count) {
       bubble?.remove();
@@ -957,6 +984,9 @@ function updateBubbles() {
     bubble.textContent = count > 9 ? "9+" : String(count);
     const game = page.state.games.find((item) => item.key === key);
     bubble.setAttribute("aria-label", `${count} playing ${game ? game.name : key}`);
+  }
+  if (moved) {
+    fitCurrencyLines();
   }
 }
 
@@ -1140,6 +1170,63 @@ function hideHover() {
     // Focus on a card shows its list after a moment, and this one was just put away
     clearTimeout(page.hoverTimer);
   }
+}
+
+// A currency line cut short shows whole while the mouse is on it or the keyboard is on its card. A tap or a click
+// never shows it, since those open the game
+function bindCurrencyTip() {
+  const games = $("games");
+  games.addEventListener("pointerover", (event) => {
+    const badge = event.target.closest(".economy");
+    if (event.pointerType === "mouse" && badge) {
+      showCurrencyTip(badge);
+    } else {
+      hideCurrencyTip();
+    }
+  });
+  games.addEventListener("pointerout", (event) => {
+    if (!event.relatedTarget?.closest?.(".economy")) {
+      hideCurrencyTip();
+    }
+  });
+  games.addEventListener("focusin", (event) => {
+    const card = event.target.closest(".card[data-key]");
+    const badge = card?.querySelector(".economy");
+    if (badge && !orbTheme() && card.matches(":focus-visible")) {
+      showCurrencyTip(badge);
+    }
+  });
+  games.addEventListener("focusout", hideCurrencyTip);
+  games.addEventListener("click", hideCurrencyTip);
+  window.addEventListener("scroll", hideCurrencyTip, { passive: true });
+  window.addEventListener("resize", hideCurrencyTip);
+}
+
+// Just above the badge, which keeps the card's own words, its bubble and its players' list below clear. Below the
+// badge when there is no room above, and never past the notch or Discord's buttons
+function showCurrencyTip(badge) {
+  const words = badge.querySelector(".economy-text");
+  if (!words || (!badge.classList.contains("coin-only") && words.scrollWidth <= words.clientWidth)) {
+    hideCurrencyTip();
+    return;
+  }
+  const tip = $("currency-tip");
+  const coin = el("span", "coin");
+  tip.replaceChildren(coin, el("span", "", words.textContent));
+  tip.hidden = false;
+  const safe = getComputedStyle(page.host.safeArea);
+  const low = EDGE + parseFloat(safe.paddingTop);
+  const left = EDGE + parseFloat(safe.paddingLeft);
+  const right = window.innerWidth - EDGE - parseFloat(safe.paddingRight);
+  tip.style.maxWidth = `${Math.max(0, right - left)}px`;
+  const at = badge.getBoundingClientRect();
+  const above = at.top - tip.offsetHeight - 4;
+  tip.style.left = `${clamp(at.left, left, Math.max(left, right - tip.offsetWidth))}px`;
+  tip.style.top = `${above >= low ? above : at.bottom + 4}px`;
+}
+
+function hideCurrencyTip() {
+  $("currency-tip").hidden = true;
 }
 
 // How wide the header row's button is with this many faces. With none it is only the count

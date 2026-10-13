@@ -139,3 +139,20 @@ async def test_a_member_who_left_loses_their_rights_but_the_owners_keep_theirs()
 
 def test_the_bot_stays_out_of_the_ctx_repr():
     assert "bot=" not in repr(context_for(make_hub()))
+
+
+def test_the_bot_doesnt_change_whether_two_contexts_are_equal():
+    ctx = context_for(make_hub())
+    assert ctx == ActivityContext(ctx.author, ctx.guild, ctx.channel_id, ctx.instance_id, bot=object())
+
+
+@pytest.mark.asyncio
+async def test_no_discord_permission_makes_a_mod_on_its_own():
+    # Only Red's mod and admin roles, and Manage Server through is_admin, count
+    hub = make_hub()
+    member = hub.bot.guilds[GUILD_ID].members[MEMBER_ID]
+    member.guild_permissions = SimpleNamespace(
+        manage_guild=False, kick_members=True, ban_members=True, manage_messages=True, moderate_members=True
+    )
+    ctx = context_for(hub, user_id=MEMBER_ID)
+    assert await ctx.is_mod() is False

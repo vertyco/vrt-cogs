@@ -41,7 +41,8 @@ if t.TYPE_CHECKING:
 
 log = logging.getLogger("red.vrt.activityhub.hub_routes")
 
-# The most of Discord's error text the log keeps when a login left scopes out. The page sends it, so it is cut
+# How many characters of Discord's error text the log keeps when a login left scopes out. The page sends that
+# text, so a page can't fill the log with it
 REASON_LIMIT = 200
 
 

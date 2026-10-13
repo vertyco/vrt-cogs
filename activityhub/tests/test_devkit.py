@@ -1,4 +1,7 @@
-"""The devkit's files checked against the hub: the type hints, the test stand-ins, the template and the dice roller"""
+"""
+The devkit's files checked against the hub: the type hints, the test stand-ins, the template and the random number
+generator
+"""
 
 import dataclasses
 import inspect
@@ -122,6 +125,9 @@ def test_the_conn_and_room_type_hints_match_the_reference_and_the_hub():
     # The other direction: a new public member of the real object fails here until it is documented or listed as internal
     assert public_members(conn) - INTERNAL_CONN_MEMBERS == conn_members
     assert public_members(room) - INTERNAL_ROOM_MEMBERS == room_members
+    # And an internal name the hub no longer has fails too, so the lists can't hide a later member of the same name
+    assert INTERNAL_CONN_MEMBERS - public_members(conn) == set()
+    assert INTERNAL_ROOM_MEMBERS - public_members(room) == set()
     assert awaited(hubtypes.HubConnection, conn_members) == awaited(conn, conn_members)
     assert awaited(hubtypes.HubRoom, room_members) == awaited(room, room_members)
 
@@ -170,7 +176,10 @@ def test_the_page_type_hints_list_every_hub_member_and_export():
     hub_type = hub_type[: hub_type.index("\n  }\n")]
     assert set(re.findall(r"^    (?:readonly )?(\w+)\??[(:]", hub_type, re.M)) == members
     assert documented(section(REFERENCE, "**The `hub` object**", "Catching an error"), "hub") == members
-    exported = set(re.findall(r"^export (?:async )?(?:function|class|const) (\w+)", SDK, re.M))
+    exported = set(re.findall(r"^export (?:async )?(?:function\*?|class|const|let|var) (\w+)", SDK, re.M))
+    # Exports in a list, or a default one, would slip past the line above
+    assert re.search(r"^export (?:\{|\*|default)", SDK, re.M) is None, "export each name where it is defined"
+    assert INTERNAL_EXPORTS <= exported
     assert set(re.findall(r"^  export (?:function|class) (\w+)", TYPES, re.M)) == exported - INTERNAL_EXPORTS
 
 

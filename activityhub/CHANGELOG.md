@@ -1,5 +1,17 @@
 # ActivityHub Changelog
 
+## 0.8.1
+
+- A game your device can't open now dims only its picture and words. Its "Desktop only" (or "Mobile only") note and the bubble showing how many people are playing stay easy to read.
+- In the Orb theme, tapping a game your device can't open no longer plays the select sound before the message saying why.
+- In the Compact layout, "Desktop only" always shows in full, and a long currency label is the one cut short, down to just its coin on a tight row. A cut label shows in full while the mouse is on it, or while the keyboard is on its game.
+- If Discord refused a game's extra permissions and the plain login after that failed too (like a network blip), later logins stayed on the plain login. They now ask for the extra permissions again.
+
+For game developers:
+
+- Each number in `requires` can be at most 9 digits. A longer one gets the usual `requires must be a version like "0.8.0"` refusal instead of a confusing error.
+- Clearer DEVELOPERS.md and REFERENCE.md: `ctx.is_admin()` and `ctx.is_mod()` are listed with the rest of `ctx`, the "Discord refused a login" log line has its own table, and the devkit files are linked.
+
 ## 0.8.0
 
 - A game asking for a Discord permission that Discord refuses no longer stops everyone from logging in. The menu logs the player in without the extra permissions, every game still opens, and the bot log names the permissions and the games that asked for them. Pressing Cancel on Discord's permission prompt works the same way.

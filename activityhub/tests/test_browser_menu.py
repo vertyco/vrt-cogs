@@ -355,7 +355,7 @@ def test_a_refused_extra_scope_login_retries_with_identify_only(driver, live, ca
         open_menu(driver, live, BAD_SCOPE_QUERY)
         wait_for(driver, "window.fakeDiscord.authenticate === 1")
     assert driver.execute_script("return window.fakeAsked") == ["identify guilds.members.read", "identify"]
-    assert "guilds.members.read (asked for by demo, second)" in caplog.text
+    assert "guilds.members.read (asked for by demo, second). Discord said: 'Invalid scope'" in caplog.text
     # The games still open and reach the bot
     driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').click()
     driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
@@ -371,6 +371,22 @@ def test_after_a_refused_extra_scope_a_relogin_asks_for_identify_only(driver, li
     wait_for(driver, "window.fakeDiscord.authenticate === 1")
     driver.execute_async_script("const done = arguments[0]; window.activityhubHost.relogin().then(() => done());")
     assert driver.execute_script("return window.fakeAsked") == ["identify guilds.members.read", "identify", "identify"]
+
+
+def test_a_failed_identify_only_retry_leaves_the_extra_scopes_for_next_time(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    wait_for(driver, "window.fakeDiscord.authenticate === 1")
+    # Discord refuses the extra scope, and then the smaller login fails for another reason
+    driver.execute_script("Object.assign(window.fakeDiscord, { refuseNextExtra: true, failNextIdentify: true })")
+    relogin = "const done = arguments[0]; window.activityhubHost.relogin().then(() => done(true), () => done(false));"
+    assert driver.execute_async_script(relogin) is False
+    assert driver.execute_async_script(relogin) is True
+    assert driver.execute_script("return window.fakeAsked") == [
+        "identify guilds.members.read",
+        "identify guilds.members.read",
+        "identify",
+        "identify guilds.members.read",
+    ]
 
 
 def test_a_relogin_refused_for_an_extra_scope_is_not_reported_as_dropped_scopes(driver, live, caplog):
@@ -1433,10 +1449,15 @@ def test_a_long_title_runs_clear_of_the_bubble(driver, live, layout):
         wait_for(driver, BUBBLE)
         name = f"document.querySelector('{DEMO_CARD} .name')"
         driver.execute_script(f"{name}.textContent = 'Super Long Game Name Deluxe Edition Remastered'")
+        # A list title wraps. A compact one is cut short with an ellipsis, so only the part inside its own box shows
         clear = driver.execute_script(
             f"""const range = document.createRange(); range.selectNodeContents({name});
             const bubble = {BUBBLE}.getBoundingClientRect();
-            return [...range.getClientRects()].every((r) => r.right <= bubble.left || r.bottom <= bubble.top);"""
+            const box = {name}.getBoundingClientRect();
+            const cut = getComputedStyle({name}).overflowX === "hidden";
+            return [...range.getClientRects()].every(
+              (r) => (cut ? Math.min(r.right, box.right) : r.right) <= bubble.left || r.bottom <= bubble.top
+            );"""
         )
         assert clear
     finally:
@@ -1834,6 +1855,156 @@ def test_a_compact_row_marked_for_the_other_platform_keeps_its_one_line_height_a
         assert row["height"] == normal_row["height"]
         assert row["note"] <= row["bubble"] and row["economy"] <= row["bubble"]
         assert no_sideways_scroll(driver)
+        # "Desktop only" keeps all its words, and the currency line is the one cut short, here down to a round coin
+        assert driver.execute_script(NOTE_WHOLE_LINE_CUT, '.card[data-key="desk"]') == [True, True]
+        wait_for(driver, round_coin("desk"))
+    finally:
+        plain_device(driver)
+
+
+# Whether a card's platform note shows all of its words, and whether its currency line is cut short
+NOTE_WHOLE_LINE_CUT = """
+const card = document.querySelector(arguments[0]);
+const note = card.querySelector('.platform-note');
+const text = document.createRange();
+text.selectNodeContents(note);
+const words = card.querySelector('.economy-text');
+const cut = card.querySelector('.economy.coin-only') !== null || words.scrollWidth > words.clientWidth;
+return [text.getBoundingClientRect().right <= note.getBoundingClientRect().right + 0.5, cut];
+"""
+CURRENCY_TIP = "document.getElementById('currency-tip')"
+LONG_LINE = "Cash in up to 1,000 credits"
+LINE_CUT = """
+const words = document.querySelector('.card[data-key="priced"] .economy-text');
+return words.scrollWidth > words.clientWidth;
+"""
+LINE_SHORT = """
+const badge = document.querySelector('.card[data-key="priced"] .economy');
+const words = badge.querySelector('.economy-text');
+return badge.classList.contains('coin-only') || words.scrollWidth > words.clientWidth;
+"""
+NAME_WHOLE = """
+const name = document.querySelector('.card[data-key="priced"] .name');
+return name.scrollWidth <= name.clientWidth;
+"""
+
+
+def round_coin(key):
+    """A JavaScript check: the game's currency line is only its coin, in a chip about as wide as it is tall"""
+    return f"""(() => {{
+const badge = document.querySelector('.card[data-key="{key}"] .economy');
+if (!badge?.classList.contains('coin-only') || badge.querySelector('.economy-text').getClientRects().length) {{
+  return false;
+}}
+const box = badge.getBoundingClientRect();
+return Math.abs(box.width - box.height) <= 2;
+}})()"""
+
+
+def add_long_priced(live, tmp_path):
+    folder = write_demo_web(tmp_path / "priced")
+    register(
+        live.hub,
+        DemoCog(folder, key="priced", name="Kingdom Rush Frontiers", cog_name="Priced", economy=LONG_LINE),
+    )
+
+
+def narrow_window(driver):
+    """Room for the priced game's whole name, and a cut currency line beside it"""
+    driver.execute_cdp_cmd(
+        "Emulation.setDeviceMetricsOverride", {"width": 380, "height": 740, "deviceScaleFactor": 1, "mobile": False}
+    )
+
+
+def test_a_cut_currency_line_shows_whole_while_the_keyboard_is_on_its_card(driver, live, tmp_path):
+    add_long_priced(live, tmp_path)
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "compact"}
+    narrow_window(driver)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        # The currency line is cut first: the name stays whole while the line can still give way
+        assert driver.execute_script(LINE_CUT) and driver.execute_script(NAME_WHOLE)
+        for _ in range(10):
+            if driver.execute_script("return document.activeElement.dataset.key") == "priced":
+                break
+            press(driver, Keys.TAB)
+        wait_for(driver, f"!{CURRENCY_TIP}.hidden")
+        assert driver.execute_script(f"return {CURRENCY_TIP}.textContent") == LONG_LINE
+        # Just above its badge, clear of the card's own row, and on the screen
+        assert driver.execute_script(
+            f"""const tip = {CURRENCY_TIP}.getBoundingClientRect();
+            const badge = document.querySelector('.card[data-key="priced"] .economy').getBoundingClientRect();
+            const gap = badge.top - tip.bottom;
+            return gap >= 0 && gap <= 8 && tip.left >= 0 && tip.right <= innerWidth;"""
+        )
+        press(driver, Keys.TAB)
+        wait_for(driver, f"{CURRENCY_TIP}.hidden")
+    finally:
+        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+
+
+def test_a_cut_currency_line_shows_whole_under_the_mouse_and_a_whole_one_needs_no_tip(driver, live, tmp_path):
+    add_long_priced(live, tmp_path)
+    folder = write_demo_web(tmp_path / "short")
+    register(live.hub, DemoCog(folder, key="short", name="Short", cog_name="Short", economy="Bet"))
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "compact"}
+    narrow_window(driver)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        badge = driver.find_element(By.CSS_SELECTOR, '.card[data-key="priced"] .economy')
+        ActionChains(driver).move_to_element(badge).perform()
+        wait_for(driver, f"!{CURRENCY_TIP}.hidden")
+        assert driver.execute_script(f"return {CURRENCY_TIP}.textContent") == LONG_LINE
+        ActionChains(driver).move_to_element(
+            driver.find_element(By.CSS_SELECTOR, '.card[data-key="short"] .economy')
+        ).perform()
+        wait_for(driver, f"{CURRENCY_TIP}.hidden")
+        time.sleep(0.3)
+        assert driver.execute_script(f"return {CURRENCY_TIP}.hidden")
+    finally:
+        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+
+
+def test_a_currency_line_with_no_room_for_its_words_is_a_round_coin_that_still_shows_whole_under_the_mouse(
+    driver, live, tmp_path
+):
+    add_long_priced(live, tmp_path)
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "compact"}
+    driver.execute_cdp_cmd(
+        "Emulation.setDeviceMetricsOverride", {"width": 300, "height": 740, "deviceScaleFactor": 1, "mobile": False}
+    )
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        wait_for(driver, round_coin("priced"))
+        badge = driver.find_element(By.CSS_SELECTOR, '.card[data-key="priced"] .economy')
+        ActionChains(driver).move_to_element(badge).perform()
+        wait_for(driver, f"!{CURRENCY_TIP}.hidden")
+        assert driver.execute_script(f"return {CURRENCY_TIP}.textContent") == LONG_LINE
+        # A wider window has room for the words again
+        driver.execute_cdp_cmd(
+            "Emulation.setDeviceMetricsOverride",
+            {"width": 1280, "height": 740, "deviceScaleFactor": 1, "mobile": False},
+        )
+        wait_for(driver, "document.querySelector('.card[data-key=\"priced\"] .economy-text').getClientRects().length")
+        assert not driver.execute_script(LINE_CUT)
+    finally:
+        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+
+
+def test_a_tap_on_a_cut_currency_line_opens_the_game_without_the_tip(driver, live, tmp_path):
+    add_long_priced(live, tmp_path)
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "compact"}
+    touch_device(driver, 300, 740)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        assert driver.execute_script(LINE_SHORT)
+        box = driver.execute_script(
+            "const b = document.querySelector('.card[data-key=\"priced\"] .economy').getBoundingClientRect();"
+            "return [b.left + b.width / 2, b.top + b.height / 2];"
+        )
+        tap(driver, *box)
+        wait_for(driver, "document.body.classList.contains('playing')")
+        assert driver.execute_script(f"return {CURRENCY_TIP}.hidden")
     finally:
         plain_device(driver)
 
@@ -1845,6 +2016,12 @@ def test_on_a_phone_a_desktop_only_game_is_marked_and_says_why_instead_of_openin
     card = driver.find_element(By.CSS_SELECTOR, '.card[data-key="desk"]')
     assert "wrong-platform" in card.get_attribute("class") and "Desktop only" in card.text
     assert "wrong-platform" not in driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').get_attribute("class")
+    # The game's own picture and words dim; the card, so its note and people bubble, stays at full strength
+    opacity = "return getComputedStyle(arguments[1] ? arguments[0].querySelector(arguments[1]) : arguments[0]).opacity"
+    assert driver.execute_script(opacity, card, ".name") == "0.55"
+    assert driver.execute_script(opacity, card, ".icon") == "0.55"
+    assert driver.execute_script(opacity, card, ".platform-note") == "1"
+    assert driver.execute_script(opacity, card, None) == "1"
     card.click()
     wait_for(driver, f"!{CONFIRM}.hidden")
     assert driver.find_element(By.CSS_SELECTOR, ".hub-confirm-text").text == WORKS_ON_DESKTOP
@@ -1855,6 +2032,51 @@ def test_on_a_phone_a_desktop_only_game_is_marked_and_says_why_instead_of_openin
     # The Join question gets its own two buttons back
     assert driver.find_element(By.CSS_SELECTOR, ".hub-confirm-stay").get_attribute("textContent") == "Stay"
     assert driver.execute_script("return document.querySelector('.hub-confirm-leave').hidden") is False
+
+
+def test_on_desktop_a_mobile_only_game_is_marked_and_says_why(driver, live, tmp_path):
+    folder = write_demo_web(tmp_path / "pocket")
+    register(live.hub, DemoCog(folder, key="pocket", name="Pocket Game", cog_name="Pocket", platforms=["mobile"]))
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    open_menu(driver, live, DISCORD_QUERY)
+    card = driver.find_element(By.CSS_SELECTOR, '.card[data-key="pocket"]')
+    assert "wrong-platform" in card.get_attribute("class") and "Mobile only" in card.text
+    card.click()
+    wait_for(driver, f"!{CONFIRM}.hidden")
+    assert driver.find_element(By.CSS_SELECTOR, ".hub-confirm-text").text == (
+        "Pocket Game only works on mobile: Discord's phone and tablet app."
+    )
+    assert driver.find_elements(By.ID, "game-frame") == []
+
+
+@pytest.mark.parametrize("close", ["escape", "outside"])
+def test_escape_or_a_tap_outside_puts_the_message_away(driver, live, tmp_path, close):
+    add_desktop_game(live, tmp_path)
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    open_menu(driver, live, PHONE_QUERY)
+    driver.find_element(By.CSS_SELECTOR, '.card[data-key="desk"]').click()
+    wait_for(driver, f"!{CONFIRM}.hidden")
+    if close == "escape":
+        press(driver, Keys.ESCAPE)
+    else:
+        # Whatever is on top beside the message, which is the dimmed backdrop behind it
+        driver.execute_script("document.elementFromPoint(4, innerHeight / 2).click()")
+    wait_for(driver, f"{CONFIRM}.hidden")
+    assert driver.find_elements(By.ID, "game-frame") == []
+
+
+def test_clicking_a_blocked_orb_pill_says_why_without_the_select_sound(driver, live, tmp_path, sound_spy):
+    add_desktop_game(live, tmp_path)
+    live.hub.config.globals["look"] = {"theme": "orb"}
+    open_menu(driver, live, PHONE_QUERY)
+    driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="desk"]').click()
+    wait_for(driver, f"!{CONFIRM}.hidden")
+    assert driver.find_element(By.CSS_SELECTOR, ".hub-confirm-text").text == WORKS_ON_DESKTOP
+    assert SELECT not in sounds(driver)
+    driver.find_element(By.CSS_SELECTOR, ".hub-confirm-stay").click()
+    # A game this device can open still sounds as it opens
+    driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="demo"]').click()
+    wait_for(driver, f"window.soundLog.includes({SELECT}) && document.getElementById('game-frame') !== null")
 
 
 def test_on_desktop_and_in_the_preview_nothing_is_marked(driver, live, tmp_path):

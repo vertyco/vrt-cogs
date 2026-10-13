@@ -26,7 +26,8 @@ DISCORD_QUERY = f"?frame_id=f&instance_id=i-1&guild_id={GUILD_ID}&channel_id=77&
 # opened outside Discord. window.fakeDiscordBus plays Discord's events to the subscribed listeners.
 # window.fakeAsked lists the scopes of every login asked for. With &badscope=1 in the address, Discord refuses
 # any login asking for more than identify, like a game listing a scope Discord doesn't accept. Setting
-# window.fakeDiscord.refuseNextExtra = true makes only the next login that asks for more than identify fail.
+# window.fakeDiscord.refuseNextExtra = true makes only the next login that asks for more than identify fail, and
+# failNextIdentify = true does the same for the next login asking for identify only, like a network blip.
 FAKE_SDK = """export class DiscordSDK {
   #listeners = new Map();
   #answered = new URLSearchParams(location.search).has("silent")
@@ -56,6 +57,10 @@ FAKE_SDK = """export class DiscordSDK {
         if (calls.refuseNextExtra && extra) {
           calls.refuseNextExtra = false;
           throw new Error("Invalid scope");
+        }
+        if (calls.failNextIdentify && !extra) {
+          calls.failNextIdentify = false;
+          throw new Error("Network error");
         }
         calls.authorize += 1;
         return { code: `code-${calls.authorize}` };

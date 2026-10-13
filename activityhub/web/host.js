@@ -101,8 +101,9 @@ async function getLogin(host, first = false) {
     }
     console.warn(`ActivityHub: Discord refused the login with ${extra.join(", ")}, so it asks for identify only`, e);
     dropped = first ? { scopes: extra, reason: String(e?.message ?? e) } : null;
+    code = await authorize(host.sdk, ["identify"]);
+    // Only once Discord takes the smaller login, so a retry that fails for another reason asks again next time
     host.scopes = ["identify"];
-    code = await authorize(host.sdk, host.scopes);
   }
   mark("Discord authorized the login");
   const body = { code, instance_id: host.sdk.instanceId, ...(dropped ? { dropped } : {}) };

@@ -60,7 +60,7 @@ async def activityhub_game(self) -> dict:
 
 Every handler gets a `ctx` that says who is playing and where. The hub proved it with Discord: the player really logged in, and Discord itself said which server and channel the Activity runs in. The page can't change it.
 
-| Attribute | Type | What it is |
+| Attribute or method | Type | What it is |
 |---|---|---|
 | `ctx.author` | `discord.Member` or `discord.User` | The player. A `discord.Member` in a server. A `discord.User` anywhere else (a DM, or a server your bot isn't in). |
 | `ctx.guild` | `discord.Guild` or `None` | The server the Activity was opened in. `None` in a DM, or in a server your bot isn't in. |
@@ -102,7 +102,7 @@ Rules the hub enforces for you:
 
 - **Actions and socket handlers only run for a logged-in player**, and only while your game is on in that server.
 - **Raw routes also run without a login.** `ctx` is then `None`.
-- **Errors stay private.** If a handler raises, or an action returns something that isn't a dict (or can't be turned into JSON), the hub logs it in the bot's log and the page gets "Something went wrong.". Your error text never reaches players. Only `{"error": "..."}` text does. When you test as the bot owner, the page also shows you the reason (see [Testing](DEVELOPERS.md#12-testing-and-debugging)).
+- **Errors stay private.** If a handler raises, or an action returns something that isn't a dict (or can't be turned into JSON, or has a top-level `activityhub` key), the hub logs it in the bot's log and the page gets "Something went wrong.". Your error text never reaches players. Only `{"error": "..."}` text does. When you test as the bot owner, the page also shows you the reason (see [Testing](DEVELOPERS.md#12-testing-and-debugging)).
 - **Size limit.** Actions refuse bodies of 1 MB or more (the page sees "Request failed (413)"), and a live message of 1 MB or more closes the connection with `1009`. In raw routes, the limit applies only to `request.read()`, `.json()`, `.text()` and `.post()`. `request.content` and `request.multipart()` aren't limited: check `ctx` first, count bytes as you read, and stop at your own limit, like the [streaming example](DEVELOPERS.md#8-uploads-and-other-raw-requests). That is also how to accept uploads bigger than 1 MB.
 - **What turns into JSON.** Replies and live messages are turned into JSON with orjson, a fast JSON library that comes with Red. Besides dicts, lists, text, numbers, booleans and `None`, it takes dataclasses, datetimes (as ISO 8601 text, like `"2026-01-02T00:00:00+00:00"`), UUIDs and enums. Dict keys that are numbers become text, like `{"1": ...}`. NaN, Infinity and whole numbers bigger than 64 bits are refused.
 

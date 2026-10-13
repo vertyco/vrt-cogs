@@ -36,6 +36,7 @@ from .sockets import (
     PING,
     PONG,
     READY,
+    RESERVED_FIELD,
     Connection,
     echo_reply,
 )
@@ -277,11 +278,11 @@ class GameRoutes:
             kind = type(result).__name__
             log.error("Action %s.%s returned %s instead of a dict", game.key, name, kind)
             return await self.something_wrong(ctx, f"returned {kind} instead of a dict")
-        if "activityhub" in result:
+        if RESERVED_FIELD in result:
             # Kept for the hub's own fields in replies, like the live messages' field of the same name, so a later
             # version can add them without clashing with a game's
-            log.error("Action %s.%s returned the reserved field 'activityhub'", game.key, name)
-            return await self.something_wrong(ctx, "returned the reserved field 'activityhub'")
+            log.error("Action %s.%s returned the reserved field %r", game.key, name, RESERVED_FIELD)
+            return await self.something_wrong(ctx, f"returned the reserved field {RESERVED_FIELD!r}")
         message = result.get("error")
         if isinstance(message, str) and message.strip():
             return error(message, 400)

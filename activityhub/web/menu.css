@@ -263,22 +263,28 @@ input:focus-visible {
   display: none;
 }
 
-/* A game's currency line: a gold coin and the game's own words, kept inside the card */
-.economy {
+/* A game's currency line: a gold coin and the game's own words, kept inside the card. The tip that shows a cut line
+   in full is drawn the same way */
+.economy,
+.currency-tip {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: fit-content;
-  max-width: 100%;
-  margin-top: 4px;
   padding: 2px 8px 2px 3px;
   border-radius: 999px;
-  background: rgb(245 197 24 / 0.16);
   font-size: 0.75rem;
   line-height: 1.3;
 }
 
-.economy .coin {
+.economy {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 4px;
+  background: rgb(245 197 24 / 0.16);
+}
+
+.economy .coin,
+.currency-tip .coin {
   flex: none;
   width: 12px;
   height: 12px;
@@ -304,17 +310,54 @@ input:focus-visible {
   gap: 8px;
 }
 
+/* Short of room, the currency line is cut first, down to its coin, and only then the name */
 .compact .name {
-  flex: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* Starts from the room for its coin and padding and grows into whatever the name and the note leave, up to its full
+   length. So it is the first thing cut, and the name is cut only once the line is down to its coin */
 .compact .economy {
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: 29px;
+  max-width: max-content;
   margin-top: 0;
 }
 
-/* A game this device can't open: dimmed, with a short note saying where it works */
-.card.wrong-platform {
+/* With room for only a sliver of its words, the line is just its coin in a round chip, since a coin in a mostly
+   empty pill reads as a switch turned off (menu.js fitCurrencyLines) */
+.economy.coin-only {
+  flex: none;
+  min-width: 0;
+  gap: 0;
+  padding: 2px;
+}
+
+.coin-only .economy-text {
+  display: none;
+}
+
+/* A cut currency line in full, by its badge. It lets the mouse through, so it never takes the pointer off the badge
+   and closes itself */
+.currency-tip {
+  position: fixed;
+  z-index: 6;
+  background: color-mix(in srgb, #f5c518 22%, var(--panel));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+body.opening .currency-tip,
+body.playing .currency-tip {
+  display: none;
+}
+
+/* A game this device can't open: its picture and words dim, while the short note saying where it works and the
+   people bubble stay easy to read */
+.card.wrong-platform :is(.icon, .thumb, .name, .desc, .economy) {
   opacity: 0.55;
 }
 
@@ -325,12 +368,11 @@ input:focus-visible {
   font-weight: 600;
 }
 
-/* Compact rows keep their one-line height: the note sits beside the name and is cut short rather than wrapped */
+/* Compact rows keep their one-line height: the note sits beside the name and stays whole, and the currency line is
+   the one cut short */
 .compact .platform-note {
-  min-width: 0;
+  flex: none;
   margin-top: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

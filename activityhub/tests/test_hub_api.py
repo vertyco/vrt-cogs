@@ -250,6 +250,16 @@ async def test_discords_text_is_cut_in_the_log(client, discord_answers, demo, ca
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("reason", [5, None, ["Bad"]])
+async def test_discords_text_that_isnt_text_logs_as_none(client, discord_answers, demo, caplog, reason):
+    dropped = {"scopes": ["guilds.members.read"], "reason": reason}
+    with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.hub_routes"):
+        resp = await client.post("/hub/api/token", json={**TOKEN_BODY, "dropped": dropped})
+    assert resp.status == 200
+    assert "guilds.members.read (asked for by demo). Discord said: None" in caplog.text
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("dropped", [None, "guilds", {"scopes": "guilds"}, {"scopes": ["made.up"]}, {"reason": "x"}])
 async def test_a_login_with_nothing_real_dropped_logs_nothing(client, discord_answers, demo, caplog, dropped):
     with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.hub_routes"):

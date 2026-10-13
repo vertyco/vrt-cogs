@@ -369,11 +369,20 @@ async def test_menu_cards_carry_each_games_line(client, hub, demo, tmp_path):
 
 @pytest.mark.asyncio
 async def test_no_lines_outside_a_server_or_in_the_preview(client, hub, tmp_path):
+    asked = []
+
+    # The docs promise a game's function a server in ctx.guild, so it is never called without one
+    async def answer(ctx):
+        asked.append(ctx)
+        return "Cash in up to 500 credits"
+
     await add_priced(hub, tmp_path, "Bet credits")
+    await add_priced(hub, tmp_path, answer, key="asked")
     status, state = await menu(client, session_headers(hub, guild_id=None))
-    assert lines(state) == {"priced": None}
+    assert lines(state) == {"asked": None, "priced": None}
     status, state = await menu(client)
-    assert lines(state) == {"priced": None}
+    assert lines(state) == {"asked": None, "priced": None}
+    assert asked == []
 
 
 @pytest.mark.asyncio

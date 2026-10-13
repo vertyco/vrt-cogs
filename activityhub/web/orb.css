@@ -662,27 +662,10 @@ body[data-theme="orb"] .notice {
   text-overflow: ellipsis;
 }
 
-/* The panel shows the description; screen readers still read it on the pill */
-.orb-menu .pill .desc {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* The pill keeps the currency line for screen readers; the screen shows it for the selected game */
-.orb-menu .pill .economy {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* The pill keeps the platform note for screen readers; the screen shows it for the selected game */
+/* The screen shows the selected game's description, currency line and platform note; screen readers still read them
+   on the pill */
+.orb-menu .pill .desc,
+.orb-menu .pill .economy,
 .orb-menu .pill .platform-note {
   position: absolute;
   width: 1px;

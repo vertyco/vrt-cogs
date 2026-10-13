@@ -67,8 +67,9 @@ KNOWN_SCOPES = frozenset(
 ABSOLUTE_PATH = re.compile(r"\b(?:src|href)\s*=\s*[\"'](/(?!/)[^\"']*)", re.IGNORECASE)
 # More files than any page needs, which usually means web_dir is the project folder rather than the built page
 MANY_FILES = 2000
-# "requires": the oldest ActivityHub a game works with, as two or three whole numbers like "0.8" or "0.8.0"
-VERSION_PATTERN = re.compile(r"[0-9]+\.[0-9]+(?:\.[0-9]+)?")
+# "requires": the oldest ActivityHub a game works with, as two or three whole numbers like "0.8" or "0.8.0". Each
+# number is at most 9 digits, well inside what Python turns into an int
+VERSION_PATTERN = re.compile(r"[0-9]{1,9}\.[0-9]{1,9}(?:\.[0-9]{1,9})?")
 
 
 class GameError(ValueError):

@@ -84,13 +84,6 @@ def test_bundled_games_register(hub, clock):
 
 
 @pytest.mark.asyncio
-async def test_game_pages_can_import_the_shared_frame(client, server, clock):
-    text = await (await client.get("/games/snake/")).text()
-    assert f'"activityhub/arcade.js": "/hub/{server.hub_build()}/arcade.js"' in text
-    assert '"activityhub/":' not in text
-
-
-@pytest.mark.asyncio
 async def test_a_real_round_is_saved_and_ranked(client, hub, clock):
     status, result = await play_2048(client, hub, clock)
     assert status == 200

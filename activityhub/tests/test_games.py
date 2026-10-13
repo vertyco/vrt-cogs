@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from activityhub.bundled.games import WEB_DIR, Snake
+from activityhub.bundled.games import Snake
 from activityhub.common import games
 from activityhub.common.games import VERSION_PATTERN, GameError, GameRegistry, validate_game
 from activityhub.main import ActivityHub
@@ -714,6 +714,14 @@ async def test_a_game_for_this_hub_or_an_older_one_registers(web_dir, requires):
 
 
 @pytest.mark.asyncio
+async def test_the_registry_refuses_a_game_for_a_newer_hub(web_dir):
+    registry = GameRegistry("0.8.0")
+    assert await registry.add(GameCog(web_dir, requires="0.9.0")) is None
+    assert registry.games == {}
+    assert registry.failed["FakeGame"][1].startswith("This game needs ActivityHub 0.9.0 or newer")
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "requires, hub_version", [("0.9.0", "0.8.0"), ("0.8.1", "0.8.0"), ("0.10", "0.9.5"), ("1.0", "0.8.0")]
 )
@@ -740,6 +748,14 @@ async def test_a_requires_that_isnt_a_version_is_refused(web_dir, requires):
     with pytest.raises(GameError) as refused:
         await validate_game(GameCog(web_dir, requires=requires), "0.8.0")
     assert str(refused.value) == f'requires must be a version like "0.8.0", got {requires!r}'
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("requires", ["1234567890.0", "0." + "9" * 5000])
+async def test_a_requires_with_a_huge_number_gets_the_version_message(web_dir, requires):
+    # Past Python's limit on turning text into an int, the refusal would otherwise be a bare ValueError
+    with pytest.raises(GameError, match='requires must be a version like "0.8.0"'):
+        await validate_game(GameCog(web_dir, requires=requires), "0.8.0")
 
 
 def test_the_hubs_own_version_is_one_requires_can_be_compared_with():
@@ -777,7 +793,7 @@ class HubSnake(Snake):
     """An included game on a hub- key, like the ones ActivityHub will add"""
 
     async def activityhub_game(self) -> dict:
-        return {**await super().activityhub_game(), "key": "hub-snake", "web_dir": WEB_DIR / "snake"}
+        return {**await super().activityhub_game(), "key": "hub-snake"}
 
 
 @pytest.mark.asyncio

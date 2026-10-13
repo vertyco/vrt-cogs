@@ -231,7 +231,7 @@ It is small, but it has every basic piece:
 
 Make this folder layout. `clickcounter` is the cog. `web` holds the page.
 
-The finished files are also in ActivityHub's folder, under `devkit/template/clickcounter/`, ready to copy.
+The finished files are also in ActivityHub's own folder, under [`devkit/template/clickcounter/`](devkit/template/clickcounter/), ready to copy. On a bot, ActivityHub's folder is `activityhub` inside the folder `[p]paths` lists as the Install Path. It is also on [GitHub](https://github.com/vertyco/vrt-cogs/tree/main/activityhub).
 
 ```
 clickcounter/
@@ -341,7 +341,7 @@ What this code does:
   - `requires` is the oldest ActivityHub your game works with. A bot with an older hub says to update ActivityHub, instead of failing in a confusing way.
 - **`click()` runs each time the page calls `hub.api("click")`.**
   - `ctx` says who clicked and in which server. The hub checked it with Discord, so you can trust it.
-  - `ctx` is not the `ctx` of a Red command. It has no `ctx.send()`, because the player isn't typing a command. It has `ctx.author`, `ctx.guild`, `ctx.channel` and `ctx.instance_id` (the full list is in [REFERENCE.md](REFERENCE.md#2-ctx)). Use `self.bot` for the bot.
+  - `ctx` is not the `ctx` of a Red command. It has no `ctx.send()`, because the player isn't typing a command. It has `ctx.author`, `ctx.guild`, `ctx.channel` and `ctx.instance_id`, and `await ctx.is_admin()` and `await ctx.is_mod()` say whether the player is a server admin or mod (the full list is in [REFERENCE.md](REFERENCE.md#2-ctx)). Use `self.bot` for the bot.
   - `data` is whatever the page sent. Here it is `{}`, because the page sends nothing.
   - Returning a dict sends it to the page.
   - Returning `{"error": "some text"}` shows that text to the player instead.
@@ -720,7 +720,7 @@ Rules for the line:
 - **There's no badge outside a server,** since a server's bank is what the line is about.
 - **Server admins can hide every badge** with **Show currency labels** in the menu's server settings. With a global bank, that switch is the bot owner's, in the **Defaults** tab.
 
-A fixed `economy` line needs ActivityHub 0.7.0 or later. A function needs 0.8.0 or later, since 0.7.0 passed it the server instead of `ctx`. Set [`requires`](REFERENCE.md#1-activityhub_game) to match.
+A fixed `economy` line needs ActivityHub 0.7.0 or later. A function needs 0.8.0 or later, since 0.7.0 passed it the server instead of the player's `ctx` (the object every handler gets, saying who the player is and where). Set [`requires`](REFERENCE.md#1-activityhub_game) to match.
 
 ## 6. Multiplayer with live connections
 
@@ -1244,7 +1244,7 @@ if (hub.status) {
 
 > **Most games never need this.** Actions cover anything that fits in a JSON message under 1 MB. Read on when you need file uploads, binary data or streaming.
 
-A raw route handles what actions don't cover. Your handler gets the raw web request from aiohttp (the web library the hub runs on) and returns any aiohttp response, so you have full control.
+A raw route handles what actions don't cover. Your handler gets `ctx`, like every handler, and the raw web request from aiohttp (the web library the hub runs on). It returns any aiohttp response, so you have full control.
 
 ```python
 from aiohttp import web
@@ -1449,7 +1449,7 @@ Don't open the game frame's own address, the one with `?frame_id=...`, in a tab 
 Your handlers are plain async methods, so tests can call them directly with stand-ins for `ctx` and `conn`. ActivityHub has those stand-ins ready in `devkit/fakes.py`, which imports nothing from ActivityHub.
 
 1. Install `pytest` and `pytest-asyncio` in the bot's Python environment.
-2. Make a `tests` folder next to `clickcounter/`, and copy `fakes.py` from ActivityHub's `devkit` folder into it.
+2. Make a `tests` folder next to `clickcounter/`, and copy [`fakes.py`](devkit/fakes.py) from ActivityHub's `devkit` folder into it.
 3. Put the two files below in the same folder.
 4. Run `python -m pytest tests` from the folder that holds both.
 
@@ -1572,7 +1572,6 @@ Your game still registers, but something will likely break:
 | What you see | Why | Fix |
 |---|---|---|
 | `asks for the scope 'x', which ActivityHub doesn't know` | A scope name the hub doesn't know, often a typo. Every installed game's scopes go into one login, so a wrong one makes every player log in without the extra permissions. | Copy the name exactly from Discord's OAuth2 scope list. |
-| `Discord refused a login that asked for extra permissions, so player ... logged in with identify only.` | Discord didn't accept one of the scopes, or the player pressed Cancel on Discord's prompt. The line names each scope and the games that ask for it. The player's games still open. | Check the scope's spelling against Discord's OAuth2 scope list. If players pressed Cancel, nothing is broken. |
 | `index.html refers to ... with an absolute path, which the hub can't serve` | A `src` or `href` starts with `/`. | Use relative paths. Built with Vite? Set `base: './'`. To go back to the menu, call `backToMenu()`. |
 | `web_dir has a node_modules folder` (or `more than 2000 files`) | `web_dir` is your project folder, not your built page. | Point `web_dir` at your build output, like `dist/`. |
 | `the game frame went to ..., which isn't a file in web_dir` | Your page went to an address that isn't a file: an `href="#"` link, a router path, a reload after `history.pushState`, or a typo. The player saw "This page isn't part of the game." | See [Files and caching](#11-files-and-caching): use buttons, and memory or hash routing. |
@@ -1580,6 +1579,12 @@ Your game still registers, but something will likely break:
 | `economy took longer than 2 seconds, so its card has no currency label` | Your `economy` function didn't answer in time when a player opened the menu. | Answer from memory or one Config read. Don't call outside services in it. |
 | `economy failed, so its card has no currency label` | Your `economy` function raised. The error follows in the log. | Fix the error. The menu still opens meanwhile. |
 | `economy returned 45 characters, so its label was cut to 40` | The line from your `economy` function was longer than the badge fits. | Return a line of 40 characters or fewer. |
+
+This one shows up when a player logs in, not when your game registers:
+
+| What you see | Why | Fix |
+|---|---|---|
+| `Discord refused a login that asked for extra permissions, so player ... logged in with identify only.` | Discord didn't accept one of the scopes, or the player pressed Cancel on Discord's prompt. The line names each scope and the games that ask for it. The player's games still open. | Check the scope's spelling against Discord's OAuth2 scope list. If players pressed Cancel, nothing is broken. |
 
 ### Your page doesn't work
 
@@ -1675,7 +1680,7 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
 Your users need ActivityHub too, and Red doesn't install required cogs by itself. Say how to get it in `info.json`'s `install_msg`, like the quick start does, and in your README: `[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`, then `[p]cog install vrt-cogs activityhub` and `[p]load activityhub`.
 
 - ActivityHub is hidden from `[p]cog list` while it's in beta, but `[p]cog install` still finds it.
-- A field added in a later ActivityHub is refused by older ones. So set `requires` in `activityhub_game()` to the oldest ActivityHub your game works with, like `"requires": "0.8.0"`, and say the same in your cog's description. A bot with an older hub then refuses your game with a message saying to update ActivityHub. `[p]help ActivityHub` shows the version a bot has.
+- A field added in a later ActivityHub is refused by older ones. So set `requires` in `activityhub_game()` to the oldest ActivityHub your game works with, like `"requires": "0.8.0"`. Say the same in your cog's description. A bot with an older hub then refuses your game with a message saying to update ActivityHub. `[p]help ActivityHub` shows the version a bot has.
 
 ### The checklist
 
@@ -1715,7 +1720,7 @@ Snake and 2048 show a stronger anti-cheat pattern than checking against the cloc
 
 A changed page can't fake a score that way, because the bot never uses the page's score. The cost is that the rules exist twice, once in JavaScript and once in Python, and must match exactly.
 
-The random number generator is the same on both sides too. `devkit/rng.py` and `devkit/rng.js` are that pair, ready to copy: the same seed gives the same numbers on the bot and on the page.
+The random number generator is the same on both sides too. [`devkit/rng.py`](devkit/rng.py) and [`devkit/rng.js`](devkit/rng.js) are that pair, ready to copy: the same seed gives the same numbers on the bot and on the page.
 
 The included pages also import `"activityhub/arcade.js"`, the hub's shared title, pause, results and leaderboard frame. That is the file `activityhub/web/arcade.js` in the cog's folder, the same one [Who's here](#7-whos-here) points to. Only the included games can import it, because it isn't part of the API yet and may change. Copy what you need instead.
 
@@ -1772,7 +1777,7 @@ Boulder Bash is a cog in the same repo (`boulderbash/`): a remake of Neopets' De
 | **Bot owner** | The person who runs the bot. They do the one-time setup and can turn any game off everywhere. |
 | **Busy** | A game's flag that its player is mid-round (`hub.busy(true)`), so Join asks before taking them away. |
 | **Config** | Red's settings storage, where a cog saves its data. |
-| **ctx** | The object every handler gets, saying who the player is and where (`ctx.author`, `ctx.guild`, `ctx.channel`, `ctx.instance_id`). The hub proved it with Discord. |
+| **ctx** | The object every handler gets, saying who the player is and where (`ctx.author`, `ctx.guild`, `ctx.channel`, `ctx.instance_id`), with `await ctx.is_admin()` and `await ctx.is_mod()` for the player's rights. The hub proved it with Discord. |
 | **Follow** | The person a player joined with **Join**: `hub.follow` on the page, `conn.follow` in Python. |
 | **Frame** | A page inside a page (an HTML `iframe`). Your game runs in one, inside the hub's menu page. |
 | **Handler** | Any of your `async def` methods the hub calls: actions, live connection handlers and raw routes. |

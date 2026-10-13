@@ -16,7 +16,9 @@ async def turn_off(hub, key="demo"):
 
 def page_imports(text):
     """The import map the hub wrote into a page"""
-    return json.loads(re.search(r'<script type="importmap">(.*?)</script>', text)[1])["imports"]
+    found = re.search(r'<script type="importmap">(.*?)</script>', text)
+    assert found is not None, "the page has no import map"
+    return json.loads(found[1])["imports"]
 
 
 @pytest.mark.asyncio
@@ -46,7 +48,7 @@ async def test_page_of_an_unloaded_game_leads_back_to_the_menu(client, server, d
     text = await resp.text()
     assert resp.status == 404 and "isn&#x27;t installed" in text
     assert page_imports(text) == {"activityhub": f"/hub/{server.hub_build()}/sdk.js"}
-    assert 'id="back"' in text and '"activityhub": "/hub/' in text
+    assert 'id="back"' in text
     # A frame that reloads on another address under the game, like a router path, gets the same way out
     resp = await client.get("/games/nope/b/play", headers={"Sec-Fetch-Dest": "iframe"})
     text = await resp.text()
