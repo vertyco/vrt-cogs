@@ -25,14 +25,14 @@ class MarbleMunch(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.4.1"
+    __version__ = "0.5.0"
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
         self.config = Config.get_conf(self, identifier=2026100901, force_registration=True)
-        self.config.register_global(payouts={})
-        self.config.register_guild(payouts={})
+        self.config.register_global(payouts={}, tally={})
+        self.config.register_guild(payouts={}, tally={})
         self.config.register_user(**USER_DEFAULTS, cashed={})
         self.config.register_member(cashed={})
         self.payouts = Payouts(self.config)
@@ -56,7 +56,16 @@ class MarbleMunch(commands.Cog):
         for guild_id, members in (await self.config.all_members()).items():
             if user_id in members:
                 await self.config.member_from_ids(guild_id, user_id).clear()
+        for guild_id in await self.config.all_guilds():
+            await self.forget_paid(self.config.guild_from_id(guild_id).tally, user_id)
+        await self.forget_paid(self.config.tally, user_id)
         self.offers.pop(user_id, None)
+
+    async def forget_paid(self, value: t.Any, user_id: int) -> None:
+        tally = await value()
+        if user_id in tally.get("players", []):
+            tally["players"].remove(user_id)
+            await value.set(tally)
 
     async def cog_unload(self):
         for match in list(self.matches.values()):
@@ -200,6 +209,7 @@ class MarbleMunch(commands.Cog):
             "defaults": DEFAULTS,
             "global": await self.payouts.bank.is_global(),
             "currency": await self.payouts.bank.get_currency_name(ctx.guild),
+            "today": await self.payouts.today_paid(ctx.guild),
         }
 
     async def save_payouts(self, ctx, data: dict) -> dict:

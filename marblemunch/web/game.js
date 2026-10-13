@@ -192,8 +192,11 @@ function showPayouts(state) {
     return;
   }
   $("payouts-global").hidden = !state.global;
-  $("payouts-rate-label").textContent = `${state.currency[0].toUpperCase()}${state.currency.slice(1)} per marble`;
+  const currency = state.currency;
+  $("payouts-rate-label").textContent = `${currency[0].toUpperCase()}${currency.slice(1)} per marble`;
   fillPayouts(state.settings);
+  const today = state.today;
+  $("payouts-today").textContent = `Today: ${today.paid.toLocaleString()} ${currency} paid to ${plural(today.players, "player")}.`;
 }
 
 function fillPayouts(settings) {

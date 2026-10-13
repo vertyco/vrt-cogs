@@ -1,5 +1,11 @@
 # Marble Munch Changelog
 
+## 0.5.0
+
+Needs ActivityHub 0.8.0 or later.
+
+- The payout settings dialog shows what was paid today and to how many players, like "Today: 1,170 credits paid to 2 players." It starts over at midnight UTC.
+
 ## 0.4.1
 
 Needs ActivityHub 0.8.0 or later.

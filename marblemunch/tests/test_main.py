@@ -183,6 +183,28 @@ async def test_only_server_admins_see_and_save_the_settings(paying):
 
 
 @pytest.mark.asyncio
+async def test_the_settings_show_todays_payouts(paying):
+    cog = paying
+    await turn_on(cog, plays=3)
+    for user_id, marbles in ((1, 12), (2, 5), (1, 500)):
+        await cog.payouts.cash_in(member_ctx(user_id).author, marbles)
+    today = (await cog.payout_settings(member_ctx(ADMIN_ID), {}))["today"]
+    assert today == {"paid": 120 + 50 + 1000, "players": 2}
+    cog.payouts.today.day = "2026-10-11"
+    assert (await cog.payout_settings(member_ctx(ADMIN_ID), {}))["today"] == {"paid": 0, "players": 0}
+
+
+@pytest.mark.asyncio
+async def test_deleting_a_players_data_takes_them_off_todays_tally(paying):
+    cog = paying
+    await turn_on(cog)
+    await cog.payouts.cash_in(member_ctx(1).author, 12)
+    await cog.payouts.cash_in(member_ctx(2).author, 5)
+    await cog.red_delete_data_for_user(requester="user", user_id=1)
+    assert (await cog.config.guild_from_id(500).tally())["players"] == [2]
+
+
+@pytest.mark.asyncio
 async def test_with_a_global_bank_only_the_owner_sets_payouts_for_every_server(paying):
     cog = paying
     cog.payouts.bank.global_bank = True

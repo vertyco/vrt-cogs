@@ -110,11 +110,14 @@ def test_the_last_round_cashes_in_from_the_side_panel(driver, live):
 
 def test_a_server_admin_sets_payouts_from_the_game(driver, live):
     run(live, live.cog.config.guild_from_id(fakes.GUILD_ID).payouts.set({}))
+    # Saved data lasts across tests, and an earlier one may have cashed in today
+    run(live, live.cog.config.guild_from_id(fakes.GUILD_ID).tally.set({}))
     live.user_id = fakes.MANAGER_ID
     open_game(driver, live)
     browser.wait_for(driver, "!document.getElementById('open-payouts').hidden")
     driver.find_element(By.ID, "open-payouts").click()
     assert driver.find_element(By.ID, "payouts-rate-label").text == "Credits per marble"
+    assert "Today: 0 credits paid to 0 players" in driver.find_element(By.ID, "payouts-today").text
     driver.find_element(By.ID, "payouts-on").click()
     driver.find_element(By.ID, "payouts-plays").send_keys(Keys.BACKSPACE, "5")
     driver.find_element(By.ID, "save-payouts").click()

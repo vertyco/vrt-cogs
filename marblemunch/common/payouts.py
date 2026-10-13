@@ -4,7 +4,7 @@ Marble payouts, the way Neopets pays for its games.
 After a round, a player may cash in the marbles they munched. Each marble pays the rate in the bank's currency, up
 to a most-per-cash-in, and each player gets a few cash-ins a day. The next round they finish replaces the unsent
 one, so players save their cash-ins for their best rounds. A cheater can't earn more than an honest player, since
-every cash-in is capped.
+every cash-in is capped. The settings dialog also shows what was paid today.
 
 With a per-server bank each server sets its own payouts. With a global bank one balance is shared by every server,
 so only the bot owner sets them, once for everywhere, and the daily cash-ins count across servers.
@@ -92,6 +92,13 @@ class Payouts:
         cashed = await (await self.ledger(member))()
         return cashed.get("count", 0) if cashed.get("day") == self.today() else 0
 
+    async def today_paid(self, guild: t.Any) -> dict:
+        """What was paid today where these settings apply, and to how many players"""
+        tally = await (await self.group(guild)).tally()
+        if tally.get("day") != self.today():
+            return {"paid": 0, "players": 0}
+        return {"paid": tally.get("paid", 0), "players": len(tally.get("players", []))}
+
     async def offer(self, member: t.Any, marbles: int) -> dict | None:
         """What cashing in these marbles would pay, or None when payouts are off where the player is"""
         settings = await self.settings(member.guild)
@@ -122,12 +129,23 @@ class Payouts:
             if paid <= 0:
                 return {"error": BALANCE_FULL}
             await ledger.set({"day": today, "count": count + 1})
+            await self.add_to_tally(member, paid)
         return {
             "paid": paid,
             "left": settings["plays"] - count - 1,
             "balance": balance,
             "currency": await self.bank.get_currency_name(member.guild),
         }
+
+    async def add_to_tally(self, member: t.Any, paid: int) -> None:
+        group = await self.group(member.guild)
+        tally, today = await group.tally(), self.today()
+        if tally.get("day") != today:
+            tally = {"day": today, "paid": 0, "players": []}
+        tally["paid"] = tally.get("paid", 0) + paid
+        if member.id not in tally["players"]:
+            tally["players"].append(member.id)
+        await group.tally.set(tally)
 
     async def deposit(self, member: t.Any, amount: int) -> tuple[int, int]:
         """Pay up to the bank's maximum balance. Returns what was paid and the new balance"""
