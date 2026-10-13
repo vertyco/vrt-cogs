@@ -1,5 +1,15 @@
 # Warfare 1917 Changelog
 
+## 0.2.0
+
+Needs ActivityHub 0.10.0 or later.
+
+- Everyone in a Discord server now plays together, whichever voice channel they opened the Activity in. The Watch list shows every battle in the server, and the Versus list every open game.
+- Battles and games of people in your own voice channel are at the top of both lists.
+- When you open a versus game, pick who can take it: **Whole server** or **My channel**. Whole server is picked each time. A My channel game only shows in your own channel's list, and says so on your row. Once its battle starts, anyone in the server can watch it.
+- The versus setup no longer shows the A.I. setting. A person commands the other side, so it did nothing.
+- Moving to another voice channel in the same server no longer loses your versus battle, and your open game stays open while you have the game open anywhere in the server.
+
 ## 0.1.3
 
 - The game now writes problems on a player's device to the bot's log: page errors, the graphics being lost or coming back, and the drawing stopping. This helps track down a black screen after the Activity shrinks into its small window.

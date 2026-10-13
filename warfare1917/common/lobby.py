@@ -1,15 +1,16 @@
-"""One Activity window's battles: every battle running in it, who sees each, and the players' requests for their own.
+"""One room's battles: every battle running in it, who sees each, and the players' requests for their own. A room is
+a whole Discord server, every voice channel in it, or a DM call's own window.
 
-One loop steps every battle in the window at the original's 35 steps a second, 3 steps at a time, and sends each
+One loop steps every battle in the room at the original's 35 steps a second, 3 steps at a time, and sends each
 battle's update to its players and watchers after each tick. A battle stays here until 6 seconds after it ends
 (postBattleScreen's delay, F5:4292); then `over` carries its result and the battle is gone.
 
 A solo battle (campaign or custom) whose player has no page open anywhere pauses at once and waits up to 10 minutes
 for them. A page that comes back gets the whole battle, still paused, and the player unpauses it.
 
-A versus battle never pauses. A player with no page in the window loses by surrender once they have been gone 60
-seconds, or at once when their only page is in another window (they left this one), or when they quit to the main
-menu.
+A versus battle never pauses. A player with no page in the room loses by surrender once they have been gone 60
+seconds, or at once when their only page is in another room (they opened the game in another server or a DM call),
+or when they quit to the main menu.
 """
 
 import asyncio
@@ -39,11 +40,11 @@ CATCH_UP_SECONDS = 0.25
 OVER_STEPS = 210
 # A solo battle whose player has no page left waits this long for them, then goes with no result
 DROP_SECONDS = 600
-# A versus player with no page in the window loses by surrender after this long
+# A versus player with no page in the room loses by surrender after this long
 VERSUS_DROP_SECONDS = 60
 SOLO = ("campaign", "custom")
-LOOP_FAILED = "Something went wrong, so the battles in this window were stopped."
-# One count for every window, after a prefix drawn each time the cog loads, so no two battles share an id, even
+LOOP_FAILED = "Something went wrong, so the battles in this server were stopped."
+# One count for every room, after a prefix drawn each time the cog loads, so no two battles share an id, even
 # across a reload while a page still shows an old one
 IDS = itertools.count(1)
 PREFIX = f"{random.getrandbits(24):06x}"
@@ -64,7 +65,7 @@ def number(value: t.Any) -> bool:
 
 @dataclass(eq=False)
 class Run:
-    """One battle running in the window"""
+    """One battle running in the room"""
 
     id: str
     kind: str  # "campaign", "custom" or "versus"
@@ -75,7 +76,7 @@ class Run:
     reported: bool = False  # its result went to the cog
     sent_paused: bool = False  # the last update sent said paused
     dropped_at: float | None = None  # when its solo player's last page closed
-    away: dict[int, float] = field(default_factory=dict)  # versus players with no page in the window: since when
+    away: dict[int, float] = field(default_factory=dict)  # versus players with no page in the room: since when
     camera: dict[str, float] = field(default_factory=dict)  # each side's player: where their camera is (world x)
     watchers: list = field(default_factory=list)
     faces: list = field(default_factory=list)  # the watchers its audience was last told of
@@ -94,6 +95,11 @@ class Game:
     name: str
     avatar: str
     settings: dict  # checked custom settings; `side` is the opener's side
+    # The opener's window when only their voice channel may take it, None when the whole server may
+    instance_id: str | None = None
+
+    def open_to(self, instance_id: str) -> bool:
+        return self.instance_id is None or self.instance_id == instance_id
 
 
 class Window:
@@ -108,8 +114,9 @@ class Window:
         on_dismiss: t.Callable[[Run], None] | None = None,
     ):
         """`on_result(run)` is called once, on the step a battle ends (it keeps playing its cheers after).
-        `on_closed(window)` is called when the loop has stopped. `everywhere()` gives every live window, since a
-        player who reopens the Activity lands in a new window while their battle carries on in the old one.
+        `on_closed(window)` is called when the loop has stopped. `everywhere()` gives every live room's window, since
+        a player who reopens the Activity in another server or a DM call lands in another room while their battle
+        carries on in this one.
         `await on_take(conn, game_id)` seats a page in an open versus game and starts the battle.
         `on_level(run)` is called on the step a campaign player's kill XP reaches a new level.
         `on_dismiss(run)` is called when a battle is gone with no result"""
@@ -150,7 +157,7 @@ class Window:
         except Exception as e:
             # Logged once and stopped, so a bug can't fill the log 11 times a second. A campaign stays as it was
             # saved at Launch Battle, so the mission plays again
-            log.error("Warfare 1917 stopped the battles in window %s", self.room.instance_id, exc_info=e)
+            log.error("Warfare 1917 stopped the battles in room %s", self.room.id, exc_info=e)
             stopped = list(self.runs.values())
             self.runs.clear()
             self.games.clear()
@@ -160,7 +167,7 @@ class Window:
                     await conn.send({"notice": LOOP_FAILED})
                 if self.on_dismiss is not None:
                     self.on_dismiss(run)
-            await self.room.broadcast(self.lobby())
+            await self.send_lobby()
         finally:
             self.on_closed(self)
 
@@ -175,10 +182,10 @@ class Window:
             await self.advance(run)
         if self.dirty:
             self.dirty = False
-            await self.room.broadcast(self.lobby())
+            await self.send_lobby()
 
     def expire_drops(self, run: Run, now: float) -> None:
-        """A versus player gone from the window for 60 seconds, or whose only page is in another window, loses by
+        """A versus player gone from the room for 60 seconds, or whose only page is in another room, loses by
         surrender (D12). Their opponent keeps playing to the end"""
         if run.kind != "versus" or run.battle.state != "playing":
             return
@@ -233,7 +240,7 @@ class Window:
 
     async def dismiss(self, run: Run, spare: t.Any = None) -> None:
         """A battle gone with no result. Its audience is sent back to the main menu, except the page `spare`, which
-        went there itself. The battle is removed from the window it runs in, which may not be this one"""
+        went there itself. The battle is removed from the room it runs in, which may not be this one"""
         audience = self.audience(run)
         owner = next((window for window in self.everywhere() if run.id in window.runs), self)
         owner.remove(run)
@@ -278,24 +285,24 @@ class Window:
         return run
 
     def run_of(self, user_id: int) -> Run | None:
-        """The player's battle in this window"""
+        """The player's battle in this room"""
         return next((run for run in self.runs.values() if user_id in run.players), None)
 
     def everywhere(self) -> list["Window"]:
-        """This window and every other live one"""
+        """This room's window and every other live one"""
         return [self, *(window for window in self.windows() if window is not self)]
 
     def mine(self, user_id: int) -> Run | None:
-        """The player's battle in any window"""
+        """The player's battle in any room"""
         return next((run for window in self.everywhere() if (run := window.run_of(user_id)) is not None), None)
 
     def pages(self, user_id: int) -> list:
-        """The player's open pages in every window"""
+        """The player's open pages in every room"""
         rooms = [window.room.connections for window in self.everywhere()]
         return [conn for conns in rooms for conn in conns if conn.ctx.author.id == user_id]
 
     def audience(self, run: Run) -> list:
-        """Everyone seeing the battle: its players on every page they have open, in any window, and its watchers"""
+        """Everyone seeing the battle: its players on every page they have open, in any room, and its watchers"""
         players = [conn for user_id in run.players for conn in self.pages(user_id)]
         return players + [conn for conn in run.watchers if not any(conn is p for p in players)]
 
@@ -329,7 +336,8 @@ class Window:
             people.append({"id": str(user_id), "name": run.names[side], "avatar": avatar, "side": side})
         return people
 
-    def lobby(self) -> dict:
+    def lobby(self, instance_id: str) -> dict:
+        """The lists for a page in window `instance_id`: every battle in the room, and the open games it may take"""
         battles = [
             {
                 "id": r.id,
@@ -349,10 +357,22 @@ class Window:
                 "user": str(g.user_id),
                 "avatar": g.avatar,
                 "settings": g.settings,
+                "channel": g.instance_id is not None,
             }
             for g in self.games.values()
+            if g.open_to(instance_id)
         ]
         return {"lobby": {"battles": battles, "versus": versus}}
+
+    async def send_lobby(self) -> None:
+        """The lists to everyone in the room, made once per window, since a game for one voice channel is only
+        listed in that channel's window"""
+        lobbies = {}
+        for conn in self.room.connections:
+            where = conn.ctx.instance_id
+            if where not in lobbies:
+                lobbies[where] = self.lobby(where)
+            await conn.send(lobbies[where])
 
     # ---------- People ----------
 
@@ -363,7 +383,7 @@ class Window:
         run = self.mine(conn.ctx.author.id)
         # Everyone's list shows this player's picture from now on
         self.dirty = True
-        await conn.send({**self.lobby(), "mine": run.id if run is not None else None})
+        await conn.send({**self.lobby(conn.ctx.instance_id), "mine": run.id if run is not None else None})
         if run is not None:
             # Back from a drop: the battle stays paused until the page asks to go on
             run.dropped_at = None
@@ -392,7 +412,7 @@ class Window:
             await conn.send({"follow": "menu"})
 
     async def watch(self, conn: t.Any, run_id: t.Any) -> None:
-        """A page starts watching a battle of the window. A player with a battle of their own can't watch another"""
+        """A page starts watching a battle of the room. A player with a battle of their own can't watch another"""
         run = self.runs.get(run_id) if isinstance(run_id, str) else None
         if run is None or self.mine(conn.ctx.author.id) is not None:
             return
@@ -412,9 +432,11 @@ class Window:
         self.unwatch(conn)
         self.dirty = True
         user_id = conn.ctx.author.id
-        # An open game closes with its opener's last page in the window
-        if not any(other.ctx.author.id == user_id for other in self.room.connections if other is not conn):
-            self.cancel(user_id)
+        # An open game closes with its opener's last page that lists it
+        pages = [other for other in self.room.connections if other is not conn and other.ctx.author.id == user_id]
+        for game_id, game in list(self.games.items()):
+            if game.user_id == user_id and not any(game.open_to(page.ctx.instance_id) for page in pages):
+                del self.games[game_id]
         run = self.mine(user_id)
         if run is None or not run.solo or self.pages(user_id):
             return
@@ -424,11 +446,13 @@ class Window:
 
     # ---------- Versus games waiting for a second player ----------
 
-    def open_game(self, conn: t.Any, settings: dict) -> Game:
-        """The player's open game, in place of any they had (one open game per player)"""
+    def open_game(self, conn: t.Any, settings: dict, channel: bool) -> Game:
+        """The player's open game, in place of any they had (one open game per player). `channel` keeps it to the
+        opener's voice channel"""
         author = conn.ctx.author
         self.cancel(author.id)
-        game = Game(new_id("v"), author.id, author.display_name, author.display_avatar.url, settings)
+        window = conn.ctx.instance_id if channel else None
+        game = Game(new_id("v"), author.id, author.display_name, author.display_avatar.url, settings, window)
         self.games[game.id] = game
         self.dirty = True
         return game

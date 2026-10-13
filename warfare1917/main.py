@@ -18,6 +18,9 @@ log = logging.getLogger("red.vrt.warfare1917")
 
 KEY = "warfare1917"
 BUSY = "You already have a battle running."
+CHANNEL_ONLY = "That game is only open to its own voice channel."
+# Who may take an open versus game: anyone in the server, or only the opener's voice channel
+WHO = ("server", "channel")
 # Requests for the player's own battle, which the window checks and passes to the battle
 BATTLE_REQUESTS = ("deploy", "support", "trench", "masks", "pause", "surrender", "quit", "camera")
 # Problems a page reports, logged at most this many per player until the cog reloads, and cut to this length
@@ -34,14 +37,14 @@ class Warfare1917(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.3"
+    __version__ = "0.2.0"
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
         self.config = Config.get_conf(self, identifier=2026101117, force_registration=True)
         self.config.register_user(campaign=None)
-        # One window per Activity window, keyed by its instance id
+        # One window per room (a whole server, or a DM call's own window), keyed by the room's id
         self.windows: dict[str, Window] = {}
         # One lock per player, so two devices or windows can't interleave changes to one save. A lock nobody holds
         # or waits for is let go, so the map doesn't keep one for every player who ever played
@@ -79,6 +82,9 @@ class Warfare1917(commands.Cog):
             "thumbnail": "thumb.png",
             "web_dir": Path(__file__).parent / "web",
             "socket": {"join": self.join, "message": self.message, "leave": self.leave},
+            # Everyone in a server plays in one room, whichever voice channel they opened the Activity in
+            "room": "server",
+            "requires": "0.10.0",
         }
 
     # ---------- Windows ----------
@@ -90,8 +96,8 @@ class Warfare1917(commands.Cog):
         return lock
 
     def window_for(self, conn: t.Any) -> Window:
-        """The window's battles, started when its first player arrives, or again after its loop stopped"""
-        window = self.windows.get(conn.ctx.instance_id)
+        """The room's battles, started when its first player arrives, or again after its loop stopped"""
+        window = self.windows.get(conn.ctx.room_id)
         if window is None:
             window = Window(
                 conn.room,
@@ -102,19 +108,19 @@ class Warfare1917(commands.Cog):
                 self.battle_level,
                 self.battle_dismissed,
             )
-            self.windows[conn.ctx.instance_id] = window
+            self.windows[conn.ctx.room_id] = window
             window.start()
         elif window.room is not conn.room:
-            # Reloading ActivityHub gives the window a new room, while its battles live on
+            # Reloading ActivityHub gives the window a new room object, while its battles live on
             window.room = conn.room
         return window
 
     def window_closed(self, window: Window) -> None:
-        if self.windows.get(window.room.instance_id) is window:
-            del self.windows[window.room.instance_id]
+        if self.windows.get(window.room.id) is window:
+            del self.windows[window.room.id]
 
     def running(self, user_id: int) -> Run | None:
-        """The battle this player is in, in any window"""
+        """The battle this player is in, in any room"""
         for window in self.windows.values():
             run = window.run_of(user_id)
             if run is not None:
@@ -137,7 +143,7 @@ class Warfare1917(commands.Cog):
         await window.join(conn, conn.follow)
 
     async def leave(self, ctx, conn) -> None:
-        window = self.windows.get(ctx.instance_id)
+        window = self.windows.get(ctx.room_id)
         if window is not None:
             window.leave(conn)
 
@@ -301,7 +307,7 @@ class Warfare1917(commands.Cog):
     # ---------- Watching and versus ----------
 
     def close_games(self, user_id: int) -> None:
-        """The player's open versus game, in every window, closed: they are about to start a battle of their own"""
+        """The player's open versus game, in every room, closed: they are about to start a battle of their own"""
         for window in self.windows.values():
             window.cancel(user_id)
 
@@ -313,10 +319,10 @@ class Warfare1917(commands.Cog):
             self.window_for(conn).unwatch(conn)
 
     async def open_versus(self, conn: t.Any, value: t.Any) -> None:
-        """A versus game opened for someone else in the window to take: the Custom Battle's settings with no
-        difficulty, and the opener's side"""
+        """A versus game opened for someone else in the server to take: the Custom Battle's settings with no
+        difficulty, the opener's side, and `who` may take it ("server" or "channel")"""
         settings = campaign.check_custom(value, versus=True)
-        if settings is None:
+        if settings is None or value.get("who") not in WHO:
             return
         user_id = conn.ctx.author.id
         # The lock makes this wait for a Launch Battle or Custom Battle of theirs that is still starting
@@ -324,7 +330,7 @@ class Warfare1917(commands.Cog):
             if self.running(user_id) is not None:
                 await conn.send({"notice": BUSY})
                 return
-            self.window_for(conn).open_game(conn, settings)
+            self.window_for(conn).open_game(conn, settings, value["who"] == "channel")
 
     async def cancel_versus(self, conn: t.Any, value: t.Any) -> None:
         if value is True:
@@ -337,6 +343,11 @@ class Warfare1917(commands.Cog):
         async with self.lock(user_id):
             if self.running(user_id) is not None:
                 await conn.send({"notice": BUSY})
+                return
+            listed = window.games.get(value) if isinstance(value, str) else None
+            if listed is not None and not listed.open_to(conn.ctx.instance_id):
+                # The page held a list from before it moved channel
+                await conn.send({"notice": CHANNEL_ONLY})
                 return
             game = window.take_game(value, user_id)
             if game is None:

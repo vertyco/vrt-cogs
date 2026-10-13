@@ -94,7 +94,7 @@ const page = {
   },
   // Bot message key -> handlers
   handlers: new Map(),
-  // The bot's word: the campaign view (null for none, undefined before the bot has said), the window's lobby and the
+  // The bot's word: the campaign view (null for none, undefined before the bot has said), the server's lobby and the
   // battle this page sees
   save: undefined,
   lobby: null,

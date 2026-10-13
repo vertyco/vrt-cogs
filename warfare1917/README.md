@@ -5,7 +5,7 @@ Lead the British or German army across the trenches of 1917, for [ActivityHub](.
 - **Both campaigns.** Nine missions as the British and nine as the Germans, with the original's map, units, fire support and mission briefings. Win a mission to move on, lose it to retry. Winning the ninth ends the campaign with the newspaper and your campaign stats.
 - **Upgrades that work.** Kills earn experience, experience earns levels, and levels buy upgrades from the original's two upgrade trees. Every upgrade does what its description says, including the ones that were broken in the original.
 - **Custom Battle.** Pick a side, difficulty, units, supports, map size, trenches, wire and mines, and fight it out.
-- **Solo, watching or 1 vs 1.** Play alone, watch any battle running in the same Activity, or open a versus battle and let a friend take the other side. Others in the voice channel can watch.
+- **Solo, watching or 1 vs 1.** Play alone, watch any battle running in your Discord server, or open a versus battle for anyone in the server (or only your voice channel) to take the other side. Anyone in the server can watch your battles. Battles and games from your own voice channel are listed first.
 - **One campaign save per person.** Your campaign follows your Discord account, so you can pick it up from any server or device.
 - **Desktop and phones.** The original's menus and screens, drawn from its own art. Works held upright or sideways.
 
@@ -13,7 +13,7 @@ There are no Red currency payouts.
 
 ## Setup
 
-Warfare 1917 needs ActivityHub 0.5.0 or later, loaded and set up (see its README). Then:
+Warfare 1917 needs ActivityHub 0.10.0 or later, loaded and set up (see its README). Then:
 
 ```
 [p]cog install vrt-cogs warfare1917

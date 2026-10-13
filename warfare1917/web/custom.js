@@ -41,6 +41,18 @@ const NOTE_BODY = 1039;
 // Where the "DIFFICULTY" heading and the three wells under it are baked into the screen's background, in the screen's
 // own pixels from the stage's top left. A versus game has no difficulty, so the note covers them
 const NOTE_BOX = { x: 230, y: 70, width: 212, height: 79 };
+// Where the "A.I SETTING" heading and its three buttons sit along the screen's bottom left, in stage pixels. A
+// versus game has no computer player either, so a panel covers them and holds who may take the game
+const WHO_BOX = { x: 52, y: 341, width: 414, height: 30 };
+// Who may take a versus game: anyone in the server, or only the player's own voice channel. Each is one of the
+// options screen's buttons (character 845), as the versus lobby uses, lit like the screen's other picks
+const WHO_BUTTON = 845;
+const WHO_BUTTONS = { server: ["whoServer", "WHOLE SERVER"], channel: ["whoChannel", "MY CHANNEL"] };
+const WHO_LABEL = "WHO CAN TAKE IT";
+const WHO_LABEL_X = 12;
+const WHO_LABEL_Y = 3;
+const WHO_GAP = 8;
+const WHO_PADDING = 24;
 const SKIRMISH_ORIGIN = { x: 400.45, y: 204.45 };
 const NOTE_HEADING_Y = 12;
 const NOTE_BODY_Y = 40;
@@ -49,6 +61,8 @@ let page = null;
 // True while the screen sets up a versus game: no difficulty (a person commands the other side), and Launch opens
 // the game in the versus lobby
 let versus = false;
+// Who may take the versus game, "server" or "channel": the whole server each time the screen opens
+let who = "server";
 // What is picked: the starting picks of setupSkirmishMapDefaults and buttonSetup_skirmish (F5:6126). The boxes' words
 // are kept apart, as the original's boxes keep theirs
 let picks = startingPicks();
@@ -148,40 +162,86 @@ function wireButtons(skirmish) {
 
 // ---------- The versus note ----------
 
-function noteWords(def, text, y) {
-  const width = NOTE_BOX.width - 16;
+function noteWords(def, text, x, y, width, align = "center") {
   const bounds = [0, 0, width, 40];
-  const field = new TextField({ ...def, bounds, font: NOTE_FONT, align: "center", multiline: true, text });
-  field.position.set(8, y);
+  const field = new TextField({ ...def, bounds, font: NOTE_FONT, align, multiline: true, text });
+  field.position.set(x, y);
   field.draw();
   return field;
 }
 
-// A panel over the baked difficulty heading and wells, shown only while the screen sets up a versus game
-function makeNote(skirmish) {
-  const holder = skirmish.attach(page.lib.make(NOTE_BACKING), "versusNote");
-  const size = holder.getLocalBounds();
-  holder.scale.set(NOTE_BOX.width / size.width, NOTE_BOX.height / size.height);
-  holder.position.set(
-    NOTE_BOX.x - SKIRMISH_ORIGIN.x - size.minX * holder.scale.x,
-    NOTE_BOX.y - SKIRMISH_ORIGIN.y - size.minY * holder.scale.y,
-  );
-  const words = skirmish.attach(new Container(), "versusWords");
-  words.position.set(NOTE_BOX.x - SKIRMISH_ORIGIN.x, NOTE_BOX.y - SKIRMISH_ORIGIN.y);
-  words.addChild(
-    noteWords(page.lib.data.texts[NOTE_HEADING], "VERSUS", NOTE_HEADING_Y),
-    noteWords(page.lib.data.texts[NOTE_BODY], "Another player commands\rthe other side.", NOTE_BODY_Y),
-  );
-  return [holder, words];
+// A panel of the dialog's backing over a baked heading and its buttons, shown only while the screen sets up a versus
+// game
+function makePanel(skirmish, name, box) {
+  const panel = skirmish.attach(new Container(), name);
+  panel.position.set(box.x - SKIRMISH_ORIGIN.x, box.y - SKIRMISH_ORIGIN.y);
+  const backing = page.lib.make(NOTE_BACKING);
+  const size = backing.getLocalBounds();
+  backing.scale.set(box.width / size.width, box.height / size.height);
+  backing.position.set(-size.minX * backing.scale.x, -size.minY * backing.scale.y);
+  panel.addChild(backing);
+  return panel;
 }
 
-// The difficulty buttons and the note are for one mode each
-function applyMode(skirmish) {
-  for (const name of Object.values(ROWS.difficulty)) {
-    skirmish.child(name).visible = !versus;
+function makeNote(skirmish) {
+  const texts = page.lib.data.texts;
+  const width = NOTE_BOX.width - 16;
+  makePanel(skirmish, "versusNote", NOTE_BOX).addChild(
+    noteWords(texts[NOTE_HEADING], "VERSUS", 8, NOTE_HEADING_Y, width),
+    noteWords(texts[NOTE_BODY], "Another player commands\rthe other side.", 8, NOTE_BODY_Y, width),
+  );
+}
+
+// One of the who buttons, its plate widened to its words as the versus lobby's are
+function whoButton(skirmish, name, words, choice) {
+  const button = skirmish.attach(page.lib.make(WHO_BUTTON), name);
+  const field = button.child("buttonText");
+  field.autoSizeCenter();
+  field.text = words;
+  const backing = button.child("backing");
+  backing.scale.x = Math.max(1, (field.box.width + WHO_PADDING) / backing.getLocalBounds().width);
+  wireHover(button);
+  button.setHandler("onRelease", () => {
+    click();
+    pickWho(skirmish, choice);
+  });
+  return button;
+}
+
+// The panel over the A.I. setting: its heading on the left, and the two buttons from its right edge in
+function makeWho(skirmish) {
+  const panel = makePanel(skirmish, "versusWho", WHO_BOX);
+  const label = WHO_BOX.width / 2;
+  panel.addChild(noteWords(page.lib.data.texts[NOTE_HEADING], WHO_LABEL, WHO_LABEL_X, WHO_LABEL_Y, label, "left"));
+  let right = WHO_BOX.x + WHO_BOX.width - WHO_GAP;
+  for (const [choice, [name, words]] of Object.entries(WHO_BUTTONS).reverse()) {
+    const button = whoButton(skirmish, name, words, choice);
+    const size = button.getLocalBounds();
+    button.position.set(
+      right - size.maxX - SKIRMISH_ORIGIN.x,
+      WHO_BOX.y + WHO_BOX.height / 2 - (size.minY + size.maxY) / 2 - SKIRMISH_ORIGIN.y,
+    );
+    right -= size.width + WHO_GAP;
   }
-  for (const part of [skirmish.child("versusNote"), skirmish.child("versusWords")]) {
-    part.visible = versus;
+}
+
+function pickWho(skirmish, choice) {
+  who = choice;
+  for (const [key, [name]] of Object.entries(WHO_BUTTONS)) {
+    light(skirmish.child(name), key === who ? PICKED : NORMAL, 0.4);
+  }
+}
+
+// The difficulty and A.I. setting buttons, and the panels over them, are for one mode each
+function applyMode(skirmish) {
+  for (const key of ["difficulty", "mood"]) {
+    for (const name of Object.values(ROWS[key])) {
+      skirmish.child(name).visible = !versus;
+    }
+  }
+  const parts = ["versusNote", "versusWho", ...Object.values(WHO_BUTTONS).map(([name]) => name)];
+  for (const name of parts) {
+    skirmish.child(name).visible = versus;
   }
 }
 
@@ -263,7 +323,7 @@ function launch() {
   if (versus) {
     delete chosen.difficulty;
   }
-  if (!(versus ? page.send({ versus: chosen }) : page.launch({ custom: chosen }))) {
+  if (!(versus ? page.send({ versus: { ...chosen, who } }) : page.launch({ custom: chosen }))) {
     page.toast(NOT_CONNECTED);
     return;
   }
@@ -298,13 +358,14 @@ async function enter(forVersus) {
   versus = forVersus;
   const had = menuClip() !== null;
   const menu = menuClip() ?? (await menus.loadMenu("custom"));
-  await page.lib.need([NOTE_BACKING]);
+  await page.lib.need([NOTE_BACKING, WHO_BUTTON]);
   const skirmish = menu.child("skirmish");
   if (!skirmish.wired) {
     skirmish.wired = true;
     wireButtons(skirmish);
     wireBoxes(skirmish);
     makeNote(skirmish);
+    makeWho(skirmish);
   }
   applyMode(skirmish);
   if (page.previousScreen !== "battle") {
@@ -312,6 +373,10 @@ async function enter(forVersus) {
   }
   focus = null;
   show(skirmish);
+  for (const [key, [name]] of Object.entries(WHO_BUTTONS)) {
+    light(skirmish.child(name), key === "server" ? PICKED : NORMAL, 0);
+  }
+  who = "server";
   page.app.stage.on("pointerdown", blur);
   document.addEventListener("keydown", typed);
   if (had) {
