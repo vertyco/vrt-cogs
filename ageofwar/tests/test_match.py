@@ -26,7 +26,7 @@ class Table:
         self.room = FakeRoom()
         self.clock = Clock()
         self.recorded = []
-        self.match = Match(self.room, self.recorded.extend, lambda match: None, random.Random(9), self.clock)
+        self.match = Match("m1", self.recorded.extend, lambda match: None, random.Random(9), self.clock)
 
     def conn(self, user_id: int) -> FakeConn:
         return FakeConn(self.room, user_id)

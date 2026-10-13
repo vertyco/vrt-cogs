@@ -1,5 +1,12 @@
 # Age of War Changelog
 
+## 0.4.0
+
+- Several games can run at once in the same voice channel. Opening Age of War while a game is already on shows a list of the games here: watch one, join one that has a free base, or press New game to start your own against the computer.
+- A list button in the corner goes back to the games list from any game you aren't playing in. If you're at a base in a battle, give up first.
+- The faces of people watching now only count the people watching your game, not everyone in Age of War.
+- Join in the hub's people list puts you in your friend's game.
+
 ## 0.3.2
 
 - On a phone or other touch screen, tapping a turret spot places the turret. Before, the tap did nothing, and only a mouse could place one.

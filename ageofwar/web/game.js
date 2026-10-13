@@ -45,6 +45,8 @@ const page = {
   preview: false,
   // What the watcher faces last showed, so an identical list leaves them alone
   watchLook: null,
+  // The games list last drawn, so an identical one leaves its buttons alone
+  gamesLook: null,
   // The status last given to the hub, and whether the game's connection has closed for good
   reported: null,
   closed: false,
@@ -81,7 +83,7 @@ async function start() {
   page.scene.orders = page.hud.orders;
   page.scene.onSpot = (press) => page.hud.spot(press);
   page.scene.onSpotHover = (kind, spot) => page.hud.spotHover(kind, spot);
-  $("logo").src = page.scene.picture(1013, null, 2).url;
+  $("logo").src = $("games-logo").src = page.scene.picture(1013, null, 2).url;
   // The original's menus point at a line with a knight's sword
   const sword = page.scene.picture(SWORD, "o", 2);
   $("app").style.setProperty("--sword", `url(${sword.url})`);
@@ -182,6 +184,9 @@ function receive(data) {
   if (data.state) {
     applyState(data.state);
   }
+  if (data.games) {
+    showGames(data.games);
+  }
   // A frame that arrives after its battle ended would put the battle back on the cleared field
   if (data.f && page.stage === "playing") {
     page.updates += 1;
@@ -217,6 +222,8 @@ function applyState(state) {
   const seat = state.seats.findIndex((s) => s.kind === "human" && s.id === myId());
   page.mySeat = seat === -1 ? null : seat;
   $("app").dataset.stage = state.stage;
+  $("games").hidden = true;
+  page.gamesLook = null;
   if (state.stage === "playing" && before !== "playing") {
     // A new battle: everything on the field starts over
     page.scene.clear();
@@ -239,6 +246,8 @@ function applyState(state) {
   showSetup(state);
   showResults(state);
   showPlaying(state);
+  // A player commanding a base gives up before going back to the list
+  $("to-games").hidden = state.stage === "playing" && mySide() !== null;
   renderWatchers();
   report(state);
   layout(page.scene.scale);
@@ -250,7 +259,7 @@ function applyState(state) {
 function activity(state) {
   const seat = page.mySeat;
   if (seat === null) {
-    return ["Watching", null, false];
+    return ["Watching", { game: state.id }, false];
   }
   let text = "Setting up";
   if (state.stage === "playing") {
@@ -260,7 +269,7 @@ function activity(state) {
   } else if (state.stage === "results" && state.results) {
     text = state.results.winner - 1 === seat ? "Won" : "Lost";
   }
-  return [text, { seat }, state.stage === "playing"];
+  return [text, { game: state.id, seat }, state.stage === "playing"];
 }
 
 // The hub passes on whatever it is told, even when nothing changed, so only changes go to it
@@ -276,7 +285,7 @@ function tell(text, data, busy) {
 
 function report(state) {
   if (!page.closed) {
-    tell(...activity(state));
+    tell(...(state ? activity(state) : ["Picking a game", null, false]));
   }
 }
 
@@ -286,8 +295,8 @@ function leaveGame() {
   tell("Not connected", null, false);
 }
 
-// The people here who aren't at a base, from the hub's list: in the setup panel, and next to the side names in a
-// battle
+// The people seeing this match who aren't at a base, from the hub's list: in the setup panel, and next to the side
+// names in a battle
 function renderWatchers() {
   const state = page.state;
   if (!state) {
@@ -295,7 +304,9 @@ function renderWatchers() {
   }
   const people = page.hub.people;
   const seated = new Set(state.seats.filter((seat) => seat.kind === "human").map((seat) => seat.id));
-  const watchers = people.filter((person) => person.here && !seated.has(person.id));
+  const watchers = people.filter(
+    (person) => person.here && !seated.has(person.id) && person.data && person.data.game === state.id,
+  );
   // The hub's list counts people. The bot's number counts connections, so someone with the game open on two
   // devices is two there. It stands in only while the hub has no list
   const count = people.length ? watchers.length : state.watching;
@@ -355,6 +366,73 @@ function watcherFace(person) {
     showToast(person.you ? "That's you." : `\u2068${person.name}\u2069 is watching.`, 2500);
   });
   return face;
+}
+
+// ---------- The games list ----------
+
+// Every match in the window, to watch or join, and a button to start one's own
+function showGames(games) {
+  doneLoading();
+  const before = page.stage;
+  page.state = null;
+  page.stage = "games";
+  page.mySeat = null;
+  $("app").dataset.stage = "games";
+  if (before === "playing") {
+    page.scene.clear();
+    page.scene.setBattle(false);
+  }
+  page.scene.mySide = null;
+  page.scene.setMode("none");
+  if ($("quit").open) {
+    $("quit").close();
+  }
+  sound.battle(false);
+  for (const id of ["setup", "results", "hud", "sides", "to-games"]) {
+    $(id).hidden = true;
+  }
+  $("pause").hidden = true;
+  $("give-up").hidden = true;
+  hideOverlay();
+  $("games").hidden = false;
+  report(null);
+  layout(page.scene.scale);
+  const look = JSON.stringify(games);
+  if (look === page.gamesLook) {
+    return;
+  }
+  page.gamesLook = look;
+  $("game-list").replaceChildren(...games.map(gameRow));
+}
+
+function gameRow(game) {
+  const row = document.createElement("li");
+  row.className = "game";
+  const about = document.createElement("span");
+  about.className = "about";
+  const names = document.createElement("span");
+  names.className = "names";
+  names.textContent = game.seats.map((seat, number) => seatName(game, seat, number)).join(" vs ");
+  const what = document.createElement("span");
+  what.className = "what";
+  const stage = { setup: "Setting up", playing: "Battle on", results: "Finished" }[game.stage] || "";
+  what.textContent = game.watching ? `${stage} · ${game.watching} watching` : stage;
+  about.append(names, what);
+  const open = game.stage === "setup" && game.seats.some((seat) => seat.kind === "empty");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "button";
+  button.textContent = open ? "Join" : "Watch";
+  button.addEventListener("click", () => send({ watch: game.id }));
+  row.append(about, button);
+  return row;
+}
+
+function seatName(game, seat, number) {
+  if (seat.kind === "human") {
+    return cut(seat.name);
+  }
+  return game.stage === "setup" || game.players[number] !== "cpu" ? "Open base" : "Computer";
 }
 
 // ---------- Setup ----------
@@ -661,6 +739,10 @@ function bindButtons() {
     tab.addEventListener("click", () => showBoard(tab.dataset.board));
   }
   $("open-help").addEventListener("click", () => $("help").showModal());
+  $("games-help").addEventListener("click", () => $("help").showModal());
+  $("games-leaderboard").addEventListener("click", openLeaderboard);
+  $("new-game").addEventListener("click", () => send({ new: true }));
+  $("to-games").addEventListener("click", () => send({ games: true }));
   $("close-help").addEventListener("click", () => $("help").close());
 }
 

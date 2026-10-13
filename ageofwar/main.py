@@ -7,7 +7,7 @@ from redbot.core import Config, commands
 from redbot.core.bot import Red
 
 from .common.leaderboard import USER_DEFAULTS, Result, add_result, rank
-from .common.match import Match
+from .common.lobby import Lobby
 
 log = logging.getLogger("red.vrt.ageofwar")
 
@@ -21,15 +21,15 @@ class AgeOfWar(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.2"
+    __version__ = "0.4.0"
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
         self.config = Config.get_conf(self, identifier=2026101001, force_registration=True)
         self.config.register_user(**USER_DEFAULTS)
-        # One match per Activity window, keyed by the window's instance id
-        self.matches: dict[str, Match] = {}
+        # Each Activity window's games, keyed by the window's instance id
+        self.lobbies: dict[str, Lobby] = {}
         # Leaderboard saves in progress, kept so a task isn't garbage collected halfway
         self.saving: set[asyncio.Task] = set()
         # Two windows can finish a match for the same player at once
@@ -46,8 +46,8 @@ class AgeOfWar(commands.Cog):
             await self.config.user_from_id(user_id).clear()
 
     async def cog_unload(self):
-        for match in list(self.matches.values()):
-            match.stop()
+        for lobby in list(self.lobbies.values()):
+            lobby.stop()
 
     async def activityhub_game(self) -> dict:
         return {
@@ -61,33 +61,33 @@ class AgeOfWar(commands.Cog):
             "socket": {"join": self.join, "message": self.message, "leave": self.leave},
         }
 
-    def match_for(self, conn: t.Any) -> Match:
-        """The window's match, started when its first player arrives, or again after it stopped"""
-        match = self.matches.get(conn.ctx.instance_id)
-        if match is None:
-            match = Match(conn.room, self.record_match, self.match_ended)
-            self.matches[conn.ctx.instance_id] = match
-            match.start()
-        elif match.room is not conn.room:
-            # Reloading ActivityHub gives the window a new room, while the match keeps seats for its dropped players
-            match.room = conn.room
-        return match
+    def lobby_for(self, conn: t.Any) -> Lobby:
+        """The window's games, made when its first player arrives"""
+        lobby = self.lobbies.get(conn.ctx.instance_id)
+        if lobby is None:
+            lobby = Lobby(conn.room, self.record_match, self.lobby_emptied)
+            self.lobbies[conn.ctx.instance_id] = lobby
+        elif lobby.room is not conn.room:
+            # Reloading ActivityHub gives the window a new room, while its matches keep seats for dropped players
+            lobby.room = conn.room
+        return lobby
 
-    def match_ended(self, match: Match) -> None:
-        if self.matches.get(match.room.instance_id) is match:
-            del self.matches[match.room.instance_id]
+    def lobby_emptied(self, lobby: Lobby) -> None:
+        if self.lobbies.get(lobby.room.instance_id) is lobby:
+            del self.lobbies[lobby.room.instance_id]
 
     async def join(self, ctx, conn) -> None:
-        await self.match_for(conn).join(conn)
+        # Set only on the first connection after a Join in the hub's people list
+        await self.lobby_for(conn).join(conn, conn.follow)
 
     async def message(self, ctx, conn, data) -> None:
-        await self.match_for(conn).message(conn, data)
+        await self.lobby_for(conn).message(conn, data)
 
     async def leave(self, ctx, conn) -> None:
-        # No await before this: the match must see the drop before its loop can decide the window is empty
-        match = self.matches.get(ctx.instance_id)
-        if match is not None:
-            match.leave(conn)
+        # No await before this: the match must see the drop before its loop can decide nobody is left
+        lobby = self.lobbies.get(ctx.instance_id)
+        if lobby is not None:
+            lobby.leave(conn)
 
     def record_match(self, results: list[Result]) -> None:
         # Saved off the update loop, so Config never slows play

@@ -3,7 +3,7 @@
 Defend your base and destroy the enemy's, for [ActivityHub](../activityhub/README.md). A port of Louissi's Flash game "Age of War", with its original art, sounds and music. Train units, build turrets, earn experience from every fight, and evolve through five ages, from cavemen with clubs to super soldiers with lasers.
 
 - **The whole original game.** All 16 units and 15 turrets with the original's prices and strengths, extra turret spots, selling turrets, the five ages, and each age's special attack: a meteor shower, a rain of arrows, healing, a bomber plane and a laser from orbit.
-- **The original's computer, or a friend.** Take the left or right base. An empty base is played by the original's computer on Normal, Harder or Impossible. Two people can fight each other instead, and everyone else in the voice channel watches.
+- **The original's computer, or a friend.** Take the left or right base. An empty base is played by the original's computer on Normal, Harder or Impossible. Two people can fight each other instead. Several games can run at once in one voice channel: anyone opening the game picks one to watch or join from a list, or starts their own.
 - **Pauses and drop-outs.** Someone playing the computer alone can pause, as in the original, and training carries on through the pause as it did there. If they leave, the battle waits a minute for them. In a game between two people, the computer plays the base of anyone away for a minute, and hands it back when they return.
 - **Global leaderboard.** Each player's fastest win against the computer on each difficulty, across every server on the bot. Time counts in game time, so pauses and lag don't.
 - **Desktop and phones.** The original's menus, drawn from its own art. Works held upright or sideways.

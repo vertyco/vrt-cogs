@@ -40,24 +40,24 @@ async def test_deleting_a_players_data_takes_them_off_the_leaderboard():
 
 
 @pytest.mark.asyncio
-async def test_a_window_whose_room_was_replaced_keeps_its_match_on_the_new_room():
-    # Reloading ActivityHub gives every window a fresh room, while the match and its kept seats live on
+async def test_a_window_whose_room_was_replaced_keeps_its_games_on_the_new_room():
+    # Reloading ActivityHub gives every window a fresh room, while its matches and their kept seats live on
     cog = AgeOfWar(bot=None)
     old_room, new_room = FakeRoom("window"), FakeRoom("window")
-    match = cog.match_for(FakeConn(old_room, 1))
+    lobby = cog.lobby_for(FakeConn(old_room, 1))
     try:
-        assert cog.match_for(FakeConn(new_room, 1)) is match
-        assert match.room is new_room
+        assert cog.lobby_for(FakeConn(new_room, 1)) is lobby
+        assert lobby.room is new_room
     finally:
         await cog.cog_unload()
 
 
 @pytest.mark.asyncio
-async def test_each_window_gets_its_own_match():
+async def test_each_window_gets_its_own_games():
     cog = AgeOfWar(bot=None)
     try:
-        first = cog.match_for(FakeConn(FakeRoom("a"), 1))
-        second = cog.match_for(FakeConn(FakeRoom("b"), 2))
-        assert first is not second and set(cog.matches) == {"a", "b"}
+        first = cog.lobby_for(FakeConn(FakeRoom("a"), 1))
+        second = cog.lobby_for(FakeConn(FakeRoom("b"), 2))
+        assert first is not second and set(cog.lobbies) == {"a", "b"}
     finally:
         await cog.cog_unload()

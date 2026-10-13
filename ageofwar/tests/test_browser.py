@@ -177,7 +177,7 @@ def test_pausing_stops_the_battle(driver, live, cog):
     start_against_the_computer(driver, live)
     driver.find_element(By.ID, "pause").click()
     browser.wait_for(driver, "!document.getElementById('overlay').hidden", timeout=5)
-    match = next(iter(cog.matches.values()))
+    match = the_match(cog)
     frame = match.battle.frame
     time.sleep(0.5)
     assert match.paused and match.battle.frame == frame
@@ -260,7 +260,12 @@ def me_in_the_window(live):
 
 
 def the_match(cog):
-    return next(iter(cog.matches.values()))
+    return next(match for lobby in cog.lobbies.values() for match in lobby.matches.values())
+
+
+def watching_here(cog):
+    """The status data of someone watching the player's match"""
+    return {"game": the_match(cog).id}
 
 
 def sit_down(driver):
@@ -291,9 +296,9 @@ def tag_text(driver, number):
     return driver.execute_script(f"return document.getElementById('side-{number}').textContent")
 
 
-def test_watchers_show_as_faces_and_the_player_says_watching(driver, live):
+def test_watchers_show_as_faces_and_the_player_says_watching(driver, live, cog):
     open_game(driver, live)
-    live.add_person(fakes.MANAGER_ID, where="ageofwar")
+    live.add_person(fakes.MANAGER_ID, where="ageofwar", data=watching_here(cog))
     browser.wait_for(driver, "document.querySelectorAll('#watching .face').length === 2")
     assert driver.execute_script("return document.querySelector('.corner .hub-people') !== null")
     me = me_in_the_window(live)
@@ -378,7 +383,7 @@ def test_a_closed_connection_clears_the_status_and_busy_flag(driver, live, cog):
     start_against_the_computer(driver, live)
     me = me_in_the_window(live)
     WebDriverWait(driver, 10).until(lambda _: me.busy)
-    conn = the_match(cog).room.connections[0]
+    conn = the_match(cog).audience[0]
     run(live, conn.close(4100))
     WebDriverWait(driver, 10).until(lambda _: me.status == "Not connected")
     assert me.busy is False
@@ -421,8 +426,8 @@ def test_long_names_on_the_side_tags_are_cut_without_splitting_an_emoji(driver, 
 def sides_with_watchers(driver, live, cog):
     """A battle against a person with a long name, with two watchers, one of them away"""
     start_against_a_person(driver, live, cog, "Bartholomew Wellington the Third")
-    manager = live.add_person(fakes.MANAGER_ID, where="ageofwar")
-    live.add_person(fakes.ADMIN_ID, where="ageofwar", away=True)
+    manager = live.add_person(fakes.MANAGER_ID, where="ageofwar", data=watching_here(cog))
+    live.add_person(fakes.ADMIN_ID, where="ageofwar", away=True, data=watching_here(cog))
     browser.wait_for(driver, "document.querySelectorAll('#side-watchers .face').length === 2")
     return manager
 
@@ -430,7 +435,7 @@ def sides_with_watchers(driver, live, cog):
 def test_watchers_show_as_faces_next_to_the_side_names_and_hide_when_nobody_watches(driver, live, cog):
     start_against_a_person(driver, live, cog, "Ann")
     assert driver.find_element(By.ID, "side-watchers").get_attribute("hidden")
-    manager = live.add_person(fakes.MANAGER_ID, where="ageofwar")
+    manager = live.add_person(fakes.MANAGER_ID, where="ageofwar", data=watching_here(cog))
     browser.wait_for(driver, "document.querySelectorAll('#side-watchers .face').length === 1")
     # The player is at a base, so only the others count
     assert driver.find_element(By.CSS_SELECTOR, "#side-watchers .label").text == "1 watching"
@@ -453,7 +458,7 @@ def test_a_new_people_list_that_changes_nothing_leaves_the_faces_alone(driver, l
         "new MutationObserver((list) => { window.redrawn += list.length; })"
         ".observe(document.getElementById('side-watchers'), { childList: true });"
     )
-    live.update_person(manager, where="ageofwar", status="Reading the rules")
+    live.update_person(manager, where="ageofwar", status="Reading the rules", data=watching_here(cog))
     time.sleep(1.2)
     assert driver.execute_script("return window.redrawn") == 0
     # The same observer does see a real change
@@ -486,13 +491,52 @@ def test_the_watching_count_is_people_not_connections(driver, live, cog):
     assert driver.find_element(By.CSS_SELECTOR, "#side-watchers .label").text == "2 watching"
 
 
-def test_the_setup_panel_shows_the_same_faces(driver, live):
+def test_the_setup_panel_shows_the_same_faces(driver, live, cog):
     open_game(driver, live)
-    live.add_person(fakes.MANAGER_ID, where="ageofwar")
-    live.add_person(fakes.ADMIN_ID, where="ageofwar", away=True)
+    browser.wait_for(driver, "document.querySelectorAll('#seats li').length === 2", timeout=20)
+    live.add_person(fakes.MANAGER_ID, where="ageofwar", data=watching_here(cog))
+    live.add_person(fakes.ADMIN_ID, where="ageofwar", away=True, data=watching_here(cog))
     browser.wait_for(driver, "document.querySelectorAll('#watching .face').length === 3")
     assert driver.find_element(By.CSS_SELECTOR, "#watching .label").text == "3 watching"
     assert driver.execute_script("return document.querySelectorAll('#watching .face.away').length") == 1
+
+
+def test_watchers_of_another_match_are_not_shown(driver, live, cog):
+    open_game(driver, live)
+    browser.wait_for(driver, "document.querySelectorAll('#seats li').length === 2", timeout=20)
+    live.add_person(fakes.MANAGER_ID, where="ageofwar", data={"game": "another"})
+    live.add_person(fakes.ADMIN_ID, where="ageofwar", data=watching_here(cog))
+    browser.wait_for(driver, "document.querySelectorAll('#watching .face').length === 2")
+    time.sleep(0.5)
+    assert driver.execute_script("return document.querySelectorAll('#watching .face').length") == 2
+
+
+def test_the_games_list_lets_you_join_a_game_or_start_your_own(driver, live, cog):
+    open_game(driver, live)
+    sit_down(driver)
+    ann = Person(901, "Ann")
+
+    async def ann_sits():
+        match = the_match(cog)
+        await match.join(ann)
+        match.sit(ann, 1)
+
+    run(live, ann_sits())
+    driver.find_element(By.ID, "to-games").click()
+    browser.wait_for(driver, "document.querySelectorAll('#game-list .game').length === 1", timeout=5)
+    assert driver.find_element(By.ID, "setup").get_attribute("hidden")
+    row = driver.find_element(By.CSS_SELECTOR, "#game-list .game")
+    assert row.find_element(By.CSS_SELECTOR, ".names").text == "Open base vs Ann"
+    assert row.find_element(By.CSS_SELECTOR, "button").text == "Join"
+    WebDriverWait(driver, 10).until(lambda _: me_in_the_window(live).status == "Picking a game")
+    driver.find_element(By.ID, "new-game").click()
+    browser.wait_for(driver, "!document.getElementById('start').hidden", timeout=5)
+    assert driver.find_element(By.ID, "games").get_attribute("hidden")
+    assert len(next(iter(cog.lobbies.values())).matches) == 2
+    driver.find_element(By.ID, "start").click()
+    browser.wait_for(driver, "document.getElementById('app').dataset.stage === 'playing'", timeout=10)
+    # Commanding a base, the player gives up before going back to the list
+    assert not driver.find_element(By.ID, "to-games").is_displayed()
 
 
 def go_to(driver, width, height, mobile=False):

@@ -369,6 +369,7 @@ button.art:active {
   left: 50%;
 }
 
+.app[data-stage="games"] .corner,
 .app[data-stage="setup"] .corner,
 .app[data-stage="results"] .corner {
   top: calc(var(--safe-top) + 6px);
@@ -376,6 +377,7 @@ button.art:active {
   transform: none;
 }
 
+.app[data-stage="games"] .icon-button,
 .app[data-stage="setup"] .icon-button,
 .app[data-stage="results"] .icon-button {
   width: 36px;
@@ -525,6 +527,53 @@ button.art:active {
 
 .choice:disabled {
   cursor: default;
+}
+
+/* The games list: one row per match in the window, each with its button */
+.list-title {
+  margin: 4px 0 10px;
+  font-size: 1.3rem;
+}
+
+.game-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.game {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+  text-align: left;
+}
+
+.game .about {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+
+.game .names {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.05rem;
+}
+
+.game .what {
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: #333;
+}
+
+.game .button {
+  flex: none;
 }
 
 .hint {

@@ -1,5 +1,5 @@
-"""One Activity window's match: two seats and the host, the difficulty, the battle on a 20 a second loop, pausing,
-players dropping out and coming back, and the results"""
+"""One match: two seats and the host, the difficulty, the battle on a 20 a second loop, pausing, players dropping out
+and coming back, and the results. A window can hold several matches; each page sees one of them, or the games list"""
 
 import asyncio
 import logging
@@ -68,6 +68,10 @@ class Seat:
         self.conn, self.dropped_at, self.stand_in = None, None, False
 
 
+async def nothing() -> None:
+    pass
+
+
 def whole(value: t.Any) -> bool:
     return type(value) is int and abs(value) <= MAX_WHOLE
 
@@ -75,17 +79,21 @@ def whole(value: t.Any) -> bool:
 class Match:
     def __init__(
         self,
-        room: t.Any,
+        match_id: str,
         record: t.Callable[[list[Result]], None],
         ended: t.Callable[["Match"], None],
         rng: random.Random | None = None,
         clock: t.Callable[[], float] | None = None,
     ):
         """
-        `room` is the window's ActivityHub room. `record(results)` gets each win against the computer for the
-        leaderboard, and `ended(match)` is called once the update loop has stopped
+        `match_id` names the match in its window's games list. `record(results)` gets each win against the computer
+        for the leaderboard, and `ended(match)` is called once the update loop has stopped
         """
-        self.room = room
+        self.id = match_id
+        # The pages seeing this match, players and watchers
+        self.audience: list = []
+        # Awaited after each state that went out, so the window's games list can follow
+        self.changed: t.Callable[[], t.Awaitable[None]] = nothing
         self.record = record
         self.ended = ended
         self.rng = rng or random.Random()
@@ -115,8 +123,12 @@ class Match:
             self.task.cancel()
 
     def alive(self) -> bool:
-        """Anyone in the window, or a dropped player's seat still kept for them"""
-        return bool(self.room.connections) or any(seat.dropped_at is not None for seat in self.seats)
+        """Anyone seeing the match, or a dropped player's seat still kept for them"""
+        return bool(self.audience) or any(seat.dropped_at is not None for seat in self.seats)
+
+    async def broadcast(self, data: dict) -> None:
+        for conn in list(self.audience):
+            await conn.send(data)
 
     async def run(self) -> None:
         loop = asyncio.get_running_loop()
@@ -130,14 +142,14 @@ class Match:
                 await asyncio.sleep(max(0.0, next_tick - loop.time()))
         except Exception as e:
             # Logged once and stopped, so a bug can't fill the log 20 times a second
-            log.error("Age of War stopped a match in window %s", self.room.instance_id, exc_info=e)
+            log.error("Age of War stopped match %s", self.id, exc_info=e)
             # The pages go back to an empty setup, where the next message starts a new match, rather than staying
             # on a battle that no longer runs
             for seat in self.seats:
                 seat.clear()
             self.back_to_setup()
-            await self.room.broadcast(self.state())
-            await self.room.broadcast({"notice": LOOP_FAILED})
+            await self.broadcast(self.state())
+            await self.broadcast({"notice": LOOP_FAILED})
         finally:
             self.ended(self)
 
@@ -152,7 +164,7 @@ class Match:
             frame = self.last_frame = self.battle.view()
             if self.battle.winner is not None:
                 # The last frame goes out before the results, which clear the field
-                await self.room.broadcast({"f": frame})
+                await self.broadcast({"f": frame})
                 frame = None
                 self.finish()
         elif self.stage == PLAYING and self.paused and not self.waiting_for_solo():
@@ -160,13 +172,14 @@ class Match:
                 self.battle.paused_step()
             frame = self.last_frame = self.battle.view()
         for message in self.outbox:
-            await self.room.broadcast(message)
+            await self.broadcast(message)
         self.outbox = []
         if self.dirty:
             self.dirty = False
-            await self.room.broadcast(self.state())
+            await self.broadcast(self.state())
+            await self.changed()
         if frame is not None:
-            await self.room.broadcast({"f": frame})
+            await self.broadcast({"f": frame})
 
     def running(self) -> bool:
         """The battle stands still while paused, and while the only person playing is away"""
@@ -194,6 +207,7 @@ class Match:
         return self.host is not None and self.number_of(conn) == self.host
 
     async def join(self, conn: t.Any) -> None:
+        self.audience.append(conn)
         seat = self.seat_of(conn.ctx.author.id)
         if seat is not None:
             # Back from a drop, or the same player on a second device: this connection plays their base now
@@ -209,15 +223,41 @@ class Match:
             await conn.send({"f": {**self.last_frame, "e": []}})
 
     def leave(self, conn: t.Any) -> None:
+        """A page closing. A seated player keeps their seat for a while, in case they come back"""
+        self.audience = [other for other in self.audience if other is not conn]
         number = self.number_of(conn)
         if number is not None:
             seat = self.seats[number]
-            others = [other for other in self.room.connections if other is not conn]
+            others = self.audience
             seat.conn = next((other for other in others if other.ctx.author.id == seat.user_id), None)
             if seat.conn is None:
                 seat.dropped_at = self.clock()
             self.fix_host()
         self.dirty = True
+
+    def depart(self, conn: t.Any) -> bool:
+        """A page going back to the games list. A seated player gives up their seat at once, which they can't in a
+        battle they still command: they give up first. False when the page has to stay"""
+        number = self.number_of(conn)
+        if number is not None and self.stage == PLAYING and not self.seats[number].stand_in:
+            return False
+        self.audience = [other for other in self.audience if other is not conn]
+        if number is not None:
+            seat = self.seats[number]
+            seat.conn = next((other for other in self.audience if other.ctx.author.id == seat.user_id), None)
+            if seat.conn is None and self.stage != PLAYING:
+                seat.clear()
+                if self.stage == RESULTS and not any(other.human for other in self.seats):
+                    self.back_to_setup()
+            elif seat.conn is None:
+                seat.dropped_at = self.clock()
+            self.fix_host()
+        self.dirty = True
+        return True
+
+    def has(self, user_id: int) -> bool:
+        """The person sits at a base here, or sees the match"""
+        return self.seat_of(user_id) is not None or any(conn.ctx.author.id == user_id for conn in self.audience)
 
     def expire_drops(self) -> None:
         now = self.clock()
@@ -428,6 +468,7 @@ class Match:
     def state(self) -> dict:
         return {
             "state": {
+                "id": self.id,
                 "stage": self.stage,
                 "difficulty": self.difficulty,
                 "host": self.host,
@@ -454,4 +495,14 @@ class Match:
 
     def watching(self) -> int:
         players = [seat.conn for seat in self.seats if seat.conn is not None]
-        return sum(1 for conn in self.room.connections if not any(conn is player for player in players))
+        return sum(1 for conn in self.audience if not any(conn is player for player in players))
+
+    def summary(self) -> dict:
+        """The match's line in the games list"""
+        return {
+            "id": self.id,
+            "stage": self.stage,
+            "seats": [{"kind": "human" if seat.human else "empty", "name": seat.name} for seat in self.seats],
+            "players": self.players,
+            "watching": self.watching(),
+        }

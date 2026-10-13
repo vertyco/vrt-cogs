@@ -28,6 +28,8 @@ class FakeConn:
         )
         self.ctx = SimpleNamespace(author=author, instance_id=room.instance_id)
         self.room = room
+        # The friend a Join in the hub's people list followed, as the hub sets it
+        self.follow = None
         self.sent = []
         room.members.append(self)
 
