@@ -1,5 +1,9 @@
 # Warfare 1944 Changelog
 
+## 0.1.1
+
+- The Versus and Watch screens' buttons now work: the list of games no longer covers them.
+
 ## 0.1.0
 
 First release. Warfare 1944, the 2009 Flash game by Con Artist Games and Armor Games, with its original art, sounds and music.

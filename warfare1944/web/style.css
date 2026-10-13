@@ -244,12 +244,13 @@ body[data-aiming] #stage canvas {
   text-shadow: 0 0 6px #000000, 0 0 3px #000000, 0 0 12px #000000;
 }
 
+/* The panel's place matches together.js's PANEL, in stage pixels */
 #together-panel {
   position: absolute;
-  top: 17.4%;
-  left: 9.5%;
-  width: 81%;
-  height: 61.6%;
+  top: calc(var(--s) * 73px);
+  left: calc(var(--s) * 76px);
+  width: calc(var(--s) * 648px);
+  height: calc(var(--s) * 258px);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
