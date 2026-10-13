@@ -1081,7 +1081,7 @@ class TaskMenu(BaseMenu):
         try:
             client = utils.openai.AsyncClient(api_key=openai_token)
             response = await client.beta.chat.completions.parse(
-                model="gpt-5-mini",
+                model="gpt-6-luna",
                 messages=messages,
                 response_format=ai_responses.CronDataResponse,
                 reasoning_effort="medium",
