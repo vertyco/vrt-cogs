@@ -1705,6 +1705,40 @@ def test_on_an_upright_phone_the_orb_bubble_opens_the_list_beside_the_pod(driver
         plain_device(driver)
 
 
+# What is on top at the middle of a bubble and at four points around it. Hit testing is on for every part of the pills
+# on the ring while it looks, their decorations too, so one drawn over the bubble shows up even if a click goes through
+ON_TOP_OF_THE_BUBBLE = """
+const bubble = document.querySelector(arguments[0]);
+const pill = '.pill:not(.off-ring)';
+const style = document.createElement('style');
+style.textContent = [pill, `${pill} *`, `${pill}::before`, `${pill}::after`, `${pill} *::before`, `${pill} *::after`]
+  .join(', ') + ' { pointer-events: auto !important; }';
+document.head.append(style);
+const r = bubble.getBoundingClientRect();
+const [x, y, dx, dy] = [r.left + r.width / 2, r.top + r.height / 2, r.width * 0.3, r.height * 0.3];
+const points = [[x, y], [x, y - dy], [x, y + dy], [x - dx, y], [x + dx, y]];
+const hits = points.map(([px, py]) => document.elementFromPoint(px, py));
+style.remove();
+return hits.map((hit) => (bubble.contains(hit) ? 'bubble' : hit?.className));
+"""
+
+
+@pytest.mark.parametrize("phone", [None, (390, 844), (844, 390)], ids=["desktop", "upright", "sideways"])
+def test_nothing_on_an_orb_pod_covers_its_bubble(driver, live, phone):
+    if phone:
+        touch_device(driver, *phone)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        live.add_person(MANAGER_ID, where="demo")
+        pod = '.pill[data-key="demo"] .pod .bubble'
+        wait_for(driver, f"document.querySelector('{pod}')?.textContent === '1'")
+        wait_for(driver, SETTLED)
+        # The clamp holding the tab to its pod crosses the pod's rim, right where the count sits
+        assert driver.execute_script(ON_TOP_OF_THE_BUBBLE, pod) == ["bubble"] * 5
+    finally:
+        plain_device(driver)
+
+
 # Puts a crowd in the page's people list the way the menu link would: this player, then `count` others in `game`
 CROWD = """
 const [count, game, elsewhere] = arguments;
@@ -2277,6 +2311,19 @@ def test_currency_badges_show_and_the_server_switch_hides_them(driver, live, tmp
     assert live.hub.config.guilds[GUILD_ID]["economy_labels"] is False
     driver.find_element(By.ID, "close").click()
     assert not driver.find_elements(By.CSS_SELECTOR, "#games .economy")
+
+
+def test_a_player_turns_on_showing_their_name_to_other_servers(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    open_settings(driver)
+    pick_tab(driver, "look")
+    switch = driver.find_element(By.ID, "show-name")
+    assert not switch.is_selected()
+    switch.click()
+    save(driver)
+    assert live.hub.config.users[MEMBER_ID]["show_name"] is True
+    assert driver.find_element(By.ID, "show-name").is_selected()
 
 
 def test_the_orb_screen_shows_the_selected_games_badge(driver, live, tmp_path):

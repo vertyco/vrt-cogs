@@ -105,7 +105,7 @@ class Connection:
         # The user id of the person this player joined from a people list, checked to be in the same window. Only
         # the first live connection after a Join has one
         self.follow: int | None = None
-        # Everyone in this activity instance playing this game. Rooms.add sets it, before join runs
+        # Everyone playing this game together, grouped by the game's "room". Rooms.add sets it, before join runs
         self.room: Room | None = None
         self.inbox = InboxLimit()
         self.closing: int | None = None
@@ -196,7 +196,7 @@ class Connection:
 
     async def broadcast(self, data: t.Any, include_self: bool = False) -> None:
         """
-        Queue a message to everyone connected to this game in the same activity instance, and return at once.
+        Queue a message to everyone connected to this game in the same room, and return at once.
         The menu's link has no room, so only include_self reaches anyone
         """
         text = to_json(data)
@@ -204,7 +204,7 @@ class Connection:
             conn.queue_text(text)
 
     def peers(self) -> list["Connection"]:
-        """The other connections to this game in the same activity instance. Empty for the menu's link"""
+        """The other connections to this game in the same room. Empty for the menu's link"""
         return [conn for conn in self.room.connections if conn is not self] if self.room else []
 
     async def close(self, code: int = 1000) -> None:
@@ -232,11 +232,14 @@ class Connection:
 
 class Room:
     """
-    Everyone playing one game in one activity instance, as games see it through conn.room. A game keeps it to reach
-    the whole window from a timer, a loop or an action, without picking one player's connection to broadcast from
+    Everyone playing one game together, as games see it through conn.room: one window, or every window in a server
+    or everywhere, as the game's "room" says. A game keeps it to reach them all from a timer, a loop or an action,
+    without picking one player's connection to broadcast from
     """
 
-    def __init__(self, instance_id: str):
+    def __init__(self, room_id: str, instance_id: str | None):
+        self.id = room_id
+        # The window's id when the room is one window. None for a room that spans windows
         self.instance_id = instance_id
         self.members: list[Connection] = []
 
@@ -253,7 +256,7 @@ class Room:
 
 
 class Rooms:
-    """Open live connections, grouped by game key and activity instance"""
+    """Open live connections, grouped by game key and room"""
 
     def __init__(self):
         self.rooms: dict[tuple[str, str], Room] = {}
@@ -263,11 +266,13 @@ class Rooms:
 
     @staticmethod
     def room_key(conn: Connection) -> tuple[str, str]:
-        return conn.game.key, conn.ctx.instance_id
+        return conn.game.key, conn.ctx.room_id
 
     def add(self, conn: Connection) -> None:
         key = self.room_key(conn)
-        room = self.rooms.get(key) or self.empty.pop(key, None) or Room(conn.ctx.instance_id)
+        ctx = conn.ctx
+        window = ctx.instance_id if ctx.room_id == ctx.instance_id else None
+        room = self.rooms.get(key) or self.empty.pop(key, None) or Room(ctx.room_id, window)
         self.rooms[key] = room
         room.members.append(conn)
         conn.room = room

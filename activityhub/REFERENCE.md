@@ -38,6 +38,7 @@ These are the fields the dict can have. Any other field name is refused, so a ty
 | `economy` | `None`, `str`, or `async def (ctx)` | no | How your game ties into the server's currency, shown as a badge with a coin on its menu card. `None` (or leaving it out) means no tie and no badge. A string is a fixed line, like `"Bet credits at the tables"`. An `async def` taking the player's `ctx` returns a line or `None`, so the badge can follow your settings (say, only while payouts are on), and can differ from one player to the next. It runs each time a player opens the menu in a server, so `ctx.guild` is never `None` there, and it must answer quickly. At most 40 characters, plain text. A fixed line needs ActivityHub 0.7.0 or later, and a function 0.8.0 or later. See [currency labels](DEVELOPERS.md#currency-labels-on-the-menu). |
 | `requires` | `str` | no | The oldest ActivityHub your game works with, as two or three whole numbers, like `"0.8.0"` or `"0.8"`. A bot with an older hub refuses your game with a message saying to update ActivityHub. Hubs older than 0.8.0 don't know this field, so they refuse it as unknown, which also says to update. |
 | `platforms` | `list[str]` | no | Where your game works: `"desktop"` (Discord's computer app, or discord.com in a browser), `"mobile"` (Discord's phone and tablet app), or both. Leaving it out means both. On the other platform the menu dims your card with a "Desktop only" or "Mobile only" note, and the hub shows a message instead of opening your game. Those two are all Discord tells the hub, so there's no iOS or Android. Needs ActivityHub 0.8.0 or later. |
+| `room` | `str` or `async def (ctx)` | no | Who plays together on a live connection. `"window"` (the default): everyone in the same Activity window, for example the same voice channel. `"server"`: everyone in the same Discord server, whichever channel they opened the Activity in. A window outside a server (a DM call, or a server your bot isn't in) stays a room of its own. `"everywhere"`: everyone, in every server and DM. It sets `conn.room`, `conn.peers()`, `conn.broadcast()` and `ctx.room_id`. An `async def` taking the player's `ctx` returns one of the three for that player, so the choice can follow a server admin's setting or the player's own (a public mode next to a private one). The hub asks it on each new live connection and each action, and gives it 2 seconds: one that fails, is slow or answers something else puts the player in `"window"` and logs a warning. The hub's people lists and **Join** still cover only the player's own window. See [who plays together](DEVELOPERS.md#who-plays-together-room). Needs ActivityHub 0.10.0 or later: set `"requires": "0.10.0"` too, so an older hub says to update. |
 
 Every handler (in `actions`, `socket` and `routes`) must be an `async def` that takes the arguments [the hub passes](#3-handlers). The hub checks both when your game registers, so a mistake shows up in `[p]activityhub games` right away, not when a player first presses a button. Put the method itself in the dict, `self.click`, not `self.click()`.
 
@@ -67,15 +68,17 @@ Every handler gets a `ctx` that says who is playing and where. The hub proved it
 | `ctx.guild_id` | `int` or `None` | `ctx.guild.id`, or `None` outside a server. |
 | `ctx.channel` | server channel, thread or `None` | The channel the Activity runs in, when it's in a server the bot can see. `None` otherwise. |
 | `ctx.channel_id` | `int` or `None` | The channel's id, also in a DM. |
-| `ctx.instance_id` | `str` | The id of this Activity window. Everyone in the same Activity window (for example, the same voice channel) has the same one. Use it to group players into one game. |
+| `ctx.instance_id` | `str` | The id of this Activity window. Everyone in the same Activity window (for example, the same voice channel) has the same one. |
+| `ctx.room_id` | `str` | The id of the room your game puts the player in, set by your game's `room` field. Everyone who plays your game together has the same one, so use it to group players into one game. In a `"window"` room it is `ctx.instance_id`. Needs ActivityHub 0.10.0 or later. |
 | **`await`** `ctx.is_admin()` | `bool` | Whether the player is a server admin where the Activity runs: the bot owner, the server's owner, or a member with the Manage Server permission or Red's admin role. Checked fresh on each call. `False` outside a server. Anyone else who is no longer in the server (not in the bot's member cache) gets `False`. Needs ActivityHub 0.8.0 or later. |
+| **`await`** `ctx.shows_name()` | `bool` | Whether the player turned on **Show my name to players from other servers** in the hub's Settings. Off until they do. Checked fresh on each call. In a room that mixes servers, show their Discord name and avatar to players from other servers only when this is `True`: see [players from other servers](DEVELOPERS.md#players-from-other-servers). Needs ActivityHub 0.10.0 or later. |
 | **`await`** `ctx.is_mod()` | `bool` | Whether the player is a server mod there: everyone `ctx.is_admin()` counts, and members with Red's mod role. No Discord permission counts on its own. `False` outside a server, and for anyone else who is no longer in the server, like `is_admin()`. Needs ActivityHub 0.8.0 or later. |
 
 `if ctx.guild is None` is the check for "not in a server". When it's false, `ctx.author` is a `discord.Member`, ready for the bank and for member Config.
 
 `ctx` has only the attributes and methods above. It isn't Red's `commands.Context`: there is no `ctx.send`, `ctx.reply` or `ctx.message`, because the player is in an Activity, not typing a command. Use `self.bot` for the bot, and `ctx.channel.send(...)` to post in the channel when `ctx.channel` isn't `None`, with a cooldown (see [What to trust](DEVELOPERS.md#5-what-to-trust-and-paying-out)).
 
-`ctx` can't be a dict key or a set member. Key per-player state by `ctx.author.id`, per-window state by `ctx.instance_id`, and per-connection state by `conn`.
+`ctx` can't be a dict key or a set member. Key per-player state by `ctx.author.id`, per-room state by `ctx.room_id`, and per-connection state by `conn`.
 
 ## 3. Handlers
 
@@ -86,7 +89,7 @@ A handler is one of your `async def` methods that the hub calls. There are three
 | Action | `async def name(self, ctx, data: dict) -> dict` | `data`: the object the page sent, or `{}`. | A dict the page receives. Return `{"error": "text"}` to make `hub.api()` throw with that text. Returning `None` sends `{}`. More below. |
 | Socket `join` | `async def join(self, ctx, conn) -> None` | `conn`: this player's live connection. | Nothing. If it raises, the connection closes with code `1011`. |
 | Socket `message` | `async def message(self, ctx, conn, data) -> None` | `data`: any JSON value the page sent (dict, list, str, number, bool or `None`). | Nothing. If it raises, the error is logged and the connection stays open. |
-| Socket `leave` | `async def leave(self, ctx, conn) -> None` | `conn`: the connection that just closed. It is already out of its room, so `conn.peers()` lists only the players still connected. When that is empty, this was the last connection in this instance: clean up there. | Nothing. Not called when `join` raised. |
+| Socket `leave` | `async def leave(self, ctx, conn) -> None` | `conn`: the connection that just closed. It is already out of its room, so `conn.peers()` lists only the players still connected. When that is empty, this was the last connection in this room: clean up there. | Nothing. Not called when `join` raised. |
 | Raw route | `async def name(self, ctx, request: aiohttp.web.Request) -> aiohttp.web.StreamResponse` | `ctx`: `None` when the request carries no login. You decide what that means. `request`: the raw request from aiohttp (the web library the hub uses). | Any aiohttp response, for example `web.json_response(...)`. Needs ActivityHub 0.8.0 or later: older hubs call raw routes with `request` first and refuse this order. |
 
 **What an action can return:**
@@ -119,11 +122,11 @@ Rules the hub enforces for you:
 | Member | Type | What it does |
 |---|---|---|
 | **`await`** `conn.send(data)` | `data`: any JSON value | Queues a message to this player and returns right away, so a player with a bad network never holds up your code. One player's messages arrive in the order you sent them. Does nothing once the connection has closed, and never fails because a player dropped. A player who can't take a message for 10 seconds, or falls 4 million characters behind, is disconnected (`1001`). Raises `ValueError` for NaN, Infinity or an `activityhub` field (see [multiplayer](DEVELOPERS.md#6-multiplayer-with-live-connections)). |
-| **`await`** `conn.broadcast(data, include_self=False)` | `data`: any JSON value | Queues a message to everyone connected to your game with the same `instance_id`, and returns right away, like `send`. Pass `include_self=True` to send to this player too. Refuses the same values as `send`, even when no one else is connected. |
-| `conn.peers()` | `list` of connections | The other connections to your game with the same `instance_id`. |
+| **`await`** `conn.broadcast(data, include_self=False)` | `data`: any JSON value | Queues a message to everyone connected to your game in the same room, and returns right away, like `send`. Pass `include_self=True` to send to this player too. Refuses the same values as `send`, even when no one else is connected. |
+| `conn.peers()` | `list` of connections | The other connections to your game in the same room. |
 | **`await`** `conn.close(code=1000)` | `code`: `int` | Closes the connection once the messages you queued before it have gone out. Use `1000`, or your own codes from `4100` to `4999`. Codes `4000` to `4099` are ActivityHub's, and `close` refuses them with a `ValueError`. |
 | `conn.ctx` | `ctx` | The same `ctx` the handlers get. |
-| `conn.room` | room | Everyone playing your game in the same window (the same `instance_id`), as one object their connections share. Keep it to reach them all from a timer, a loop or an action: see [multiplayer](DEVELOPERS.md#6-multiplayer-with-live-connections). |
+| `conn.room` | room | Everyone playing your game together (the same `ctx.room_id`): the same window, unless your game's `room` field says otherwise. One object their connections share. Keep it to reach them all from a timer, a loop or an action: see [multiplayer](DEVELOPERS.md#6-multiplayer-with-live-connections). |
 | `conn.follow` | `int` or `None` | The user id of the person this player joined with **Join** in the hub's people lists, or `None`. Only on the first live connection after a Join, and only when that person is in the same window. Reconnects have `None`. See [Who's here](DEVELOPERS.md#7-whos-here). |
 
 **`room`**, what `conn.room` gives you:
@@ -132,7 +135,8 @@ Rules the hub enforces for you:
 |---|---|---|
 | **`await`** `room.broadcast(data)` | `data`: any JSON value | Queues a message to everyone in the room and returns right away, like `send`. The message is turned into JSON once for all of them. Refuses the same values as `send`. |
 | `room.connections` | `list` of connections | Everyone in the room right now. A copy, so it's safe to loop over while players leave. Empty once everyone has left. |
-| `room.instance_id` | `str` | The window's id, the same as `ctx.instance_id`. |
+| `room.id` | `str` | The room's id, the same as `ctx.room_id`. Needs ActivityHub 0.10.0 or later. |
+| `room.instance_id` | `str` or `None` | The window's id, the same as `ctx.instance_id`, when the room is one window. `None` in a `"server"` or `"everywhere"` room, which holds many windows. |
 
 **Type hints.** Don't import from `activityhub` in your cog. Red loads cogs by folder name, so the import fails whenever your cog loads before ActivityHub, and `isinstance` checks go stale after ActivityHub reloads. For your editor, copy [`devkit/hubtypes.py`](devkit/hubtypes.py) into your cog instead. It describes `ctx`, `conn` and `room`, so after `from .hubtypes import HubContext` you can write `async def click(self, ctx: HubContext, data: dict) -> dict:`.
 

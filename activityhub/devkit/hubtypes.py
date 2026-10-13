@@ -17,6 +17,7 @@ class HubContext(Protocol):
     guild: discord.Guild | None
     channel_id: int | None
     instance_id: str
+    room_id: str
 
     @property
     def guild_id(self) -> int | None: ...
@@ -28,11 +29,14 @@ class HubContext(Protocol):
 
     async def is_mod(self) -> bool: ...
 
+    async def shows_name(self) -> bool: ...
+
 
 class HubRoom(Protocol):
-    """Everyone playing your game in one Activity window"""
+    """Everyone playing your game together: one Activity window, or more with the "room" field"""
 
-    instance_id: str
+    id: str
+    instance_id: str | None
 
     @property
     def connections(self) -> Sequence["HubConnection"]: ...

@@ -1,3 +1,5 @@
+import asyncio
+import dataclasses
 import difflib
 import inspect
 import itertools
@@ -8,6 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .files import hidden, resolve_inside, served_files
+from .sessions import ActivityContext
 from ..bundled.games import BundledGame
 
 log = logging.getLogger("red.vrt.activityhub.games")
@@ -39,6 +42,7 @@ FIELDS = {
     "economy",
     "requires",
     "platforms",
+    "room",
 }
 REQUIRED = ("key", "name", "web_dir")
 # The most characters a game's currency line can have, so the badge fits a card on a phone
@@ -46,6 +50,10 @@ ECONOMY_LIMIT = 40
 # What Discord says a device is, in the platform part of the Activity's address: its computer app or a browser, or its
 # phone and tablet app. Discord says nothing finer, like iOS or Android
 PLATFORMS = ("desktop", "mobile")
+# Who plays together: everyone in one Activity window, everyone in the server, or everyone the bot has
+ROOMS = ("window", "server", "everywhere")
+# Seconds a game's room function has to answer, since every action of that game waits on it
+ROOM_WAIT = 2
 SCOPE_NAME = re.compile(r"[a-z0-9_.]+")
 # These add a bot or a webhook to a server, which isn't something a player approves while logging in
 NOT_LOGIN_SCOPES = ("bot", "webhook.incoming")
@@ -93,6 +101,47 @@ class Game:
     economy: str | t.Callable | None = None
     # Where the game works. The menu marks it, and won't open it, on the other one
     platforms: list[str] = field(default_factory=lambda: list(PLATFORMS))
+    # One of ROOMS, or an async def taking the player's ctx and returning one
+    room: str | t.Callable = "window"
+
+    async def room_kind(self, ctx: ActivityContext) -> str:
+        """
+        Which kind of room this game puts the player in. A room function that fails, is slow or answers
+        something else keeps the player in their own window
+        """
+        if isinstance(self.room, str):
+            return self.room
+        try:
+            kind = await asyncio.wait_for(self.room(ctx), ROOM_WAIT)
+        except asyncio.TimeoutError:
+            log.warning(
+                "%s: room took longer than %s seconds, so the player plays in their own window", self.key, ROOM_WAIT
+            )
+            return "window"
+        except Exception as e:
+            log.warning("%s: room failed, so the player plays in their own window", self.key, exc_info=e)
+            return "window"
+        if kind not in ROOMS:
+            log.warning(
+                '%s: room returned %r, not "window", "server" or "everywhere", so the player plays in their own window',
+                self.key,
+                kind,
+            )
+            return "window"
+        return kind
+
+    async def context(self, ctx: ActivityContext) -> ActivityContext:
+        """The player's ctx as this game's handlers get it, with the room this game puts them in"""
+        return dataclasses.replace(ctx, room_id=room_id(await self.room_kind(ctx), ctx))
+
+
+def room_id(kind: str, ctx: ActivityContext) -> str:
+    """The id of a player's room of this kind. In a server room, a window outside a server is a room of its own"""
+    if kind == "everywhere":
+        return "everywhere"
+    if kind == "server" and ctx.guild_id is not None:
+        return f"server-{ctx.guild_id}"
+    return ctx.instance_id
 
 
 def version_numbers(text: str) -> tuple[int, int, int]:
@@ -306,12 +355,17 @@ def check_economy(value: t.Any) -> str | t.Callable | None:
                 f"economy is {len(line)} characters long, but the menu's badge fits {ECONOMY_LIMIT}. Shorten it."
             )
         return line or None
+    return check_ctx_function("economy", value, "economy must be None, a string, or an async def that takes ctx")
+
+
+def check_ctx_function(name: str, value: t.Any, refused: str) -> t.Callable:
+    """An async def the hub calls with the player's ctx, or GameError with `refused` for anything else"""
     if inspect.iscoroutine(value):
         # Closed here, so Python doesn't also warn that it was never awaited
         value.close()
-        raise GameError(f"economy is a coroutine, not a method: write self.{value.__name__} without ()")
+        raise GameError(f"{name} is a coroutine, not a method: write self.{value.__name__} without ()")
     if not callable(value) or not is_async(value):
-        raise GameError("economy must be None, a string, or an async def that takes ctx")
+        raise GameError(refused)
     try:
         signature = inspect.signature(value)
     except (TypeError, ValueError):
@@ -321,7 +375,7 @@ def check_economy(value: t.Any) -> str | t.Callable | None:
         signature.bind(None)
     except TypeError:
         shown = signature.replace(return_annotation=inspect.Signature.empty)
-        raise GameError(f"economy takes {shown}, but the hub calls it with (ctx).")
+        raise GameError(f"{name} takes {shown}, but the hub calls it with (ctx).")
     return value
 
 
@@ -332,6 +386,16 @@ def check_platforms(value: t.Any) -> list[str]:
     if not value:
         raise GameError("platforms can't be empty: leave it out to run everywhere")
     return list(dict.fromkeys(value))
+
+
+def check_room(value: t.Any) -> str | t.Callable:
+    """One of ROOMS, or an async def the hub calls with the player's ctx to pick one"""
+    refused = f'room must be "window", "server", "everywhere", or an async def that takes ctx, got {value!r}'
+    if isinstance(value, str):
+        if value not in ROOMS:
+            raise GameError(refused)
+        return value
+    return check_ctx_function("room", value, refused)
 
 
 def check_picture(desc: dict, field_name: str, web_dir: Path) -> str | None:
@@ -406,6 +470,7 @@ async def validate_game(cog: t.Any, hub_version: str | None = None) -> Game:
         scopes=scopes,
         economy=check_economy(desc.get("economy")),
         platforms=check_platforms(desc.get("platforms", list(PLATFORMS))),
+        room=check_room(desc.get("room", "window")),
     )
     warn_about_page(key, web_dir, html)
     return game

@@ -1,17 +1,19 @@
 import asyncio
 import logging
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from activityhub.common import economy
 from activityhub.common.games import Game
+from activityhub.common.sessions import ActivityContext
 
-CTX = object()
+CTX = ActivityContext(author=SimpleNamespace(id=1), guild=SimpleNamespace(id=9), instance_id="i-1")
 
 
-def game(key, value):
-    return Game(key=key, name=key.title(), web_dir=Path("."), cog=None, economy=value)
+def game(key, value, room="window"):
+    return Game(key=key, name=key.title(), web_dir=Path("."), cog=None, economy=value, room=room)
 
 
 @pytest.mark.parametrize(
@@ -51,6 +53,9 @@ async def test_a_function_gets_the_players_ctx():
 
     assert await economy.line(game("a", answer), CTX) == "Cash in up to 500 credits"
     assert seen == [CTX]
+    # Like every handler, it gets the room the game puts the player in
+    await economy.line(game("b", answer, room="server"), CTX)
+    assert seen[1].author is CTX.author and seen[1].room_id == "server-9"
 
 
 @pytest.mark.asyncio

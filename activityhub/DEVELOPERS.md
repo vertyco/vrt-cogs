@@ -37,6 +37,7 @@ You don't need to know anything about Discord Activities, web servers or Discord
 | Understand what happens when my page calls my Python | [4. How one click travels](#4-how-one-click-travels) |
 | Pay players credits without getting cheated | [5. What to trust, and paying out](#5-what-to-trust-and-paying-out) |
 | Let players play together, live | [6. Multiplayer](#6-multiplayer-with-live-connections) |
+| Let players from other channels or servers play together | [Who plays together](#who-plays-together-room) |
 | Make a fast action game | [Speed and fast-paced games](#speed-and-fast-paced-games) |
 | Show who is playing what | [7. Who's here](#7-whos-here) |
 | Let players upload files | [8. Uploads](#8-uploads-and-other-raw-requests) |
@@ -176,7 +177,7 @@ Most steps in Discord's own Activity guides don't apply here. This table shows w
 | Discord toolkit | Your page creates `DiscordSDK` and waits for `ready()`. | The menu already did. Your page calls `connect()` and uses `hub.discord`. Your own `DiscordSDK` would never finish its `ready()` inside the hub. |
 | Login | Your page asks Discord for a login code, your server trades it for an access token using the client secret, then checks which server and window the player is in. | Done before your game opens. `hub.player` says who is playing, and your Python gets a checked `ctx`. Neither side ever sees the access token. |
 | Your server's endpoints | You write each request handler, and check the login on every one. | You write `async def` methods and list them in `activityhub_game()`. The hub checks the login, and that your game is on in this server, before calling them. |
-| Multiplayer | You run your own WebSocket server and group players by window yourself. | List `socket` handlers. The hub groups connections by `ctx.instance_id` and gives you `conn.broadcast()` and `conn.peers()`. |
+| Multiplayer | You run your own WebSocket server and group players by window yourself. | List `socket` handlers. The hub groups connections into rooms (one per window, unless your game asks for the whole server or everyone) and gives you `conn.broadcast()` and `conn.peers()`. |
 | Discord permissions | You choose the scopes in your own login. | List them in `scopes`. They join the one login every game shares. |
 | Opening it | The Entry Point command (the Play button in Discord's App Launcher) or a launch reply to a command. | The Entry Point command opens the hub's menu, and players pick your game there. `hub.launch()` opens your game straight from your own button or slash command. |
 | Turning it off | Up to you. | Server admins can turn your game off in their server, and the bot owner in every server, from the menu's settings. The hub enforces it. |
@@ -897,6 +898,88 @@ async def poke(self, ctx, data: dict) -> dict:
 ```
 
 A room stays the same object while anyone is in it. When everyone leaves and someone comes back, they get the same room again as long as your code still holds it. So a loop holding the room reaches them.
+
+### Who plays together: `room`
+
+**In short:** by default, a room is one Activity window. One line in `activityhub_game()` makes a room hold everyone in the server, or everyone everywhere.
+
+```python
+    async def activityhub_game(self) -> dict:
+        return {
+            "key": "clickcounter",
+            "name": "Click Counter",
+            "description": "One click, one credit",
+            "web_dir": Path(__file__).parent / "web",
+            "actions": {"click": self.click},
+            "socket": {"join": self.join, "message": self.message, "leave": self.leave},
+            "room": "server",
+            "requires": "0.10.0",
+        }
+```
+
+| `room` | Who plays together | Good for |
+|---|---|---|
+| `"window"` (the default) | Everyone in the same Activity window, like one voice channel. | Friends playing together while they talk. |
+| `"server"` | Everyone in the same Discord server, whichever channel they opened the Activity in. A window outside a server (a DM call, or a server your bot isn't in) stays a room of its own. | Finding an opponent, or filling a table, beyond one channel. |
+| `"everywhere"` | Everyone, in every server and DM. | Games where players can't harm each other: no money passing between them and nothing they can type to each other. Names stay hidden from other servers (see [players from other servers](#players-from-other-servers)). |
+
+What changes with a wider room:
+
+- **The hub does the grouping.** `conn.room`, `conn.peers()` and `conn.broadcast()` reach the whole room, with no other code from you.
+- **Key your game's state by `ctx.room_id`** (or `room.id`), not `ctx.instance_id`: players in one room come from different windows. `room.instance_id` is `None` in a wider room. `ctx.room_id` is the same in actions and raw routes, so an action finds the room's state too.
+- **Rooms get big.** A channel holds a few friends. A server can hold hundreds. Split the room into matches or tables yourself, and cap how many players each one takes.
+- **Money stays apart.** Each server has its own currency, unless the bot owner made the bank global. In an `"everywhere"` room, never move credits from a player in one server to a player in another.
+- **Who's here stays per window.** The hub's people lists and **Join** only cover the player's own window, and the menu only counts the players in the server's other channels. Show the rest of the room in your game's own view.
+- **Voice stays per channel.** Players from another channel can't hear each other.
+- **Switches still work per server.** A server admin who turns your game off closes only their own server's connections.
+- **It needs ActivityHub 0.10.0 or later.** Add `"requires": "0.10.0"` like the example, so an older hub says to update instead of refusing `room` as an unknown field.
+
+- **Keep some things to one channel.** Inside a wider room, `ctx.instance_id` still says which window a player is in. Use it for a match only the player's own channel can join (like the locked tables in Discord's Chess in the Park), or to list the player's own channel first.
+- **Let latecomers watch.** In a big room people arrive mid-round all the time. Give them something to watch until the next round starts, as Discord's [design patterns](https://docs.discord.com/developers/activities/design-patterns) ask.
+- **Give hosts a kick, and players a report button.** A wider room puts strangers together. Let the player who opened a match remove someone from it. In a `"server"` room, `await ctx.is_mod()` tells you who may moderate. An `"everywhere"` room has no moderators of its own, so offer a report button and send the reports somewhere the bot owner reads.
+
+### Let the server or the player choose
+
+`room` can also be an `async def` that takes the player's `ctx` and returns `"window"`, `"server"` or `"everywhere"` for that player. Use it to:
+
+- let server admins turn server-wide play on or off, with a setting in your game's own admin dialog;
+- offer a public mode next to a private one, like Bobble League's public matchmaking: players who pick public meet everyone, and the rest stay with their own window.
+
+List the method itself, `"room": self.room_for`, with `"requires": "0.10.0"`:
+
+```python
+    async def room_for(self, ctx) -> str:
+        if ctx.guild is not None and await self.config.guild(ctx.guild).server_wide():
+            return "server"
+        return "window"
+```
+
+- **The hub asks on each new live connection and each action,** and waits up to 2 seconds. A function that fails, is slow or answers something else puts the player in `"window"`, and the bot's log says why. Read your settings and return: Config is quick enough.
+- **Decide from `ctx.guild`, `ctx.author` and your own settings.** `ctx.room_id` isn't set yet while it runs.
+- **A connected player stays in their room until their page reconnects.** When the answer changes (an admin flips the setting, a player picks public), tell the page, and have it close its connection and call `hub.socket()` again. Actions follow the new answer straight away.
+
+### Players from other servers
+
+**In short:** in a room that mixes servers, hide each player's Discord name and avatar from players in other servers, unless the player said yes.
+
+Discord's [design patterns](https://docs.discord.com/developers/activities/design-patterns) ask this of every Activity that matches players from different servers: names and avatars are hidden by default, and shown only with the player's agreement, or to people who already share a server or a DM with them. A `"server"` room never mixes servers, so this matters for `"everywhere"` rooms, and for a room function that can answer `"everywhere"`.
+
+- **The player says yes in the hub.** Each player has a **Show my name to players from other servers** switch in the hub's Settings (the **My look** tab), off until they turn it on. `await ctx.shows_name()` reads it, fresh each time.
+- **Who sees the real name:** players in the same server (the same `ctx.guild_id`, and not `None`), players in the same window (the same DM call), and everyone else only when `await ctx.shows_name()` is `True`.
+- **Everyone else sees a stand-in:** a name your game makes up, like "Player 4821" or "Blue Hippo", and a plain avatar. Keep the stand-in the same for a player during a match. Don't make it from the player's id in a way someone could work backwards.
+- **One view per viewer.** When names differ by viewer, send each player their own view with `conn.send()` rather than one `broadcast`.
+
+```python
+async def name_for(self, player, viewer) -> str:
+    """The name `viewer` sees for `player`: both are ctx"""
+    if player.guild_id is not None and player.guild_id == viewer.guild_id:
+        return player.author.display_name  # their nickname in this server
+    if player.instance_id == viewer.instance_id:
+        return player.author.display_name
+    if await player.shows_name():
+        return player.author.global_name or player.author.name
+    return self.stand_in(player)
+```
 
 ### Speed and fast-paced games
 
@@ -1718,6 +1801,7 @@ Your users need ActivityHub too, and Red doesn't install required cogs by itself
 - [ ] Taps don't wait on an iPhone: the page and every box that scrolls have `touch-action: manipulation` (or `none` where your page takes the finger itself), and nothing waits for a `focus` event before the first tap ([Discord's limits](#14-discords-limits)).
 - [ ] If you use a live connection: the page shows when it's reconnecting (`conn.onReconnecting`), `join` sends the full state, and the page says something useful in `conn.onClose`.
 - [ ] Your game sets a status line (`hub.status`), and `hub.busy(true)` while a round is on.
+- [ ] If your `room` can mix servers, players from other servers see stand-in names unless the player turned on **Show my name** (`await ctx.shows_name()`). See [players from other servers](#players-from-other-servers).
 - [ ] The people button doesn't cover anything, on a computer and on a phone.
 - [ ] `info.json` has an `end_user_data_statement`, and your cog deletes a player's data when Red asks it to (`red_delete_data_for_user`).
 - [ ] `info.json`'s `install_msg` (or your README) says how to get ActivityHub.
@@ -1808,7 +1892,7 @@ Boulder Bash is a cog in the same repo (`boulderbash/`): a remake of Neopets' De
 | **People panel** | The hub's list of everyone in the window, grouped by where they are, with Join and Invite buttons. |
 | **Preview** | The menu and your game opened in a normal browser, outside Discord. `hub.offline` is `true` there. |
 | **Raw route** | A handler that gets `ctx` and the raw web request, and returns any response. Used for uploads and anything actions can't do. |
-| **Room** | Everyone playing your game in one Activity window, as `conn.room`. Its `broadcast` reaches all of them. |
+| **Room** | Everyone playing your game together, as `conn.room`: one Activity window, unless your game's `room` field makes it the whole server or everyone. Its `broadcast` reaches all of them. |
 | **Scope** | One extra Discord permission the player approves at login, like changing their Discord status. |
 | **Server admin** | The bot owner, a server's owner, or a member with the Manage Server permission or Red's admin role. They can turn games on or off in their own server. `await ctx.is_admin()` checks it. |
 | **Server mod** | A server admin, or a member with Red's mod role (set with `[p]set roles addmodrole`). `await ctx.is_mod()` checks it. The hub itself gives mods nothing extra. |

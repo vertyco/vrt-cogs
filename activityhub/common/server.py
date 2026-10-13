@@ -179,4 +179,5 @@ class HubServer:
             channel_id=location["channel_id"],
             instance_id=instance_id,
             bot=self.bot,
+            hub_config=self.hub.config,
         )

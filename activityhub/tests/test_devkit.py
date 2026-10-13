@@ -103,8 +103,8 @@ def real_ctx_members() -> set[str]:
         for name, value in vars(ActivityContext).items()
         if not name.startswith("_") and (inspect.isfunction(value) or isinstance(value, property))
     }
-    # ctx.bot is for the hub itself: games use their own self.bot
-    return ({field.name for field in dataclasses.fields(ActivityContext)} | methods) - {"bot"}
+    # ctx.bot and ctx.hub_config are for the hub itself: games use their own self.bot and Config
+    return ({field.name for field in dataclasses.fields(ActivityContext)} | methods) - {"bot", "hub_config"}
 
 
 def test_the_ctx_type_hints_and_the_reference_match_the_real_ctx():
@@ -119,7 +119,7 @@ def test_the_conn_and_room_type_hints_match_the_reference_and_the_hub():
     conn_members, room_members = protocol_members(hubtypes.HubConnection), protocol_members(hubtypes.HubRoom)
     assert documented(handlers, "conn") == conn_members
     assert documented(handlers, "room") == room_members
-    conn, room = Connection(ws=None, ctx=None, game=None, rooms=None), Room("i-1")
+    conn, room = Connection(ws=None, ctx=None, game=None, rooms=None), Room("i-1", "i-1")
     assert {name for name in conn_members if not hasattr(conn, name)} == set()
     assert {name for name in room_members if not hasattr(room, name)} == set()
     # The other direction: a new public member of the real object fails here until it is documented or listed as internal

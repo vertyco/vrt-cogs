@@ -518,3 +518,33 @@ async def test_a_line_can_differ_per_player(client, hub, tmp_path):
     _, manager = await menu(client, session_headers(hub, user_id=MANAGER_ID))
     assert lines(member) == {"priced": f"Player {MEMBER_ID}"}
     assert lines(manager) == {"priced": f"Player {MANAGER_ID}"}
+
+
+@pytest.mark.asyncio
+async def test_the_name_switch_is_off_until_the_player_turns_it_on(client, hub, demo):
+    status, state = await menu(client, session_headers(hub))
+    assert state["showName"] is False
+    status, state = await save(client, session_headers(hub), {"tab": "look", "showName": True})
+    assert status == 200 and state["showName"] is True
+    assert hub.config.users[MEMBER_ID]["show_name"] is True
+
+
+@pytest.mark.asyncio
+async def test_the_preview_has_no_name_switch(client, demo):
+    status, state = await menu(client)
+    assert state["showName"] is None
+
+
+@pytest.mark.asyncio
+async def test_a_look_save_without_the_key_keeps_the_name_switch(client, hub, demo):
+    await hub.config.user_from_id(MEMBER_ID).show_name.set(True)
+    await save(client, session_headers(hub), {"tab": "look", "look": {"layout": "list"}})
+    assert hub.config.users[MEMBER_ID]["show_name"] is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value", ["yes", 1, None])
+async def test_the_name_switch_must_be_on_or_off(client, hub, demo, value):
+    status, body = await save(client, session_headers(hub), {"tab": "look", "showName": value})
+    assert status == 400 and body == {"error": "Show my name must be on or off."}
+    assert hub.config.users[MEMBER_ID]["show_name"] is False

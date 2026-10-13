@@ -39,7 +39,7 @@ async def line(game: Game, ctx: t.Any) -> str | None:
     if game.economy is None or isinstance(game.economy, str):
         return game.economy
     try:
-        value = await asyncio.wait_for(game.economy(ctx), WAIT)
+        value = await asyncio.wait_for(game.economy(await game.context(ctx)), WAIT)
     except TimeoutError:
         log.warning("%s: economy took longer than %s seconds, so its card has no currency label", game.key, WAIT)
         return None

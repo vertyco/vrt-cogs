@@ -1387,6 +1387,12 @@ body[data-theme="orb"] .swatch[aria-pressed="true"] {
   font-size: clamp(0.62rem, calc(var(--pod) * 0.22), 0.75rem);
 }
 
+/* The count can't rise out of its pod above the clamp across the pod's rim, so on a pod with a count the clamp goes
+   under the pod instead, still over the tab */
+.orb-menu .pill.has-bubble::after {
+  z-index: 0;
+}
+
 .screen-people {
   margin-top: 10px;
 }

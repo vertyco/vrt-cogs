@@ -92,9 +92,9 @@ def stalled_player(client, hub, **kwargs) -> socket.socket:
     return raw
 
 
-async def joined(client, hub, **kwargs):
+async def joined(client, hub, path="/games/demo/ws", **kwargs):
     """A live connection past the ready and join messages"""
-    ws = await open_live(client, hub, **kwargs)
+    ws = await open_live(client, hub, path, **kwargs)
     assert await next_json(ws) == READY
     await next_json(ws)
     return ws
@@ -139,6 +139,41 @@ async def test_broadcast_stays_inside_the_instance(client, hub, demo):
     with pytest.raises(asyncio.TimeoutError):
         await elsewhere.receive(timeout=0.3)
     for ws in (member, manager, elsewhere):
+        await ws.close()
+
+
+@pytest.mark.asyncio
+async def test_a_server_room_reaches_other_windows_in_the_server(client, hub, tmp_path):
+    assert await hub.registry.add(
+        DemoCog(write_demo_web(tmp_path / "wide"), key="wide", cog_name="Wide", room="server")
+    )
+    path = "/games/wide/ws"
+    member = await joined(client, hub, path=path)
+    manager = await joined(client, hub, path=path, user_id=MANAGER_ID, instance_id="i-2")
+    outside = await joined(client, hub, path=path, user_id=ADMIN_ID, instance_id="dm-1", guild_id=None)
+    await manager.send_json({"shout": "hi"})
+    assert await next_json(member) == {"shout": "hi", "from": MANAGER_ID}
+    with pytest.raises(asyncio.TimeoutError):
+        await outside.receive(timeout=0.3)
+    for ws in (member, manager, outside):
+        await ws.close()
+
+
+@pytest.mark.asyncio
+async def test_a_room_function_lets_players_in_one_window_choose_their_room(client, hub, tmp_path):
+    async def pick(ctx):
+        return "everywhere" if ctx.author.id in (MANAGER_ID, ADMIN_ID) else "window"
+
+    assert await hub.registry.add(DemoCog(write_demo_web(tmp_path / "picky"), key="picky", cog_name="Picky", room=pick))
+    path = "/games/picky/ws"
+    private = await joined(client, hub, path=path)
+    public = await joined(client, hub, path=path, user_id=MANAGER_ID)
+    stranger = await joined(client, hub, path=path, user_id=ADMIN_ID, instance_id="dm-1", guild_id=None)
+    await public.send_json({"shout": "hi"})
+    assert await next_json(stranger) == {"shout": "hi", "from": MANAGER_ID}
+    with pytest.raises(asyncio.TimeoutError):
+        await private.receive(timeout=0.3)
+    for ws in (private, public, stranger):
         await ws.close()
 
 

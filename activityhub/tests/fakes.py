@@ -88,7 +88,8 @@ class FakeConfig:
         return self.guild_from_id(guild.id)
 
     def user_from_id(self, user_id: int) -> FakeGroup:
-        return FakeGroup(self.users.setdefault(user_id, {"look": {}, "order": [], "cashed": {}}))
+        defaults = {"look": {}, "order": [], "cashed": {}, "show_name": False}
+        return FakeGroup(self.users.setdefault(user_id, defaults))
 
     def user(self, user) -> FakeGroup:
         return self.user_from_id(user.id)
@@ -246,7 +247,14 @@ def context_for(
     user = hub.bot.get_user(user_id)
     guild = hub.bot.get_guild(guild_id) if guild_id else None
     member = guild.get_member(user_id) if guild else None
-    return ActivityContext(author=member or user, guild=guild, channel_id=77, instance_id=instance_id, bot=hub.bot)
+    return ActivityContext(
+        author=member or user,
+        guild=guild,
+        channel_id=77,
+        instance_id=instance_id,
+        bot=hub.bot,
+        hub_config=hub.config,
+    )
 
 
 def session_headers(hub, **kwargs) -> dict:
@@ -329,6 +337,7 @@ class DemoCog:
         thumbnail=None,
         economy=None,
         platforms=None,
+        room=None,
     ):
         self.qualified_name = cog_name
         self.web_dir = web_dir
@@ -338,6 +347,7 @@ class DemoCog:
         self.thumbnail = thumbnail
         self.economy = economy
         self.platforms = platforms
+        self.room = room
         self.events: list[tuple] = []
         self.join_error = False
         self.result: t.Any = None  # what the "give" action returns
@@ -374,10 +384,18 @@ class DemoCog:
             desc["economy"] = self.economy
         if self.platforms is not None:
             desc["platforms"] = self.platforms
+        if self.room is not None:
+            desc["room"] = self.room
         return desc
 
     async def echo(self, ctx, data):
-        return {"user": ctx.author.id, "guild": ctx.guild_id, "instance": ctx.instance_id, "data": data}
+        return {
+            "user": ctx.author.id,
+            "guild": ctx.guild_id,
+            "instance": ctx.instance_id,
+            "room": ctx.room_id,
+            "data": data,
+        }
 
     async def give_none(self, ctx, data):
         return None
@@ -399,7 +417,9 @@ class DemoCog:
 
     async def hello(self, ctx, request):
         self.events.append(("hello", ctx.author.id if ctx else None))
-        return web.json_response({"user": ctx.author.id if ctx else None})
+        if ctx is None:
+            return web.json_response({"user": None})
+        return web.json_response({"user": ctx.author.id, "room": ctx.room_id})
 
     async def teapot(self, ctx, request):
         raise web.HTTPForbidden(text="no tea")

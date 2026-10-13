@@ -7,7 +7,7 @@ import pytest
 from activityhub.bundled.games import bundled_games
 from activityhub.common.files import build_id
 from activityhub.common.replies import SESSION_EXPIRED
-from activityhub.tests.fakes import GUILD_ID, MEMBER_ID, OWNER_ID, session_headers
+from activityhub.tests.fakes import GUILD_ID, MEMBER_ID, OWNER_ID, DemoCog, session_headers, write_demo_web
 
 
 async def turn_off(hub, key="demo"):
@@ -160,7 +160,39 @@ async def test_action_needs_a_session(client, demo):
 async def test_action_gets_the_proven_player(client, hub, demo):
     resp = await client.post("/games/demo/api/echo", json={"n": 1}, headers=session_headers(hub))
     assert resp.status == 200
-    assert await resp.json() == {"user": MEMBER_ID, "guild": GUILD_ID, "instance": "i-1", "data": {"n": 1}}
+    assert await resp.json() == {
+        "user": MEMBER_ID,
+        "guild": GUILD_ID,
+        "instance": "i-1",
+        "room": "i-1",
+        "data": {"n": 1},
+    }
+
+
+@pytest.mark.asyncio
+async def test_handlers_get_the_room_the_game_asked_for(client, hub, tmp_path):
+    assert await hub.registry.add(
+        DemoCog(write_demo_web(tmp_path / "wide"), key="wide", cog_name="Wide", room="server")
+    )
+    headers = session_headers(hub)
+    action = await (await client.post("/games/wide/api/echo", json={}, headers=headers)).json()
+    assert action["instance"] == "i-1" and action["room"] == f"server-{GUILD_ID}"
+    raw = await (await client.get("/games/wide/raw/hello", headers=headers)).json()
+    assert raw == {"user": MEMBER_ID, "room": f"server-{GUILD_ID}"}
+
+
+@pytest.mark.asyncio
+async def test_a_room_function_picks_the_room_for_each_action(client, hub, tmp_path):
+    public = set()
+
+    async def pick(ctx):
+        return "everywhere" if ctx.author.id in public else "window"
+
+    assert await hub.registry.add(DemoCog(write_demo_web(tmp_path / "picky"), key="picky", cog_name="Picky", room=pick))
+    headers = session_headers(hub)
+    assert (await (await client.post("/games/picky/api/echo", json={}, headers=headers)).json())["room"] == "i-1"
+    public.add(MEMBER_ID)
+    assert (await (await client.post("/games/picky/api/echo", json={}, headers=headers)).json())["room"] == "everywhere"
 
 
 @pytest.mark.asyncio
@@ -291,7 +323,7 @@ async def test_bodies_over_one_megabyte_are_refused(client, hub, demo):
 @pytest.mark.asyncio
 async def test_raw_routes_get_the_player_or_none(client, hub, demo):
     with_session = await client.get("/games/demo/raw/hello", headers=session_headers(hub))
-    assert await with_session.json() == {"user": MEMBER_ID}
+    assert await with_session.json() == {"user": MEMBER_ID, "room": "i-1"}
     without = await client.get("/games/demo/raw/hello")
     assert await without.json() == {"user": None}
 

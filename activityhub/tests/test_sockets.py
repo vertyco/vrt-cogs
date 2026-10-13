@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import gc
 import json
 import math
@@ -9,7 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 from activityhub.common import sockets
-from activityhub.common.games import Game
+from activityhub.common.games import Game, room_id
 from activityhub.common.sessions import ActivityContext
 from activityhub.common.sockets import PING, READY, Connection, Rooms
 
@@ -50,8 +51,8 @@ class DroppedWebSocket(FakeWebSocket):
         raise ConnectionError("Connection lost")
 
 
-def make_game(key="demo"):
-    return Game(key=key, name=key.title(), web_dir=Path("."), cog=None)
+def make_game(key="demo", room="window"):
+    return Game(key=key, name=key.title(), web_dir=Path("."), cog=None, room=room)
 
 
 async def delivered(*conns):
@@ -64,6 +65,8 @@ async def delivered(*conns):
 def connect(rooms, game, user_id, instance="i-1", guild_id=9, ws=None):
     guild = SimpleNamespace(id=guild_id) if guild_id else None
     ctx = ActivityContext(author=SimpleNamespace(id=user_id), guild=guild, instance_id=instance)
+    # The ctx the game's handlers get, the way the hub hands it over
+    ctx = dataclasses.replace(ctx, room_id=room_id(game.room, ctx))
     conn = Connection(ws or FakeWebSocket(), ctx, game, rooms)
     rooms.add(conn)
     return conn
@@ -92,6 +95,44 @@ async def test_everyone_in_a_window_shares_one_room():
     # A copy, so a loop over it can't trip over a player leaving
     a.room.connections.clear()
     assert a.room.connections == [a, b]
+
+
+@pytest.mark.asyncio
+async def test_a_window_room_is_that_window():
+    rooms, demo = Rooms(), make_game()
+    conn = connect(rooms, demo, 1)
+    assert conn.ctx.room_id == conn.room.id == conn.room.instance_id == "i-1"
+
+
+@pytest.mark.asyncio
+async def test_a_server_room_holds_every_window_in_the_server():
+    rooms, demo = Rooms(), make_game(room="server")
+    a, b = connect(rooms, demo, 1), connect(rooms, demo, 2, instance="i-2")
+    other_server = connect(rooms, demo, 3, instance="i-3", guild_id=8)
+    assert a.room is b.room and a.peers() == [b]
+    assert other_server.room is not a.room and other_server.peers() == []
+    assert a.ctx.room_id == b.ctx.room_id == a.room.id == "server-9"
+    # The room spans windows, so it belongs to no one window
+    assert a.room.instance_id is None
+
+
+@pytest.mark.asyncio
+async def test_a_server_room_outside_a_server_is_its_window():
+    rooms, demo = Rooms(), make_game(room="server")
+    a, b = connect(rooms, demo, 1, instance="dm-1", guild_id=None), connect(rooms, demo, 2, guild_id=None)
+    assert a.room is not b.room
+    assert a.ctx.room_id == a.room.id == a.room.instance_id == "dm-1"
+
+
+@pytest.mark.asyncio
+async def test_an_everywhere_room_holds_everyone():
+    rooms, demo, other = Rooms(), make_game(room="everywhere"), make_game("other", room="everywhere")
+    a, b = connect(rooms, demo, 1), connect(rooms, demo, 2, instance="i-2", guild_id=8)
+    dm = connect(rooms, demo, 3, instance="dm-1", guild_id=None)
+    other_game = connect(rooms, other, 4)
+    assert a.room is b.room is dm.room and a.peers() == [b, dm]
+    assert a.ctx.room_id == a.room.id == "everywhere" and a.room.instance_id is None
+    assert other_game.room is not a.room
 
 
 @pytest.mark.asyncio

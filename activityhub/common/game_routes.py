@@ -257,6 +257,7 @@ class GameRoutes:
             return error(SESSION_EXPIRED, 401)
         if await self.server.game_off(ctx.guild_id, game.key):
             return error(TURNED_OFF, 403)
+        ctx = await game.context(ctx)
         handler = game.actions.get(name)
         if handler is None:
             return error(NO_SUCH_ACTION.format(name=name), 404)
@@ -309,6 +310,8 @@ class GameRoutes:
             return web.json_response({"error": SESSION_EXPIRED}, status=401, headers=EXPIRED_HEADER)
         if ctx is not None and await self.server.game_off(ctx.guild_id, game.key):
             return error(TURNED_OFF, 403)
+        if ctx is not None:
+            ctx = await game.context(ctx)
         try:
             response = await handler(ctx, request)
         except web.HTTPException:
@@ -336,7 +339,7 @@ class GameRoutes:
         if await self.server.game_off(ctx.guild_id, game.key):
             await ws.close(code=CLOSE_TURNED_OFF, message=b"Turned off in this server")
             return ws
-        conn = Connection(ws, ctx, game, self.server.rooms)
+        conn = Connection(ws, await game.context(ctx), game, self.server.rooms)
         conn.follow = self.server.presence.follow_target(ctx, first.get("follow"))
         # Ready goes out before join, so nothing join sends can reach the page ahead of it
         await conn.send(READY)

@@ -1,5 +1,19 @@
 # ActivityHub Changelog
 
+## 0.10.0
+
+- In the Orb theme, the number of people playing a game shows in full on its icon. Before, the small bar joining the icon to the game's name covered half of it.
+- Settings has a new **Show my name to players from other servers** switch in the **My look** tab, off until you turn it on. Games that put players from different servers together show everyone else a made-up name for you unless it is on.
+
+For game developers:
+
+- A game can now let players from other channels play together. The new `room` field in `activityhub_game()` says who shares a room: `"window"` (everyone in one Activity window, as before, and still the default), `"server"` (everyone in the same Discord server, whichever channel they opened the Activity in) or `"everywhere"` (everyone, in every server and DM). `conn.room`, `conn.peers()` and `conn.broadcast()` then reach the whole room with no other code. "Who plays together" in DEVELOPERS.md explains what changes with a wider room.
+- `ctx.room_id` and `room.id` name the player's room, so a game can keep its state per room. In a window room they are the window's id. `room.instance_id` is `None` in a room that spans windows.
+- `room` can also be an `async def` that takes the player's `ctx` and picks their room, so a game can let server admins turn server-wide play on or off, or offer a public mode next to a private one. A function that fails, is slow or answers something else puts the player in their own window and logs a warning.
+- `await ctx.shows_name()` says whether the player turned on **Show my name to players from other servers**. DEVELOPERS.md's new "Players from other servers" part explains Discord's rule: in a room that mixes servers, players from other servers see a stand-in name unless the player said yes.
+- DEVELOPERS.md also covers keeping a match to one channel inside a wider room, letting latecomers watch, and giving hosts a kick and players a report button.
+- The devkit's type hints and test stand-ins know `ctx.room_id`, `room.id` and `ctx.shows_name()`.
+
 ## 0.9.0
 
 - On a phone or tablet, the Orb's ring is now a picker wheel, like an iPhone's. The selected game sits in the middle of the ring and the games slide along under your finger: sliding up brings the next ones in. A flick keeps the ring spinning and it slows to rest on a whole game, with a click sound for each game it passes. A finger on a spinning ring stops it. Pulling past the first or last game stretches a little and springs back. The lit look of the selected game slides along with the ring, so a game lights up as it nears the middle instead of the light jumping from game to game, and the panel fades over to each game in place instead of flipping over for every one. A tap on any game still opens it right away. Computers keep the ring as it was.

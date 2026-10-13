@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import importlib.util
 import inspect
@@ -5,6 +6,7 @@ import logging
 import re
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -830,3 +832,90 @@ async def test_platforms_only_know_desktop_and_mobile(web_dir, value):
 async def test_platforms_cant_be_empty(web_dir):
     with pytest.raises(GameError, match="platforms can't be empty: leave it out to run everywhere"):
         await validate_game(GameCog(web_dir, platforms=[]))
+
+
+@pytest.mark.asyncio
+async def test_room_defaults_to_one_window(web_dir):
+    assert (await validate_game(GameCog(web_dir))).room == "window"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value", ["window", "server", "everywhere"])
+async def test_room_takes_window_server_or_everywhere(web_dir, value):
+    assert (await validate_game(GameCog(web_dir, room=value))).room == value
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value", ["guild", "Server", "", None, ["server"]])
+async def test_room_refuses_anything_else(web_dir, value):
+    with pytest.raises(GameError) as refused:
+        await validate_game(GameCog(web_dir, room=value))
+    assert str(refused.value) == (
+        f'room must be "window", "server", "everywhere", or an async def that takes ctx, got {value!r}'
+    )
+
+
+@pytest.mark.asyncio
+async def test_room_can_be_a_function_of_the_player(web_dir):
+    async def pick(ctx):
+        return "server"
+
+    assert (await validate_game(GameCog(web_dir, room=pick))).room is pick
+
+
+@pytest.mark.asyncio
+async def test_a_room_function_must_be_an_async_def_taking_ctx(web_dir):
+    def plain(ctx):
+        return "server"
+
+    async def two(ctx, extra):
+        return "server"
+
+    async def pick(ctx):
+        return "server"
+
+    with pytest.raises(GameError, match="or an async def that takes ctx, got <function"):
+        await validate_game(GameCog(web_dir, room=plain))
+    with pytest.raises(GameError) as refused:
+        await validate_game(GameCog(web_dir, room=two))
+    assert str(refused.value) == "room takes (ctx, extra), but the hub calls it with (ctx)."
+    called = pick(None)
+    with pytest.raises(GameError) as refused:
+        await validate_game(GameCog(web_dir, room=called))
+    assert str(refused.value) == "room is a coroutine, not a method: write self.pick without ()"
+
+
+def room_game(room):
+    return games.Game(key="picky", name="Picky", web_dir=Path("."), cog=None, room=room)
+
+
+@pytest.mark.asyncio
+async def test_a_room_function_picks_each_players_room():
+    async def pick(ctx):
+        return "everywhere" if ctx.author == 1 else "window"
+
+    game = room_game(pick)
+    assert await game.room_kind(SimpleNamespace(author=1)) == "everywhere"
+    assert await game.room_kind(SimpleNamespace(author=2)) == "window"
+
+
+@pytest.mark.asyncio
+async def test_a_broken_room_function_keeps_the_player_in_their_window(caplog, monkeypatch):
+    async def broken(ctx):
+        raise RuntimeError("no settings")
+
+    async def wrong(ctx):
+        return "guild"
+
+    async def slow(ctx):
+        await asyncio.sleep(1)
+        return "server"
+
+    monkeypatch.setattr(games, "ROOM_WAIT", 0.05)
+    with caplog.at_level(logging.WARNING, logger="red.vrt.activityhub.games"):
+        assert await room_game(broken).room_kind(None) == "window"
+        assert await room_game(wrong).room_kind(None) == "window"
+        assert await room_game(slow).room_kind(None) == "window"
+    assert "picky: room failed, so the player plays in their own window" in caplog.text
+    assert "picky: room returned 'guild'" in caplog.text
+    assert "picky: room took longer than 0.05 seconds, so the player plays in their own window" in caplog.text

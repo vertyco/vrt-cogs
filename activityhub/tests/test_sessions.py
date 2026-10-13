@@ -156,3 +156,14 @@ async def test_no_discord_permission_makes_a_mod_on_its_own():
     )
     ctx = context_for(hub, user_id=MEMBER_ID)
     assert await ctx.is_mod() is False
+
+
+@pytest.mark.asyncio
+async def test_shows_name_follows_the_players_switch():
+    hub = make_hub()
+    ctx = context_for(hub)
+    assert await ctx.shows_name() is False
+    await hub.config.user_from_id(MEMBER_ID).show_name.set(True)
+    assert await ctx.shows_name() is True
+    # Each player answers for themselves
+    assert await context_for(hub, user_id=MANAGER_ID).shows_name() is False

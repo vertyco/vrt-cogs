@@ -111,7 +111,7 @@ def test_game_in_the_frame_borrows_the_login(driver, live):
     demo = driver.execute_script("return window.demo")
     assert demo["offline"] is False and demo.get("error") is None
     assert demo["player"]["guildId"] == str(GUILD_ID)
-    assert demo["echo"] == {"user": MEMBER_ID, "guild": GUILD_ID, "instance": "i-1", "data": {"n": 1}}
+    assert demo["echo"] == {"user": MEMBER_ID, "guild": GUILD_ID, "instance": "i-1", "room": "i-1", "data": {"n": 1}}
     wait_for(driver, "window.demo.messages.length >= 2")
     messages = driver.execute_script("return window.demo.messages")
     assert messages[0] == {"joined": MEMBER_ID, "peers": 0}
@@ -172,7 +172,7 @@ def test_an_expired_login_is_renewed_without_leaving_the_game(driver, live):
     wait_for(driver, "window.demo && window.demo.done")
     demo = driver.execute_script("return window.demo")
     assert demo.get("error") is None
-    assert demo["echo"] == {"user": MEMBER_ID, "guild": GUILD_ID, "instance": "i-1", "data": {"n": 1}}
+    assert demo["echo"] == {"user": MEMBER_ID, "guild": GUILD_ID, "instance": "i-1", "room": "i-1", "data": {"n": 1}}
     wait_for(driver, "window.demo.messages.length >= 2")
     driver.switch_to.default_content()
     assert driver.execute_script("return window.fakeDiscord") == {"created": 1, "authorize": 2, "authenticate": 1}
@@ -192,7 +192,7 @@ def test_a_raw_route_logs_in_again(driver, live):
     open_game_in_host(driver, live)
     live.hub.sessions.sessions.clear()
     reply = in_game(driver, "const resp = await hub.fetch('hello'); done([resp.status, await resp.json()]);")
-    assert reply == [200, {"user": MEMBER_ID}]
+    assert reply == [200, {"user": MEMBER_ID, "room": "i-1"}]
     assert driver.execute_script("return window.parent.fakeDiscord.authorize") == 2
     # The route only ever saw the player, never the expired login as a request with no login
     hellos = [event for event in live.hub.demo.events if event[0] == "hello"]
