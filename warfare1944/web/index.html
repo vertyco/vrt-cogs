@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Warfare 1944</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- The original's 800 by 500 stage, scaled to fit the window between black bars -->
+    <main id="stage"></main>
+    <p id="toast" role="status" hidden></p>
+    <button type="button" id="back" aria-label="Back to the menu" title="Back to the menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 L8 12 L15 19" /></svg>
+    </button>
+    <!-- The Watch list and the versus lobby: words and faces over the original's panel, laid on the stage by together.js -->
+    <section id="together" hidden>
+      <h1 id="together-title"></h1>
+      <div id="together-panel">
+        <div id="together-list"></div>
+        <p id="together-note" hidden></p>
+      </div>
+    </section>
+    <!-- In a battle: watchers' faces by the flag they watch from, and the versus opponent's name under theirs -->
+    <div id="faces" hidden>
+      <div class="group" data-side="british"></div>
+      <div class="group" data-side="german"></div>
+    </div>
+    <!-- The hub's people button, placed on the stage by game.js -->
+    <div id="people"></div>
+    <!-- Shown under the stage when the phone is upright -->
+    <p id="turn" hidden>Turn your phone sideways for a bigger view</p>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
