@@ -1,5 +1,11 @@
 # ActivityHub Changelog
 
+## 0.10.1
+
+For game developers:
+
+- DEVELOPERS.md has a new part, "Aiming: locking the mouse", for games where players aim with the mouse, like a shooter. It shows how to hide the cursor and keep it on the game (Pointer Lock) from a click, read how far the mouse moved, pause when Esc lets go, and what to give phones, which have no mouse to lock.
+
 ## 0.10.0
 
 - In the Orb theme, the number of people playing a game shows in full on its icon. Before, the small bar joining the icon to the game's name covered half of it.

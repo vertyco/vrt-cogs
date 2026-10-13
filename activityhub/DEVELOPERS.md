@@ -39,6 +39,7 @@ You don't need to know anything about Discord Activities, web servers or Discord
 | Let players play together, live | [6. Multiplayer](#6-multiplayer-with-live-connections) |
 | Let players from other channels or servers play together | [Who plays together](#who-plays-together-room) |
 | Make a fast action game | [Speed and fast-paced games](#speed-and-fast-paced-games) |
+| Let players aim with the mouse, like in a shooter | [Aiming: locking the mouse](#aiming-locking-the-mouse) |
 | Show who is playing what | [7. Who's here](#7-whos-here) |
 | Let players upload files | [8. Uploads](#8-uploads-and-other-raw-requests) |
 | Use extra Discord features, like the player's Discord status | [9. Extra Discord permissions](#9-extra-discord-permissions) |
@@ -1099,6 +1100,62 @@ Then, after a dropped network or a reload of ActivityHub, a page picks up where 
 4. Your game server checks the signature with `hmac.compare_digest`, and refuses expired or reused tickets.
 
 Your game server then has to do its own checks. The hub's login and on/off switches don't reach it.
+
+### Aiming: locking the mouse
+
+> **Skip this unless players aim with the mouse,** like in a shooter or anything with a first-person view.
+
+**In short:** your game can hide the cursor and keep it from leaving the screen, so a player can keep turning without hitting the edge. Browsers call this Pointer Lock. It works inside the hub in the Discord app, with nothing to turn on.
+
+**Ask for it from a click.** The browser refuses a lock that doesn't come from the player's own click or key press. So show "Click to play" first, and lock from that click:
+
+```js
+const canvas = document.getElementById("game");
+
+canvas.addEventListener("click", async () => {
+  if (document.pointerLockElement === canvas) return;
+  try {
+    // Raw mouse skips Windows' mouse acceleration, which aiming players prefer. Not every browser has it
+    await canvas.requestPointerLock({ unadjustedMovement: true });
+  } catch {
+    try {
+      await canvas.requestPointerLock();
+    } catch (e) {
+      console.warn("Couldn't lock the mouse", e);
+    }
+  }
+});
+```
+
+**Read how far the mouse moved, not where it is.** While locked, the cursor's position stops changing. Each `mousemove` instead says how far the mouse moved since the last one, in `movementX` and `movementY`:
+
+```js
+let yaw = 0;
+let pitch = 0;
+
+document.addEventListener("mousemove", (e) => {
+  if (document.pointerLockElement !== canvas) return;
+  yaw += e.movementX * 0.2; // 0.2 is the mouse sensitivity, in degrees per pixel
+  pitch = Math.max(-89, Math.min(89, pitch - e.movementY * 0.2));
+});
+```
+
+**Pause when the lock ends.** Esc always lets go of the mouse. The browser does this, and your game can't stop it. Watch for it and pause, with "Click to resume" on screen:
+
+```js
+document.addEventListener("pointerlockchange", () => {
+  const locked = document.pointerLockElement === canvas;
+  setPaused(!locked);
+  hub.busy(locked);
+});
+```
+
+Some things to know:
+
+- **Right after Esc, a new lock can fail** for about a second. The browser does this on purpose, so a page can't grab the mouse straight back. Leave the "Click to resume" screen up, and let the player click again.
+- **The hub's buttons can't be clicked while the mouse is locked.** All mouse input goes to your game, so the people button and the hub's menu wait until the player presses Esc. Put your own Back and Invite buttons on the pause screen, where they can be reached.
+- **Phones have no mouse to lock.** Give phones touch controls instead, such as a stick on the left and drag-to-aim on the right. Check `matchMedia("(pointer: coarse)").matches` to tell a touch screen from a mouse.
+- **Your Python decides hits.** The page sends where the player aimed and when they fired. Python checks the shot against its own copy of the game, as [What to trust](#5-what-to-trust-and-paying-out) explains. A page that says "I hit them" is easy to fake.
 
 ## 7. Who's here
 
