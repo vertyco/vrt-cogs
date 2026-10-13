@@ -110,7 +110,7 @@ const page = {
   },
   // Bot message key -> handlers
   handlers: new Map(),
-  // The bot's word: the campaign view (null for none, undefined before the bot has said), the window's lobby and the
+  // The bot's word: the campaign view (null for none, undefined before the bot has said), the server's lobby and the
   // battle this page sees
   save: undefined,
   // True while the tutorial plays from the Instructions page, so it ends back there (F6:578-606)

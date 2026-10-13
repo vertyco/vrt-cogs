@@ -2,7 +2,7 @@
   "author": [
     "Vertyco"
   ],
-  "description": "Warfare 1944 for ActivityHub, ported from the Flash game published by Armor Games in 2009, with its original art, sounds and music. Lead the American or German army across the battlefields of 1944 through two eight-mission campaigns, or set up a Custom Battle: spend resource points to deploy units in three lanes, give your squads orders, take cover, call in artillery, air support and smoke, and win the morale war, then spend experience on the two upgrade trees. Play alone, watch other battles in the Activity, or fight a friend 1 vs 1. Each player has one campaign save across all servers. The bot runs every battle. Works on desktop and on phones held either way. Needs ActivityHub 0.5.0 or later.",
+  "description": "Warfare 1944 for ActivityHub, ported from the Flash game published by Armor Games in 2009, with its original art, sounds and music. Lead the American or German army across the battlefields of 1944 through two eight-mission campaigns, or set up a Custom Battle: spend resource points to deploy units in three lanes, give your squads orders, take cover, call in artillery, air support and smoke, and win the morale war, then spend experience on the two upgrade trees. Play alone, watch any battle in the server, or fight someone from the server 1 vs 1. Each player has one campaign save across all servers. The bot runs every battle. Works on desktop and on phones held either way. Needs ActivityHub 0.10.0 or later.",
   "disabled": false,
   "end_user_data_statement": "This cog stores each player's Discord user ID with their Warfare 1944 campaign save (current mission, experience, level, upgrades and campaign stats).",
   "hidden": true,

@@ -1,5 +1,8 @@
 // Playing together (spec 5, D17): the Watch list, the versus lobby, and the faces in a battle.
 //
+// Everyone in the Discord server plays in one room, so the lists hold battles and games from every voice channel. Rows
+// with someone from the player's own channel come first (the hub's people list is everyone in the player's window).
+//
 // The Watch list and the versus lobby sit on the menu clip's metal frame. Their panel (the dialog's backing, character
 // 1068) and buttons (the options screen's, character 957) are the original's own pieces; the rows are words and faces
 // in the page, laid over the stage's exact place (place), because a row carries Discord pictures that the art can't.
@@ -225,7 +228,7 @@ function send(message) {
 
 // ---------- What each screen lists ----------
 
-// Every battle in the window: its title, who commands each side (the computer as CPU), and who watches
+// Every battle in the server: its title, who commands each side (the computer as CPU), and who watches
 function watchRows() {
   return (page.lobby?.battles ?? []).map((battle) => {
     const side = (which) => `${name(battle.names[which] ?? "CPU")} (${SIDE_WORDS[which]})`;
@@ -252,7 +255,7 @@ function versusRows() {
   const others = games.filter((game) => game.user !== me());
   const own = mine.map((game) => ({
     key: game.id,
-    title: "Waiting for an opponent",
+    title: game.channel ? "Waiting for an opponent in your channel" : "Waiting for an opponent",
     line: `You command the ${SIDE_WORDS[game.side]} · ${mapName(game.settings.map)} · ${game.settings.rp} RP`,
     who: [{ id: game.user, name: game.name, avatar: game.avatar }],
     waiting: true,
@@ -266,6 +269,14 @@ function versusRows() {
     press: () => send({ takeVersus: game.id }),
   }));
   return [...own, ...open];
+}
+
+// The rows with someone from the player's own voice channel first, then the rest, each in the bot's order (oldest
+// first)
+function channelFirst(rows) {
+  const here = new Set((page.hub?.people ?? []).map((person) => person.id));
+  const ours = (row) => row.who.some((person) => here.has(person.id));
+  return [...rows.filter(ours), ...rows.filter((row) => !ours(row))];
 }
 
 // No one else is in the window, so asking friends in is the useful thing to do
@@ -359,7 +370,7 @@ function refresh() {
     return;
   }
   noteAway();
-  const rows = state.kind === "watch" ? watchRows() : versusRows();
+  const rows = channelFirst(state.kind === "watch" ? watchRows() : versusRows());
   reconcile(state.list, rows);
   const note = document.getElementById("together-note");
   const words = noteWords(state.kind, rows);

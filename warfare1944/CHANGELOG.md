@@ -1,5 +1,14 @@
 # Warfare 1944 Changelog
 
+## 0.2.0
+
+Needs ActivityHub 0.10.0 or later.
+
+- Everyone in a Discord server now plays together, whichever voice channel they opened the Activity in. The Watch list shows every battle in the server, and the Versus list every open game.
+- Battles and games of people in your own voice channel are at the top of both lists.
+- When you open a versus game, pick who can take it: **Whole server** or **My channel**. Whole server is picked each time. A My channel game only shows in your own channel's list, and says so on your row. Once its battle starts, anyone in the server can watch it.
+- Moving to another voice channel in the same server no longer loses your versus battle, and your open game stays open while you have the game open anywhere in the server.
+
 ## 0.1.1
 
 - The Versus and Watch screens' buttons now work: the list of games no longer covers them.
