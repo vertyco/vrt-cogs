@@ -200,7 +200,19 @@ export class Host {
     // Game pages share this page's origin and read this.login, and nothing needs the Discord token again
     delete login.accessToken;
     mark("Discord accepted the login");
+    this.watchHeat();
     return login;
+  }
+
+  // Discord says how hot a phone is running, at once and after every change: 0 cool, 1 warm, 2 hot, 3 critical. Only
+  // its phone apps say
+  watchHeat() {
+    if (this.platform !== "mobile") {
+      return;
+    }
+    this.sdk
+      .subscribe("THERMAL_STATE_UPDATE", (update) => this.events.onHeat?.(update.thermal_state))
+      .catch((e) => console.warn("ActivityHub: Discord didn't say how hot the phone is", e));
   }
 
   discordSilent() {

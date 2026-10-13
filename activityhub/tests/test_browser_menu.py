@@ -9,6 +9,7 @@ from selenium.webdriver.support.select import Select
 
 from activityhub.tests.browser import (
     DISCORD_QUERY,
+    WAITS_FOR_DOUBLE_TAP,
     LiveHub,
     console_lines,
     fresh,
@@ -76,6 +77,9 @@ def driver():
     chrome = start_chrome()
     if chrome is None:
         pytest.skip("Chrome can't start on this machine")
+    # The page acts as the focused window all along, as it is for a player using the keyboard. Otherwise a test that
+    # leaves the window unfocused stops focus() firing focus events for every test after it
+    chrome.execute_cdp_cmd("Emulation.setFocusEmulationEnabled", {"enabled": True})
     yield chrome
     chrome.quit()
 
@@ -510,7 +514,67 @@ def slide(driver, start, end, steps=8):
     driver.execute_cdp_cmd("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
 
 
-def test_orb_swipes_move_along_the_ring_on_a_phone_held_sideways(driver, live, tmp_path, sound_spy):
+# One screen frame, in seconds
+FRAME = 0.016
+
+
+def touch(driver, kind, x=None, y=None, stamp=None):
+    """A finger event, at the given time on the computer's clock or, without one, when the browser takes it"""
+    command = {"type": kind, "touchPoints": [] if x is None else [{"x": x, "y": y}]}
+    if stamp is not None:
+        command["timestamp"] = stamp
+    driver.execute_cdp_cmd("Input.dispatchTouchEvent", command)
+
+
+def hold_drag(driver, start, end, steps=8):
+    """One finger from start to end, a frame per move, still down at the end. Like a real screen, each move carries
+    the time a frame after the last however long the browser is busy, so a slow test machine flicks as fast as a quick
+    one. Returns the last move's time"""
+    (x0, y0), (x1, y1) = start, end
+    stamp = time.time()
+    touch(driver, "touchStart", x0, y0, stamp)
+    for i in range(1, steps + 1):
+        time.sleep(FRAME)
+        stamp += FRAME
+        touch(driver, "touchMove", x0 + (x1 - x0) * i / steps, y0 + (y1 - y0) * i / steps, stamp)
+    return stamp
+
+
+def drag(driver, start, end, steps=8):
+    """A drag that rests well past the picker's flick window before the finger lifts, so it flicks nothing"""
+    hold_drag(driver, start, end, steps)
+    time.sleep(0.15)
+    touch(driver, "touchEnd")
+
+
+def flick(driver, start, end, steps=4):
+    """A flick: the finger lifts a frame after its last move, still moving. Fewer steps flick faster"""
+    last = hold_drag(driver, start, end, steps)
+    touch(driver, "touchEnd", stamp=last + FRAME)
+
+
+# How far apart the ring's rows are, from the first two pods on it
+RING_ROW = """
+const pods = [...document.querySelectorAll('#games .pill:not(.off-ring) .pod')];
+const middle = (pod) => { const r = pod.getBoundingClientRect(); return (r.top + r.bottom) / 2; };
+return middle(pods[1]) - middle(pods[0]);
+"""
+# How far the selected pod sits from the middle of the ring, up or down
+OFF_MIDDLE = """
+const ring = document.querySelector('.orb-ring').getBoundingClientRect();
+const pod = document.querySelector('#games .pill.selected .pod').getBoundingClientRect();
+return (pod.top + pod.bottom) / 2 - (ring.top + ring.bottom) / 2;
+"""
+# The touch screen's picker has stopped turning, and every pod has eased into place
+RESTING = f"!document.getElementById('orb-list').classList.contains('turning') && {SETTLED}"
+
+
+def picker_row(driver):
+    wait_for(driver, RESTING)
+    return driver.execute_script(RING_ROW)
+
+
+def test_orb_picker_follows_the_finger_on_a_phone_held_sideways(driver, live, tmp_path, sound_spy):
     for i in range(4):
         folder = write_demo_web(tmp_path / f"extra{i}")
         register(live.hub, DemoCog(folder, key=f"extra{i}", name=f"Extra {i}", cog_name=f"Extra{i}"))
@@ -519,38 +583,301 @@ def test_orb_swipes_move_along_the_ring_on_a_phone_held_sideways(driver, live, t
         open_menu(driver, live, DISCORD_QUERY)
         assert driver.execute_script("return document.body.dataset.theme") == "orb"
         assert driver.execute_script(f"return {PILLS}")[:3] == ["second", "demo", "extra0"]
-        # Down along the ring moves to the next game, one per step, like the highlight follows the finger
-        slide(driver, (420, 200), (420, 300))
+        row = picker_row(driver)
+        # The selected game sits in the middle of the ring, and the games follow the finger: up along the ring brings
+        # the next ones to the middle, one for each row the finger travels
+        assert abs(driver.execute_script(OFF_MIDDLE)) < 1
+        drag(driver, (420, 300), (420, 290 - 2.3 * row))
         wait_for(driver, f"{SELECTED} === 'extra0'")
+        wait_for(driver, RESTING)
+        assert abs(driver.execute_script(OFF_MIDDLE)) < 1
         # Browsers keep a page quiet until the first touch ends, so the move sound comes from the next slide on
-        slide(driver, (420, 300), (420, 250))
-        wait_for(driver, f"{SELECTED} === 'demo'")
-        wait_for(driver, f"window.soundLog.includes({MOVE})")
+        drag(driver, (420, 150), (420, 160 + 1.3 * row))
+        wait_for(driver, f"{SELECTED} === 'demo' && window.soundLog.includes({MOVE})")
         # Left and right work too, and a slide that starts on a pill doesn't open its game
-        slide(driver, (500, 200), (600, 200))
-        wait_for(driver, f"{SELECTED} === 'extra1'")
-        pill = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="extra1"]').rect
-        x, y = pill["x"] + pill["width"] / 2, pill["y"] + pill["height"] / 2
-        slide(driver, (x, y), (x - 50, y))
-        wait_for(driver, f"{SELECTED} === 'extra0'")
+        drag(driver, (700, 200), (690 - 1.3 * row, 200))
+        wait_for(driver, f"{SELECTED} === 'extra0' && {RESTING}")
+        pill = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="extra0"] .plate').rect
+        x, y = pill["x"] + 30, pill["y"] + pill["height"] / 2
+        drag(driver, (x, y), (x + 10 + 1.3 * row, y))
+        wait_for(driver, f"{SELECTED} === 'demo' && {RESTING}")
         assert driver.find_elements(By.ID, "game-frame") == []
-        # A fast slide that arrives in one big move goes as far as a slow one, here three steps
-        slide(driver, (420, 190), (420, 190 + 3 * 44 + 10), steps=1)
-        wait_for(driver, f"{SELECTED} === 'extra3'")
         assert driver.execute_script("return window.scrollY") == 0
     finally:
         plain_device(driver)
 
 
-def test_orb_swipes_move_along_the_ring_on_an_upright_phone(driver, live):
+def test_orb_picker_follows_the_finger_on_an_upright_phone(driver, live):
     touch_device(driver, 375, 740)
     try:
         open_menu(driver, live, DISCORD_QUERY)
-        slide(driver, (300, 510), (300, 560))
+        row = picker_row(driver)
+        drag(driver, (300, 600), (300, 590 - 1.3 * row))
         wait_for(driver, f"{SELECTED} === 'demo'")
         assert driver.find_element(By.CSS_SELECTOR, "#orb-screen .screen-name").text.lower() == "demo"
         assert driver.execute_script("return window.scrollY") == 0
         assert driver.find_elements(By.ID, "game-frame") == []
+    finally:
+        plain_device(driver)
+
+
+# The middle of the first pod on the ring, as the screen shows it
+FIRST_POD = """
+const pod = document.querySelector('#games .pill .pod').getBoundingClientRect();
+return (pod.top + pod.bottom) / 2;
+"""
+
+
+def test_orb_picker_stretches_past_its_ends_and_comes_back(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        row = picker_row(driver)
+        before = driver.execute_script(FIRST_POD)
+        # Pulling the first game down moves it less than the finger, and never a whole row
+        hold_drag(driver, (300, 560), (300, 570 + 2 * row))
+        pulled = driver.execute_script(FIRST_POD) - before
+        assert 0 < pulled < row
+        time.sleep(0.15)
+        touch(driver, "touchEnd")
+        wait_for(driver, RESTING)
+        assert driver.execute_script(f"return {SELECTED}") == "second"
+        assert abs(driver.execute_script(OFF_MIDDLE)) < 1
+    finally:
+        plain_device(driver)
+
+
+# The first two pills' share of the selected look, and the color of their names
+LIT_PILLS = """
+return [...document.querySelectorAll('#games .pill')].slice(0, 2).map((pill) => ({
+  lit: Number(getComputedStyle(pill).getPropertyValue('--lit')),
+  name: getComputedStyle(pill.querySelector('.name')).color,
+}));
+"""
+# Every animation the page starts from now on, as the class of what it moves and its keyframes
+LOG_ANIMATIONS = """
+window.started = [];
+const animate = Element.prototype.animate;
+Element.prototype.animate = function (keyframes, options) {
+  window.started.push([this.getAttribute('class'), JSON.stringify(keyframes)]);
+  return animate.call(this, keyframes, options);
+};
+"""
+
+
+def test_orb_picker_lights_each_game_by_how_near_the_middle_it_is_and_blends_the_panel(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        row = picker_row(driver)
+        rest = driver.execute_script(LIT_PILLS)
+        assert [pill["lit"] for pill in rest] == [1, 0]
+        # A quarter of the way to the next game, the look is shared out between the two, and each name stays the color
+        # that reads on its tab
+        hold_drag(driver, (300, 760), (300, 750 - 0.3 * row))
+        between = driver.execute_script(LIT_PILLS)
+        assert between[0]["lit"] > 0.55 and 0 < between[1]["lit"] < 0.45
+        assert between[0]["lit"] + between[1]["lit"] == pytest.approx(1, abs=0.02)
+        assert [pill["name"] for pill in between] == [pill["name"] for pill in rest]
+        # Past halfway the next game is selected, and the panel fades over to it in place: no turn, and no arm
+        driver.execute_script(LOG_ANIMATIONS)
+        touch(driver, "touchMove", 300, 750 - 0.8 * row, time.time())
+        wait_for(driver, f"{SELECTED} === 'demo'")
+        started = driver.execute_script("return window.started")
+        panels = [keyframes for moved, keyframes in started if "screen-face" in (moved or "")]
+        assert panels and all("opacity" in keyframes and "rotate" not in keyframes for keyframes in panels)
+        assert not [moved for moved, _ in started if "arm" in (moved or "")]
+        time.sleep(0.15)
+        touch(driver, "touchEnd")
+        wait_for(driver, RESTING)
+        assert [pill["lit"] for pill in driver.execute_script(LIT_PILLS)] == [0, 1]
+        # A panel on its way out lets taps through to the one coming in
+        leaving = driver.execute_script(
+            "const face = document.createElement('div'); face.className = 'screen-face leaving';"
+            "document.querySelector('#orb-screen .screen-faces').append(face);"
+            "const events = getComputedStyle(face).pointerEvents; face.remove(); return events;"
+        )
+        assert leaving == "none"
+    finally:
+        plain_device(driver)
+
+
+# Whether the picker still turns, and the middle of the selected game's plate with its game, to tap it
+CAUGHT_PILL = """
+const pill = document.querySelector('#games .pill.selected');
+const plate = pill.querySelector('.plate').getBoundingClientRect();
+return {
+  turning: document.getElementById('orb-list').classList.contains('turning'),
+  key: pill.dataset.key,
+  x: (plate.left + plate.right) / 2,
+  y: (plate.top + plate.bottom) / 2,
+};
+"""
+# The game whose pill the next finger lands on, or null when it lands off every pill
+LOG_TAP_TARGET = """
+window.tappedPill = undefined;
+window.addEventListener('pointerdown', (event) => {
+  window.tappedPill = event.target.closest('#games .pill')?.dataset.key ?? null;
+}, { capture: true, once: true });
+"""
+
+
+def test_orb_picker_spins_on_after_a_flick_and_a_finger_stops_it(driver, live, tmp_path):
+    for i in range(14):
+        folder = write_demo_web(tmp_path / f"x{i:02}")
+        register(live.hub, DemoCog(folder, key=f"x{i:02}", name=f"X {i:02}", cog_name=f"X{i}"))
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        pills = driver.execute_script(f"return {PILLS}")
+        row = picker_row(driver)
+
+        def place():
+            return pills.index(driver.execute_script(f"return {SELECTED}"))
+
+        # A drag of two rows that rests before letting go moves two games
+        drag(driver, (300, 760), (300, 750 - 2.3 * row))
+        wait_for(driver, RESTING)
+        assert place() == 2
+        # A flick over the same two rows keeps the picker turning, and it comes to rest on a whole game
+        flick(driver, (300, 760), (300, 750 - 2.3 * row))
+        wait_for(driver, RESTING, timeout=5)
+        spun = place() - 2
+        assert spun > 3
+        assert abs(driver.execute_script(OFF_MIDDLE)) < 1
+        # A gentle flick back, caught by a finger on the middle game while the picker still turns: it stops on the
+        # game under the finger, and that tap opens no game
+        flick(driver, (300, 500), (300, 596), steps=8)
+        time.sleep(0.25)
+        caught = driver.execute_script(CAUGHT_PILL)
+        assert caught["turning"]
+        driver.execute_script(LOG_TAP_TARGET)
+        touch(driver, "touchStart", caught["x"], caught["y"])
+        touch(driver, "touchEnd")
+        wait_for(driver, RESTING, timeout=5)
+        assert driver.execute_script("return window.tappedPill") is not None
+        assert abs(place() - pills.index(caught["key"])) <= 1
+        time.sleep(0.3)
+        assert driver.find_elements(By.ID, "game-frame") == []
+    finally:
+        plain_device(driver)
+
+
+PRESSED = "document.querySelector(arguments[0]).classList.contains('pressed')"
+# When the next finger lands and when the given element first shows its press, on the page's own clock, and whether
+# it showed by half the wait. That half-wait timer is set first and falls due first, so it runs first even when the
+# page is too busy to run either on time
+TIME_THE_PRESS = """
+const node = document.querySelector(arguments[0]);
+window.pressTimes = {};
+window.addEventListener('pointerdown', () => {
+  window.pressTimes.down = performance.now();
+  setTimeout(() => { window.pressTimes.early = node.classList.contains('pressed'); }, 40);
+}, { capture: true, once: true });
+const watch = new MutationObserver(() => {
+  if (node.classList.contains('pressed')) {
+    window.pressTimes.pressed = performance.now();
+    watch.disconnect();
+  }
+});
+watch.observe(node, { attributes: true, attributeFilter: ['class'] });
+"""
+
+
+def test_a_finger_shows_its_press_and_a_slide_takes_it_away(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        # The Orb shows the press the moment the finger lands, since nothing there scrolls
+        open_menu(driver, live, PHONE_QUERY)
+        wait_for(driver, RESTING)
+        pill = '#games .pill[data-key="demo"]'
+        plate = driver.find_element(By.CSS_SELECTOR, f"{pill} .plate").rect
+        x, y = plate["x"] + 30, plate["y"] + plate["height"] / 2
+        touch(driver, "touchStart", x, y)
+        assert driver.execute_script(f"return {PRESSED}", pill)
+        touch(driver, "touchMove", x, y - 15)
+        assert not driver.execute_script(f"return {PRESSED}", pill)
+        touch(driver, "touchEnd")
+        # The Standard list waits a moment first, since the finger may be starting a scroll
+        live.hub.config.globals["look"] = {"theme": "standard", "layout": "list"}
+        open_menu(driver, live, PHONE_QUERY)
+        card = '#games .card[data-key="demo"]'
+        box = driver.find_element(By.CSS_SELECTOR, card).rect
+        x, y = box["x"] + 40, box["y"] + box["height"] / 2
+        driver.execute_script(TIME_THE_PRESS, card)
+        touch(driver, "touchStart", x, y)
+        wait_for(driver, "window.pressTimes.pressed !== undefined", timeout=1)
+        times = driver.execute_script("return window.pressTimes")
+        assert times["early"] is False
+        assert times["pressed"] - times["down"] >= 75
+        touch(driver, "touchMove", x, y + 30)
+        assert not driver.execute_script(f"return {PRESSED}", card)
+        touch(driver, "touchEnd")
+        assert driver.find_elements(By.ID, "game-frame") == []
+    finally:
+        plain_device(driver)
+
+
+HOT_SIGN = "getComputedStyle(document.getElementById('hot')).display"
+FOG = "document.querySelector('.fog').getAnimations()[0].playState"
+
+
+def heat(driver, state):
+    driver.execute_script(f"window.fakeDiscordBus.emit('THERMAL_STATE_UPDATE', {{ thermal_state: {state} }})")
+
+
+def test_a_hot_phone_holds_the_orbs_background_still_and_says_why(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        wait_for(driver, "window.fakeDiscordBus.count('THERMAL_STATE_UPDATE') > 0")
+        assert driver.execute_script(f"return [{HOT_SIGN}, {FOG}]") == ["none", "running"]
+        # Warm is fine; hot (Discord's "serious") holds the background still and shows the sign
+        heat(driver, 1)
+        assert driver.execute_script(f"return [{HOT_SIGN}, {FOG}]") == ["none", "running"]
+        heat(driver, 2)
+        assert driver.execute_script(f"return [{HOT_SIGN}, {FOG}]") == ["grid", "paused"]
+        assert driver.execute_script(WAITS_FOR_DOUBLE_TAP) == []
+        # A tap on the sign says why
+        driver.find_element(By.ID, "hot").click()
+        text = wait_for(
+            driver,
+            "!document.querySelector('.hub-confirm').hidden && document.querySelector('.hub-confirm-text').textContent",
+        )
+        assert "running hot" in text
+        driver.find_element(By.CSS_SELECTOR, ".hub-confirm-stay").click()
+        # Cooled down, it all moves again
+        heat(driver, 0)
+        assert driver.execute_script(f"return [{HOT_SIGN}, {FOG}]") == ["none", "running"]
+    finally:
+        plain_device(driver)
+    # Only Discord's phone apps say how hot they run, so a computer doesn't ask
+    open_menu(driver, live, DISCORD_QUERY)
+    wait_for(driver, "document.body.dataset.theme === 'orb'")
+    assert driver.execute_script("return window.fakeDiscordBus.count('THERMAL_STATE_UPDATE')") == 0
+
+
+def test_a_computers_touch_screen_keeps_the_computers_ring(driver, live, tmp_path):
+    for i in range(3):
+        folder = write_demo_web(tmp_path / f"extra{i}")
+        register(live.hub, DemoCog(folder, key=f"extra{i}", name=f"Extra {i}", cog_name=f"Extra{i}"))
+    # The mouse is still the computer's main pointer, so its touch screen gets the ring that stays put: the highlight
+    # follows the finger down, one pill per step
+    open_menu(driver, live, DISCORD_QUERY)
+    slide(driver, (900, 300), (900, 300 + 2 * 44 + 10))
+    wait_for(driver, f"{SELECTED} === 'extra0'")
+    assert not driver.execute_script("return document.getElementById('orb-list').classList.contains('turning')")
+
+
+def test_orb_picker_tap_opens_a_game_that_is_not_in_the_middle(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        wait_for(driver, RESTING)
+        plate = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="demo"] .plate').rect
+        tap(driver, plate["x"] + 30, plate["y"] + plate["height"] / 2)
+        src = wait_for(driver, "document.getElementById('game-frame')?.src")
+        assert "/games/demo/" in src
     finally:
         plain_device(driver)
 
@@ -603,6 +930,54 @@ def test_orb_upright_phone_fits_between_discords_buttons(driver, live, tmp_path)
         plain_device(driver)
 
 
+# The header ends above the panel, and the ring's first pod sits below the panel
+CLEAR_OF_THE_HEADER = """(() => {
+  const bar = document.querySelector('.bar').getBoundingClientRect();
+  const panel = document.getElementById('orb-screen').getBoundingClientRect();
+  const pod = document.querySelector('#games .pill:not(.off-ring) .pod').getBoundingClientRect();
+  return panel.top >= bar.bottom && pod.top >= panel.bottom;
+})()"""
+
+
+def test_orb_moves_down_when_only_discords_top_buttons_change(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        wait_for(driver, SETTLED)
+        # Discord can set the room its buttons take after the page has loaded, and the window keeps its size
+        driver.execute_script("document.documentElement.style.setProperty('--discord-safe-area-inset-top', '100px')")
+        wait_for(driver, CLEAR_OF_THE_HEADER)
+    finally:
+        plain_device(driver)
+
+
+# Three moves in quick succession: the first panel turns in halfway, the second takes its place and turns in halfway
+# too, and the third should start from the angle and opacity the second had reached
+QUICK_TURNS = """
+const wheel = () => document.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+const face = () => document.querySelector('#orb-screen .screen-face:not(.leaving)');
+const turn = () => face().getAnimations()[0];
+wheel();
+turn().currentTime = 225;
+wheel();
+turn().currentTime = 75;
+const reached = Number(getComputedStyle(face()).opacity);
+wheel();
+return [reached, Number(turn().effect.getKeyframes()[0].opacity)];
+"""
+
+
+def test_orb_quick_moves_carry_the_panel_on_from_where_it_was(driver, live, tmp_path):
+    for i in range(3):
+        register(
+            live.hub, DemoCog(write_demo_web(tmp_path / f"x{i}"), key=f"x{i}", name=f"Extra {i}", cog_name=f"X{i}")
+        )
+    open_menu(driver, live, DISCORD_QUERY)
+    wait_for(driver, SETTLED)
+    reached, start = driver.execute_script(QUICK_TURNS)
+    assert reached == pytest.approx(start, abs=0.01)
+
+
 def test_orb_slides_hold_the_page_still_and_work_from_anywhere(driver, live):
     touch_device(driver, 390, 844)
     try:
@@ -612,13 +987,150 @@ def test_orb_slides_hold_the_page_still_and_work_from_anywhere(driver, live):
             "window.heldStill = [];"
             "window.addEventListener('touchmove', (event) => window.heldStill.push(event.defaultPrevented));"
         )
-        # A slide that starts on the orb, away from every tab, still moves along the ring
-        slide(driver, (30, 540), (30, 600))
+        # A slide that starts on the orb, away from every tab, still turns the ring
+        row = picker_row(driver)
+        drag(driver, (30, 640), (30, 630 - 1.3 * row))
         wait_for(driver, f"{SELECTED} === 'demo'")
         assert driver.execute_script("return window.heldStill.length > 0 && window.heldStill.every(Boolean)")
         assert driver.find_elements(By.ID, "game-frame") == []
     finally:
         plain_device(driver)
+
+
+# Discord shows an Activity in a frame from another site. WebKit, which runs every iPhone browser and Discord's iPhone
+# app, ignores focus() in such a frame until the player has touched it (Element::focus checks hasHadUserInteraction)
+NO_FOCUS_YET = "HTMLElement.prototype.focus = function () {};"
+
+
+def test_orb_slides_the_wheel_and_the_mouse_move_the_selection_before_the_first_tap(driver, live):
+    script = driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": NO_FOCUS_YET})
+    touch_device(driver, 375, 740)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        row = picker_row(driver)
+        drag(driver, (300, 600), (300, 590 - 1.3 * row))
+        wait_for(driver, f"{SELECTED} === 'demo'")
+        assert driver.find_element(By.CSS_SELECTOR, "#orb-screen .screen-name").text.lower() == "demo"
+        plain_device(driver)
+        open_menu(driver, live, DISCORD_QUERY)
+        driver.execute_script("document.dispatchEvent(new WheelEvent('wheel', {deltaY: 100, cancelable: true}))")
+        assert driver.execute_script(f"return {SELECTED}") == "demo"
+        wait_for(driver, SETTLED)
+        key, x, y = driver.execute_script(PILL_SPOT, "#games .pill:nth-child(3)")
+        mouse(driver, "mouseMoved", x, y)
+        wait_for(driver, f"{SELECTED} === {key!r}")
+    finally:
+        driver.execute_cdp_cmd("Page.removeScriptToEvaluateOnNewDocument", {"identifier": script["identifier"]})
+        plain_device(driver)
+
+
+def test_no_tap_on_the_menu_waits_for_a_double_tap(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        live.add_person(MANAGER_ID, where="demo")
+        wait_for(driver, BUBBLE)
+        driver.execute_script(f"{BUBBLE}.click()")
+        wait_for(driver, f"!{HOVER}.hidden")
+        assert driver.execute_script(WAITS_FOR_DOUBLE_TAP) == []
+        open_settings(driver)
+        assert driver.execute_script(WAITS_FOR_DOUBLE_TAP) == []
+        live.hub.config.globals["look"] = {"theme": "orb"}
+        open_menu(driver, live, PHONE_QUERY)
+        assert driver.execute_script(WAITS_FOR_DOUBLE_TAP) == []
+        driver.execute_script("document.querySelector('.settings-pill').click()")
+        wait_for(driver, "document.body.classList.contains('panel-open')")
+        assert driver.execute_script(WAITS_FOR_DOUBLE_TAP) == []
+        driver.execute_script("window.activityhubHost.people.open()")
+        assert driver.execute_script(WAITS_FOR_DOUBLE_TAP) == []
+    finally:
+        plain_device(driver)
+
+
+TOUCH_AND_WHEEL = {"wheel", "mousewheel", "touchstart", "touchmove"}
+
+
+def blocking_listeners(driver):
+    """The wheel and touch listeners on the page that may stop a scroll, so the browser waits for them before scrolling"""
+    found = []
+    for target in ("document", "window"):
+        handle = driver.execute_cdp_cmd("Runtime.evaluate", {"expression": target})["result"]["objectId"]
+        listeners = driver.execute_cdp_cmd("DOMDebugger.getEventListeners", {"objectId": handle})["listeners"]
+        found += [
+            f"{target} {item['type']}" for item in listeners if item["type"] in TOUCH_AND_WHEEL and not item["passive"]
+        ]
+    return sorted(found)
+
+
+def test_only_the_orb_holds_scrolls_back(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "list"}
+    open_menu(driver, live, DISCORD_QUERY)
+    assert blocking_listeners(driver) == []
+    # The ring turns with the wheel and a slide, which keep the page still
+    live.hub.config.globals["look"] = {"theme": "orb"}
+    open_menu(driver, live, DISCORD_QUERY)
+    assert blocking_listeners(driver) == ["document touchmove", "document wheel"]
+    # A Settings preview of the Standard theme lets go of them, and going back to the Orb takes them again
+    open_settings_pill(driver)
+    Select(driver.find_element(By.ID, "field-theme")).select_by_value("standard")
+    assert blocking_listeners(driver) == []
+    Select(driver.find_element(By.ID, "field-theme")).select_by_value("orb")
+    assert blocking_listeners(driver) == ["document touchmove", "document wheel"]
+
+
+def open_settings_pill(driver):
+    driver.execute_script("document.querySelector('.settings-pill').click()")
+    wait_for(driver, "getComputedStyle(document.getElementById('panel')).transform === 'none'")
+
+
+def test_orb_arrows_are_big_enough_for_a_finger_and_leave_the_end_pods_alone(driver, live, tmp_path):
+    for i in range(6):
+        register(
+            live.hub, DemoCog(write_demo_web(tmp_path / f"x{i}"), key=f"x{i}", name=f"Extra {i}", cog_name=f"X{i}")
+        )
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        wait_for(driver, SETTLED)
+        hits = driver.execute_script("""
+            const down = document.querySelector('.orb-arrow.down');
+            const box = down.getBoundingClientRect();
+            const pills = [...document.querySelectorAll('#games .pill:not(.off-ring)')];
+            const pod = pills[pills.length - 1].querySelector('.pod').getBoundingClientRect();
+            const at = (x, y) => document.elementFromPoint(x, y);
+            const x = box.left + box.width / 2;
+            return {
+              shown: !down.hidden,
+              below: at(x, box.bottom + 22) === down,
+              side: at(box.left - 5, box.top + box.height / 2) === down,
+              rim: pills[pills.length - 1].contains(at(pod.left + pod.width / 2, pod.bottom - 2)),
+            };
+        """)
+        assert hits == {"shown": True, "below": True, "side": True, "rim": True}
+    finally:
+        plain_device(driver)
+
+
+def test_a_panel_over_the_list_holds_the_list_still_on_a_touch_screen(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "list"}
+    overflow = "getComputedStyle(document.body).overflow"
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        assert driver.execute_script(f"return {overflow}") == "visible"
+        open_settings(driver)
+        assert driver.execute_script(f"return {overflow}") == "hidden"
+        driver.find_element(By.ID, "close").click()
+        assert driver.execute_script(f"return {overflow}") == "visible"
+        driver.execute_script("window.activityhubHost.people.open()")
+        assert driver.execute_script(f"return {overflow}") == "hidden"
+    finally:
+        plain_device(driver)
+    # A mouse can't drag the list, and its scroll bar stays, so the cards don't jump sideways
+    open_menu(driver, live, DISCORD_QUERY)
+    open_settings(driver)
+    assert driver.execute_script(f"return {overflow}") == "visible"
 
 
 def test_orb_theme_menu_moves_with_the_arrow_keys(driver, live):
@@ -1174,14 +1686,19 @@ def test_on_an_upright_phone_the_orb_bubble_opens_the_list_beside_the_pod(driver
         pod = '.pill[data-key="demo"] .pod .bubble'
         wait_for(driver, f"document.querySelector('{pod}')?.textContent === '1'")
         wait_for(driver, SETTLED)
-        box = driver.execute_script(f"return document.querySelector('{pod}').getBoundingClientRect().toJSON()")
+        selected = driver.execute_script(f"return {SELECTED}")
+        where = f"return document.querySelector('{pod}').getBoundingClientRect().toJSON()"
+        box = driver.execute_script(where)
         tap(driver, box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
         wait_for(driver, f"!{HOVER}.hidden")
         assert "Manager" in driver.execute_script(f"return {HOVER}.innerText")
-        # The panel on this screen is a fixed size with no room for players, so the list opens in its place
+        # The panel on this screen is a fixed size with no room for players, so the list opens beside the pod instead,
+        # and the picker stays put so the pod stays beside its list
         screen = "document.querySelector('#orb-screen .screen-face:not(.leaving) .screen-people')"
-        assert driver.execute_script(f"return {screen}.dataset.key") == "demo"
-        assert driver.execute_script(f"return !{screen}.getClientRects().length")
+        assert driver.execute_script(f"return !{screen}?.getClientRects().length")
+        wait_for(driver, SETTLED)
+        assert driver.execute_script(f"return {SELECTED}") == selected
+        assert driver.execute_script(where)["y"] == pytest.approx(box["y"], abs=1)
         assert driver.execute_script("return document.documentElement.scrollWidth <= window.innerWidth")
         assert not driver.execute_script("return document.body.classList.contains('opening')")
     finally:
@@ -1595,17 +2112,18 @@ def test_a_long_list_scrolls_in_the_orb_by_wheel_and_by_touch(driver, live):
         wait_for(driver, f"!{HOVER}.hidden")
         box = driver.execute_script(BOX_RECT)
         x, y = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+        selected = driver.execute_script(f"return {SELECTED}")
         # A finger drag scrolls the list and doesn't move the Orb's selection
         slide(driver, (x, y + 100), (x, y - 100))
         wait_for(driver, f"{HOVER}.scrollTop > 0")
-        assert driver.execute_script(f"return {SELECTED}") == "demo"
+        assert driver.execute_script(f"return {SELECTED}") == selected
         # So does the wheel (here back up), which would otherwise turn the Orb
         before = driver.execute_script(f"return {HOVER}.scrollTop")
         driver.execute_cdp_cmd(
             "Input.dispatchMouseEvent", {"type": "mouseWheel", "x": x, "y": y, "deltaX": 0, "deltaY": -120}
         )
         wait_for(driver, f"{HOVER}.scrollTop < {before}")
-        assert driver.execute_script(f"return {SELECTED}") == "demo"
+        assert driver.execute_script(f"return {SELECTED}") == selected
     finally:
         plain_device(driver)
 

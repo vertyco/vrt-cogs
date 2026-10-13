@@ -373,6 +373,11 @@ What this code does:
 `web/style.css` is the look:
 
 ```css
+/* Phones ignore a frame's viewport tag, so without this every tap waits to see if a second tap zooms */
+html {
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -1660,6 +1665,18 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
   ```
 
 - **Desktop only or mobile only.** If your game can't work on one of them (say it needs a keyboard), set `"platforms": ["desktop"]` in `activityhub_game()`. On a phone the menu then dims your card with a "Desktop only" note, and the hub shows a message instead of opening your game, whether the player taps your card, presses Join, or comes from a launch button. Discord only tells the hub "desktop" or "mobile", so there is no way to pick iOS or Android. A game that runs everywhere can read `hub.platform` to adapt, like showing touch buttons on phones.
+- **Taps wait on iPhones unless you say otherwise.** Your page is a frame inside Discord, and phones ignore a frame's viewport tag. So an iPhone holds every tap for about a third of a second, to see whether a second tap zooms. CSS stops the wait, and only two values do it: `manipulation` (scrolling still works) and `none` (your page takes the finger itself, like a playfield). Put one on the page, and on every box that scrolls (`overflow: auto` or `scroll`), since a scrolling box starts over at the default:
+
+  ```css
+  html,
+  .scrolling-list {
+    touch-action: manipulation;
+  }
+  ```
+
+  The quick start's page does this, and the included games do it in `activityhub/web/arcade.css`.
+- **An iPhone ignores `focus()` until the player first taps your page.** Before that tap, `element.focus()` does nothing and no `focus` event fires, with no error. A tap on the menu doesn't count for your frame. So keep what's selected in your own variables and change it yourself, then call `focus()` for keyboard players. Never wait for a `focus` event to move a selection.
+- **Hover is for a mouse.** A phone keeps a tapped button looking hovered until the next tap somewhere else. Put `:hover` styles inside `@media (hover: hover) { ... }`, and never hide anything a finger needs behind a hover.
 - **Service workers can't register.** (A service worker is a background script some web apps use for offline caching.)
 - **Clean up when your game closes.** Your page is removed when the player goes back to the menu, and `pagehide` is the last event it gets. Listeners you added with `hub.discord.subscribe()` are removed for you. Undo anything else you changed on Discord there, like `setActivity` or `setOrientationLockState`, so it doesn't carry into the next game.
 - **Pause when the game loses the keyboard.** Clicking Discord's chat or another window takes the keyboard away from your game. Pause real-time games when the window loses focus and when the page is hidden. The included games do this (`activityhub/web/arcade.js`, `listen()`):
@@ -1698,6 +1715,7 @@ Your users need ActivityHub too, and Red doesn't install required cogs by itself
 - [ ] Nothing secret is in `web_dir`.
 - [ ] `web_dir` holds only page files: not your cog's `.py` files, `.env` or `node_modules`.
 - [ ] Your page works on a phone-sized screen and with touch, since Activities run on Discord's phone apps too, and nothing you tap sits under Discord's buttons at the top ([safe areas](#14-discords-limits)). If it can't work on phones, `"platforms": ["desktop"]` says so.
+- [ ] Taps don't wait on an iPhone: the page and every box that scrolls have `touch-action: manipulation` (or `none` where your page takes the finger itself), and nothing waits for a `focus` event before the first tap ([Discord's limits](#14-discords-limits)).
 - [ ] If you use a live connection: the page shows when it's reconnecting (`conn.onReconnecting`), `join` sends the full state, and the page says something useful in `conn.onClose`.
 - [ ] Your game sets a status line (`hub.status`), and `hub.busy(true)` while a round is on.
 - [ ] The people button doesn't cover anything, on a computer and on a phone.

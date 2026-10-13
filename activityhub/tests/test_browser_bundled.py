@@ -13,6 +13,7 @@ from activityhub.bundled.games import bundled_games
 from activityhub.tests.browser import (
     DISCORD_QUERY,
     TEST_HOST_PAGE,
+    WAITS_FOR_DOUBLE_TAP,
     LiveHub,
     fresh,
     hub_web_copy,
@@ -966,6 +967,14 @@ def swipe_up(driver):
 
 def tap(driver, element):
     near_the_bottom(driver, element).click().perform()
+
+
+def test_no_tap_in_a_bundled_game_waits_for_a_double_tap(driver, live):
+    live.user_id = MANAGER_ID
+    open_game(driver, live, "snake")
+    assert driver.execute_script(WAITS_FOR_DOUBLE_TAP) == []
+    open_payouts(driver)
+    assert driver.execute_script(WAITS_FOR_DOUBLE_TAP) == []
 
 
 def test_an_admin_turns_payouts_on_from_the_gear(driver, live, monkeypatch):

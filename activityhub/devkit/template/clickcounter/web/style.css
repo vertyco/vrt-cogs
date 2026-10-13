@@ -1,3 +1,8 @@
+/* Phones ignore a frame's viewport tag, so without this every tap waits to see if a second tap zooms */
+html {
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   min-height: 100vh;

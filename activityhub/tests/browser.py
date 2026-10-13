@@ -112,6 +112,51 @@ TEST_HOST_PAGE = """<!doctype html>
 """
 
 
+# Everything on the page a finger can tap that waits to see if a second tap zooms. A frame's viewport tag doesn't count
+# on phones, so only touch-action stops the wait, and WebKit only stops it for none or manipulation (TouchAction.h).
+# WebKit works out each element's touch-action from the page down, starting over at auto in every box that scrolls,
+# and keeps a none, or the narrower of two sets of pans (StyleAdjuster.cpp computeUsedTouchAction)
+WAITS_FOR_DOUBLE_TAP = (
+    """
+const doc = arguments[0] || document;
+const KEYWORDS = ['auto', 'none', 'manipulation'];
+const used = (style, parent) => {
+  const scrolls = [style.overflowX, style.overflowY].some((value) => value === 'auto' || value === 'scroll');
+  const start = scrolls ? 'auto' : parent;
+  const own = style.touchAction;
+  if (own === 'auto') {
+    return start;
+  }
+  if (start === 'none' || own === 'none') {
+    return 'none';
+  }
+  if (KEYWORDS.includes(start)) {
+    return own;
+  }
+  if (KEYWORDS.includes(own)) {
+    return start;
+  }
+  const shared = start.split(' ').filter((pan) => own.split(' ').includes(pan));
+  return shared.length ? shared.join(' ') : 'none';
+};
+const waits = [];
+"""
+    "for (const node of doc.querySelectorAll('button, input, select, .bubble, [tabindex]')) {"
+    """
+  const path = [];
+  for (let at = node; at; at = at.parentElement) {
+    path.unshift(at);
+  }
+  const touch = path.reduce((parent, at) => used(getComputedStyle(at), parent), 'auto');
+  if (touch !== 'none' && touch !== 'manipulation') {
+    waits.push(`${node.id || node.className || node.tagName} (${touch})`);
+  }
+}
+return waits;
+"""
+)
+
+
 def hub_web_copy(tmp_path: Path, index: str | None = None) -> Path:
     """The hub's real web files with the fake Discord toolkit, and optionally a different index.html"""
     target = tmp_path / "hubweb-live"

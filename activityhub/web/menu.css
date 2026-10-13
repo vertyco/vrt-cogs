@@ -32,6 +32,16 @@ body {
   margin: 0;
 }
 
+/* Inside Discord the menu is a frame, and phones ignore a frame's viewport tag, so every tap would wait about a third
+   of a second to see if a second tap zooms. Manipulation keeps scrolling and drops that wait. Contain keeps a scroll
+   that reaches the end from dragging Discord's page, and the text size stays put when a phone turns sideways */
+html {
+  touch-action: manipulation;
+  overscroll-behavior: contain;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   min-height: 100vh;
   color: var(--text);
@@ -45,8 +55,37 @@ body[data-background="darker"] {
 
 body[data-background="gradient"] {
   background-color: #111214;
+}
+
+/* A layer of its own that stays put while the list scrolls over it. A fixed page background would be drawn again on
+   every frame of a scroll, and iPhones stretch it down the whole list instead */
+body[data-background="gradient"]:not([data-theme="orb"])::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
   background-image: linear-gradient(160deg, color-mix(in srgb, var(--accent) 40%, #111214) 0%, #111214 70%);
-  background-attachment: fixed;
+  content: "";
+  pointer-events: none;
+}
+
+/* A finger's long press on the menu picks out no text and opens no picture menu, and a picture can't be dragged off
+   its card */
+.bar,
+.games {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.games img {
+  -webkit-user-drag: none;
+}
+
+/* While a panel covers the list, a finger scrolling the panel past its end doesn't scroll the list under it */
+@media (pointer: coarse) {
+  body:is(.panel-open, .people-open) {
+    overflow: hidden;
+  }
 }
 
 button,
@@ -122,8 +161,26 @@ input:focus-visible {
   cursor: pointer;
 }
 
-.icon-button:hover {
-  background: rgba(255, 255, 255, 0.08);
+/* Hover looks are for a mouse: a phone keeps a tapped thing looking hovered until the next tap somewhere else */
+@media (hover: hover) {
+  .icon-button:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* Shown while a hot phone holds the Orb's background still (menu.js heatChanged), at the header's far end. A tap
+   says why */
+.hot-sign {
+  display: none;
+  margin-left: auto;
+  border-radius: 50%;
+  background: rgb(255 181 71 / 0.14);
+  color: #ffb547;
+}
+
+body.hot[data-theme="orb"] .hot-sign {
+  display: grid;
+  place-items: center;
 }
 
 .notice {
@@ -178,15 +235,29 @@ input:focus-visible {
     background-color 0.15s;
 }
 
-.card:hover {
-  border-color: var(--accent);
-  background: var(--card-hover);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .card:hover {
+    border-color: var(--accent);
+    background: var(--card-hover);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    transform: translateY(-2px);
+  }
 }
 
 .card:active {
   transform: translateY(0) scale(0.99);
+}
+
+/* A finger's press (menu.js bindPress): the card dims and gives a little under it */
+.games:not(.orb-menu) .card.pressed {
+  filter: brightness(0.82);
+  transform: scale(0.97);
+  transition-duration: 0.06s;
+}
+
+.bar button.pressed {
+  filter: brightness(0.8);
+  transform: scale(0.94);
 }
 
 .grid .card {
@@ -383,12 +454,14 @@ body.playing .currency-tip {
   text-align: center;
 }
 
+/* A finger dragging the dimmed part moves nothing under it */
 .scrim {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   opacity: 0;
   pointer-events: none;
+  touch-action: none;
   transition: opacity 0.2s;
 }
 
@@ -440,6 +513,9 @@ body.panel-open .panel {
   flex: 1;
   gap: 2px;
   overflow-x: auto;
+  overscroll-behavior: contain;
+  /* A scrolling box starts touch-action over (WebKit), so it says manipulation again: no wait for a second tap */
+  touch-action: manipulation;
   scrollbar-width: none;
 }
 
@@ -458,12 +534,16 @@ body.panel-open .panel {
   color: var(--text);
 }
 
+/* A scroll that reaches the end of the settings stops there instead of scrolling the list behind them */
 .tab-body {
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: 18px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  /* A scrolling box starts touch-action over (WebKit), so it says manipulation again: no wait for a second tap */
+  touch-action: manipulation;
   padding: 16px;
   scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
@@ -707,8 +787,10 @@ body.playing .menu {
 }
 
 /* The card clips it, so the picture zooms inside its frame */
-.grid .card:hover .thumb {
-  transform: scale(1.04);
+@media (hover: hover) {
+  .grid .card:hover .thumb {
+    transform: scale(1.04);
+  }
 }
 
 .has-thumb .icon {
@@ -801,7 +883,8 @@ body.playing .menu {
   padding: 8px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  touch-action: pan-y;
+  /* A scrolling box starts touch-action over (WebKit), so it says manipulation again: no wait for a second tap */
+  touch-action: manipulation;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--panel);

@@ -1,8 +1,19 @@
 import { mark, startHost } from "./host.js";
 import { request } from "./sdk.js";
 import { FrameRate } from "./fps.js";
+import { glide, restingPlace, speed, stretch } from "./glide.js";
 import { MenuSounds } from "./sounds.js";
-import { applyGlow, buildArm, buildOrbParts, drawWeb, gearIcon, introPills, turnArm, turnPanels } from "./orb.js";
+import {
+  applyGlow,
+  blendPanels,
+  buildArm,
+  buildOrbParts,
+  drawWeb,
+  gearIcon,
+  introPills,
+  turnArm,
+  turnPanels,
+} from "./orb.js";
 import { PressHold, avatar, elsewhereLine, icon, personRow, statusText } from "./people.js";
 
 const TAB_NAMES = { look: "My look", order: "My order", server: "This server", defaults: "Defaults" };
@@ -59,8 +70,20 @@ const NAME_KEEP_EM = 6;
 const COMPACT_WIDTH = 480;
 // A currency line with less room than this for its words (about two letters and the "…") shows only its coin
 const LINE_ROOM = 24;
+// What a finger shows pressed (bindPress), how long the Standard list waits before it does, and how long a quick
+// tap's press stays
+const PRESSABLE = "#games .card, #games .pill, #games .screen-select, .bar button";
+const PRESS_WAIT_MS = 80;
+const PRESS_FLASH_MS = 100;
+// Discord's thermal states from serious up: the phone is hot, and the Orb's background holds still to let it cool
+const HOT = 2;
+const HOT_NOTE = "Your phone is running hot, so the menu's moving background is paused until it cools down.";
 // The lists with Join buttons or a button to press: a card's players, the header's people, the Orb screen's players
 const PEOPLE_LISTS = "#hover-people, #people-row, .screen-people";
+// A phone held upright, as orb.css lays it out
+const UPRIGHT = window.matchMedia("(max-aspect-ratio: 4/5)");
+// A phone or tablet, where a finger is the main way in, and the Orb's ring is a picker
+const TOUCH = window.matchMedia("(pointer: coarse)");
 
 const $ = (id) => document.getElementById(id);
 const clamp = (value, low, high) => Math.min(Math.max(value, low), high);
@@ -76,6 +99,17 @@ const page = {
   pointer: null,
   hoverHeld: null,
   orbScroll: 0,
+  // The finger sliding along the ring, and how far the wheel has turned toward its next step
+  swipe: null,
+  wheel: 0,
+  // The touch screen's picker: the game in its middle row, which is part way between two while it turns, whether a
+  // finger or a glide is turning it, the glide's next frame, and when the tap that caught it lifted (0 for none)
+  pick: 0,
+  turning: false,
+  glide: null,
+  swallowClick: 0,
+  // Where the Orb's ring is and how many rows fit on it (measureRing)
+  ring: null,
   // The first look at the menu, and each return from a game, plays the menu's opening
   intro: true,
   // How far the fins around the orb have turned, in degrees
@@ -124,6 +158,7 @@ async function start() {
     onLatency: (ms) => frameRate.setLatency(ms),
     // Shown until the menu loads, which hides it, in case Discord answers after all
     onDiscordSilent: (text) => showNotice(text),
+    onHeat: heatChanged,
   });
   bindPanel();
   buildOrbParts();
@@ -131,6 +166,8 @@ async function start() {
   page.hold = new PressHold((node) => Boolean(node.closest?.(PEOPLE_LISTS)), redrawPeople);
   bindHover();
   bindCurrencyTip();
+  bindPress();
+  bindHeat();
   // A frame later, since a fit changes the rows' sizes and the observer would otherwise see a loop
   new ResizeObserver(() => requestAnimationFrame(fitCurrencyLines)).observe($("games"));
   page.host.presence.listen(peopleChanged);
@@ -301,6 +338,7 @@ function applyLook(look) {
   if (look.theme === "orb") {
     page.tones = applyGlow(look.glow);
   }
+  listenForRing(look.theme === "orb");
   sounds.setEnabled(look.theme === "orb" && look.sounds);
   frameRate.setEnabled(look.fps);
   const games = $("games");
@@ -310,6 +348,11 @@ function applyLook(look) {
 
 function orbTheme() {
   return document.body.dataset.theme === "orb";
+}
+
+// On a phone or tablet the Orb's ring is a picker that a finger turns
+function picking() {
+  return orbTheme() && TOUCH.matches;
 }
 
 function render() {
@@ -458,11 +501,19 @@ const HOVER_SLACK = 12;
 // How far a finger slides before the selection moves one pill, and before a touch counts as a slide at all
 const SWIPE_STEP = 44;
 const SWIPE_START = 10;
+// How fast a finger must be moving as it lifts, in pixels per millisecond, for the picker to keep turning, and how
+// soon after the finger that caught a turning picker lifts its click comes
+const FLICK_SPEED = 0.3;
+const CAUGHT_CLICK_MS = 600;
 // How far the fins around the orb turn, in degrees, for each pill the selection moves, and when a menu opens
 const FIN_NOTCH = 14;
 const FIN_TURN = 70;
 
 function renderOrb(games) {
+  // The pills are made again, so no finger or glide is turning them any more
+  stopGlide();
+  page.turning = false;
+  page.swipe = null;
   const items = page.state.tabs.length > 0 ? [...games, SETTINGS_ITEM] : games;
   const list = el("div", "orb-list");
   list.id = "orb-list";
@@ -478,6 +529,7 @@ function renderOrb(games) {
   if (pill) {
     selectPill(pill, true);
   }
+  measureRing();
   placePills();
   drawOrbWeb();
   if (page.intro && pill) {
@@ -505,10 +557,16 @@ function orbPill(item) {
   // a still mouse, and that isn't the player pointing
   pill.addEventListener("pointermove", (event) => {
     if (event.pointerType === "mouse" && !page.hoverHeld) {
-      pill.focus({ preventScroll: true });
+      pointAt(pill);
     }
   });
-  pill.addEventListener("focus", () => selectPill(pill, page.touch));
+  // Keyboard focus selects the pill it lands on. A finger's tap focuses the pill too (or the bubble on it), and on a
+  // touch screen's picker selecting would turn the pill away from under the finger before its game or list opens
+  pill.addEventListener("focus", () => {
+    if (!picking() || !page.touch) {
+      selectPill(pill, page.touch);
+    }
+  });
   pill.addEventListener("click", () => {
     // A game this device can't open says so instead of opening, so it makes no opening sound
     if (!item.key || page.host.canOpen(item.key)) {
@@ -553,17 +611,20 @@ function orbScreen() {
 }
 
 // Rows are evenly spaced around the orb's middle, and each pod sits on the ring at its row's height, so the
-// list curves around the orb. With more pills than rows, the rows scroll to keep the selected pill in view.
-// Each tab ends before the edge of the screen
-function placePills() {
+// list curves around the orb. Measured only when the screen, the header or the list changes, so a move along the
+// ring only writes the pills' places and never makes the browser lay the page out mid-swipe
+function measureRing() {
   const pills = [...document.querySelectorAll("#games .pill")];
+  page.ring = null;
   if (!orbTheme() || !pills.length) {
     return;
   }
   // On a phone held upright the panel and the orb sit below the header (orb.css), so they move with it
   const header = [document.querySelector(".bar"), $("notice")].filter((node) => !node.hidden);
-  const head = Math.max(...header.map((node) => node.getBoundingClientRect().bottom));
-  document.body.style.setProperty("--head", `${head}px`);
+  const head = `${Math.max(...header.map((node) => node.getBoundingClientRect().bottom))}px`;
+  if (document.body.style.getPropertyValue("--head") !== head) {
+    document.body.style.setProperty("--head", head);
+  }
   const ring = document.querySelector(".orb-ring");
   const box = ring.getBoundingClientRect();
   const [cx, cy] = [box.left + box.width / 2, box.top + box.height / 2];
@@ -574,33 +635,90 @@ function placePills() {
   // The rows stay clear of the header, of the panel where it sits above the ring (a phone held upright) and of
   // the bottom edge, with room past their ends for the arrows
   const screen = $("orb-screen").getBoundingClientRect();
-  const top = screen.height && screen.bottom < cy ? screen.bottom + row * 0.9 : head + row / 2;
+  const top = screen.height && screen.bottom < cy ? screen.bottom + row * 0.9 : parseFloat(head) + row / 2;
   const bottom = window.innerHeight - parseFloat(getComputedStyle($("menu")).paddingBottom) - row * 0.9;
   const reach = Math.max(0, Math.min(radius * 0.85, cy - top, bottom - cy));
+  const spread = parseFloat(getComputedStyle(document.body).getPropertyValue("--row-spread"));
+  // The selected tab leans out a little further than the rest, so it gets that much room too
+  const edge = window.innerWidth - parseFloat(getComputedStyle($("menu")).paddingRight) - 22;
+  $("orb-list").classList.toggle("picker", picking());
+  if (picking()) {
+    // The selected game sits in the middle row, with as many rows each side as fit, and no more than the games fill.
+    // Rows to spare spread out along the ring, as far as the layout allows (orb.css)
+    const fit = Math.floor(reach / row);
+    const half = Math.min(fit, pills.length - 1);
+    if (half && half < fit && spread) {
+      row = Math.min(pod * spread, reach / half);
+    }
+    page.ring = { cx, cy, radius, pod, row, half, edge };
+    return;
+  }
   const rows = Math.min(pills.length, Math.floor((2 * reach) / row) + 1);
   // When every pill fits, the rows spread out along the ring, as far as the layout allows (orb.css)
-  const spread = parseFloat(getComputedStyle(document.body).getPropertyValue("--row-spread"));
   if (rows === pills.length && rows > 1 && spread) {
     row = Math.min(pod * spread, (2 * reach) / (rows - 1));
   }
+  page.ring = { cx, cy, radius, pod, row, rows, edge };
+}
+
+// Each pod's place on the ring for its row, counted from the middle row
+function ringSpot(at) {
+  const { cx, cy, radius, row } = page.ring;
+  const dy = at * row;
+  return [cx + Math.sqrt(Math.max(0, radius ** 2 - dy ** 2)), cy + dy];
+}
+
+function placePill(pill, at) {
+  const [x, y] = ringSpot(at);
+  pill.style.transform = `translate(${x}px, ${y}px)`;
+  pill.style.maxWidth = `${page.ring.edge - x + page.ring.pod / 2}px`;
+}
+
+// With more pills than rows, the rows scroll to keep the selected pill in view. On a touch screen the ring is a picker
+// instead (placePicker)
+function placePills() {
+  const pills = [...document.querySelectorAll("#games .pill")];
+  if (!page.ring || !orbTheme() || !pills.length) {
+    return;
+  }
+  if (page.ring.half !== undefined) {
+    placePicker(pills);
+    return;
+  }
+  const { row, rows } = page.ring;
   const index = Math.max(0, pills.findIndex((pill) => pill.dataset.key === page.selected));
   page.orbScroll = clamp(clamp(page.orbScroll, index - rows + 1, index), 0, pills.length - rows);
-  const spot = (at) => {
-    const dy = (at - (rows - 1) / 2) * row;
-    return [cx + Math.sqrt(Math.max(0, radius ** 2 - dy ** 2)), cy + dy];
-  };
-  // The selected tab leans out a little further than the rest, so it gets that much room too
-  const edge = window.innerWidth - parseFloat(getComputedStyle($("menu")).paddingRight) - 22;
+  const middle = (rows - 1) / 2;
   pills.forEach((pill, i) => {
     const at = i - page.orbScroll;
-    const [x, y] = spot(at);
-    pill.style.transform = `translate(${x}px, ${y}px)`;
-    pill.style.maxWidth = `${edge - x + pod / 2}px`;
+    placePill(pill, at - middle);
+    pill.style.opacity = "";
+    pill.style.removeProperty("--lit");
     pill.classList.toggle("off-ring", at < 0 || at >= rows);
   });
   // Each arrow sits just past the end pod it leads from
-  placeArrow("up", spot(0), -1, page.orbScroll > 0, row);
-  placeArrow("down", spot(rows - 1), 1, page.orbScroll + rows < pills.length, row);
+  placeArrow("up", ringSpot(-middle), -1, page.orbScroll > 0, row);
+  placeArrow("down", ringSpot(middle), 1, page.orbScroll + rows < pills.length, row);
+}
+
+// The picker turns to page.pick, the game in the middle row, which is part way between two games while a finger turns
+// it. A pod passing the last row fades away over the next one, and each pill is lit by how near the middle it is
+// (orb.css), in steps too small to see, so the pills far from the middle aren't styled again every frame
+function placePicker(pills) {
+  const { row, half } = page.ring;
+  pills.forEach((pill, i) => {
+    const at = i - page.pick;
+    const shown = clamp(half + 1 - Math.abs(at), 0, 1);
+    placePill(pill, clamp(at, -half - 1, half + 1));
+    pill.style.opacity = shown < 1 ? String(shown) : "";
+    pill.classList.toggle("off-ring", shown < 0.5);
+    const lit = String(Math.round(clamp(1 - Math.abs(at), 0, 1) * 100) / 100);
+    if (pill.style.getPropertyValue("--lit") !== lit) {
+      pill.style.setProperty("--lit", lit);
+    }
+  });
+  placeArrow("up", ringSpot(-half), -1, page.pick > half + 0.5, row);
+  placeArrow("down", ringSpot(half), 1, pills.length - 1 - page.pick > half + 0.5, row);
 }
 
 function placeArrow(name, [x, y], side, show, row) {
@@ -625,8 +743,16 @@ function moveSelection(step) {
   const pills = [...document.querySelectorAll("#games .pill")];
   const next = pills[clamp(pills.indexOf(selectedPill()) + step, 0, pills.length - 1)];
   if (next) {
-    next.focus({ preventScroll: true });
+    pointAt(next);
   }
+}
+
+// Keyboard focus follows the selection, but the selection can't wait for it: Discord shows the menu in a frame from
+// another site, and WebKit (every iPhone) ignores focus() there until the player's first tap. The focus listener
+// selects first when focus does move, so this only selects when it didn't
+function pointAt(pill) {
+  pill.focus({ preventScroll: true });
+  selectPill(pill, page.touch);
 }
 
 function selectedPill() {
@@ -653,6 +779,10 @@ function selectPill(pill, quiet) {
     hideHover();
   }
   showOnScreen(page.state.games.find((game) => game.key === page.selected) || SETTINGS_ITEM, !quiet);
+  // A picker turns the selected game to its middle row, unless a finger or a glide is turning it there already
+  if (picking() && !page.turning) {
+    page.pick = pills.indexOf(pill);
+  }
   placePills();
   if (!quiet) {
     sounds.play("move");
@@ -662,12 +792,16 @@ function selectPill(pill, quiet) {
 }
 
 // The panel shows the new item at once, so the page always says what is selected. With a turn, the old panel
-// turns away on the arm while the new one turns in
+// turns away on the arm while the new one turns in. On a touch screen's picker, which passes a game with every row a
+// finger slides, the panels blend instead, and the ones still fading out stay until they have
 function showOnScreen(item, turn) {
   const faces = document.querySelector("#orb-screen .screen-faces");
   const face = screenFace(item);
-  faces.querySelectorAll(".leaving").forEach((node) => node.remove());
-  const old = faces.querySelector(".screen-face");
+  const blend = picking();
+  if (!blend) {
+    faces.querySelectorAll(".leaving").forEach((node) => node.remove());
+  }
+  const old = faces.querySelector(".screen-face:not(.leaving)");
   if (!old || !turn) {
     faces.replaceChildren(face);
     fitScreenPeople();
@@ -677,6 +811,10 @@ function showOnScreen(item, turn) {
   old.setAttribute("aria-hidden", "true");
   faces.prepend(face);
   fitScreenPeople();
+  if (blend) {
+    blendPanels(old, face);
+    return;
+  }
   turnPanels(old, face, false);
   turnArm(document.querySelector("#orb-screen .screen-arm"), false);
 }
@@ -727,12 +865,15 @@ function screenIcon(item) {
   return img;
 }
 
-// Restarting the animation needs a reflow between taking the class off and putting it back
+// Each flash after the first swaps to the other copy of its keyframes (orb.css), which starts it over without making
+// the browser lay the page out mid-swipe, as taking the class off and putting it back would
 function pulseOrb() {
   const orb = $("orb");
-  orb.classList.remove("pulse");
-  void orb.offsetWidth;
-  orb.classList.add("pulse");
+  if (orb.classList.contains("pulse")) {
+    orb.classList.toggle("again");
+  } else {
+    orb.classList.add("pulse");
+  }
 }
 
 // The fins around the orb turn and stay turned, so a long scroll winds them round like a dial
@@ -761,10 +902,11 @@ function focusSelected() {
   }
 }
 
-// The ring takes the arrow keys, the wheel and slides only while nothing covers it: a game, Settings or the people
-// panel. A panel over it scrolls the usual way, and its keys stay its own
+// The ring takes the arrow keys, the wheel and slides only while nothing covers it: a game, Settings, the people
+// panel or the hub's message box. A panel over it scrolls the usual way, and its keys stay its own
 function ringFree() {
-  return orbTheme() && page.staged === null && !page.host.frame && !page.host.people.isOpen();
+  const people = page.host.people;
+  return orbTheme() && page.staged === null && !page.host.frame && !people.isOpen() && !people.isAsking();
 }
 
 // Up and down, the scroll wheel, or a swipe move between the pills like a controller. A tap opens a game without
@@ -802,25 +944,16 @@ function bindOrb() {
     holdHover(page.pointer);
     moveSelection(step);
   });
-  let turned = 0;
-  document.addEventListener(
-    "wheel",
-    (event) => {
-      if (!ringFree()) {
-        return;
-      }
-      event.preventDefault();
-      holdHover([event.clientX, event.clientY]);
-      // A mouse wheel moves one pill per notch; a touchpad's many small turns add up to the same
-      turned += event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 33 : event.deltaY;
-      if (Math.abs(turned) >= WHEEL_STEP) {
-        moveSelection(Math.sign(turned));
-        turned = 0;
-      }
-    },
-    { passive: false },
-  );
   window.addEventListener("resize", layoutOrb);
+  // A tablet whose keyboard and trackpad come and go changes between the picker and the computer's ring
+  TOUCH.addEventListener("change", render);
+  // Discord's buttons and the phone's notch (the safe area), and the header's font arriving, move the header and the
+  // menu's edges without resizing the window. The header takes the top's room as padding, so its whole box is
+  // watched; the menu takes the other sides' room as padding around what it holds. A frame later, like the other
+  // observers here
+  const edges = new ResizeObserver(() => requestAnimationFrame(layoutOrb));
+  edges.observe(document.querySelector(".bar"), { box: "border-box" });
+  edges.observe($("menu"));
   bindSwipe();
 }
 
@@ -831,25 +964,66 @@ function holdHover(at) {
   document.body.classList.toggle("hover-held", Boolean(at));
 }
 
+// The ring's wheel and slides hold the page still, and a listener that may do that makes the browser wait for this
+// script before every scroll. So they listen only while the Orb shows, and the Standard theme's list scrolls at once
+function listenForRing(on) {
+  const change = on ? "addEventListener" : "removeEventListener";
+  document[change]("wheel", turnRing, { passive: false });
+  document[change]("touchmove", holdStill, { passive: false });
+}
+
+function turnRing(event) {
+  if (!ringFree()) {
+    return;
+  }
+  event.preventDefault();
+  holdHover([event.clientX, event.clientY]);
+  // A mouse wheel moves one pill per notch; a touchpad's many small turns add up to the same
+  page.wheel += event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 33 : event.deltaY;
+  if (Math.abs(page.wheel) >= WHEEL_STEP) {
+    moveSelection(Math.sign(page.wheel));
+    page.wheel = 0;
+  }
+}
+
+// Some phones still scroll or bounce the page under a finger, which would take the slide away from the ring, so a
+// slide holds the page still itself
+function holdStill(event) {
+  if (page.swipe) {
+    event.preventDefault();
+  }
+}
+
 // The screen's size and the header place the ring and the panel. Behind a game the scene is hidden and has no
 // size, so the menu waits to be shown again, which places it
 function layoutOrb() {
   if (orbTheme() && page.state && !page.host.frame) {
+    measureRing();
     placePills();
     drawOrbWeb();
     fitScreenPeople();
   }
 }
 
-// On a touch screen, sliding a finger up or down along the ring, or left and right across the screen, moves one
-// pill per step. The selection follows the finger, so sliding down or right moves to the next one
+// A finger sliding up or down along the ring, or left and right across the screen, moves through the games. On a touch
+// screen the ring is a picker the finger turns (turnPicker). A computer's touch screen keeps the computer's ring, where
+// the selection follows the finger one pill per step, so sliding down or right moves to the next one
 function bindSwipe() {
-  let swipe = null;
   document.addEventListener("pointerdown", (event) => {
+    // A second finger joining in leaves the first one's slide alone
+    if (!event.isPrimary) {
+      return;
+    }
+    page.swallowClick = 0;
     const touch = ringFree() && event.pointerType === "touch";
-    swipe = touch ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
+    page.swipe = touch ? { id: event.pointerId, x: event.clientX, y: event.clientY, moves: [] } : null;
+    // A finger landing on a turning picker holds it where it is
+    if (touch && page.turning) {
+      stopGlide();
+    }
   });
   document.addEventListener("pointermove", (event) => {
+    const swipe = page.swipe;
     if (!swipe || event.pointerId !== swipe.id) {
       return;
     }
@@ -857,31 +1031,207 @@ function bindSwipe() {
     // The first clear direction holds for the rest of the slide, so a thumb's curve doesn't switch it
     if (!swipe.axis && Math.hypot(dx, dy) >= SWIPE_START) {
       swipe.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      if (picking()) {
+        // The picker follows the finger from here, so it doesn't jump by the distance that told a slide from a tap
+        [swipe.x, swipe.y, swipe.from] = [event.clientX, event.clientY, page.pick];
+        startTurning();
+      }
     }
-    const steps = Math.trunc(({ x: dx, y: dy }[swipe.axis] || 0) / SWIPE_STEP);
-    if (steps) {
-      // Every whole step counts and the rest carries over, so a fast slide that arrives in a few big moves goes as
-      // far as a slow one
-      swipe[swipe.axis] += steps * SWIPE_STEP;
-      // A slide sounds like the arrow keys, unlike a tap on a pill, which opens it with the select sound
-      page.touch = false;
-      moveSelection(steps);
+    if (swipe.axis && picking()) {
+      turnPicker(swipe, event);
+    } else if (swipe.axis) {
+      slideSteps(swipe, dx, dy);
     }
   });
-  // Some phones still scroll or bounce the page under a finger, which would take the slide away from the ring,
-  // so a slide holds the page still itself
+  document.addEventListener("pointerup", (event) => letGo(event, true));
+  document.addEventListener("pointercancel", (event) => letGo(event, false));
+  // The tap that caught a turning picker opens nothing. Its click comes straight after the finger lifts, so a click
+  // much later, like one from the keyboard, is never taken for it
   document.addEventListener(
-    "touchmove",
+    "click",
     (event) => {
-      if (swipe) {
+      const caught = page.swallowClick > 0 && performance.now() - page.swallowClick < CAUGHT_CLICK_MS;
+      page.swallowClick = 0;
+      if (caught) {
         event.preventDefault();
+        event.stopPropagation();
       }
     },
-    { passive: false },
+    { capture: true },
   );
-  for (const type of ["pointerup", "pointercancel"]) {
-    document.addEventListener(type, () => (swipe = null));
+  // A phone can hide the Activity mid-slide, and the finger's release then never arrives
+  document.addEventListener("visibilitychange", () => {
+    page.swipe = null;
+    if (page.turning) {
+      stopTurning();
+    }
+  });
+  // iPhones draw a pressed button's :active look only on a page that listens for touches
+  document.addEventListener("touchstart", () => {}, { passive: true });
+}
+
+// Every whole step counts and the rest carries over, so a fast slide that arrives in a few big moves goes as far as a
+// slow one
+function slideSteps(swipe, dx, dy) {
+  const steps = Math.trunc({ x: dx, y: dy }[swipe.axis] / SWIPE_STEP);
+  if (steps) {
+    swipe[swipe.axis] += steps * SWIPE_STEP;
+    // A slide sounds like the arrow keys, unlike a tap on a pill, which opens it with the select sound
+    page.touch = false;
+    moveSelection(steps);
   }
+}
+
+// The games follow the finger, so sliding up (or left) brings the next ones to the middle row, and past either end the
+// picker stretches
+function turnPicker(swipe, event) {
+  const travel = swipe.axis === "y" ? event.clientY - swipe.y : event.clientX - swipe.x;
+  const place = stretch(swipe.from - travel / page.ring.row, pillCount() - 1);
+  swipe.moves.push([event.timeStamp, place]);
+  turnTo(place);
+}
+
+// The finger lifts. A picker it turned keeps turning as fast as the finger flicked it and slows to rest on a whole
+// game; one it only held comes to rest on the nearest game, and that tap opens nothing. A cancelled touch flicks
+// nothing and sends no click
+function letGo(event, lifted) {
+  const swipe = page.swipe;
+  if (!swipe || event.pointerId !== swipe.id) {
+    return;
+  }
+  page.swipe = null;
+  if (!page.turning) {
+    return;
+  }
+  page.swallowClick = lifted && !swipe.axis ? performance.now() : 0;
+  const velocity = swipe.axis && lifted ? speed(swipe.moves, event.timeStamp) : 0;
+  const to = restingPlace(page.pick, velocity, pillCount() - 1, FLICK_SPEED / page.ring.row);
+  const path = glide(page.pick, to, velocity);
+  const started = performance.now();
+  const frame = (time) => {
+    turnTo(path.at(time - started));
+    page.glide = time - started < path.duration ? requestAnimationFrame(frame) : null;
+    if (!page.glide) {
+      stopTurning();
+    }
+  };
+  page.glide = requestAnimationFrame(frame);
+}
+
+// While a finger or a glide turns the picker, the pills follow page.pick frame by frame, with no easing of their own
+function startTurning() {
+  stopGlide();
+  page.turning = true;
+  $("orb-list").classList.add("turning");
+}
+
+// The picker at a place, with the game nearest the middle row selected. Passing each game sounds like a click
+function turnTo(place) {
+  page.pick = place;
+  const pills = [...document.querySelectorAll("#games .pill")];
+  const nearest = pills[clamp(Math.round(place), 0, pills.length - 1)];
+  if (nearest && nearest.dataset.key !== page.selected) {
+    selectPill(nearest, false);
+  } else {
+    placePills();
+  }
+}
+
+function stopGlide() {
+  cancelAnimationFrame(page.glide);
+  page.glide = null;
+}
+
+// The picker rests with the selected game in the middle row, and the pills ease between places again
+function stopTurning() {
+  stopGlide();
+  page.turning = false;
+  $("orb-list")?.classList.remove("turning");
+  const pills = [...document.querySelectorAll("#games .pill")];
+  page.pick = Math.max(0, pills.indexOf(selectedPill()));
+  placePills();
+}
+
+function pillCount() {
+  return document.querySelectorAll("#games .pill").length;
+}
+
+// A finger's press shows on the card, pod or button under it at once in the Orb, where nothing scrolls, and a moment
+// later in the Standard list, where a finger landing may be starting a scroll. It goes as soon as the finger slides,
+// and a quick tap's press stays for a moment. iPhones draw :active late or not at all, and can leave it stuck
+function bindPress() {
+  let press = null;
+  const lift = () => {
+    if (press) {
+      clearTimeout(press.timer);
+      press.node.classList.remove("pressed");
+      press = null;
+    }
+  };
+  const options = { capture: true };
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (!event.isPrimary) {
+        return;
+      }
+      lift();
+      // A finger catching a turning picker presses nothing
+      const node = event.pointerType === "touch" && !page.turning ? event.target.closest?.(PRESSABLE) : null;
+      if (!node) {
+        return;
+      }
+      const show = () => node.classList.add("pressed");
+      press = { id: event.pointerId, node, x: event.clientX, y: event.clientY, timer: null };
+      if (orbTheme()) {
+        show();
+      } else {
+        press.timer = setTimeout(show, PRESS_WAIT_MS);
+      }
+    },
+    options,
+  );
+  document.addEventListener(
+    "pointermove",
+    (event) => {
+      const moved = press?.id === event.pointerId && Math.hypot(event.clientX - press.x, event.clientY - press.y);
+      if (moved >= SWIPE_START) {
+        lift();
+      }
+    },
+    options,
+  );
+  document.addEventListener(
+    "pointerup",
+    (event) => {
+      if (press?.id === event.pointerId) {
+        const { node, timer } = press;
+        press = null;
+        clearTimeout(timer);
+        node.classList.add("pressed");
+        setTimeout(() => node.classList.remove("pressed"), PRESS_FLASH_MS);
+      }
+    },
+    options,
+  );
+  document.addEventListener("pointercancel", lift, options);
+  window.addEventListener("scroll", lift, { capture: true, passive: true });
+  // A phone hiding the Activity, or the window losing focus, may keep the finger's release from ever arriving
+  document.addEventListener("visibilitychange", lift);
+  window.addEventListener("blur", lift);
+}
+
+// A phone running hot holds the Orb's background still (orb.css), and a sign in the header says why when tapped
+function heatChanged(state) {
+  document.body.classList.toggle("hot", state >= HOT);
+  // The sign takes room in the header, which the row of faces is fitted to
+  page.hold.request();
+}
+
+function bindHeat() {
+  const sign = $("hot");
+  sign.append(icon(document, "hot"));
+  sign.addEventListener("click", () => page.host.people.tell(HOT_NOTE));
 }
 
 // The included games are always installed, so an empty menu usually means games were turned off
@@ -1003,7 +1353,11 @@ function bubbleTapped(event, key) {
   event.stopPropagation();
   const card = event.currentTarget.closest(".card");
   if (orbTheme()) {
-    card.focus({ preventScroll: true });
+    // Selecting turns a picker's pod to the middle row, which would leave a list opened beside it behind, so on an
+    // upright phone, whose panel lists no players, the tap only opens the list
+    if (!picking() || !UPRIGHT.matches) {
+      pointAt(card);
+    }
     if (screenListsPlayers(key)) {
       return;
     }
@@ -1251,9 +1605,10 @@ function faceCount(others) {
   if (inside <= 0) {
     return Math.min(others, ROW_MAX);
   }
-  // The gear takes no room when it is hidden, and the Orb has none at all (Settings is a pod there)
-  const gear = $("gear");
-  const beside = gear.offsetWidth ? gear.offsetWidth + parseFloat(barStyle.columnGap) : 0;
+  // The gear and the hot phone sign take no room while hidden, and the Orb has no gear (Settings is a pod there)
+  const spacing = parseFloat(barStyle.columnGap);
+  const width = (node) => (node.offsetWidth ? node.offsetWidth + spacing : 0);
+  const beside = width($("gear")) + width($("hot"));
   const share = whoStyle.maxWidth.endsWith("%") ? (inside * parseFloat(whoStyle.maxWidth)) / 100 : Infinity;
   const gap = parseFloat(whoStyle.columnGap);
   // What the name and the row share: the badge and the gap after it come first, then the gap and margin before the row
@@ -1398,6 +1753,12 @@ function fitScreenPeople() {
     return;
   }
   screen.classList.remove("no-room");
+  // A panel without a players' list (Settings, nobody playing, or an upright phone, whose panel never shows one) has
+  // nothing to fit, so a swipe through the games measures nothing
+  const people = screen.querySelector(".screen-face:not(.leaving) .screen-people");
+  if (!people || people.hidden || UPRIGHT.matches) {
+    return;
+  }
   const panel = screen.getBoundingClientRect();
   if (!panel.height) {
     return;

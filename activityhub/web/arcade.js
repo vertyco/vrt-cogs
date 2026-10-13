@@ -1049,6 +1049,8 @@ class Arcade {
 
   listen(autoPause) {
     window.addEventListener("pointerdown", () => this.unlockAudio());
+    // iPhones draw a pressed button's :active look only on a page that listens for touches
+    window.addEventListener("touchstart", () => {}, { passive: true });
     // While the payout settings are open, no key, press or swipe reaches the game, so a round waiting for its first
     // move can't start behind them. The games listen on the window too, so this runs first and stops the event there.
     // Typing, Tab and the dialog's buttons still work. Escape closes it here, before the browser would, so the

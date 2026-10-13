@@ -22,6 +22,7 @@ const ICONS = {
     '<path d="M17 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1"/><circle cx="10" cy="7" r="3.5"/>' +
     '<path d="M21 19v-1a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  hot: '<path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>',
 };
 
 function make(doc, tag, className, text) {
@@ -397,6 +398,11 @@ export class PeopleUI {
 
   isOpen() {
     return !this.panel.hidden;
+  }
+
+  // The Join question or a message from the hub is showing
+  isAsking() {
+    return !this.confirmBox.hidden;
   }
 
   open() {

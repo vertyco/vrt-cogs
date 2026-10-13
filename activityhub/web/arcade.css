@@ -116,10 +116,13 @@ button:focus-visible {
   width: 36px;
 }
 
-.arcade-back:hover,
-.arcade-icon:hover {
-  background: var(--arcade-line);
-  color: var(--arcade-text);
+/* Hover looks are for a mouse: a phone keeps a tapped button looking hovered until the next tap somewhere else */
+@media (hover: hover) {
+  .arcade-back:hover,
+  .arcade-icon:hover {
+    background: var(--arcade-line);
+    color: var(--arcade-text);
+  }
 }
 
 .arcade-name {
@@ -336,6 +339,10 @@ button:focus-visible {
   width: min(400px, 100%);
   max-height: 100%;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  /* A scrolling box starts touch-action over (WebKit), so it says manipulation: a finger still scrolls a card too tall
+     for the screen, and its buttons don't wait for a second tap */
+  touch-action: manipulation;
   padding: 22px 22px 20px;
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-top: 3px solid var(--arcade-accent);
@@ -463,8 +470,10 @@ button:focus-visible {
     transform 0.12s;
 }
 
-.arcade-cash:hover:not(:disabled) {
-  filter: brightness(1.1);
+@media (hover: hover) {
+  .arcade-cash:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
 }
 
 .arcade-cash:active:not(:disabled) {
@@ -511,16 +520,20 @@ button:focus-visible {
   color: var(--arcade-on-accent);
 }
 
-.arcade-actions .primary:hover:not(:disabled) {
-  filter: brightness(1.12);
+@media (hover: hover) {
+  .arcade-actions .primary:hover:not(:disabled) {
+    filter: brightness(1.12);
+  }
 }
 
 .arcade-actions .secondary {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.arcade-actions .secondary:hover {
-  background: rgba(255, 255, 255, 0.09);
+@media (hover: hover) {
+  .arcade-actions .secondary:hover {
+    background: rgba(255, 255, 255, 0.09);
+  }
 }
 
 .arcade-actions button:disabled {
@@ -805,6 +818,9 @@ button:focus-visible {
   max-height: calc(100% - var(--arcade-safe-top) - var(--arcade-safe-bottom) - 24px);
   padding: 20px 20px 18px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  /* The same as a card: a finger scrolls it, and its buttons don't wait for a second tap */
+  touch-action: manipulation;
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-top: 3px solid var(--arcade-accent);
   border-radius: 18px;

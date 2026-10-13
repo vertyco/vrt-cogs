@@ -39,8 +39,11 @@
   backdrop-filter: blur(6px);
 }
 
-.hub-people-button:hover {
-  border-color: var(--hub-accent);
+/* Only a mouse: a phone keeps a tapped button looking hovered */
+@media (hover: hover) {
+  .hub-people-button:hover {
+    border-color: var(--hub-accent);
+  }
 }
 
 .hub-people-button:focus-visible,
@@ -142,11 +145,13 @@
 
 /* ---------- The panel ---------- */
 
+/* A finger dragging the dimmed part moves nothing under it */
 .hub-people-scrim {
   position: fixed;
   inset: 0;
   z-index: 20;
   background: rgba(0, 0, 0, 0.45);
+  touch-action: none;
 }
 
 .hub-people-panel {
@@ -198,9 +203,13 @@
   cursor: pointer;
 }
 
+/* A scroll that reaches the end of the list stops there instead of dragging what is behind the panel */
 .hub-panel-body {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  /* A scrolling box starts touch-action over (WebKit), so it says manipulation again: no wait for a second tap */
+  touch-action: manipulation;
   padding: 0 12px calc(16px + var(--safe-bottom, 0px));
 }
 

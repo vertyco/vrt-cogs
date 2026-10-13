@@ -105,17 +105,10 @@ body[data-theme="orb"] .menu {
   overflow: hidden;
 }
 
-/* The ring takes slides itself (menu.js), so the browser mustn't scroll or zoom the menu under a finger, or pick
-   out text. Settings scrolls the usual way while it is open. Game frames keep their own touch handling */
+/* The ring takes slides itself (menu.js), so the browser mustn't scroll or zoom the menu under a finger. Settings
+   scrolls the usual way while it is open. Game frames keep their own touch handling */
 body[data-theme="orb"]:not(.panel-open) .menu {
   touch-action: none;
-}
-
-body[data-theme="orb"] .bar,
-.games.orb-menu {
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
 }
 
 /* orb.js draws the web of cells around the orb */
@@ -298,6 +291,11 @@ body[data-theme="orb"] .bar,
   animation: orb-flash 0.45s ease-out;
 }
 
+/* A new name starts the flash over (menu.js pulseOrb) */
+.orb.pulse.again::before {
+  animation-name: orb-flash-again;
+}
+
 /* The glossy highlight, small and sharp like light on glass */
 .orb::after {
   position: absolute;
@@ -331,6 +329,13 @@ body[data-theme="orb"] .bar,
   will-change: transform;
 }
 
+/* A phone running hot (menu.js heatChanged) holds the scene's endless motion still, and it carries on from there once
+   the phone cools */
+body.hot :is(.fog, .orb-wrap, .orb, .orb-core, .fins-shape, .goo-shape),
+body.hot .orb-arrow::before {
+  animation-play-state: paused;
+}
+
 @keyframes fog-drift {
   from {
     transform: translate3d(-3%, -2%, 0) scale(1);
@@ -353,6 +358,17 @@ body[data-theme="orb"] .bar,
 }
 
 @keyframes orb-flash {
+  from {
+    transform: scale(1.12);
+    filter: brightness(1.8);
+  }
+  to {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes orb-flash-again {
   from {
     transform: scale(1.12);
     filter: brightness(1.8);
@@ -457,6 +473,11 @@ body[data-theme="orb"] .notice {
     opacity 0.2s;
 }
 
+/* While a finger or a glide turns the touch screen's picker, the pills follow it frame by frame (menu.js) */
+.orb-list.turning .pill {
+  transition: none;
+}
+
 .orb-menu .pill.off-ring {
   opacity: 0;
   pointer-events: none;
@@ -466,8 +487,22 @@ body[data-theme="orb"] .notice {
   outline: none;
 }
 
-/* A glass bubble with the game's icon inside, in a dark socket with a lit rim */
+/* A glass bubble with the game's icon inside, in a dark socket with a lit rim. The selected pod's glass glows */
 .pod {
+  --pod-glass: radial-gradient(
+    circle,
+    rgb(var(--orb-ink)) 0 66%,
+    rgb(var(--orb-dark) / 0.9) 76%,
+    rgb(var(--orb-main) / 0.75) 92%,
+    rgb(var(--orb-pale) / 0.8) 100%
+  );
+  --pod-lit: radial-gradient(
+    circle,
+    rgb(var(--orb-deep)) 0 66%,
+    rgb(var(--orb-main)) 78%,
+    rgb(var(--orb-pale)) 92%,
+    rgb(var(--orb-white)) 100%
+  );
   position: relative;
   z-index: 1;
   display: grid;
@@ -476,13 +511,7 @@ body[data-theme="orb"] .notice {
   width: var(--pod);
   height: var(--pod);
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgb(var(--orb-ink)) 0 66%,
-    rgb(var(--orb-dark) / 0.9) 76%,
-    rgb(var(--orb-main) / 0.75) 92%,
-    rgb(var(--orb-pale) / 0.8) 100%
-  );
+  background: var(--pod-glass);
   box-shadow:
     0 0 0 2px rgb(var(--orb-ink) / 0.85),
     0 0 0 3px rgb(var(--orb-light) / 0.3),
@@ -529,24 +558,35 @@ body[data-theme="orb"] .notice {
   fill: rgb(var(--orb-ink));
 }
 
-/* The pill under the mouse lights up, except while the wheel or the arrow keys have the selection (menu.js) */
-:where(body:not(.hover-held)) .orb-menu .pill:hover .pod {
-  filter: brightness(1.2);
+/* The pill under the mouse lights up, except while the wheel or the arrow keys have the selection (menu.js). Only a
+   mouse: a phone would keep a tapped pill lit */
+@media (hover: hover) {
+  :where(body:not(.hover-held)) .orb-menu .pill:hover .pod {
+    filter: brightness(1.2);
+  }
 }
 
 .orb-menu .pill.selected .pod {
-  background: radial-gradient(
-    circle,
-    rgb(var(--orb-deep)) 0 66%,
-    rgb(var(--orb-main)) 78%,
-    rgb(var(--orb-pale)) 92%,
-    rgb(var(--orb-white)) 100%
-  );
+  background: var(--pod-lit);
   box-shadow:
     0 0 0 2px rgb(var(--orb-ink) / 0.9),
     0 0 0 3px rgb(var(--orb-white) / 0.85),
     0 0 28px 4px rgb(var(--orb-light) / 0.7);
   transform: scale(1.14);
+}
+
+/* A finger's press (menu.js bindPress): the pod sinks into its socket and the tab dims */
+.orb-menu .pill.pressed .pod {
+  filter: brightness(0.78);
+  transform: scale(0.9);
+}
+
+.orb-menu .pill.selected.pressed .pod {
+  transform: scale(1.02);
+}
+
+.orb-menu .pill.pressed .plate {
+  filter: brightness(0.8);
 }
 
 .orb-menu .pill.selected .pod .icon {
@@ -558,8 +598,16 @@ body[data-theme="orb"] .notice {
 }
 
 /* The tab, cut like a folder tab with a raised strip on its top left and chamfered corners. Its own color is
-   the edge, and the fill sits 1px inside it. It starts under its pod, so the pod looks plugged into it */
+   the edge, and the fill sits 1px inside it. It starts under its pod, so the pod looks plugged into it. The selected
+   tab is lit all over */
 .orb-menu .pill .plate {
+  --plate-lit: linear-gradient(
+    180deg,
+    rgb(var(--orb-pale)) 0%,
+    rgb(var(--orb-light)) 30%,
+    rgb(var(--orb-main)) 78%,
+    rgb(var(--orb-mid)) 100%
+  );
   --shape: polygon(
     0 10px,
     8px 2px,
@@ -605,9 +653,11 @@ body[data-theme="orb"] .notice {
   transition: opacity 0.15s;
 }
 
-:where(body:not(.hover-held)) .orb-menu .pill:hover .plate {
-  background: rgb(var(--orb-pale) / 0.7);
-  color: rgb(var(--orb-text));
+@media (hover: hover) {
+  :where(body:not(.hover-held)) .orb-menu .pill:hover .plate {
+    background: rgb(var(--orb-pale) / 0.7);
+    color: rgb(var(--orb-text));
+  }
 }
 
 /* A small clamp holds the tab to its pod, across the pod's rim */
@@ -636,13 +686,7 @@ body[data-theme="orb"] .notice {
 }
 
 .orb-menu .pill.selected .plate {
-  background: linear-gradient(
-    180deg,
-    rgb(var(--orb-pale)) 0%,
-    rgb(var(--orb-light)) 30%,
-    rgb(var(--orb-main)) 78%,
-    rgb(var(--orb-mid)) 100%
-  );
+  background: var(--plate-lit);
   color: rgb(var(--orb-ink));
   transform: translateX(8px);
 }
@@ -660,6 +704,101 @@ body[data-theme="orb"] .notice {
   text-transform: uppercase;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* On a touch screen's picker the selected look slides from game to game with the ring instead of jumping: menu.js
+   sets each pill's --lit from how near the middle row it is (1 there, 0 a row away), and every part of the look blends
+   by it. Each pill moves as a layer of its own, so its name glides instead of being drawn again every frame */
+@property --lit {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+.orb-menu .orb-list.picker .pill {
+  --lit: 0;
+  filter: drop-shadow(0 0 10px rgb(var(--orb-main) / calc(0.45 * var(--lit))));
+  will-change: transform;
+}
+
+.orb-menu .orb-list.picker.placed .pill {
+  transition:
+    transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s,
+    --lit 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.orb-menu .orb-list.picker.turning .pill {
+  transition: none;
+}
+
+.orb-menu .orb-list.picker .pod {
+  background: var(--pod-glass);
+  box-shadow:
+    0 0 0 2px rgb(var(--orb-ink) / calc(0.85 + 0.05 * var(--lit))),
+    0 0 0 3px color-mix(in srgb, rgb(var(--orb-white) / 0.85) calc(var(--lit) * 100%), rgb(var(--orb-light) / 0.3)),
+    0 0 calc(18px + 10px * var(--lit)) calc(4px * var(--lit))
+      color-mix(in srgb, rgb(var(--orb-light) / 0.7) calc(var(--lit) * 100%), rgb(var(--orb-main) / 0.28));
+  transform: scale(calc(1 + 0.14 * var(--lit)));
+  transition: filter 0.15s;
+}
+
+/* The lit glass, over the plain glass and under the icon */
+.orb-menu .orb-list.picker .pod::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--pod-lit);
+  opacity: var(--lit);
+  content: "";
+}
+
+.orb-menu .orb-list.picker .pill.pressed .pod {
+  transform: scale(calc(0.9 + 0.12 * var(--lit)));
+}
+
+.orb-menu .orb-list.picker .pod .icon {
+  filter: brightness(calc(0.78 + 0.22 * var(--lit))) saturate(calc(0.85 + 0.15 * var(--lit)));
+  transition: none;
+}
+
+.orb-menu .orb-list.picker .gear-icon {
+  fill: color-mix(in srgb, rgb(var(--orb-white)) calc(var(--lit) * 100%), rgb(var(--orb-light) / 0.85));
+}
+
+.orb-menu .orb-list.picker .pill::after {
+  border-color: color-mix(in srgb, rgb(var(--orb-white) / 0.9) calc(var(--lit) * 100%), rgb(var(--orb-light) / 0.55));
+  background: color-mix(in srgb, rgb(var(--orb-mid)) calc(var(--lit) * 100%), rgb(var(--orb-deep)));
+}
+
+/* The name turns dark as quickly as it can without a jump, halfway to the middle: blended slowly, it would fade into
+   the half lit tab under it */
+.orb-menu .orb-list.picker .plate {
+  background: rgb(var(--orb-light) / 0.42);
+  color: color-mix(
+    in srgb,
+    rgb(var(--orb-ink)) calc(clamp(0, (var(--lit) - 0.45) * 10, 1) * 100%),
+    rgb(var(--orb-light) / 0.92)
+  );
+  transform: translateX(calc(8px * var(--lit)));
+  transition: filter 0.15s;
+}
+
+.orb-menu .orb-list.picker .plate::before {
+  opacity: calc(1 - var(--lit));
+  transition: none;
+}
+
+/* The lit tab, under the tab's dark fill, which fades as the tab nears the middle */
+.orb-menu .orb-list.picker .plate::after {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: var(--plate-lit);
+  clip-path: var(--shape);
+  opacity: var(--lit);
+  content: "";
 }
 
 /* The screen shows the selected game's description, currency line and platform note; screen readers still read them
@@ -698,6 +837,22 @@ body[data-theme="orb"] .notice {
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
   content: "";
   animation: nudge-up 1.2s ease-in-out infinite;
+}
+
+/* A finger needs about 44px, more than the arrow itself. The extra reaches away from the end pod beside it, so a tap
+   on that pod's rim still opens it */
+.orb-arrow::after {
+  position: absolute;
+  inset: 0 -7px;
+  content: "";
+}
+
+.orb-arrow.up::after {
+  top: -26px;
+}
+
+.orb-arrow.down::after {
+  bottom: -26px;
 }
 
 .orb-arrow.down::before {
@@ -809,6 +964,11 @@ body[data-theme="orb"] .notice {
   background: rgb(var(--orb-light) / 0.45);
   clip-path: var(--shape);
   backface-visibility: hidden;
+}
+
+/* A panel on its way out lets taps through to the one coming in */
+.screen-face.leaving {
+  pointer-events: none;
 }
 
 /* The fill lets the web show through, like a projection, with faint scan lines over it */
@@ -971,11 +1131,14 @@ body[data-theme="orb"] .notice {
   pointer-events: none;
 }
 
-.screen-select:hover .select-button {
-  transform: scale(1.1);
+@media (hover: hover) {
+  .screen-select:hover .select-button {
+    transform: scale(1.1);
+  }
 }
 
-.screen-select:active .select-button {
+.screen-select:active .select-button,
+.screen-select.pressed .select-button {
   transform: scale(0.94);
 }
 
@@ -1195,11 +1358,13 @@ body[data-theme="orb"] .swatch[aria-pressed="true"] {
   .fins-shape,
   .goo-shape,
   .orb.pulse::before,
+  .orb.pulse.again::before,
   .orb-arrow::before {
     animation: none;
   }
 
   .orb-list.placed .pill,
+  .orb-menu .orb-list.picker.placed .pill,
   .orb-arrow,
   .orb-fins,
   .orb-scene,

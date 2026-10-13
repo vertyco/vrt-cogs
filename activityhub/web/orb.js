@@ -325,6 +325,19 @@ export function turnArm(arm, big) {
   );
 }
 
+// The turn each panel is turning in with, and the angle and opacity it started from. A quick next move works out
+// how far it has come from these, since asking the browser (getAnimations, getComputedStyle) would make it work out
+// the page's styles in the middle of a swipe
+const turnsIn = new WeakMap();
+
+function turnIn(face, angle, opacity, timing) {
+  const turn = face.animate(
+    [{ transform: `rotateY(${angle}deg)`, opacity }, { transform: "rotateY(0deg)", opacity: 1 }],
+    timing,
+  );
+  turnsIn.set(face, { turn, angle, opacity });
+}
+
 // The panel turns edge-on to the player, and the new one turns back to face them. The old panel goes once it
 // has turned away. A panel still turning in when the next move comes gives its place to the new one, which
 // carries on turning in from the same angle
@@ -335,10 +348,13 @@ export function turnPanels(leaving, coming, big) {
   }
   const half = big ? 300 : 150;
   const easing = "cubic-bezier(0.1, 0.5, 0.5, 1)";
-  if (leaving && leaving.getAnimations().length) {
-    const { transform, opacity } = getComputedStyle(leaving);
+  const turning = leaving && turnsIn.get(leaving);
+  if (turning?.turn.playState === "running") {
+    // The share of the turn done so far, its easing included, and 0 while it waits out its delay
+    const done = turning.turn.effect.getComputedTiming().progress ?? 0;
     leaving.remove();
-    coming.animate([{ transform, opacity }, { transform: "rotateY(0deg)", opacity: 1 }], { duration: half, easing });
+    const opacity = turning.opacity + (1 - turning.opacity) * done;
+    turnIn(coming, turning.angle * (1 - done), opacity, { duration: half, easing });
     return;
   }
   if (leaving) {
@@ -351,10 +367,38 @@ export function turnPanels(leaving, coming, big) {
       () => leaving.remove(),
     );
   }
-  coming.animate(
-    [{ transform: "rotateY(-80deg)", opacity: 0.2 }, { transform: "rotateY(0deg)", opacity: 1 }],
-    { duration: half, delay: leaving ? half : 0, easing, fill: "backwards" },
-  );
+  turnIn(coming, -80, 0.2, { duration: half, delay: leaving ? half : 0, easing, fill: "backwards" });
+}
+
+// How long a panel takes to fade in, and the one before it to fade out, when the touch screen's picker changes game
+const BLEND_IN_MS = 200;
+const BLEND_OUT_MS = 140;
+// The fade each panel is fading in with
+const fadesIn = new WeakMap();
+
+// The touch screen's picker changes the panel with every game the ring passes, so the panel blends instead of turning:
+// the new one fades in where the old one fades out, and the panel's frame stays put. A panel still fading in when the
+// next game comes fades out from as far as it got
+export function blendPanels(leaving, coming) {
+  if (calm.matches) {
+    leaving?.remove();
+    return;
+  }
+  if (leaving) {
+    const fading = fadesIn.get(leaving);
+    const shown = fading?.playState === "running" ? (fading.effect.getComputedTiming().progress ?? 0) : 1;
+    fading?.cancel();
+    const out = leaving.animate([{ opacity: shown }, { opacity: 0 }], {
+      duration: BLEND_OUT_MS,
+      easing: "ease-out",
+      fill: "forwards",
+    });
+    out.finished.then(
+      () => leaving.remove(),
+      () => leaving.remove(),
+    );
+  }
+  fadesIn.set(coming, coming.animate([{ opacity: 0 }, { opacity: 1 }], { duration: BLEND_IN_MS, easing: "ease-out" }));
 }
 
 // The first look at the menu: each pod pops onto the ring in turn and its tab slides out of it. Each ends where

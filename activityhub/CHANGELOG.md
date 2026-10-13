@@ -1,5 +1,23 @@
 # ActivityHub Changelog
 
+## 0.9.0
+
+- On a phone or tablet, the Orb's ring is now a picker wheel, like an iPhone's. The selected game sits in the middle of the ring and the games slide along under your finger: sliding up brings the next ones in. A flick keeps the ring spinning and it slows to rest on a whole game, with a click sound for each game it passes. A finger on a spinning ring stops it. Pulling past the first or last game stretches a little and springs back. The lit look of the selected game slides along with the ring, so a game lights up as it nears the middle instead of the light jumping from game to game, and the panel fades over to each game in place instead of flipping over for every one. A tap on any game still opens it right away. Computers keep the ring as it was.
+- A finger on a card, pod or button now shows it pressed, and the look goes as soon as the finger slides.
+- When Discord says a phone is running hot, the Orb's moving background pauses until the phone cools down, and a small thermometer shows in the header. Tapping it says why.
+- On phones, swiping the Orb menu works from the first touch. Before, nothing moved until you had tapped the screen once: inside Discord, an iPhone ignores the menu's attempts to move the keyboard focus until the first tap, and the selection was waiting on that focus. The mouse wheel and pointing at a game no longer wait on it either.
+- An iPhone never holds a tap back to check for a double-tap zoom, which can cost about a third of a second per tap. The menu runs in a frame inside Discord, where phones ignore a page's own zoom settings, so it now says so in a way frames keep. This covers the menu, Settings, the people lists and the included games.
+- Each move along the Orb ring does less work, so the ring keeps up with a fast thumb.
+- A tapped card, button or pod no longer stays lit up as if the mouse were on it. Hover looks only show for a mouse.
+- Scrolling Settings or the people list to its end no longer scrolls the menu behind it.
+- In the Standard theme, scrolling the list never waits on the menu's script, and the Gradient background stays put while the list scrolls instead of being redrawn (or, on iPhones, stretched down the whole list).
+- The Orb's up and down arrows are easier to hit with a finger, without taking taps meant for the game next to them.
+- A long press on the menu no longer picks out text or opens a picture's menu.
+
+For game developers:
+
+- DEVELOPERS.md explains three phone traps every game page runs into: taps that wait unless the page sets `touch-action: manipulation`, `focus()` doing nothing until the player's first tap, and hover looks that stick. The quick start's page and the checklist cover them.
+
 ## 0.8.1
 
 - A game your device can't open now dims only its picture and words. Its "Desktop only" (or "Mobile only") note and the bubble showing how many people are playing stay easy to read.
