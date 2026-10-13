@@ -1,4 +1,5 @@
 import asyncio
+from types import SimpleNamespace
 
 import pytest
 import pytest_asyncio
@@ -288,11 +289,64 @@ async def test_a_page_opened_by_a_join_watches_the_friends_battle(cog):
     assert run.watchers == [me]
 
 
+# ---------- One room for the whole server ----------
+
+SERVER = "server-500"
+
+
+@pytest.mark.asyncio
+async def test_the_game_plays_in_one_room_per_server_and_a_dm_call_in_its_own(cog):
+    games = pytest.importorskip("activityhub.common.games")
+    sessions = pytest.importorskip("activityhub.common.sessions")
+    game = await games.validate_game(cog)
+    author = SimpleNamespace(id=1)
+    server = sessions.ActivityContext(author, guild=SimpleNamespace(id=500), instance_id="i-1")
+    dm = sessions.ActivityContext(author, instance_id="i-9")
+    assert (await game.context(server)).room_id == SERVER
+    assert (await game.context(dm)).room_id == "i-9"
+
+
+@pytest.mark.asyncio
+async def test_two_channels_of_one_server_share_one_window(cog):
+    room = FakeRoom(None, SERVER)
+    one, two = FakeConn(room, 1, "i-1"), FakeConn(room, 2, "i-2")
+    await cog.join(one.ctx, one)
+    await cog.join(two.ctx, two)
+    assert list(cog.windows) == [SERVER]
+    await say(cog, one, "challenge", 0)
+    run = cog.running(1)
+    await say(cog, two, "watch", run.id)
+    assert run.watchers == [two] and last(two, "battle")["battle"]["id"] == run.id
+
+
+@pytest.mark.asyncio
+async def test_a_stopped_window_is_let_go_by_its_rooms_id(cog):
+    window = cog.window_for(FakeConn(FakeRoom(None, SERVER), 1, "i-1"))
+    cog.window_closed(window)
+    assert cog.windows == {}
+
+
+@pytest.mark.asyncio
+async def test_a_battle_carries_on_when_its_player_reopens_the_game_in_another_channel(cog):
+    room = FakeRoom(None, SERVER)
+    old = FakeConn(room, 1, "i-1")
+    await cog.join(old.ctx, old)
+    await say(cog, old, "challenge", 0)
+    run = cog.running(1)
+    old.drop()
+    await cog.leave(old.ctx, old)
+    new = FakeConn(room, 1, "i-2")
+    await cog.join(new.ctx, new)
+    assert last(new, "battle")["battle"]["id"] == run.id and last(new, "lobby")["mine"] == run.id
+    assert list(cog.windows) == [SERVER] and list(cog.windows[SERVER].runs) == [run.id]
+
+
 # ---------- Reopening the Activity ----------
 
 
 async def reopen(cog, old, instance_id="reopened"):
-    """Discord closed the Activity (common on phones) and the player opened it again: a new window"""
+    """The player opened the Activity again in another server or a DM call: another room, with the battle left in the
+    first"""
     old.drop()
     await cog.leave(old.ctx, old)
     new = FakeConn(FakeRoom(instance_id), old.ctx.author.id)
@@ -351,7 +405,7 @@ async def test_a_battle_whose_player_reopened_elsewhere_is_not_stopped_as_abando
 
 
 @pytest.mark.asyncio
-async def test_a_player_in_another_window_hears_when_the_battles_window_fails(cog, monkeypatch):
+async def test_a_player_in_another_room_hears_when_the_battles_room_fails(cog, monkeypatch):
     old = FakeConn(FakeRoom("first"), 1)
     await say(cog, old, "challenge", 0)
     run = cog.running(1)
@@ -364,15 +418,15 @@ async def test_a_player_in_another_window_hears_when_the_battles_window_fails(co
     monkeypatch.setattr(home, "tick", broken)
     await home.loop()
     assert last(new, "over")["over"] == {"id": run.id, "next": "challenges"}
-    assert last(new, "notice")["notice"] == "Something went wrong, so the battles in this window were stopped."
+    assert last(new, "notice")["notice"] == "Something went wrong, so the battles in this server were stopped."
     assert cog.running(1) is None and "first" not in cog.windows
 
 
 @pytest.mark.asyncio
-async def test_a_battle_started_on_one_device_goes_to_the_players_pages_in_other_windows(cog):
-    room = FakeRoom("first")
-    phone, watcher = FakeConn(room, 1), FakeConn(FakeRoom("second"), 1)
-    friend = FakeConn(watcher.room, 2)
+async def test_a_battle_started_on_one_device_goes_to_the_players_pages_in_other_servers(cog):
+    room = FakeRoom(None, "server-500")
+    phone, watcher = FakeConn(room, 1, "i-1"), FakeConn(FakeRoom(None, "server-600"), 1, "i-2")
+    friend = FakeConn(watcher.room, 2, "i-2")
     await say(cog, friend, "challenge", 1)
     theirs = cog.running(2)
     await say(cog, watcher, "watch", theirs.id)
@@ -410,7 +464,7 @@ async def test_a_battle_started_while_a_fight_opens_never_leaves_both(cog, monke
     window = cog.windows["window"]
     gate, real = asyncio.Event(), cog.config.user_from_id
     monkeypatch.setattr(cog.config, "user_from_id", lambda user_id: Held(real(user_id), gate))
-    opening = asyncio.create_task(say(cog, phone, "open", [1, None]))
+    opening = asyncio.create_task(say(cog, phone, "open", [1, None, "server"]))
     await asyncio.sleep(0)
     # The open is past its busy check, reading the career; a challenge (which reads nothing) starts meanwhile
     starting = asyncio.create_task(say(cog, desk, "challenge", 0))

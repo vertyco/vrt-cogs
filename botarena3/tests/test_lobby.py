@@ -144,7 +144,7 @@ async def test_ids_never_repeat_across_windows():
     first, second = window()[0], window()[0]
     one, two = FakeConn(first.room, 1), FakeConn(second.room, 2)
     ids = [(await solo(first, one)).id, (await solo(second, two)).id]
-    ids += [first.open_fight(1, "A", "A", 1, None).id, second.open_fight(2, "B", "B", 1, None).id]
+    ids += [first.open_fight(1, "A", "A", 1, None, None).id, second.open_fight(2, "B", "B", 1, None, None).id]
     assert len(set(ids)) == 4
 
 
@@ -286,7 +286,7 @@ async def test_joining_a_friend_with_an_open_fight_goes_to_pvp():
     room = FakeRoom()
     FakeConn(room, 1)
     win, _ = window(room)
-    win.open_fight(1, "Player 1", "Global 1", 1, None)
+    win.open_fight(1, "Player 1", "Global 1", 1, None, None)
     me = FakeConn(room, 2)
     await win.join(me, follow=1)
     assert sent(me, "follow") == ["pvp"]
@@ -309,3 +309,13 @@ async def test_joining_a_friend_doing_nothing_together_or_your_own_battle_follow
     await win.join(again, follow=3)
     assert [b["id"] for b in sent(again, "battle")] == [mine.id]
     assert theirs.watchers == []
+
+
+@pytest.mark.asyncio
+async def test_a_battles_row_names_its_players_by_id():
+    room = FakeRoom()
+    me = FakeConn(room, 1)
+    win, _ = window(room)
+    await solo(win, me)
+    await win.tick()
+    assert sent(me, "lobby")[-1]["battles"][0]["players"] == ["1"]

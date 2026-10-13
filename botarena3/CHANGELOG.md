@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0
+
+Needs ActivityHub 0.10.0 or later.
+
+- Everyone in a Discord server now plays together, whichever voice channel they opened the Activity in. Watch lists every battle in the server, and PvP every open fight.
+- Battles and fights of people in your own voice channel are at the top of both lists.
+- PvP has two new buttons under OPEN FIGHT: WHOLE SERVER and MY CHANNEL, for who can join your fight. WHOLE SERVER is picked each time. A MY CHANNEL fight only shows in your own channel's list. Once it starts, anyone in the server can watch it.
+- The lists on the PvP, Watch and leaderboard screens scroll with the mouse wheel and a finger swipe on the rows.
+- Those lists no longer redraw every row when one changes, so a row you are pressing stays put and the press counts. A row is chosen when your finger or button comes up on it.
+- Your open fight now stays open while you have the game open anywhere in the server.
+
 ## 0.1.1
 
 - Opening the Activity while your battle runs, or joining a friend's battle, now takes you to the battle even when its art is slow to load. Before, the intro could finish first and leave you on the menu while the battle went on without you.

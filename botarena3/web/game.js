@@ -141,7 +141,7 @@ const page = {
   dark: false,
   // Whether the menu starts its music when it shows (the original's playstart)
   playstart: false,
-  // The bot's game data, the player's career view (null for none) once the bot has said, and this window's lobby
+  // The bot's game data, the player's career view (null for none) once the bot has said, and the server's lobby
   data: null,
   career: null,
   careerKnown: false,
@@ -428,7 +428,7 @@ function receive(data) {
   renderWatchers();
 }
 
-// What the page keeps of the bot's word: the game data, the career, the window's lobby and the battle on the page
+// What the page keeps of the bot's word: the game data, the career, the server's lobby and the battle on the page
 function remember(data) {
   if ("data" in data) {
     page.data = data.data;

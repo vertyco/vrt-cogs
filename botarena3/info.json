@@ -1,6 +1,6 @@
 {
   "author": ["Vertyco"],
-  "description": "Bot Arena 3 for ActivityHub, ported from the Flash game on Armor Games. Run a career with the original's parts, shop and 15 arenas, and try its 7 challenges. Careers follow players across every server and save themselves. Watch battles, or fight other players' teams 1 vs 1 with a global leaderboard. Uses the original's art, sounds and music. Arena prizes are in-game cash only, so Red credits are never touched. Needs ActivityHub.",
+  "description": "Bot Arena 3 for ActivityHub, ported from the Flash game on Armor Games. Run a career with the original's parts, shop and 15 arenas, and try its 7 challenges. Careers follow players across every server and save themselves. Watch any battle in the server, or fight other players' teams 1 vs 1 with a global leaderboard. Uses the original's art, sounds and music. Arena prizes are in-game cash only, so Red credits are never touched. Needs ActivityHub 0.10.0 or later.",
   "disabled": false,
   "end_user_data_statement": "This cog stores each player's Discord user ID, their Bot Arena 3 career (cash, level, robots and parts) and their PvP wins, losses, draws and Discord name for the global leaderboard.",
   "hidden": true,

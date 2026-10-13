@@ -1,5 +1,6 @@
-"""One Activity window's battles: every battle running in it, who watches each, and the open PvP fights. One loop
-steps them all at the original's 33 steps a second, 3 steps at a time, and sends each battle's update after each"""
+"""One room's battles: every battle running in it, who watches each, and the open PvP fights. A room is a whole
+Discord server, every voice channel in it, or a DM call's own window. One loop steps them all at the original's
+33 steps a second, 3 steps at a time, and sends each battle's update after each"""
 
 import asyncio
 import itertools
@@ -16,10 +17,10 @@ STEPS = 3
 TICK_SECONDS = STEPS / FPS
 # After a freeze longer than this, the loop skips the steps it missed instead of running them all at once
 CATCH_UP_SECONDS = 0.25
-LOOP_FAILED = "Something went wrong, so the battles in this window were stopped."
+LOOP_FAILED = "Something went wrong, so the battles in this server were stopped."
 # Farther than this from the stage (about 700 pixels wide) is no place a drag can end
 FAR = 10_000
-# One count for every window, after a prefix drawn each time the cog loads, so no two battles or fights share an id,
+# One count for every room, after a prefix drawn each time the cog loads, so no two battles or fights share an id,
 # even across a reload while a page still shows an old one
 IDS = itertools.count(1)
 PREFIX = f"{random.getrandbits(24):06x}"
@@ -31,7 +32,7 @@ def new_id(letter: str) -> str:
 
 @dataclass(eq=False)
 class Run:
-    """One battle running in the window"""
+    """One battle running in the room"""
 
     id: str
     kind: str  # "arena", "challenge" or "pvp"
@@ -58,6 +59,11 @@ class Fight:
     board: str
     background: int
     weight: str | None
+    # The opener's window when only their voice channel may join, None when the whole server may
+    instance_id: str | None = None
+
+    def open_to(self, instance_id: str) -> bool:
+        return self.instance_id is None or self.instance_id == instance_id
 
 
 class Window:
@@ -69,8 +75,9 @@ class Window:
         windows: t.Callable[[], t.Iterable["Window"]] | None = None,
     ):
         """`result(run)` is called once, on the step a battle gets its result (it keeps playing its banner after).
-        `closed(window)` is called when the loop has stopped. `windows()` gives every live window, since a player who
-        reopens the Activity lands in a new window while their battle carries on in the old one"""
+        `closed(window)` is called when the loop has stopped. `windows()` gives every live room's window, since a
+        player who reopens the Activity in another server or a DM call lands in another room while their battle
+        carries on in this one"""
         self.room = room
         self.result = result
         self.closed = closed
@@ -105,18 +112,18 @@ class Window:
         except Exception as e:
             # Logged once and stopped, so a bug can't fill the log 11 times a second. Held entry fees come back the
             # next time each player opens the game
-            log.error("Bot Arena 3 stopped the battles in window %s", self.room.instance_id, exc_info=e)
+            log.error("Bot Arena 3 stopped the battles in room %s", self.room.id, exc_info=e)
             stopped = list(self.runs.values())
             self.runs.clear()
             self.fights.clear()
-            await self.room.broadcast(self.lobby())
+            await self.send_lobby()
             await self.room.broadcast({"notice": LOOP_FAILED})
             await self.tell_away(stopped)
         finally:
             self.closed(self)
 
     async def tell_away(self, stopped: list[Run]) -> None:
-        """Players seeing a stopped battle from another window never get this window's list, so they are told it ended"""
+        """Players seeing a stopped battle from another room never get this room's list, so they are told it ended"""
         here = self.room.connections
         for run in stopped:
             for conn in self.audience(run):
@@ -129,7 +136,7 @@ class Window:
             await self.advance(run)
         if self.dirty:
             self.dirty = False
-            await self.room.broadcast(self.lobby())
+            await self.send_lobby()
 
     async def advance(self, run: Run) -> None:
         battle = run.battle
@@ -209,24 +216,24 @@ class Window:
         return run
 
     def run_of(self, user_id: int) -> Run | None:
-        """The player's battle in this window"""
+        """The player's battle in this room"""
         return next((run for run in self.runs.values() if user_id in run.players), None)
 
     def everywhere(self) -> list["Window"]:
-        """This window and every other live one"""
+        """This room's window and every other live one"""
         return [self, *(window for window in self.windows() if window is not self)]
 
     def mine(self, user_id: int) -> Run | None:
-        """The player's battle in any window"""
+        """The player's battle in any room"""
         return next((run for window in self.everywhere() if (run := window.run_of(user_id)) is not None), None)
 
     def pages(self, user_id: int) -> list:
-        """The player's open pages in every window"""
+        """The player's open pages in every room"""
         rooms = [window.room.connections for window in self.everywhere()]
         return [conn for conns in rooms for conn in conns if conn.ctx.author.id == user_id]
 
     def audience(self, run: Run) -> list:
-        """Everyone seeing the battle: its players on every page they have open, in any window, and its watchers"""
+        """Everyone seeing the battle: its players on every page they have open, in any room, and its watchers"""
         players = [conn for user_id in run.players for conn in self.pages(user_id)]
         return players + [conn for conn in run.watchers if not any(conn is p for p in players)]
 
@@ -266,19 +273,43 @@ class Window:
             }
         }
 
-    def lobby(self) -> dict:
-        battles = [{"id": r.id, "kind": r.kind, "title": r.title, "names": r.names} for r in self.runs.values()]
+    def lobby(self, instance_id: str) -> dict:
+        """The lists for a page in window `instance_id`: every battle in the room, and the fights it may join"""
+        battles = [
+            {
+                "id": r.id,
+                "kind": r.kind,
+                "title": r.title,
+                "names": r.names,
+                "players": [str(user_id) for user_id in r.players],
+            }
+            for r in self.runs.values()
+        ]
         fights = [
             {"id": f.id, "user": str(f.user_id), "name": f.name, "background": f.background, "weight": f.weight}
             for f in self.fights.values()
+            if f.open_to(instance_id)
         ]
         return {"lobby": {"battles": battles, "fights": fights}}
 
+    async def send_lobby(self) -> None:
+        """The lists to everyone in the room, made once per window, since a fight for one voice channel is only
+        listed in that channel's window"""
+        lobbies = {}
+        for conn in self.room.connections:
+            where = conn.ctx.instance_id
+            if where not in lobbies:
+                lobbies[where] = self.lobby(where)
+            await conn.send(lobbies[where])
+
     # ---------- PvP fights waiting for a second player ----------
 
-    def open_fight(self, user_id: int, name: str, board: str, background: int, weight: str | None) -> Fight:
+    def open_fight(
+        self, user_id: int, name: str, board: str, background: int, weight: str | None, instance_id: str | None
+    ) -> Fight:
+        """`instance_id` is the opener's window when only their voice channel may join"""
         self.cancel(user_id)
-        fight = Fight(new_id("f"), user_id, name, board, background, weight)
+        fight = Fight(new_id("f"), user_id, name, board, background, weight, instance_id)
         self.fights[fight.id] = fight
         self.dirty = True
         return fight
@@ -299,10 +330,11 @@ class Window:
 
     async def join(self, conn: t.Any, follow: int | None = None) -> None:
         """A page arriving. `follow` is the friend whose Join in the hub's people list opened it, if any"""
-        # A player who reopened the Activity lands in a new window, while their battle runs on in the old one. The page
-        # hears which battle is theirs, so one still showing a battle whose end it missed knows that battle is gone
+        # A player who reopened the Activity in another server or a DM call lands in another room, while their battle
+        # runs on in this one. The page hears which battle is theirs, so one still showing a battle whose end it
+        # missed knows that battle is gone
         run = self.mine(conn.ctx.author.id)
-        await conn.send({**self.lobby(), "mine": run.id if run is not None else None})
+        await conn.send({**self.lobby(conn.ctx.instance_id), "mine": run.id if run is not None else None})
         if run is not None:
             await conn.send(self.full(run, conn))
         elif follow is not None:
@@ -322,9 +354,12 @@ class Window:
     def leave(self, conn: t.Any) -> None:
         self.unwatch(conn)
         user_id = conn.ctx.author.id
-        # The hub takes a closing connection out of the room before leave runs
-        if not any(other.ctx.author.id == user_id for other in self.room.connections if other is not conn):
-            self.cancel(user_id)
+        # A fight closes with its opener's last page that lists it. The hub takes a closing connection out of the
+        # room before leave runs
+        pages = [other for other in self.room.connections if other is not conn and other.ctx.author.id == user_id]
+        for fight_id, fight in list(self.fights.items()):
+            if fight.user_id == user_id and not any(fight.open_to(page.ctx.instance_id) for page in pages):
+                del self.fights[fight_id]
         self.dirty = True
 
     async def watch(self, conn: t.Any, run_id: t.Any) -> None:

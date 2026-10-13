@@ -24,21 +24,24 @@ class BotArena3(commands.Cog):
     Bot Arena 3 for ActivityHub, ported from the Flash game on Armor Games.
 
     Build a team of up to five robots from chassis, plating and weapons, fight your way through 15 arenas, and battle
-    other players' teams in the same Activity.
+    other players' teams.
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.1"
+    __version__ = "0.2.0"
 
     BUSY = "You already have a battle running."
     FIGHT_GONE = "That fight isn't open any more."
+    CHANNEL_ONLY = "That game is only open to its own voice channel."
+    # Who may join an open fight: anyone in the server, or only the opener's voice channel
+    WHO = ("server", "channel")
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
         self.config = Config.get_conf(self, identifier=2026101011, force_registration=True)
         self.config.register_user(career=None, pvp=dict(leaderboard.DEFAULTS))
-        # One window per Activity window, keyed by its instance id
+        # One window per room (a whole server, or a DM call's own window), keyed by the room's id
         self.windows: dict[str, Window] = {}
         # One lock per player, so two devices or windows can't interleave changes to one career. A lock nobody holds
         # or waits for is let go, so the map doesn't keep one for every player who ever played
@@ -71,6 +74,9 @@ class BotArena3(commands.Cog):
             "web_dir": Path(__file__).parent / "web",
             "actions": {"leaderboard": self.leaderboard},
             "socket": {"join": self.join, "message": self.message, "leave": self.leave},
+            # Everyone in a server plays in one room, whichever voice channel they opened the Activity in
+            "room": "server",
+            "requires": "0.10.0",
         }
 
     # ---------- Windows ----------
@@ -82,23 +88,23 @@ class BotArena3(commands.Cog):
         return lock
 
     def window_for(self, conn: t.Any) -> Window:
-        """The window's battles, started when its first player arrives, or again after its loop stopped"""
-        window = self.windows.get(conn.ctx.instance_id)
+        """The room's battles, started when its first player arrives, or again after its loop stopped"""
+        window = self.windows.get(conn.ctx.room_id)
         if window is None:
             window = Window(conn.room, self.battle_result, self.window_closed, self.windows.values)
-            self.windows[conn.ctx.instance_id] = window
+            self.windows[conn.ctx.room_id] = window
             window.start()
         elif window.room is not conn.room:
-            # Reloading ActivityHub gives the window a new room, while its battles live on
+            # Reloading ActivityHub gives the window a new room object, while its battles live on
             window.room = conn.room
         return window
 
     def window_closed(self, window: Window) -> None:
-        if self.windows.get(window.room.instance_id) is window:
-            del self.windows[window.room.instance_id]
+        if self.windows.get(window.room.id) is window:
+            del self.windows[window.room.id]
 
     def running(self, user_id: int) -> Run | None:
-        """The battle this player is in, in any window"""
+        """The battle this player is in, in any room"""
         for window in self.windows.values():
             run = window.run_of(user_id)
             if run is not None:
@@ -116,7 +122,7 @@ class BotArena3(commands.Cog):
         await window.join(conn, conn.follow)
 
     async def leave(self, ctx, conn) -> None:
-        window = self.windows.get(ctx.instance_id)
+        window = self.windows.get(ctx.room_id)
         if window is not None:
             window.leave(conn)
 
@@ -272,9 +278,12 @@ class BotArena3(commands.Cog):
         return author.global_name or author.name
 
     async def open_fight(self, conn: t.Any, value: t.Any) -> None:
-        if not isinstance(value, list) or len(value) != 2:
+        """[arena, weight class or None, "server" or "channel"]"""
+        if not isinstance(value, list) or len(value) != 3:
             return
-        background, weight = value
+        background, weight, who = value
+        if who not in self.WHO:
+            return
         if not career.whole(background) or background not in BACKGROUNDS:
             return
         if weight is not None and (not isinstance(weight, str) or weight not in WEIGHT_CLASSES):
@@ -290,7 +299,8 @@ class BotArena3(commands.Cog):
                 await conn.send({"notice": problem})
                 return
             name = conn.ctx.author.display_name
-            self.window_for(conn).open_fight(user_id, name, self.board_name(conn), background, weight)
+            channel = conn.ctx.instance_id if who == "channel" else None
+            self.window_for(conn).open_fight(user_id, name, self.board_name(conn), background, weight, channel)
 
     async def cancel_fight(self, conn: t.Any, value: t.Any) -> None:
         if value is True:
@@ -307,6 +317,10 @@ class BotArena3(commands.Cog):
             await conn.send({"notice": self.FIGHT_GONE})
             return
         if fight.user_id == user_id:
+            return
+        if not fight.open_to(conn.ctx.instance_id):
+            # The page held a list from before it moved channel
+            await conn.send({"notice": self.CHANNEL_ONLY})
             return
         # Both players' locks, lowest id first so two joins can't wait on each other. A start of their own (which
         # holds one of these locks) can't slip in between the checks and the battle
@@ -349,7 +363,7 @@ class BotArena3(commands.Cog):
         )
 
     def close_fights(self, *user_ids: int) -> None:
-        """Starting a battle takes a player's own open fights off every window"""
+        """Starting a battle takes a player's own open fights off every room"""
         for window in self.windows.values():
             for user_id in user_ids:
                 window.cancel(user_id)

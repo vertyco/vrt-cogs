@@ -1,12 +1,18 @@
 // The screens for playing together, new to the port and built from the original's own pieces: the shop's backdrop,
 // its scrolling lists and their rows, its wide buttons and its info monitor, the arena list's map previews, and the
-// pixel font. PvP lists the open fights in this Activity window and opens one in an arena and a weight class. Watch
-// lists the battles running in the window. The leaderboard shows the bot's ranking. The page decides nothing: who can
-// open or join a fight, which battles run and the ranking all come from the bot. The check before a fight opens only
-// mirrors the career view's problems and weight, as the shop's START does, to show the original's error panel.
+// pixel font. Everyone in the Discord server plays in one room, so PvP lists the open fights from every voice channel
+// and opens one in an arena and a weight class, for the whole server or only the player's own channel. Watch lists
+// the battles running in the server. Rows with someone from the player's own channel come first (the hub's people
+// list is everyone in the player's window). The leaderboard shows the bot's ranking. The page decides nothing: who
+// can open or join a fight, which battles run and the ranking all come from the bot. The check before a fight opens
+// only mirrors the career view's problems and weight, as the shop's START does, to show the original's error panel.
+//
+// The lists arrive up to four times a second, so a row is changed in place, never made again, and keeps its place
+// under the player's finger. A tap on a row counts when the finger comes up on it; a finger that moves first, or the
+// mouse wheel, scrolls the list.
 import { Label, setMatrix } from "./flash.js";
 import { cantFight } from "./shop.js";
-import { Container, Rectangle, Sprite } from "./vendor/pixi.min.mjs";
+import { Container, Point, Rectangle, Sprite } from "./vendor/pixi.min.mjs";
 
 // The original's characters these screens build
 const BACKDROP = 363;
@@ -42,10 +48,20 @@ const SCROLL_TOP = 15;
 const SCROLL_BOTTOM = 205;
 const SCROLL_RANGE = 190;
 const SCROLL_EASE = 5;
+// A finger that moves this many stage pixels from where it went down on a row scrolls the list instead of tapping
+const SWIPE = 6;
+// The wheel's lines and pages in stage pixels, for the few mice that count in those
+const WHEEL_LINE = 16;
+const WHEEL_PAGE = LIST_SHOWS;
 // A row's white highlight: picked, or under the pointer. Greyed buttons are half see-through
 const PICKED = 0.5;
 const HOVERED = 0.2;
 const GREYED = 0.5;
+// Who may join a fight the player opens: the whole server (picked each time the screen opens) or only their own
+// voice channel. The pick wears the orange of the player's own rows
+const WHO = { server: ["whoserver", "WHOLE SERVER", 1], channel: ["whochannel", "MY CHANNEL", 2] };
+const WHO_PICKED = 0xffb060;
+const WHO_NOT = 0xffffff;
 // The arena list's map preview, small enough for a row's picture, flattened as the arena list shows it
 const MAP_SCALE = 0.05;
 // A row with no picture starts its words where the picture would be
@@ -79,7 +95,8 @@ function me(page) {
 // ---------- Showing and leaving ----------
 
 // The shop's backdrop, the menu's music, and the fader clearing, as the shop does
-function begin(page) {
+// redraw: draws the screen's lists again from what the bot last said, when the hub's people list changes
+function begin(page, redraw = null) {
   // erred: the info monitor shows an error. yours: the bot lists a fight of yours
   state = { page, parts: [], lists: [], pictureSize: pictureSize(page), erred: false, yours: false };
   page.fader.gotoAndPlay("fadein");
@@ -88,14 +105,22 @@ function begin(page) {
     page.sound.music(MUSIC);
   }
   setMatrix(place(page.lib.make(BACKDROP)), BACKDROP_MATRIX);
+  page.app.canvas.addEventListener("wheel", wheel, { passive: false });
+  if (redraw) {
+    const mine = state;
+    state.stopPeople = page.hub?.onPeople(() => state === mine && redraw(page)) ?? null;
+  }
 }
 
 function leave() {
   delete document.body.dataset.fights;
   delete document.body.dataset.monitor;
+  delete document.body.dataset.who;
   if (!state) {
     return;
   }
+  state.page.app.canvas.removeEventListener("wheel", wheel);
+  state.stopPeople?.();
   for (const list of state.lists) {
     clearRows(list);
   }
@@ -105,7 +130,8 @@ function leave() {
   state = null;
 }
 
-// The rows' pictures are drawn again when the window changes size, so they stay sharp
+// The rows' pictures are drawn again when the window changes size, so they stay sharp. A finger on a row scrolls its
+// list once it moves
 function step() {
   if (!state) {
     return;
@@ -114,6 +140,9 @@ function step() {
   if (size !== state.pictureSize) {
     state.pictureSize = size;
     redrawPictures();
+  }
+  for (const list of state.lists) {
+    swipe(list);
   }
 }
 
@@ -169,8 +198,8 @@ function showWelcome() {
 
 // ---------- The shop's lists ----------
 
-// One of the shop's lists with its heading. pressed(row) runs on a press of a row; a list that picks keeps the
-// pressed row lit until it is pressed again, as the shop's lists do
+// One of the shop's lists with its heading. pressed(row) runs on a tap of a row; a list that picks keeps the tapped
+// row lit until it is tapped again, as the shop's lists do
 function addList(name, column, top, heading, { picks = false, pressed = () => {} } = {}) {
   const { lib } = state.page;
   const x = COLUMNS[column];
@@ -178,74 +207,164 @@ function addList(name, column, top, heading, { picks = false, pressed = () => {}
   place(words, null, x + 2, top - HEADING_ABOVE);
   const clip = place(lib.make(LIST), name, x, top);
   const list = { clip, hold: clip.child("itemhold"), scroller: clip.child("scroller"), picks, pressed };
-  Object.assign(list, { items: [], pictures: [], rows: [], key: null, picked: null, scrollpos: 0 });
+  // entries: each row on show, in order: { item, row, picture }. picked: the lit row's key. touch: a finger or button
+  // down on a row: { entry, y, from, swiping }
+  Object.assign(list, { entries: [], key: null, picked: null, scrollpos: 0, touch: null });
   state.lists.push(list);
   setUpScroller(list);
   return list;
 }
 
-// rows: each row's title, details line, color (a frame of the original's row tints), arena map if any, and what a
-// press on it asks for. The list is drawn again only when it changed
+// rows: each row's key, title, details line, color (a frame of the original's row tints), arena map if any, and what a
+// tap on it asks for. A row already on show keeps its place on the stage, and its picture is drawn again only when its
+// own words or look changed
 function showRows(list, rows) {
   const key = JSON.stringify(rows);
   if (key === list.key) {
     return;
   }
   list.key = key;
-  clearRows(list);
-  list.rows = rows;
-  list.picked = null;
+  const had = new Map(list.entries.map((entry) => [entry.row.key, entry]));
+  list.entries = rows.map((row, index) => {
+    const entry = had.get(row.key) ?? addRow(list, row);
+    had.delete(row.key);
+    if (JSON.stringify(entry.row) !== JSON.stringify(row)) {
+      fillRow(entry, row);
+    }
+    entry.item.label = `row${index}`;
+    entry.item.vars.ypos = index * ROW_HEIGHT;
+    entry.item.onEnterFrame();
+    return entry;
+  });
+  for (const entry of had.values()) {
+    dropRow(list, entry);
+  }
+  if (!list.entries.some((entry) => entry.row.key === list.picked)) {
+    list.picked = null;
+  }
   // The list stays where it was scrolled, as far as its new length allows, so rows don't move under the player's
   // finger when the list changes
-  list.scrollpos = Math.min(0, Math.max(list.scrollpos, -scrollRoom(list)));
-  rows.forEach((row, index) => list.items.push(addRow(list, row, index)));
+  scrollTo(list, list.scrollpos);
   setUpScroller(list);
 }
 
 function clearRows(list) {
-  // A row's picture loses its texture as the row goes, so the textures are let go first
-  for (const picture of list.pictures) {
-    picture.texture.destroy(true);
+  for (const entry of list.entries) {
+    dropRow(list, entry);
   }
-  for (const item of list.items) {
-    item.destroy({ children: true });
-  }
-  list.items = [];
-  list.pictures = [];
+  list.entries = [];
 }
 
-function addRow(list, row, index) {
-  const item = list.hold.attach(state.page.lib.makeExported("listitem"), `row${index}`);
+function dropRow(list, entry) {
+  if (list.touch?.entry === entry) {
+    list.touch = null;
+  }
+  // A row's picture loses its texture as the row goes, so the texture is kept to let go after
+  const texture = entry.picture.texture;
+  entry.item.destroy({ children: true });
+  texture.destroy(true);
+}
+
+function addRow(list, row) {
+  const item = list.hold.attach(state.page.lib.makeExported("listitem"));
   // The row's first frame: its second is the shop's robot rows', with a name field of its own
   item.gotoAndStop(1);
-  item.vars.ypos = index * ROW_HEIGHT;
-  item.set("itemtitle", row.title);
-  item.set("itemdetails", row.details);
-  const picture = drawRow(row);
-  list.pictures.push(picture);
-  item.child("bmphold").addChild(picture);
-  item.setHandler("onPress", () => state && pressRow(list, index));
+  const entry = { item, row: null, picture: null };
+  fillRow(entry, row);
+  item.setHandler("onPress", () => state && pressRow(list, entry));
+  item.setHandler("onRelease", () => state && releaseRow(list, entry));
+  item.setHandler("onReleaseOutside", () => {
+    list.touch = null;
+  });
   item.onEnterFrame = () => {
     item.y = item.vars.ypos + list.scrollpos;
     const pointer = state.page.lib.pointer;
-    const over = item.child("hitarea").getBounds().containsPoint(pointer.x, pointer.y);
-    item.child("white").alpha = list.picked === index ? PICKED : over ? HOVERED : 0;
+    const over = !list.touch?.swiping && item.child("hitarea").getBounds().containsPoint(pointer.x, pointer.y);
+    item.child("white").alpha = list.picked === entry.row.key ? PICKED : over ? HOVERED : 0;
   };
-  item.onEnterFrame();
-  return item;
+  return entry;
 }
 
-function pressRow(list, index) {
+function fillRow(entry, row) {
+  entry.row = row;
+  entry.item.set("itemtitle", row.title);
+  entry.item.set("itemdetails", row.details);
+  drawPicture(entry);
+}
+
+function drawPicture(entry) {
+  const picture = drawRow(entry.row);
+  entry.item.child("bmphold").addChild(picture);
+  if (entry.picture) {
+    const texture = entry.picture.texture;
+    entry.picture.destroy();
+    texture.destroy(true);
+  }
+  entry.picture = picture;
+}
+
+// Where the pointer is down the list, in the list's own pixels
+function pointerY(list) {
+  return list.clip.toLocal(state.page.lib.pointer).y;
+}
+
+function pressRow(list, entry) {
+  list.touch = { entry, y: pointerY(list), from: list.scrollpos, swiping: false };
+}
+
+// The finger came up on a row: a tap when it went down on the same row and didn't swipe
+function releaseRow(list, entry) {
+  const touch = list.touch;
+  list.touch = null;
+  if (!touch || touch.swiping || touch.entry !== entry) {
+    return;
+  }
   effect("cons");
   if (list.picks) {
-    list.picked = list.picked === index ? null : index;
+    list.picked = list.picked === entry.row.key ? null : entry.row.key;
   }
-  list.pressed(list.rows[index]);
+  list.pressed(entry.row);
+}
+
+// A finger down on a row that has moved far enough scrolls the list with it
+function swipe(list) {
+  const touch = list.touch;
+  if (!touch) {
+    return;
+  }
+  const moved = pointerY(list) - touch.y;
+  touch.swiping ||= Math.abs(moved) >= SWIPE;
+  if (touch.swiping) {
+    scrollTo(list, touch.from + moved);
+  }
+}
+
+// The mouse wheel over a list scrolls it
+function wheel(event) {
+  if (!state) {
+    return;
+  }
+  const at = new Point();
+  state.page.app.renderer.events.mapPositionToPoint(at, event.clientX, event.clientY);
+  const list = state.lists.find((one) => one.clip.getBounds().containsPoint(at.x, at.y));
+  if (!list || !scrollRoom(list)) {
+    return;
+  }
+  event.preventDefault();
+  const unit = [1 / list.clip.worldTransform.d, WHEEL_LINE, WHEEL_PAGE][event.deltaMode] ?? 1;
+  scrollTo(list, list.scrollpos - event.deltaY * unit);
+}
+
+// The rows scrolled up by `-scrollpos`, as far as the list allows, with the scroller beside them
+function scrollTo(list, scrollpos) {
+  list.scrollpos = Math.min(0, Math.max(scrollpos, -scrollRoom(list)));
+  const most = scrollRoom(list);
+  list.scroller.y = SCROLL_TOP + (most > 0 ? (-list.scrollpos * SCROLL_RANGE) / most : 0);
 }
 
 // How far the list's rows can scroll up
 function scrollRoom(list) {
-  return Math.max(0, list.rows.length * ROW_HEIGHT - LIST_SHOWS);
+  return Math.max(0, list.entries.length * ROW_HEIGHT - LIST_SHOWS);
 }
 
 // The scroller sits where the list is scrolled to. A drag carries on over a list that changes, following its new
@@ -332,21 +451,16 @@ function pictureSize(page) {
 
 function redrawPictures() {
   for (const list of state.lists) {
-    list.pictures.forEach((old, index) => {
-      const picture = drawRow(list.rows[index]);
-      old.parent.addChild(picture);
-      const texture = old.texture;
-      old.destroy();
-      texture.destroy(true);
-      list.pictures[index] = picture;
-    });
+    for (const entry of list.entries) {
+      drawPicture(entry);
+    }
   }
 }
 
 // ---------- PvP ----------
 
 function enterPvp(page) {
-  begin(page);
+  begin(page, showFights);
   const fights = addList("fightlist", 0, LIST_TOP, "OPEN FIGHTS", { pressed: (row) => page.send(row.asks) });
   const picked = () => enable(state.open, state.arenas.picked !== null && state.weights.picked !== null);
   state.arenas = addList("arenalist", 1, LIST_TOP, "ARENA", { picks: true, pressed: picked });
@@ -354,16 +468,49 @@ function enterPvp(page) {
   state.fights = fights;
   buttonUnder(0, LIST_TOP, 0, "boardbutton", "LEADERBOARD", () => page.go("board", { keepSound: true }));
   buttonUnder(0, LIST_TOP, 1, "backbutton", "BACK", () => page.go("menu", { keepSound: true }));
-  // OPEN FIGHT sits under the arena and weight lists, and works once both are picked
+  // OPEN FIGHT sits under the arena and weight lists, and works once both are picked. Who may join sits under it
   const between = (COLUMNS[1] + COLUMNS[2]) / 2 + BUTTON_X;
   state.open = addButton("openfight", "OPEN FIGHT", between, LIST_TOP + BUTTON_BELOW[0], () => openFight(page));
   enable(state.open, false);
+  state.who = "server";
+  state.whoButtons = {};
+  for (const [choice, [name, words, column]] of Object.entries(WHO)) {
+    state.whoButtons[choice] = buttonUnder(column, LIST_TOP, 1, name, words, () => pickWho(choice));
+  }
+  showWho();
   state.screen = place(page.lib.make(INFO_MONITOR), "infomon", ...MONITOR_AT).child("screen");
   page.flashMonitor(state.screen);
   const arenas = Array.from({ length: ARENAS }, (_, index) => index + 1);
-  showRows(state.arenas, arenas.map((n) => ({ title: `ARENA ${n}`, details: "", tint: "blue", map: n })));
+  const arenaRows = arenas.map((n) => ({ key: `arena${n}`, title: `ARENA ${n}`, details: "", tint: "blue", map: n }));
+  showRows(state.arenas, arenaRows);
   showClasses(page);
   showFights(page);
+}
+
+function pickWho(choice) {
+  effect("cons");
+  state.who = choice;
+  showWho();
+}
+
+function showWho() {
+  for (const [choice, button] of Object.entries(state.whoButtons)) {
+    button.tint = choice === state.who ? WHO_PICKED : WHO_NOT;
+  }
+  document.body.dataset.who = state.who;
+}
+
+// The row a list that picks has lit, or null
+function pickedRow(list) {
+  return list.entries.find((entry) => entry.row.key === list.picked)?.row ?? null;
+}
+
+// The things listed with someone from the player's own voice channel first, then the rest, each in the bot's order
+// (oldest first). ids(thing) gives the user ids of its players
+function channelFirst(page, things, ids) {
+  const here = new Set((page.hub?.people ?? []).map((person) => person.id));
+  const ours = (thing) => ids(thing).some((id) => here.has(id));
+  return [...things.filter(ours), ...things.filter((thing) => !ours(thing))];
 }
 
 // No limit and the 6 weight classes: each class's name and the most its team may weigh. No limit comes first, so the
@@ -374,20 +521,23 @@ function classes(page) {
 
 function showClasses(page) {
   const rows = classes(page).map(([name, most]) => ({
+    key: name ?? NO_LIMIT,
     title: name ?? NO_LIMIT,
     details: most === null ? "" : `WEIGHT LIMIT: ${most}`,
     tint: "purple",
+    weight: [name, most],
   }));
   showRows(state.weights, rows);
 }
 
-// The window's open fights: the opener's name, the arena's map, and the weight class. A press on someone else's
-// asks to join it; your own says CANCEL, and a press on it cancels it
+// The server's open fights this window may join: the opener's name, the arena's map, and the weight class. A tap on
+// someone else's asks to join it; your own says CANCEL, and a tap on it cancels it
 function showFights(page) {
-  const fights = page.lobby?.fights ?? [];
+  const fights = channelFirst(page, page.lobby?.fights ?? [], (fight) => [fight.user]);
   const rows = fights.map((fight) => {
     const yours = fight.user === me(page);
     return {
+      key: fight.id,
       title: upper(fight.name),
       details: yours ? "CANCEL" : (fight.weight ?? NO_LIMIT),
       tint: yours ? "orange" : "green",
@@ -408,7 +558,8 @@ function showFights(page) {
 // The original's error panel when the team can't go, as the shop's START shows it; otherwise the bot is asked, and
 // it checks everything again
 function openFight(page) {
-  const [weight, most] = classes(page)[state.weights.picked];
+  const arena = pickedRow(state.arenas).map;
+  const [weight, most] = pickedRow(state.weights).weight;
   const view = page.career;
   if (view?.problems.length) {
     showError(cantFight(view.problems));
@@ -418,7 +569,7 @@ function openFight(page) {
     showError(TOO_HEAVY);
     return;
   }
-  page.send({ open: [state.arenas.picked + 1, weight] });
+  page.send({ open: [arena, weight, state.who] });
 }
 
 function receivePvp(page, data) {
@@ -436,17 +587,18 @@ function receivePvp(page, data) {
 // ---------- Watch ----------
 
 function enterWatch(page) {
-  begin(page);
+  begin(page, showBattles);
   // The bot's answer is the whole battle, which takes the page to the battle screen to watch
   state.battles = addList("watchlist", 1, ONE_LIST_TOP, "BATTLES", { pressed: (row) => page.send(row.asks) });
   buttonUnder(1, ONE_LIST_TOP, 0, "backbutton", "BACK", () => page.go("menu", { keepSound: true }));
   showBattles(page);
 }
 
-// The window's battles: each one's arena or challenge (or PVP), and who fights it, the computer as COMPUTER
+// The server's battles: each one's arena or challenge (or PVP), and who fights it, the computer as COMPUTER
 function showBattles(page) {
-  const battles = page.lobby?.battles ?? [];
+  const battles = channelFirst(page, page.lobby?.battles ?? [], (battle) => battle.players ?? []);
   const rows = battles.map((battle) => ({
+    key: battle.id,
     title: upper(battle.title),
     details: battle.names.map((name) => upper(name ?? COMPUTER)).join(" VS "),
     tint: "green",
@@ -491,6 +643,7 @@ async function showBoard(page, list) {
   showRows(
     list,
     rows.map((entry) => ({
+      key: entry.id,
       title: `${entry.rank}. ${upper(entry.name)}`,
       details: `WON ${entry.wins}, LOST ${entry.losses}, DREW ${entry.draws}`,
       tint: entry.id === me(page) ? "orange" : "green",

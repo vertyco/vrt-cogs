@@ -50,7 +50,7 @@ async def test_opening_and_joining_starts_a_fight_left_and_right(cog):
     host, guest = FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host)
     await ready(cog, guest, color=4)
-    await say(cog, host, "open", [2, "ORIENTATION"])
+    await say(cog, host, "open", [2, "ORIENTATION", "server"])
     window = cog.windows["window"]
     (fight,) = window.fights.values()
     await say(cog, guest, "join", fight.id)
@@ -67,7 +67,7 @@ async def test_the_same_color_shows_the_joiner_in_the_computers_color(cog):
     host, guest = FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host, color=3)
     await ready(cog, guest, color=3)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     await say(cog, guest, "join", next(iter(cog.windows["window"].fights)))
     assert cog.running(1).battle.colors == [3, career.COMPUTER_COLOR]
 
@@ -78,12 +78,12 @@ async def test_a_team_that_cant_fight_cant_join_and_no_career_cant_open(cog):
     host, guest = FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host)
     await say(cog, guest, "newCareer", True)
-    await say(cog, host, "open", [1, "ORIENTATION"])
+    await say(cog, host, "open", [1, "ORIENTATION", "server"])
     fight_id = next(iter(cog.windows["window"].fights))
     await say(cog, guest, "join", fight_id)
     assert cog.running(2) is None and last(guest, "notice")["notice"] == career.NOT_READY
     nobody = FakeConn(room, 3)
-    await say(cog, nobody, "open", [1, None])
+    await say(cog, nobody, "open", [1, None, "server"])
     assert last(nobody, "notice")["notice"] == career.NO_TEAM
 
 
@@ -92,10 +92,12 @@ async def test_you_cant_join_your_own_fight_and_bad_values_are_ignored(cog):
     room = FakeRoom()
     host = FakeConn(room, 1)
     await ready(cog, host)
-    for value in ([4, None], [1, "FEATHERWEIGHT"], [True, None], "x", [1]):
+    for value in ([4, None, "server"], [1, "FEATHERWEIGHT", "server"], [True, None, "server"], "x", [1]):
+        await say(cog, host, "open", value)
+    for value in ([1, None], [1, None, "everywhere"], [1, None, True]):
         await say(cog, host, "open", value)
     assert cog.windows["window"].fights == {}
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     await say(cog, host, "join", next(iter(cog.windows["window"].fights)))
     assert cog.running(1) is None
 
@@ -105,11 +107,11 @@ async def test_cancelling_or_leaving_closes_the_fight(cog):
     room = FakeRoom()
     host = FakeConn(room, 1)
     await ready(cog, host)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     await say(cog, host, "cancel", True)
     window = cog.windows["window"]
     assert window.fights == {}
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     host.drop()
     await cog.leave(host.ctx, host)
     assert window.fights == {}
@@ -121,7 +123,7 @@ async def test_results_go_on_the_leaderboard(cog):
     host, guest = FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host)
     await ready(cog, guest)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     await say(cog, guest, "join", next(iter(cog.windows["window"].fights)))
     run = cog.running(1)
     run.battle.finish(2)
@@ -137,7 +139,7 @@ async def test_a_draw_counts_for_both(cog):
     host, guest = FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host)
     await ready(cog, guest)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     await say(cog, guest, "join", next(iter(cog.windows["window"].fights)))
     run = cog.running(1)
     run.battle.finish(0)
@@ -153,7 +155,7 @@ async def test_deleting_data_takes_a_player_off_the_leaderboard(cog):
     host, guest = FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host)
     await ready(cog, guest)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     await say(cog, guest, "join", next(iter(cog.windows["window"].fights)))
     run = cog.running(1)
     run.battle.finish(1)
@@ -169,7 +171,7 @@ async def test_data_deleted_during_a_fight_is_not_written_back_by_its_result(cog
     host, guest = FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host)
     await ready(cog, guest)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     await say(cog, guest, "join", next(iter(cog.windows["window"].fights)))
     run = cog.running(1)
     await cog.red_delete_data_for_user(requester="user", user_id=1)
@@ -217,7 +219,7 @@ async def test_a_join_and_an_arena_start_at_once_leave_the_joiner_in_one_run(cog
     host, guest, other = FakeConn(room, 1), FakeConn(room, 2), FakeConn(room, 2)
     await ready(cog, host)
     await ready(cog, guest)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     fight_id = next(iter(cog.windows["window"].fights))
     await asyncio.gather(say(cog, other, "arena", 0), say(cog, guest, "join", fight_id))
     assert len(kinds(cog, 2)) == 1
@@ -229,7 +231,7 @@ async def test_a_join_and_the_openers_arena_start_at_once_leave_the_opener_in_on
     host, second, guest = FakeConn(room, 1), FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host)
     await ready(cog, guest)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     fight_id = next(iter(cog.windows["window"].fights))
     await asyncio.gather(say(cog, second, "arena", 0), say(cog, guest, "join", fight_id))
     assert len(kinds(cog, 1)) == 1
@@ -242,7 +244,7 @@ async def test_starting_a_battle_closes_your_own_open_fight(cog, kind, value):
     room = FakeRoom()
     host = FakeConn(room, 1)
     await ready(cog, host)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     await say(cog, host, kind, value)
     assert cog.windows["window"].fights == {}
 
@@ -253,8 +255,8 @@ async def test_joining_a_fight_closes_your_own_open_fight(cog):
     host, guest = FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host)
     await ready(cog, guest)
-    await say(cog, guest, "open", [3, None])
-    await say(cog, host, "open", [1, None])
+    await say(cog, guest, "open", [3, None, "server"])
+    await say(cog, host, "open", [1, None, "server"])
     window = cog.windows["window"]
     mine = next(f.id for f in window.fights.values() if f.user_id == 1)
     await say(cog, guest, "join", mine)
@@ -268,14 +270,14 @@ async def test_a_busy_opener_makes_the_fight_gone_for_the_joiner(cog):
     await ready(cog, host)
     await ready(cog, guest)
     await ready(cog, third)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     fight_id = next(iter(cog.windows["window"].fights))
     await say(cog, host, "challenge", 0)
     await say(cog, guest, "join", fight_id)
     assert cog.windows["window"].fights == {}
     assert cog.running(2) is None
     assert last(guest, "notice")["notice"] == cog.FIGHT_GONE
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     assert last(host, "notice")["notice"] == cog.BUSY
 
 
@@ -285,7 +287,7 @@ async def test_only_a_fight_id_that_was_open_is_answered(cog):
     host, guest = FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host)
     await ready(cog, guest)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     fight_id = next(iter(cog.windows["window"].fights))
     # Not a fight id at all, or the player's own fight: nothing to say
     for value in (None, 5, [fight_id], True):
@@ -314,7 +316,7 @@ async def test_a_second_device_keeps_the_fight_open(cog):
     room = FakeRoom()
     first, second = FakeConn(room, 1), FakeConn(room, 1)
     await ready(cog, first)
-    await say(cog, first, "open", [1, None])
+    await say(cog, first, "open", [1, None, "server"])
     first.drop()
     await cog.leave(first.ctx, first)
     assert len(cog.windows["window"].fights) == 1
@@ -331,8 +333,8 @@ async def test_an_opener_whose_team_no_longer_qualifies_loses_the_fight(cog):
     await ready(cog, guest)
     third = FakeConn(room, 3)
     await ready(cog, third)
-    await say(cog, third, "open", [2, None])
-    await say(cog, host, "open", [1, None])
+    await say(cog, third, "open", [2, None, "server"])
+    await say(cog, host, "open", [1, None, "server"])
     window = cog.windows["window"]
     fight_id = next(f.id for f in window.fights.values() if f.user_id == 1)
     await say(cog, host, "newCareer", True)
@@ -347,7 +349,7 @@ async def test_one_failed_record_save_does_not_stop_the_other(cog, monkeypatch):
     host, guest = FakeConn(room, 1), FakeConn(room, 2)
     await ready(cog, host)
     await ready(cog, guest)
-    await say(cog, host, "open", [1, None])
+    await say(cog, host, "open", [1, None, "server"])
     await say(cog, guest, "join", next(iter(cog.windows["window"].fights)))
     run = cog.running(1)
     run.battle.finish(1)
@@ -363,3 +365,83 @@ async def test_one_failed_record_save_does_not_stop_the_other(cog, monkeypatch):
     monkeypatch.undo()
     board = await cog.leaderboard(guest.ctx, {})
     assert [row["id"] for row in board["top"]] == ["2"]
+
+
+# ---------- Whole server or my channel ----------
+
+SERVER = "server-500"
+
+
+def fights_seen(conn):
+    return [fight["user"] for fight in last(conn, "lobby")["lobby"]["fights"]]
+
+
+@pytest.mark.asyncio
+async def test_a_fight_for_the_whole_server_can_be_joined_from_another_channel(cog):
+    room = FakeRoom(None, SERVER)
+    host, guest = FakeConn(room, 1, "i-1"), FakeConn(room, 2, "i-2")
+    await ready(cog, host)
+    await ready(cog, guest, color=4)
+    await say(cog, host, "open", [1, None, "server"])
+    window = cog.windows[SERVER]
+    await window.tick()
+    assert fights_seen(host) == ["1"] and fights_seen(guest) == ["1"]
+    await say(cog, guest, "join", next(iter(window.fights)))
+    assert cog.running(2) is cog.running(1) is not None
+
+
+@pytest.mark.asyncio
+async def test_a_fight_for_my_channel_is_listed_only_in_its_channel(cog):
+    room = FakeRoom(None, SERVER)
+    host, mate, other = FakeConn(room, 1, "i-1"), FakeConn(room, 2, "i-1"), FakeConn(room, 3, "i-2")
+    await ready(cog, host)
+    await say(cog, host, "open", [1, None, "channel"])
+    await cog.windows[SERVER].tick()
+    assert fights_seen(host) == ["1"] and fights_seen(mate) == ["1"] and fights_seen(other) == []
+    await cog.join(other.ctx, other)
+    assert fights_seen(other) == []
+
+
+@pytest.mark.asyncio
+async def test_a_fight_for_one_channel_cant_be_joined_from_another(cog):
+    room = FakeRoom(None, SERVER)
+    host, other = FakeConn(room, 1, "i-1"), FakeConn(room, 3, "i-2")
+    await ready(cog, host)
+    await ready(cog, other)
+    await say(cog, host, "open", [1, None, "channel"])
+    window = cog.windows[SERVER]
+    await say(cog, other, "join", next(iter(window.fights)))
+    assert last(other, "notice")["notice"] == "That game is only open to its own voice channel."
+    assert cog.running(3) is None and len(window.fights) == 1
+
+
+@pytest.mark.asyncio
+async def test_a_join_lands_on_the_pvp_screen_with_the_friends_channel_fight(cog):
+    room = FakeRoom(None, SERVER)
+    friend = FakeConn(room, 1, "i-1")
+    await cog.join(friend.ctx, friend)
+    await ready(cog, friend)
+    await say(cog, friend, "open", [1, None, "channel"])
+    me = FakeConn(room, 2, "i-1")
+    me.follow = 1
+    await cog.join(me.ctx, me)
+    assert last(me, "follow")["follow"] == "pvp" and fights_seen(me) == ["1"]
+
+
+@pytest.mark.asyncio
+async def test_a_fight_stays_open_while_its_opener_has_a_page_that_lists_it(cog):
+    room = FakeRoom(None, SERVER)
+    phone, desk = FakeConn(room, 1, "i-1"), FakeConn(room, 1, "i-2")
+    await ready(cog, phone)
+    window = cog.windows[SERVER]
+    await say(cog, phone, "open", [1, None, "server"])
+    phone.drop()
+    await cog.leave(phone.ctx, phone)
+    assert len(window.fights) == 1
+    # A page in another channel can't see a channel's fight, so the fight goes with its channel's last page
+    await say(cog, desk, "open", [1, None, "channel"])
+    back = FakeConn(room, 1, "i-1")
+    await say(cog, back, "open", [1, None, "channel"])
+    back.drop()
+    await cog.leave(back.ctx, back)
+    assert window.fights == {}

@@ -7,6 +7,7 @@ import pytest
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
 from selenium.webdriver.common.by import By
 
 from botarena3.common import career, leaderboard
@@ -995,7 +996,7 @@ class Guest:
         author = SimpleNamespace(
             id=user_id, name=name, display_name=name, global_name=name, display_avatar=SimpleNamespace(url="")
         )
-        self.ctx = SimpleNamespace(author=author, instance_id=window.room.instance_id)
+        self.ctx = SimpleNamespace(author=author, instance_id="i-1", room_id=window.room.id)
         self.room = window.room
         self.sent = []
 
@@ -1059,7 +1060,7 @@ def test_tapping_someone_elses_fight_joins_it_on_the_right(driver, live, cog):
     pvp_screen(driver, live, cog, ready_career())
     guest = guest_in(live, cog)
     set_career(cog, live, 902, ready_career())
-    say(cog, live, guest, "open", [3, None])
+    say(cog, live, guest, "open", [3, None, "server"])
     browser.wait_for(driver, "document.body.dataset.fights === '1'")
     assert row(driver, "fightlist.itemhold.row0") == ("VAINNE", "NO LIMIT")
     press(driver, "fightlist.itemhold.row0")
@@ -1086,7 +1087,7 @@ def test_the_fights_list_stays_scrolled_when_a_fight_is_added(driver, live, cog)
 
     def open_by(user_id):
         set_career(cog, live, user_id, ready_career())
-        say(cog, live, guest_in(live, cog, user_id, f"Player {user_id}"), "open", [1, None])
+        say(cog, live, guest_in(live, cog, user_id, f"Player {user_id}"), "open", [1, None, "server"])
 
     for user_id in range(910, 917):
         open_by(user_id)
@@ -1105,6 +1106,104 @@ def test_the_fights_list_stays_scrolled_when_a_fight_is_added(driver, live, cog)
     # The same rows stay where they were, under the player's finger
     assert row(driver, third)[0] == "PLAYER 912"
     assert stays(driver, near)
+
+
+def finger_swipe(driver, start, end, steps=8):
+    """One finger on the game's page from start to end (CSS pixels in the game's frame), a frame per move, then up"""
+    driver.switch_to.default_content()
+    left, top = driver.execute_script(
+        "const r = document.getElementById('game-frame').getBoundingClientRect(); return [r.left, r.top];"
+    )
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    driver.execute_cdp_cmd("Emulation.setTouchEmulationEnabled", {"enabled": True, "maxTouchPoints": 5})
+    (x0, y0), (x1, y1) = start, end
+
+    def touch(kind, x=None, y=None):
+        points = [] if x is None else [{"x": left + x, "y": top + y}]
+        driver.execute_cdp_cmd("Input.dispatchTouchEvent", {"type": kind, "touchPoints": points})
+        time.sleep(0.03)
+
+    touch("touchStart", x0, y0)
+    for i in range(1, steps + 1):
+        touch("touchMove", x0 + (x1 - x0) * i / steps, y0 + (y1 - y0) * i / steps)
+    touch("touchEnd")
+
+
+def open_fights_by(live, cog, user_ids):
+    for user_id in user_ids:
+        set_career(cog, live, user_id, ready_career())
+        say(cog, live, guest_in(live, cog, user_id, f"Player {user_id}"), "open", [1, None, "server"])
+
+
+def test_a_fight_row_held_down_through_a_list_update_still_joins(driver, live, cog):
+    pvp_screen(driver, live, cog, ready_career())
+    open_fights_by(live, cog, [910])
+    browser.wait_for(driver, "document.body.dataset.fights === '1'")
+    first = still(driver, "fightlist.itemhold.row0")
+    held = pointer_at(driver, first["x"] + first["w"] / 2, first["y"] + first["h"] / 2).click_and_hold()
+    held.perform()
+    # The list changes while the button is down; the row under it stays the same row
+    open_fights_by(live, cog, [911])
+    browser.wait_for(driver, "document.body.dataset.fights === '2'")
+    ActionChains(driver).release().perform()
+    on_screen(driver, "battle")
+    assert cog.running(ME).players == {910: 1, ME: 2}
+
+
+def test_the_wheel_and_a_swipe_scroll_the_fights_list_without_joining(driver, live, cog):
+    pvp_screen(driver, live, cog)
+    open_fights_by(live, cog, range(910, 917))
+    browser.wait_for(driver, "document.body.dataset.fights === '7'")
+    third = "fightlist.itemhold.row2"
+    top = still(driver, third)["y"]
+    scale = stage_scale(driver)
+    # Scrolled to the bottom, 7 rows of 40 in a list that shows 220, the rows sit 60 higher
+    bottom = f"Math.abs(window.botArena3.find('{third}')?.y - {top - 60 * scale}) < 1"
+    first = still(driver, "fightlist.itemhold.row0")
+    middle = (first["x"] + first["w"] / 2, first["y"] + first["h"] / 2)
+    canvas = driver.find_element(By.CSS_SELECTOR, "#stage canvas")
+    left, upper_edge, right, lower_edge = rect_of(driver, "#stage canvas")
+    origin = ScrollOrigin.from_element(
+        canvas, round(middle[0] - (left + right) / 2), round(middle[1] - (upper_edge + lower_edge) / 2)
+    )
+    ActionChains(driver).scroll_from_origin(origin, 0, 300).perform()
+    browser.wait_for(driver, bottom)
+    # A finger dragging the rows down scrolls them back, and lets go without joining the fight under it
+    try:
+        finger_swipe(driver, middle, (middle[0], middle[1] + 70 * scale))
+        browser.wait_for(driver, f"Math.abs(window.botArena3.find('{third}')?.y - {top}) < 1")
+    finally:
+        driver.execute_cdp_cmd("Emulation.setTouchEmulationEnabled", {"enabled": False})
+    assert stays(driver, "document.body.dataset.screen === 'pvp'")
+    assert cog.running(ME) is None
+
+
+def test_fights_from_your_own_channel_come_first(driver, live, cog):
+    live.add_person(fakes.MANAGER_ID, where="botarena3")
+    pvp_screen(driver, live, cog)
+    open_fights_by(live, cog, [910, fakes.MANAGER_ID])
+    browser.wait_for(driver, "document.body.dataset.fights === '2'")
+    assert row(driver, "fightlist.itemhold.row0")[0] == f"PLAYER {fakes.MANAGER_ID}"
+    assert row(driver, "fightlist.itemhold.row1")[0] == "PLAYER 910"
+
+
+def test_a_fight_opened_for_my_channel_is_kept_to_the_window(driver, live, cog):
+    pvp_screen(driver, live, cog, ready_career())
+    assert driver.execute_script("return document.body.dataset.who") == "server"
+    press(driver, "whochannel")
+    browser.wait_for(driver, "document.body.dataset.who === 'channel'")
+    press(driver, "weightlist.itemhold.row0")
+    press(driver, "arenalist.itemhold.row0")
+    press(driver, "openfight")
+    browser.wait_for(driver, "document.body.dataset.fights === '1'")
+    (fight,) = on_loop(live, lambda: list(next(iter(cog.windows.values())).fights.values()))
+    assert fight.instance_id == "i-1"
+    # Back on the screen, the whole server is picked again
+    press(driver, "backbutton")
+    on_screen(driver, "menu")
+    press(driver, "pvpbutton")
+    on_screen(driver, "pvp")
+    assert driver.execute_script("return document.body.dataset.who") == "server"
 
 
 def test_open_fight_shows_the_originals_error_when_the_team_cant_go(driver, live, cog):
@@ -1230,7 +1329,7 @@ def start_guests_fight(live, cog):
     first, second = guest_in(live, cog), guest_in(live, cog, 903, "Mira")
     for user_id in (902, 903):
         set_career(cog, live, user_id, ready_career())
-    say(cog, live, first, "open", [1, None])
+    say(cog, live, first, "open", [1, None, "server"])
     say(cog, live, second, "join", open_fight_id(live, cog))
     return cog.running(902)
 
@@ -1283,7 +1382,7 @@ def test_a_drawn_pvp_fight_shows_draw_and_goes_back_to_pvp(driver, live, cog):
     pvp_screen(driver, live, cog, ready_career())
     guest = guest_in(live, cog)
     set_career(cog, live, 902, ready_career())
-    say(cog, live, guest, "open", [2, None])
+    say(cog, live, guest, "open", [2, None, "server"])
     browser.wait_for(driver, "document.body.dataset.fights === '1'")
     press(driver, "fightlist.itemhold.row0")
     on_screen(driver, "battle")
@@ -1462,7 +1561,7 @@ def test_watchers_show_as_faces_capped_and_hide_when_nobody_watches(driver, live
     assert driver.find_element(By.CSS_SELECTOR, "#watchers .more").text == "+6"
 
     async def everyone_leaves():
-        window = cog.windows["i-1"]
+        window = cog.windows["server-500"]
         for conn in list(run.watchers):
             window.unwatch(conn)
 
@@ -1600,7 +1699,7 @@ def friend_here(live, cog):
     live.add_person(fakes.MANAGER_ID, where="botarena3")
 
     async def arrive():
-        conn = FakeConn(FakeRoom("i-1"), fakes.MANAGER_ID)
+        conn = FakeConn(FakeRoom(None, "server-500"), fakes.MANAGER_ID, "i-1")
         await cog.join(conn.ctx, conn)
         return conn
 
@@ -1620,7 +1719,7 @@ def test_joining_a_friend_in_a_battle_watches_it(driver, live, cog):
 def test_joining_a_friend_with_an_open_fight_lands_on_pvp(driver, live, cog):
     friend = friend_here(live, cog)
     set_career(cog, live, fakes.MANAGER_ID, ready_career())
-    say(cog, live, friend, "open", [1, None])
+    say(cog, live, friend, "open", [1, None, "server"])
     join_friend(driver, live, fakes.MANAGER_ID)
     on_screen(driver, "pvp")
     browser.wait_for(driver, "document.body.dataset.fights === '1'")
