@@ -59,7 +59,7 @@ Check out some of my projects below!
 | [Whitelabel](whitelabel/README.md)         | <details><summary>Per-server bot profile customization with role-based access control.</summary> Allow server owners to customize the bot's avatar, banner, and bio on a per-server basis with optional role-based access control.</details>                                                                                                                                                                                                                                                                                                                                                  |
 | [XTools](xtools/README.md)             | <details><summary>Access your xbox profile and much more.</summary> Various tools for Xbox using Microsoft's XSAPI. View your Xbox profile, friends, screenshots and game clips using simple commands and interactive menus. (You will need to register a Microsoft Azure application to use this cog. Type "[p]apiset help" after install for more info)</details>                                                                                                    |
 
-# Activity Games
+<img src=".github/ASSETS/divider.svg" width="100%" alt="">
 
 <img src=".github/ASSETS/marquee.svg" width="100%" alt="Activity Games">
 
