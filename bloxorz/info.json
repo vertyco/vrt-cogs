@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Bloxorz for ActivityHub, ported from Damien Clarke's 2007 Flash puzzle, with its original art, sounds and music. Roll a tall stone block across floating stages without falling off, past fragile tiles, switches, bridges and a split that gives you two cubes, and stand it upright in the hole. All 33 stages, passcodes, Load Stage and Continue, and one global leaderboard of the fewest moves and best times, shown under real Discord names. Single player, works on desktop and on phones held either way. Needs ActivityHub 0.11.0 or later.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores each player's Discord user ID, Discord display name, their saved progress (current stage, moves and time) and their best moves and time on each stage, for the global leaderboard.",
+  "hidden": true,
+  "install_msg": "Thank you for installing Bloxorz!\n\nBloxorz is a game for ActivityHub, which must be installed and set up first:\n`[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`\n`[p]cog install vrt-cogs activityhub`\n`[p]load activityhub`\nThen follow ActivityHub's README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nOnce both are loaded, Bloxorz shows up in the hub's menu.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Roll a block across floating stages, an ActivityHub port of the Flash game Bloxorz",
+  "tags": ["activity", "games", "puzzle", "vert"],
+  "type": "COG"
+}
