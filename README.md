@@ -3,7 +3,7 @@
 Various useful and fun plugins (cogs) for **[Red-DiscordBot](https://github.com/Cog-Creators/Red-DiscordBot)**, a Discord bot you can run on your own computer!
 
 ![Py](https://img.shields.io/badge/python-v3.11-orange?style=for-the-badge)
-![black](https://img.shields.io/badge/style-black-000000?style=for-the-badge&?link=https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=for-the-badge)](https://github.com/astral-sh/ruff)
 ![license](https://img.shields.io/github/license/Vertyco/Vrt-Cogs?style=for-the-badge)
 
 ![Red-DiscordBot](https://img.shields.io/badge/Red%20DiscordBot-V3.5-red?style=for-the-badge)
@@ -39,9 +39,9 @@ Check out some of my projects below!
 | [Hunting](hunting/README.md)           | <details><summary>Hunt birds in your server!</summary> Originally created by Paddo for red v2, then ported to v3 by aikaterna#1393, and now maintained by me. This cog allows you to 'hunt' birds in your server via reactions or text.</details>                                                                                                                                                                                                                      |
 | [IdeaBoard](ideaboard/README.md)       | <details><summary>Make suggestions and share ideas anonymously.</summary> Allow users to create suggestions for your server. With optional anonymity and customization.</details>                                                                                                                                                                                                                                                                                      |
 | [ImGen](imgen/README.md)               | <details><summary>Generate and edit images with OpenAI's GPT-Image models.</summary> Create images from text prompts, edit existing images with AI, and iteratively refine results with turn-based editing. Features per-server API keys, role-based access control with cooldowns, and generation logging.</details>                                                                                                                                                  |
-| [LevelUp](levelup/README.md)           | <details><summary>Streamlined Discord Leveling System.</summary> An intuitive full-featured leveling system with prestige features, customizable backgrounds, toggleable embed/image profiles, and extensive voice tracking options.</details>                                                                                                                                                                                                                         |                                                                                    |
+| [LevelUp](levelup/README.md)           | <details><summary>Streamlined Discord Leveling System.</summary> An intuitive full-featured leveling system with prestige features, customizable backgrounds, toggleable embed/image profiles, and extensive voice tracking options.</details>                                                                                                                                                                                                                         |
 | [Meow](meow/README.md)                 | <details><summary>Meow</summary> Replaces the word "now" with "meow" in someone's latest message, if word doesnt exist in the most recent 2 messages, it sends a random cat unicode emoji. Yall have a good day meow.</details>                                                                                                                                                                                                                                        |
-| [Miner](meow/README.md)                 | <details><summary>Pickaxe in hand, fortune awaits!</summary> Mine rocks with your friends! This is a simple incremental-ish game where you mine rocks to earn resources that you use to upgrade your tools and thus, increase your mining efficiency.</details>                                                                                                                                                                                                                                        |
+| [Miner](miner/README.md)               | <details><summary>Pickaxe in hand, fortune awaits!</summary> Mine rocks with your friends! This is a simple incremental-ish game where you mine rocks to earn resources that you use to upgrade your tools and thus, increase your mining efficiency.</details>                                                                                                                                                                                                                                        |
 | [ModLogTools](modlogtools/README.md)   | <details><summary>Extended modlog and warnings tooling.</summary> Add configurable warning expiry, moderation insights, import/export tooling, and optional deletion of original warning modlog messages when warnings expire.</details>                                                                                                                                                                                                                                  |
 | [NoBot](nobot/README.md)               | <details><summary>Filter certain messages from other bots.</summary> (ONLY checks messages from other bots), Add a bot to be filtered and a key phrase to check for. When that bot sends a message containing that phrase the message will be auto-deleted.</details>                                                                                                                                                                                                  |
 | [NoPing](noping/README.md)             | <details><summary>Let users opt out of being pinged with AutoMod.</summary> Manages Discord AutoMod keyword filter rules to block pings to opted-out users, with optional per-user day-of-week availability schedules, personal timezones, and an interactive schedule editor.</details>                                                                                                                                                                               |
@@ -61,7 +61,12 @@ Check out some of my projects below!
 
 # Activity Games
 
-Games played inside Discord's Activity window. Install [ActivityHub](activityhub/README.md) first; every game here then shows up on its menu.
+<img src=".github/ASSETS/marquee.svg" width="100%" alt="Activity Games">
+
+Games for ActivityHub, played together inside your bot's Discord Activity.
+
+> [!TIP]
+> Install [ActivityHub](activityhub/README.md) (`activityhub`) first. It turns your bot's Activity into a menu of games, with Snake, Brick Breaker and 2048 built in, and every game below adds itself to that menu. Making your own game? See [DEVELOPERS.md](activityhub/DEVELOPERS.md).
 
 | Cog | Description |
 |-----|-------------|
@@ -80,6 +85,8 @@ Games played inside Discord's Activity window. Install [ActivityHub](activityhub
 
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/vertyco)<br/>
+
+<img src=".github/ASSETS/divider.svg" width="100%" alt="">
 
 # Installation
 
@@ -136,4 +143,4 @@ I am open to ideas or suggestions for new cogs and features!
 [![Visitors](https://api.visitorbadge.io/api/daily?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Visitors%20Today&countColor=%230015b3)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Total&countColor=%239085b3)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
 
-![](.github/ASSETS/Bottom_down.svg)
+<img src=".github/ASSETS/footer-gears.svg" width="100%" alt="">
