@@ -1,5 +1,13 @@
 # ActivityHub Changelog
 
+## 0.11.0
+
+- Settings no longer has the **Show my name to players from other servers** switch. Games show players' Discord names to everyone they play with.
+
+For game developers:
+
+- `ctx.shows_name()` is gone, along with DEVELOPERS.md's "Players from other servers" part. A game in an `"everywhere"` room shows real names without asking.
+
 ## 0.10.1
 
 For game developers:

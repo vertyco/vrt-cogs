@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 
 class FakeContext:
-    """Stands in for ctx. admin, mod and shows_name set what is_admin(), is_mod() and shows_name() answer"""
+    """Stands in for ctx. admin and mod set what is_admin() and is_mod() answer"""
 
     def __init__(
         self,
@@ -22,13 +22,12 @@ class FakeContext:
         room_id=None,
         admin=False,
         mod=False,
-        shows_name=False,
     ):
         self.author, self.guild, self.instance_id = author, guild, instance_id
         # The window's id unless the test puts the player in a wider room
         self.room_id = room_id or instance_id
         self.channel, self.channel_id = channel, channel_id
-        self.admin, self.mod, self.name_shown = admin, mod, shows_name
+        self.admin, self.mod = admin, mod
 
     @property
     def guild_id(self):
@@ -36,9 +35,6 @@ class FakeContext:
 
     async def is_admin(self):
         return self.admin
-
-    async def shows_name(self):
-        return self.name_shown
 
     async def is_mod(self):
         # Admins count as mods, like the real ctx

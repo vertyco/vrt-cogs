@@ -922,7 +922,7 @@ A room stays the same object while anyone is in it. When everyone leaves and som
 |---|---|---|
 | `"window"` (the default) | Everyone in the same Activity window, like one voice channel. | Friends playing together while they talk. |
 | `"server"` | Everyone in the same Discord server, whichever channel they opened the Activity in. A window outside a server (a DM call, or a server your bot isn't in) stays a room of its own. | Finding an opponent, or filling a table, beyond one channel. |
-| `"everywhere"` | Everyone, in every server and DM. | Games where players can't harm each other: no money passing between them and nothing they can type to each other. Names stay hidden from other servers (see [players from other servers](#players-from-other-servers)). |
+| `"everywhere"` | Everyone, in every server and DM. | Games where players can't harm each other: no money passing between them and nothing they can type to each other. |
 
 What changes with a wider room:
 
@@ -958,29 +958,6 @@ List the method itself, `"room": self.room_for`, with `"requires": "0.10.0"`:
 - **The hub asks on each new live connection and each action,** and waits up to 2 seconds. A function that fails, is slow or answers something else puts the player in `"window"`, and the bot's log says why. Read your settings and return: Config is quick enough.
 - **Decide from `ctx.guild`, `ctx.author` and your own settings.** `ctx.room_id` isn't set yet while it runs.
 - **A connected player stays in their room until their page reconnects.** When the answer changes (an admin flips the setting, a player picks public), tell the page, and have it close its connection and call `hub.socket()` again. Actions follow the new answer straight away.
-
-### Players from other servers
-
-**In short:** in a room that mixes servers, hide each player's Discord name and avatar from players in other servers, unless the player said yes.
-
-Discord's [design patterns](https://docs.discord.com/developers/activities/design-patterns) ask this of every Activity that matches players from different servers: names and avatars are hidden by default, and shown only with the player's agreement, or to people who already share a server or a DM with them. A `"server"` room never mixes servers, so this matters for `"everywhere"` rooms, and for a room function that can answer `"everywhere"`.
-
-- **The player says yes in the hub.** Each player has a **Show my name to players from other servers** switch in the hub's Settings (the **My look** tab), off until they turn it on. `await ctx.shows_name()` reads it, fresh each time.
-- **Who sees the real name:** players in the same server (the same `ctx.guild_id`, and not `None`), players in the same window (the same DM call), and everyone else only when `await ctx.shows_name()` is `True`.
-- **Everyone else sees a stand-in:** a name your game makes up, like "Player 4821" or "Blue Hippo", and a plain avatar. Keep the stand-in the same for a player during a match. Don't make it from the player's id in a way someone could work backwards.
-- **One view per viewer.** When names differ by viewer, send each player their own view with `conn.send()` rather than one `broadcast`.
-
-```python
-async def name_for(self, player, viewer) -> str:
-    """The name `viewer` sees for `player`: both are ctx"""
-    if player.guild_id is not None and player.guild_id == viewer.guild_id:
-        return player.author.display_name  # their nickname in this server
-    if player.instance_id == viewer.instance_id:
-        return player.author.display_name
-    if await player.shows_name():
-        return player.author.global_name or player.author.name
-    return self.stand_in(player)
-```
 
 ### Speed and fast-paced games
 
@@ -1858,7 +1835,6 @@ Your users need ActivityHub too, and Red doesn't install required cogs by itself
 - [ ] Taps don't wait on an iPhone: the page and every box that scrolls have `touch-action: manipulation` (or `none` where your page takes the finger itself), and nothing waits for a `focus` event before the first tap ([Discord's limits](#14-discords-limits)).
 - [ ] If you use a live connection: the page shows when it's reconnecting (`conn.onReconnecting`), `join` sends the full state, and the page says something useful in `conn.onClose`.
 - [ ] Your game sets a status line (`hub.status`), and `hub.busy(true)` while a round is on.
-- [ ] If your `room` can mix servers, players from other servers see stand-in names unless the player turned on **Show my name** (`await ctx.shows_name()`). See [players from other servers](#players-from-other-servers).
 - [ ] The people button doesn't cover anything, on a computer and on a phone.
 - [ ] `info.json` has an `end_user_data_statement`, and your cog deletes a player's data when Red asks it to (`red_delete_data_for_user`).
 - [ ] `info.json`'s `install_msg` (or your README) says how to get ActivityHub.

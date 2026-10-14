@@ -88,7 +88,7 @@ class FakeConfig:
         return self.guild_from_id(guild.id)
 
     def user_from_id(self, user_id: int) -> FakeGroup:
-        defaults = {"look": {}, "order": [], "cashed": {}, "show_name": False}
+        defaults = {"look": {}, "order": [], "cashed": {}}
         return FakeGroup(self.users.setdefault(user_id, defaults))
 
     def user(self, user) -> FakeGroup:
@@ -253,7 +253,6 @@ def context_for(
         channel_id=77,
         instance_id=instance_id,
         bot=hub.bot,
-        hub_config=hub.config,
     )
 
 

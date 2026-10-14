@@ -29,8 +29,6 @@ class HubContext(Protocol):
 
     async def is_mod(self) -> bool: ...
 
-    async def shows_name(self) -> bool: ...
-
 
 class HubRoom(Protocol):
     """Everyone playing your game together: one Activity window, or more with the "room" field"""

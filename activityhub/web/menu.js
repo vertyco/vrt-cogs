@@ -1842,9 +1842,6 @@ function stagedFrom(tab) {
   if (labelsTab(tab)) {
     staged.economyLabels = state.economyLabels.on;
   }
-  if (tab === "look") {
-    staged.showName = state.showName;
-  }
   return staged;
 }
 
@@ -1881,7 +1878,6 @@ function renderPanel() {
       ...lookEditor(),
       ...(page.tab in SWITCHES ? [switchEditor()] : []),
       ...(labelsTab(page.tab) ? [labelsEditor()] : []),
-      ...(page.tab === "look" ? [nameEditor()] : []),
     );
   }
   preview();
@@ -2140,22 +2136,6 @@ function labelsEditor() {
   return box;
 }
 
-// Games that mix players from different servers show this player's Discord name to them only with this switch on
-function nameEditor() {
-  const input = el("input");
-  input.type = "checkbox";
-  input.id = "show-name";
-  input.checked = page.staged.showName;
-  input.addEventListener("change", () => {
-    page.staged.showName = input.checked;
-  });
-  const label = el("label", "switch");
-  label.append(input, el("span", "", "Show my name to players from other servers"));
-  const box = el("fieldset", "switches");
-  box.append(el("legend", "field-label", "Privacy"), label);
-  return box;
-}
-
 // ---------- Save and reset ----------
 
 function saveBody() {
@@ -2172,9 +2152,6 @@ function saveBody() {
   }
   if (labelsTab(page.tab)) {
     body.economyLabels = page.staged.economyLabels;
-  }
-  if (page.tab === "look") {
-    body.showName = page.staged.showName;
   }
   return body;
 }

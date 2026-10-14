@@ -2313,19 +2313,6 @@ def test_currency_badges_show_and_the_server_switch_hides_them(driver, live, tmp
     assert not driver.find_elements(By.CSS_SELECTOR, "#games .economy")
 
 
-def test_a_player_turns_on_showing_their_name_to_other_servers(driver, live):
-    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
-    open_menu(driver, live, DISCORD_QUERY)
-    open_settings(driver)
-    pick_tab(driver, "look")
-    switch = driver.find_element(By.ID, "show-name")
-    assert not switch.is_selected()
-    switch.click()
-    save(driver)
-    assert live.hub.config.users[MEMBER_ID]["show_name"] is True
-    assert driver.find_element(By.ID, "show-name").is_selected()
-
-
 def test_the_orb_screen_shows_the_selected_games_badge(driver, live, tmp_path):
     folder = write_demo_web(tmp_path / "priced")
     register(live.hub, DemoCog(folder, key="priced", name="Priced", cog_name="Priced", economy="Bet credits"))

@@ -23,8 +23,6 @@ class ActivityContext:
     room_id: str = ""
     # For is_admin and is_mod. Games use their own self.bot, so the docs leave it out
     bot: t.Any = field(default=None, repr=False, compare=False)
-    # ActivityHub's Config, for shows_name. The docs leave it out too
-    hub_config: t.Any = field(default=None, repr=False, compare=False)
 
     def __post_init__(self):
         if not self.room_id:
@@ -56,15 +54,6 @@ class ActivityContext:
         if member is None:
             return False
         return member.guild_permissions.manage_guild or await self.bot.is_admin(member)
-
-    async def shows_name(self) -> bool:
-        """
-        Whether the player turned on "Show my name to players from other servers" in the hub's Settings, checked
-        fresh each time. Off until they do
-        """
-        if self.hub_config is None:
-            return False
-        return await self.hub_config.user(self.author).show_name()
 
     async def is_mod(self) -> bool:
         """Everyone is_admin counts, and members with Red's mod role. No Discord permission counts on its own"""

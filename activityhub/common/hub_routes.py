@@ -14,7 +14,6 @@ from .looks import BUILTIN_LOOK, SettingsError, apply_look_change, effective_loo
 from .menu import (
     allowed_tabs,
     check_labels,
-    check_show_name,
     games_json,
     merge_disabled,
     merge_order,
@@ -213,7 +212,6 @@ class HubRoutes:
             "switches": [],
             "globalSwitches": [],
             "economyLabels": None,
-            "showName": None,
             "launch": None,
         }
 
@@ -235,7 +233,6 @@ class HubRoutes:
             "switches": switches if "server" in tabs else [],
             "globalSwitches": await self.global_switches() if "defaults" in tabs else [],
             "economyLabels": await self.labels_switch(ctx, tabs),
-            "showName": await self.hub.config.user(ctx.author).show_name(),
             "launch": None,
         }
 
@@ -311,13 +308,11 @@ class HubRoutes:
         config = self.hub.config
         if tab == "look":
             group = config.user(ctx.author)
-            # A missing part keeps its saved value. Both are checked before either is saved
+            # A missing look keeps its saved value
             look = await group.look()
             if "look" in body:
                 look = apply_look_change(look, body["look"])
-            show_name = check_show_name(body, await group.show_name())
             await group.look.set(look)
-            await group.show_name.set(show_name)
         elif tab == "order":
             group = config.user(ctx.author)
             await group.order.set(merge_order(await group.order(), body.get("order"), self.hub.registry.games))

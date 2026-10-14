@@ -103,8 +103,8 @@ def real_ctx_members() -> set[str]:
         for name, value in vars(ActivityContext).items()
         if not name.startswith("_") and (inspect.isfunction(value) or isinstance(value, property))
     }
-    # ctx.bot and ctx.hub_config are for the hub itself: games use their own self.bot and Config
-    return ({field.name for field in dataclasses.fields(ActivityContext)} | methods) - {"bot", "hub_config"}
+    # ctx.bot is for the hub itself: games use their own self.bot
+    return ({field.name for field in dataclasses.fields(ActivityContext)} | methods) - {"bot"}
 
 
 def test_the_ctx_type_hints_and_the_reference_match_the_real_ctx():

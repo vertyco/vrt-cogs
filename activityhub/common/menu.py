@@ -60,15 +60,6 @@ def check_labels(body: dict, saved: bool) -> bool:
     return body["economyLabels"]
 
 
-def check_show_name(body: dict, saved: bool) -> bool:
-    """The "Show my name" switch to save: the sent value, or the saved one when the body leaves it out"""
-    if "showName" not in body:
-        return saved
-    if not isinstance(body["showName"], bool):
-        raise SettingsError("Show my name must be on or off.")
-    return body["showName"]
-
-
 def allowed_tabs(server_admin: bool, is_owner: bool) -> list[str]:
     """Settings panel tabs a player may see and save"""
     tabs = ["look", "order"]
