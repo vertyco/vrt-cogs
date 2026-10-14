@@ -39,6 +39,7 @@ class Membership(Table):
     access = Integer(default=0)
     reduction = Integer(default=0, help_text="Cooldown reduction in seconds")
     bonus = Real(default=1.0)
+    bet_boost = Real(default=1.0, help_text="Max bet multiplier; fixed bet games stay fixed")
     req_credits = BigInt(null=True, default=None)
     req_role_id = BigInt(null=True, default=None)
     req_days = Integer(null=True, default=None)

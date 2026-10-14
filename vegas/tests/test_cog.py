@@ -4,11 +4,13 @@ from types import SimpleNamespace
 import pytest
 import pytest_asyncio
 
+from vegas.commands.embeds import stats_embed, tier_embed
 from vegas.common.memberships import Updater
 from vegas.common.money import Money
 from vegas.db.tables import PlayerGame
 from vegas.main import Vegas
 from vegas.views.play import PlayView
+from vegas.views.tiers import tier_fields
 from vegas.tests.fakes import GUILD_ID, Clock, FakeBank, FakeBot, FakeConn, FakeGuild, FakeRoom, ctx_for
 from vegas.tests.tables_kit import Rigged, until
 
@@ -359,6 +361,21 @@ async def test_a_membership_the_updater_gives_reaches_the_players_open_page(cog)
     assert sam.last("me")["membership"]["name"] == "Basic"
     await cog.updater.run_once()
     assert sam.last("me")["membership"]["name"] == "Open"
+
+
+@pytest.mark.asyncio
+async def test_a_membership_max_bet_multiplier_reaches_the_players_open_page(cog):
+    sam = await joined(cog, PLAYER, FakeRoom())
+    assert sam.last("hello")["me"]["max_bets"]["dice"] == 100
+    boss = ctx(cog, MANAGER)
+    gold = (await cog.act_save_membership(boss, {"name": "Gold", "color": "yellow", "bet_boost": 2}))["tiers"][0]
+    assert gold["bet_boost"] == 2.0 and tier_fields(gold)["bet_boost"] == 2.0
+    assert "Max bet multiplier: 2.0x" in tier_embed(gold).description
+    await cog.act_player_update(boss, {"user_id": str(PLAYER), "op": "assign", "membership_id": gold["id"]})
+    me = sam.last("me")
+    assert (me["max_bets"]["dice"], me["max_bets"]["coin"], me["max_bets"]["allin"]) == (200, 10, None)
+    stats = await cog.act_profile(ctx(cog, PLAYER), {})
+    assert stats["bet_boost"] == 2.0 and "Max bet multiplier: 2.0x" in stats_embed(stats, "Vegas").description
 
 
 @pytest.mark.asyncio

@@ -34,7 +34,7 @@ The bot decides every card, roll and flip with a secure random source, and check
 - **Craps.** The help text now matches what the code does: a come-out 7 pays stake x 3 x the multiplier, and the shooter gets exactly one more roll.
 - **Payout limit.** The limit now compares the real total, with the multiplier and bonus, instead of the smaller number. A held win pays what was actually won, and several held wins add up instead of replacing each other.
 - **Cooldowns.** The time left shown to a member with a cooldown reduction now has the reduction taken off, not added.
-- **Memberships.** The 5 minute loop no longer crashes on a days requirement. Memberships given by hand stay put. Role requirements are kept by role id, so renaming a role breaks nothing, and renaming a membership keeps its players. In global mode all the admin commands are owner-only.
+- **Memberships.** The 5 minute loop no longer crashes on a days requirement. Memberships given by hand stay put. Role requirements are kept by role id, so renaming a role breaks nothing, and renaming a membership keeps its players. A membership can also raise its players' max bets with a max bet multiplier. In global mode all the admin commands are owner-only.
 - **Other.** Each table has its own deck. All In refuses a balance of 0. Switching modes no longer wipes data.
 
 ## Credits

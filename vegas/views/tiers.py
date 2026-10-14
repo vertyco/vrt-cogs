@@ -70,7 +70,7 @@ def tier_fields(tier: dict | None) -> dict:
     """A shown tier's saved fields, as clean_membership takes them"""
     if tier is None:
         return {}
-    keys = ("name", "color", "access", "reduction", "bonus", "req_credits", "req_role_id", "req_days")
+    keys = ("name", "color", "access", "reduction", "bonus", "bet_boost", "req_credits", "req_role_id", "req_days")
     return {key: tier[key] for key in keys}
 
 
@@ -172,6 +172,10 @@ class TierEditor(OwnedView):
     async def requirements(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(RequirementsForm(self.designer, self.tier))
 
+    @discord.ui.button(label=_("Limits"), style=discord.ButtonStyle.primary)
+    async def limits(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(LimitsForm(self.designer, self.tier))
+
     @discord.ui.button(label=_("Delete"), style=discord.ButtonStyle.danger)
     async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = Choose(self.author_id, [("yes", _("Delete it")), ("no", _("Keep it"))], danger=("yes",))
@@ -260,3 +264,20 @@ class RequirementsForm(discord.ui.Modal):
             "req_role_id": role.id if role else None,
         }
         await self.designer.save(interaction, self.tier, data)
+
+
+class LimitsForm(discord.ui.Modal):
+    """Perks that change a player's betting limits. The Perks form is full: a modal holds 5 boxes at most"""
+
+    def __init__(self, designer: Designer, tier: dict):
+        super().__init__(title=_("Limits"), timeout=TIMEOUT)
+        self.designer, self.tier = designer, tier
+        self.bet_boost = discord.ui.TextInput(
+            label=_("Max bet multiplier"),
+            placeholder=_("2 doubles every game's max bet. Fixed bets stay fixed"),
+            default=str(tier["bet_boost"]),
+        )
+        self.add_item(self.bet_boost)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await self.designer.save(interaction, self.tier, {"bet_boost": self.bet_boost.value})

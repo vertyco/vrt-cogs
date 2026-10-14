@@ -2,7 +2,7 @@
 
 from .catalog import GAME_NAMES, GAMES
 from .memberships import perks_for
-from .money import Money
+from .money import Money, raised_max
 from .store import Store
 
 
@@ -44,6 +44,7 @@ async def player_stats(store: Store, money: Money, scope: int, who) -> dict:
         "access": perks.access,
         "reduction": perks.reduction,
         "bonus": perks.bonus,
+        "bet_boost": perks.bet_boost,
         "pending": player.pending,
         "by_hand": player.by_hand,
         "membership_id": player.membership,
@@ -61,9 +62,11 @@ async def player_stats(store: Store, money: Money, scope: int, who) -> dict:
 
 
 async def me(store: Store, money: Money, scope: int, who) -> dict:
-    """The top bar's facts about the player, and how long until each game is ready for them"""
+    """The top bar's facts about the player, how long until each game is ready for them, and their max bet in each
+    game after their membership's max bet multiplier"""
     perks = await perks_for(store, scope, who.id)
     player = await store.player(scope, who.id)
+    games = await store.games(scope)
     return {
         "t": "me",
         "id": str(who.id),
@@ -73,6 +76,7 @@ async def me(store: Store, money: Money, scope: int, who) -> dict:
         "access": perks.access,
         "pending": player.pending,
         "ready": {key: await money.ready_in(scope, who.id, key) for key in GAMES},
+        "max_bets": {key: raised_max(row.min_bet, row.max_bet, perks.bet_boost) for key, row in games.items()},
     }
 
 
@@ -90,6 +94,7 @@ async def tiers(store: Store, scope: int, guild) -> list[dict]:
                 "access": tier.access,
                 "reduction": tier.reduction,
                 "bonus": tier.bonus,
+                "bet_boost": tier.bet_boost,
                 "req_credits": tier.req_credits,
                 "req_role_id": str(tier.req_role_id) if tier.req_role_id else None,
                 "req_role": role.name if role else None,

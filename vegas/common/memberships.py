@@ -29,15 +29,23 @@ class Perks:
     access: int
     reduction: int
     bonus: float
+    bet_boost: float
 
 
-BASIC = Perks(name="Basic", color="grey", access=0, reduction=0, bonus=1.0)
+BASIC = Perks(name="Basic", color="grey", access=0, reduction=0, bonus=1.0, bet_boost=1.0)
 
 
 def perks_of(membership: Membership | None) -> Perks:
     if membership is None:
         return replace(BASIC, name=_("Basic"))
-    return Perks(membership.name, membership.color, membership.access, membership.reduction, membership.bonus)
+    return Perks(
+        membership.name,
+        membership.color,
+        membership.access,
+        membership.reduction,
+        membership.bonus,
+        membership.bet_boost,
+    )
 
 
 async def perks_for(store: Store, scope: int, user_id: int) -> Perks:
@@ -58,13 +66,14 @@ def clean_membership(data: dict, taken: list[str]) -> tuple[dict, str | None]:
             "access": int(data.get("access", 0)),
             "reduction": int(data.get("reduction", 0)),
             "bonus": float(data.get("bonus", 1.0)),
+            "bet_boost": float(data.get("bet_boost", 1.0)),
             "req_credits": optional_int(data.get("req_credits")),
             "req_role_id": optional_int(data.get("req_role_id")),
             "req_days": optional_int(data.get("req_days")),
         }
     except (TypeError, ValueError, OverflowError) as e:
         log.debug("Membership fields weren't numbers: %s", e)
-        return {}, _("Access, reduction, bonus and requirements must be numbers.")
+        return {}, _("Access, reduction, multipliers and requirements must be numbers.")
     # The database keeps whole numbers up to MAX_NUMBER
     if any(abs(value) > MAX_NUMBER for value in fields.values() if isinstance(value, int)):
         return {}, _("That number is too large.")
@@ -78,6 +87,9 @@ def clean_membership(data: dict, taken: list[str]) -> tuple[dict, str | None]:
         return {}, _("Access and cooldown reduction can't be below 0.")
     if not 0 < fields["bonus"] < 1000:
         return {}, _("The bonus multiplier must be above 0 and below 1000.")
+    # Memberships only raise bet limits, so Basic's 1 is the lowest
+    if not 1 <= fields["bet_boost"] < 1000:
+        return {}, _("The max bet multiplier must be at least 1 and below 1000.")
     for key in ("req_credits", "req_days"):
         if fields[key] is not None and fields[key] < 0:
             return {}, _("Requirements can't be below 0.")
@@ -131,17 +143,21 @@ class Updater:
         self.stopping = asyncio.Event()
 
     async def run_forever(self) -> None:
-        while not self.stopping.is_set():
-            try:
-                await asyncio.wait_for(self.stopping.wait(), UPDATE_EVERY)
-                return
-            except asyncio.TimeoutError as e:
-                log.debug("Membership update interval elapsed: %r", e)
+        while not await self.stops_within(UPDATE_EVERY):
             try:
                 await self.run_once()
             except Exception as e:
                 # A failed pass is logged, and the loop carries on with the next one
                 log.error("Membership update failed", exc_info=e)
+
+    async def stops_within(self, seconds: float) -> bool:
+        """Waits out the interval, ending early if the cog unloads. True when it unloaded"""
+        stopped = asyncio.ensure_future(self.stopping.wait())
+        try:
+            finished, pending = await asyncio.wait({stopped}, timeout=seconds)
+        finally:
+            stopped.cancel()
+        return stopped in finished
 
     async def run_once(self) -> None:
         if await self.store.global_mode():

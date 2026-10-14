@@ -31,12 +31,14 @@ def yes_no(value: bool) -> str:
 
 def stats_embed(stats: dict, casino_name: str) -> discord.Embed:
     perks = _(
-        "Membership: {name}\nAccess level: {access}\nCooldown reduction: {reduction}\nBonus multiplier: {bonus}x"
+        "Membership: {name}\nAccess level: {access}\nCooldown reduction: {reduction}\nBonus multiplier: {bonus}x\n"
+        "Max bet multiplier: {boost}x"
     ).format(
         name=stats["membership"]["name"],
         access=stats["access"],
         reduction=fmt_seconds(stats["reduction"]),
         bonus=stats["bonus"],
+        boost=stats["bet_boost"],
     )
     if stats["pending"]:
         perks += "\n" + _("Held winnings: {amount}").format(amount=money(stats["pending"]))
@@ -75,9 +77,16 @@ def info_embed(info: dict) -> discord.Embed:
 
 
 def tier_embed(tier: dict) -> discord.Embed:
-    perks = _("Access level: {access}\nCooldown reduction: {reduction}\nBonus multiplier: {bonus}x\nColor: {color}")
+    perks = _(
+        "Access level: {access}\nCooldown reduction: {reduction}\nBonus multiplier: {bonus}x\n"
+        "Max bet multiplier: {boost}x\nColor: {color}"
+    )
     perks = perks.format(
-        access=tier["access"], reduction=fmt_seconds(tier["reduction"]), bonus=tier["bonus"], color=tier["color"]
+        access=tier["access"],
+        reduction=fmt_seconds(tier["reduction"]),
+        bonus=tier["bonus"],
+        boost=tier["bet_boost"],
+        color=tier["color"],
     )
     needs = []
     if tier["req_credits"]:

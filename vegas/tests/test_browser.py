@@ -253,6 +253,16 @@ def test_the_membership_form_keeps_a_deleted_role_and_warns_about_open_membershi
     assert not problems(driver)
 
 
+def test_a_membership_raises_the_trays_max_bet(driver, live):
+    gold = on_loop(live, live.cog.store.save_membership(fakes.GUILD_ID, {"name": "Gold", "bet_boost": 2.0}))
+    on_loop(live, live.cog.store.set_membership(fakes.GUILD_ID, fakes.MEMBER_ID, gold.id, by_hand=True))
+    open_casino(driver, live)
+    walk_up(driver, "dice")
+    driver.find_element(By.ID, "max").click()
+    browser.wait_for(driver, "document.getElementById('amount').textContent === '200'")
+    assert not problems(driver)
+
+
 def me_on_the_hub(live):
     return live.server.presence.windows["i-1"].people[fakes.MEMBER_ID]
 

@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from vegas.common.memberships import BASIC, Updater, clean_membership, open_tier_warning, perks_for
@@ -82,8 +84,21 @@ def test_membership_fields_are_checked():
     assert clean_membership({"name": "Gold", "color": "beige"}, [])[1].startswith("Pick a color from: blue")
     assert clean_membership({"name": "Gold", "access": "x"}, [])[1].startswith("Access, reduction")
     assert clean_membership({"name": "Gold", "bonus": 0}, [])[1].startswith("The bonus multiplier")
+    for boost in (0.5, 1000, "nan", "inf"):
+        assert clean_membership({"name": "Gold", "bet_boost": boost}, [])[1].startswith("The max bet multiplier")
     fields, problem = clean_membership({"name": "Gold", "access": 0, "reduction": 0, "req_credits": ""}, [])
-    assert problem is None and fields["access"] == 0 and fields["req_credits"] is None
+    assert problem is None and fields["access"] == 0 and fields["req_credits"] is None and fields["bet_boost"] == 1.0
+    assert BASIC.bet_boost == 1.0
+
+
+@pytest.mark.asyncio
+async def test_the_updater_waits_without_logging_and_stops_early_when_the_cog_unloads(world, caplog):
+    bot, guild, bank, updater = world
+    with caplog.at_level(logging.DEBUG, logger="red.vrt.vegas.memberships"):
+        assert await updater.stops_within(0.01) is False
+    assert not caplog.records
+    updater.stopping.set()
+    assert await updater.stops_within(60) is True
 
 
 @pytest.mark.asyncio

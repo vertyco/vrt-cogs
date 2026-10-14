@@ -215,6 +215,7 @@ export function statsView(stats) {
     ["Access level", stats.access],
     ["Cooldown reduction", duration(stats.reduction)],
     ["Bonus multiplier", `${stats.bonus}x`],
+    ["Max bet multiplier", `${stats.bet_boost}x`],
   ];
   if (stats.pending) {
     pairs.push(["Held winnings", money(stats.pending)]);
@@ -256,6 +257,7 @@ export function tierCard(tier) {
       ["Access level", tier.access],
       ["Cooldown reduction", duration(tier.reduction)],
       ["Bonus multiplier", `${tier.bonus}x`],
+      ["Max bet multiplier", `${tier.bet_boost}x`],
       ["Needs", needs.length ? needs.join(", ") : "Nothing: open to everyone"],
       ["Games", tier.games.length ? tier.games.join(", ") : "None"],
     ]),

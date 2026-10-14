@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from vegas.common.money import Money, fmt_seconds
+from vegas.common.money import Money, fmt_seconds, raised_max
 from vegas.tests.fakes import Clock, FakeBank, member
 
 GUILD = 500
@@ -70,6 +70,26 @@ async def test_a_membership_cuts_the_cooldown_and_shows_the_right_time_left(mone
     assert await money.ready_in(GUILD, 7, "dice") == 2
     money.clock.now += 2
     assert await money.stake(GUILD, sam, "dice", 50) is None
+
+
+@pytest.mark.asyncio
+async def test_a_membership_raises_the_max_bet_but_not_the_min_or_a_fixed_bet(money, store):
+    sam = member(7)
+    gold = await store.save_membership(GUILD, {"name": "Gold", "bet_boost": 2.0})
+    assert await money.problem(GUILD, sam, "dice", 200) == "Bets here are 25 to 100."
+    await store.set_membership(GUILD, 7, gold.id, by_hand=True)
+    assert await money.problem(GUILD, sam, "dice", 200) is None
+    assert await money.problem(GUILD, sam, "dice", 201) == "Bets here are 25 to 200."
+    assert await money.problem(GUILD, sam, "dice", 24) == "Bets here are 25 to 200."
+    assert await money.problem(GUILD, sam, "coin", 20) == "Bets here are exactly 10."
+    assert await money.problem(GUILD, sam, "allin", 1000) is None
+
+
+def test_a_raised_max_is_whole_credits_and_leaves_fixed_and_rangeless_games_alone():
+    assert raised_max(25, 75, 1.25) == 94
+    assert raised_max(25, 75, 1.0) == 75
+    assert raised_max(10, 10, 3.0) == 10
+    assert raised_max(None, None, 2.0) is None
 
 
 @pytest.mark.asyncio

@@ -357,7 +357,8 @@ export class TableView {
     }
     const game = this.page.casino()?.games[this.game];
     if (game) {
-      this.tray.configure(game);
+      // A membership can raise the player's max bet, so the tray takes their own max over the table's
+      this.tray.configure({ ...game, max: this.page.me()?.max_bets?.[this.game] ?? game.max });
     }
     const state = this.state;
     this.renderTray();

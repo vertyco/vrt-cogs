@@ -91,6 +91,13 @@ def fmt_seconds(seconds: int) -> str:
     return _("{rest} and {last}").format(rest=", ".join(parts[:-1]), last=parts[-1])
 
 
+def raised_max(min_bet: int | None, max_bet: int | None, boost: float) -> int | None:
+    """A player's max bet after their membership's max bet multiplier. A game with one fixed bet stays fixed"""
+    if min_bet is None or max_bet is None or min_bet == max_bet:
+        return max_bet
+    return round(max_bet * boost)
+
+
 def range_problem(key: str, min_bet: int | None, max_bet: int | None, amount: int) -> str | None:
     if key in NO_BET_RANGE:
         return _("You need some credits to go all in.") if amount <= 0 else None
@@ -137,7 +144,8 @@ class Money:
             )
         if choice_problem:
             return choice_problem
-        if out_of_range := range_problem(key, game.min_bet, game.max_bet, amount):
+        top = raised_max(game.min_bet, game.max_bet, perks.bet_boost)
+        if out_of_range := range_problem(key, game.min_bet, top, amount):
             return out_of_range
         if not await self.bank.can_spend(member, amount):
             return _("You don't have enough credits for that bet.")

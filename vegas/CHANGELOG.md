@@ -1,5 +1,13 @@
 # Vegas Changelog
 
+## 0.4.0
+
+Needs ActivityHub 0.8.0 or later.
+
+- Memberships can raise betting limits. Each membership has a max bet multiplier: at 2x, every game's max bet is doubled for its players, so Blackjack at 50-500 becomes 50-1,000. Min bets stay the same, games with one fixed bet stay fixed, and All In has no limits to raise. Basic and existing memberships start at 1x.
+- Admins set it in the Activity's membership form, or with the new Limits button in `[p]vegas memdesigner`. The chip tray's Max button and chips follow the player's own max.
+- The membership updater no longer writes a debug log line every 5 minutes.
+
 ## 0.3.1
 
 Needs ActivityHub 0.8.0 or later.

@@ -184,7 +184,7 @@ function tiersTab(body, view) {
 }
 
 function tierForm(body, view, tier) {
-  const t = tier || { name: "", color: "blue", access: 0, reduction: 0, bonus: 1.0 };
+  const t = tier || { name: "", color: "blue", access: 0, reduction: 0, bonus: 1.0, bet_boost: 1.0 };
   const global = view.settings.global;
   const parts = {
     name: input("text", t.name, { maxLength: 32 }),
@@ -197,6 +197,7 @@ function tierForm(body, view, tier) {
     access: input("number", t.access, { min: 0, step: 1 }),
     reduction: input("number", t.reduction, { min: 0, step: 1 }),
     bonus: input("number", t.bonus, { min: 0, step: 0.1 }),
+    bet_boost: input("number", t.bet_boost, { min: 1, step: 0.1 }),
     req_credits: input("number", t.req_credits, { min: 0, step: 1 }),
     req_days: input("number", t.req_days, { min: 0, step: 1 }),
     req_role_id: choose(roleOptions(view.settings.roles, t.req_role_id), t.req_role_id),
@@ -208,6 +209,7 @@ function tierForm(body, view, tier) {
     field("Access level", parts.access),
     field("Cooldown reduction (seconds)", parts.reduction),
     field("Bonus payout multiplier", parts.bonus),
+    field("Max bet multiplier", parts.bet_boost),
     field("Needs credits", parts.req_credits),
     field(global ? "Needs days on Discord" : "Needs days in the server", parts.req_days),
   );
