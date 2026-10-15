@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.24.4
+
+- **Fix**: The cog could fail to load with `AttributeError: module 'chromadb' has no attribute 'api'`. The type hints reached `ClientAPI` through the `chromadb` package attribute, which is missing when the `chromadb` module has been re-imported while `chromadb.api` stayed loaded. `ClientAPI` is now imported directly from `chromadb.api`, which works either way.
+
 ## v8.24.3
 
 - **Fix**: Unloading or reloading the cog could freeze the whole bot. The regex safety check used a helper process, and shutting that process down could get stuck waiting on a lock forever. The helper process is gone: trigger phrases and the reply regex blacklist now use the `regex` package's built-in 2-second timeout instead, which stops a runaway pattern the same way without a second Python process. It also saves the memory that process used and a round trip to it for every trigger phrase on every message.

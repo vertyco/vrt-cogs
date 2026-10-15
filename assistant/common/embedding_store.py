@@ -6,7 +6,7 @@ from pathlib import Path
 from time import perf_counter
 
 import chromadb
-import chromadb.api
+from chromadb.api import ClientAPI
 from chromadb.api.types import GetResult
 from chromadb.errors import ChromaError
 
@@ -35,7 +35,7 @@ class EmbeddingStore:
 
     def __init__(self, data_path: Path):
         self.data_path = data_path / "chromadb"
-        self._client: t.Optional[chromadb.api.ClientAPI] = None
+        self._client: t.Optional[ClientAPI] = None
         # Per-server BM25 index, built lazily from stored text and dropped on every write
         self.keyword_indexes: dict[int, KeywordIndex] = {}
 
@@ -49,7 +49,7 @@ class EmbeddingStore:
         await asyncio.to_thread(_init)
 
     @property
-    def client(self) -> chromadb.api.ClientAPI:
+    def client(self) -> ClientAPI:
         if self._client is None:
             raise RuntimeError("EmbeddingStore has not been initialized. Call await initialize() first.")
         return self._client

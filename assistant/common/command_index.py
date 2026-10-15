@@ -4,8 +4,8 @@ import logging
 import re
 import typing as t
 
-import chromadb
 import discord
+from chromadb.api import ClientAPI
 from chromadb.errors import ChromaError
 from rapidfuzz import fuzz, process
 from redbot.core import commands
@@ -125,7 +125,7 @@ class CommandIndexStore:
         self.store = embedding_store
 
     @property
-    def client(self) -> chromadb.api.ClientAPI:
+    def client(self) -> ClientAPI:
         return self.store.client
 
     async def list_collections(self) -> list[str]:
