@@ -6,6 +6,7 @@ import re
 import typing as t
 from dataclasses import dataclass, field
 
+from .playlog import PlayLog
 from .replies import dumps
 from .sessions import ActivityContext
 from .sockets import Connection
@@ -18,7 +19,9 @@ DATA_MAX = 1024
 GRACE_SECONDS = 15
 # Each window's list goes out at most this often. Changes in between are merged into the next one
 SEND_EVERY = 0.25
-FIELDS = {"where", "status", "data", "busy", "away"}
+FIELDS = {"where", "status", "data", "busy", "away", "platform"}
+# What Discord calls the two kinds of device, in the Activity's address
+PLATFORMS = {"desktop", "mobile"}
 # Control characters, and the lone halves of an emoji (surrogates) that a page cut in two, which can't be sent on
 CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\ud800-\udfff]")
 
@@ -39,6 +42,11 @@ def clean_data(value: t.Any) -> t.Any:
     return value if len(text) <= DATA_MAX else None
 
 
+def clean_platform(value: t.Any) -> str:
+    """Phone or computer as Discord says it, or empty for anything else. A list or dict can't be looked up in a set"""
+    return value if isinstance(value, str) and value in PLATFORMS else ""
+
+
 @dataclass
 class Person:
     member: t.Any
@@ -50,6 +58,8 @@ class Person:
     data: t.Any = None
     busy: bool = False
     away: bool = False
+    # Phone or computer, for the play log only. Never in view(), so nobody else sees it
+    platform: str = ""
     # Takes them off the list once the grace after their last link dropped is over
     leaving: asyncio.Task | None = None
 
@@ -83,9 +93,10 @@ class Window:
 class Presence:
     """The people list of every window, kept up to date by each player's menu link"""
 
-    def __init__(self, game_on: t.Callable[[int | None, str], t.Awaitable[bool]]):
+    def __init__(self, game_on: t.Callable[[int | None, str], t.Awaitable[bool]], playlog: PlayLog):
         # Whether a game is installed and on in a server, so a page can't claim to be somewhere it can't be
         self.game_on = game_on
+        self.playlog = playlog
         self.windows: dict[str, Window] = {}
 
     def links(self) -> list[Connection]:
@@ -107,6 +118,7 @@ class Presence:
             person.leaving = None
         person.member = ctx.author
         person.links.append(conn)
+        self.log_play(window, person)
         self.changed(window)
 
     def find(self, conn: Connection) -> tuple[Window, Person] | None:
@@ -125,6 +137,7 @@ class Presence:
         if found is None:
             return
         window, person = found
+        person.platform = clean_platform(data.get("platform"))
         where = await self.clean_where(conn.ctx, data.get("where"))
         state = (where, clean_status(data.get("status")), data.get("busy") is True, data.get("away") is True)
         new_data = clean_data(data.get("data"))
@@ -135,6 +148,7 @@ class Presence:
         moved = where != person.where
         person.where, person.status, person.busy, person.away = state
         person.data = new_data
+        self.log_play(window, person)
         self.changed(window, moved)
 
     async def clean_where(self, ctx: ActivityContext, value: t.Any) -> str | None:
@@ -148,6 +162,7 @@ class Presence:
             return
         window, person = found
         person.links.remove(conn)
+        self.log_play(window, person)
         if not person.links:
             person.leaving = asyncio.create_task(self.forget(window, person))
         self.changed(window)
@@ -158,9 +173,16 @@ class Presence:
         if person.links or window.people.get(person.member.id) is not person:
             return
         del window.people[person.member.id]
+        self.playlog.end((window.instance_id, person.member.id))
         if not window.people and self.windows.get(window.instance_id) is window:
             del self.windows[window.instance_id]
         self.changed(window, person.where is not None)
+
+    def log_play(self, window: Window, person: Person) -> None:
+        """Tell the play log where the person is, and whether their play's clock runs: in a game, linked, not away"""
+        running = bool(person.links) and not person.away
+        key = (window.instance_id, person.member.id)
+        self.playlog.sync(key, window.guild_id, person.member.id, person.where, person.platform, running)
 
     def follow_target(self, ctx: ActivityContext, value: t.Any) -> int | None:
         """The user id a game connection's follow names, when that person is someone else in the same window"""
@@ -221,7 +243,8 @@ class Presence:
         return counts
 
     def stop(self) -> None:
-        """Cancel every pending send and grace, for a server shutting down"""
+        """End every open play, and cancel every pending send and grace, for a server shutting down"""
+        self.playlog.end_all()
         for window in self.windows.values():
             if window.sender is not None:
                 window.sender.cancel()

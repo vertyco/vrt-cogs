@@ -1,5 +1,11 @@
 # ActivityHub Changelog
 
+## 0.12.0
+
+- Settings has a new **Stats** tab for server admins and the bot owner. It shows how often each game gets played, by how many people, for how long, and how many plays were on phones, plus plays per day and the busiest hours of the day, for the last 7 days, 30 days or all time. Admins see their own server. The bot owner can pick any server, all of them together, or plays outside servers.
+- The hub keeps a play log: one line each time someone opens a game, with the server, the game, phone or computer, when it started and how long it lasted. Time with the Activity hidden doesn't count, and time in the menu isn't logged. The log stays on the bot, in a small database file in the hub's data folder.
+- ActivityHub now needs `piccolo` and `aiosqlite`. Red installs them with the cog.
+
 ## 0.11.0
 
 - Settings no longer has the **Show my name to players from other servers** switch. Games show players' Discord names to everyone they play with.

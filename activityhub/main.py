@@ -11,14 +11,19 @@ from .commands import Commands
 from .common.discord_api import drop_entry_point_hook, keep_entry_point
 from .common.games import GameRegistry
 from .common.payouts import Payouts
+from .common.playlog import PlayLog
 from .common.server import DEFAULT_HOST, DEFAULT_PORT, HubServer
 from .common.sessions import LaunchMemory, SessionStore
+from .db.tables import TABLES, Play
+from .engine import engine
 from .views.launch import LaunchButton
 
 log = logging.getLogger("red.vrt.activityhub")
 
 # Seconds a freed game key waits for its cog to come back from a reload before a refused cog gets it
 HANDOVER_DELAY = 10
+# How long a data deletion request waits for the play log's database to open
+DELETE_WAIT = 60
 
 
 class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
@@ -29,7 +34,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.11.0"
+    __version__ = "0.12.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -46,6 +51,9 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.launches = LaunchMemory()
         self.scores = ScoreBoard(self.config)
         self.payouts = Payouts(self.config, bot)
+        self.playlog = PlayLog()
+        # Opens the play log's database once Red is ready. See cog_load
+        self.opening: asyncio.Task | None = None
         self.server = HubServer(self)
         # The game cogs cog_load found already loaded, each describing itself in its own task
         self.scans: list[asyncio.Task] = []
@@ -62,10 +70,22 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
                 await self.config.member_from_ids(guild_id, user_id).clear()
         self.sessions.forget_user(user_id)
         self.launches.forget_user(user_id)
+        self.playlog.forget_user(user_id)
+        try:
+            await asyncio.wait_for(self.playlog.ready.wait(), DELETE_WAIT)
+        except asyncio.TimeoutError as e:
+            log.error("The play log's database isn't open, so user %s's plays couldn't be deleted: %r", user_id, e)
+            return
+        # A batch already being written may hold their plays, and would land after the delete
+        await self.playlog.settle()
+        await Play.delete().where(Play.user_id == user_id)
 
     async def cog_load(self) -> None:
         self.entry_point_hook = keep_entry_point(self.bot)
         self.bot.add_dynamic_items(LaunchButton)
+        # In its own task: it waits for Red to be ready, which happens only after every cog has loaded, and the web
+        # server must come up whether or not the database opens
+        self.opening = asyncio.create_task(self.open_playlog())
         try:
             await self.start_server()
             for game in bundled_games(self.scores, self.payouts):
@@ -83,17 +103,33 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
             # discord.py never calls cog_unload when cog_load fails or is cancelled (at startup Red cancels a load
             # that takes over 30 seconds), so without this the port would stay taken until the bot restarts, and
             # slash syncs would keep going through this copy's hook
+            self.opening.cancel()
             drop_entry_point_hook(self.bot, self.entry_point_hook)
             self.bot.remove_dynamic_items(LaunchButton)
             await self.server.stop()
+            await self.playlog.close()
             raise
 
     async def cog_unload(self) -> None:
         for task in self.scans:
             task.cancel()
+        self.opening.cancel()
         drop_entry_point_hook(self.bot, self.entry_point_hook)
         self.bot.remove_dynamic_items(LaunchButton)
+        # The server first: stopping it ends every open play, which close then writes
         await self.server.stop()
+        await self.playlog.close()
+
+    async def open_playlog(self) -> None:
+        await self.bot.wait_until_red_ready()
+        logging.getLogger("aiosqlite").setLevel(logging.INFO)
+        try:
+            await engine.register_cog(self, TABLES, trace=True)
+        except Exception as e:
+            log.error("The play log's database couldn't open, so plays aren't logged", exc_info=e)
+            self.playlog.failed()
+            return
+        self.playlog.opened()
 
     async def start_server(self) -> None:
         await self.server.stop()

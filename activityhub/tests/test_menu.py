@@ -67,10 +67,10 @@ def test_merge_disabled_refuses_bad_input():
 
 def test_tabs_for_each_kind_of_player():
     assert allowed_tabs(server_admin=False, is_owner=False) == ["look", "order"]
-    assert allowed_tabs(server_admin=True, is_owner=False) == ["look", "order", "server"]
-    assert allowed_tabs(server_admin=True, is_owner=True) == ["look", "order", "server", "defaults"]
+    assert allowed_tabs(server_admin=True, is_owner=False) == ["look", "order", "server", "stats"]
+    assert allowed_tabs(server_admin=True, is_owner=True) == ["look", "order", "server", "defaults", "stats"]
     # The bot owner in a DM
-    assert allowed_tabs(server_admin=False, is_owner=True) == ["look", "order", "defaults"]
+    assert allowed_tabs(server_admin=False, is_owner=True) == ["look", "order", "defaults", "stats"]
 
 
 def test_game_json():

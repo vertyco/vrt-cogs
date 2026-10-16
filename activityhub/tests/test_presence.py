@@ -5,9 +5,11 @@ import pytest
 import pytest_asyncio
 
 from activityhub.common import presence as presence_module
+from activityhub.common.playlog import PlayLog
 from activityhub.common.presence import Presence, clean_data, clean_status
 from activityhub.common.sockets import Connection
 from activityhub.tests.fakes import ADMIN_ID, MANAGER_ID, MEMBER_ID, context_for, make_hub
+from activityhub.tests.test_playlog import Clock
 from activityhub.tests.test_sockets import FakeWebSocket, delivered
 
 ON = {"snake", "tanks"}
@@ -24,12 +26,17 @@ def hub():
     return make_hub()
 
 
+@pytest.fixture
+def clock():
+    return Clock()
+
+
 @pytest_asyncio.fixture
-async def presence():
+async def presence(clock):
     async def game_on(guild_id, key):
         return key in ON
 
-    made = Presence(game_on)
+    made = Presence(game_on, PlayLog(clock=clock))
     yield made
     links = made.links()
     # Inside the test's loop, so the cancelled sends and graces belong to a loop that is still running
@@ -283,3 +290,116 @@ async def test_a_list_that_cant_be_built_is_logged_and_the_next_one_goes_out(hub
     await presence.update(ann, {"where": "snake"})
     await settle(ann)
     assert last(ann)["people"][0]["game"] == "snake"
+
+
+def me_in(presence):
+    return presence.windows["i-1"].people[MEMBER_ID]
+
+
+def open_plays(presence):
+    return {key: play.game for key, play in presence.playlog.plays.items()}
+
+
+def written(presence):
+    return [(row.game, row.platform, row.guild_id, row.seconds) for row in presence.playlog.queue]
+
+
+@pytest.mark.asyncio
+async def test_the_platform_is_kept_but_never_shown_or_sent(hub, presence):
+    ann = link(hub)
+    await presence.connect(ann)
+    await settle(ann)
+    sent = len(ann.ws.sent)
+    await presence.update(ann, {"where": None, "platform": "mobile"})
+    await settle(ann)
+    assert me_in(presence).platform == "mobile"
+    # Only the platform changed, and nobody else sees it, so no list went out
+    assert len(ann.ws.sent) == sent
+    await presence.update(ann, {"where": "snake", "platform": "mobile"})
+    await settle(ann)
+    assert "platform" not in last(ann)["people"][0]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value", ["tablet", 7, None, ["mobile"], {"mobile": 1}])
+async def test_an_odd_platform_is_unknown(hub, presence, value):
+    ann = link(hub)
+    await presence.connect(ann)
+    await presence.update(ann, {"where": "snake", "platform": value})
+    assert me_in(presence).platform == ""
+
+
+@pytest.mark.asyncio
+async def test_moving_between_games_starts_and_ends_plays(hub, presence, clock):
+    ann = link(hub)
+    await presence.connect(ann)
+    await presence.update(ann, {"where": "snake", "platform": "desktop"})
+    assert open_plays(presence) == {("i-1", MEMBER_ID): "snake"}
+    clock.now += 10
+    await presence.update(ann, {"where": "tanks", "platform": "desktop"})
+    clock.now += 4
+    await presence.update(ann, {"where": None, "platform": "desktop"})
+    assert open_plays(presence) == {}
+    assert written(presence) == [("snake", "desktop", 500, 10.0), ("tanks", "desktop", 500, 4.0)]
+
+
+@pytest.mark.asyncio
+async def test_a_game_that_is_off_makes_no_play(hub, presence):
+    ann = link(hub)
+    await presence.connect(ann)
+    await presence.update(ann, {"where": "vegas"})
+    assert open_plays(presence) == {} and written(presence) == []
+
+
+@pytest.mark.asyncio
+async def test_leaving_ends_the_play_at_the_last_drop(hub, presence, clock):
+    ann = link(hub)
+    await presence.connect(ann)
+    await presence.update(ann, {"where": "snake"})
+    clock.now += 20
+    presence.disconnect(ann)
+    clock.now += 100
+    # The grace is 0.05 s in these tests; after it the person is forgotten and the play ends
+    await asyncio.sleep(0.15)
+    assert [row.seconds for row in presence.playlog.queue] == [20.0]
+
+
+@pytest.mark.asyncio
+async def test_a_reconnect_inside_the_grace_keeps_one_play(hub, presence, clock):
+    ann = link(hub)
+    await presence.connect(ann)
+    await presence.update(ann, {"where": "snake"})
+    clock.now += 20
+    presence.disconnect(ann)
+    clock.now += 3
+    again = link(hub)
+    await presence.connect(again)
+    await asyncio.sleep(0.15)
+    assert written(presence) == [] and open_plays(presence) == {("i-1", MEMBER_ID): "snake"}
+    clock.now += 10
+    presence.playlog.end(("i-1", MEMBER_ID))
+    # The 3 seconds without a link don't count
+    assert [row.seconds for row in presence.playlog.queue] == [30.0]
+
+
+@pytest.mark.asyncio
+async def test_away_time_is_left_out(hub, presence, clock):
+    ann = link(hub)
+    await presence.connect(ann)
+    await presence.update(ann, {"where": "snake"})
+    clock.now += 5
+    await presence.update(ann, {"where": "snake", "away": True})
+    clock.now += 500
+    await presence.update(ann, {"where": "snake"})
+    clock.now += 5
+    await presence.update(ann, {"where": None})
+    assert [row.seconds for row in presence.playlog.queue] == [10.0]
+
+
+@pytest.mark.asyncio
+async def test_stopping_ends_open_plays(hub, presence):
+    ann = link(hub)
+    await presence.connect(ann)
+    await presence.update(ann, {"where": "snake"})
+    presence.stop()
+    assert [row.game for row in presence.playlog.queue] == ["snake"]

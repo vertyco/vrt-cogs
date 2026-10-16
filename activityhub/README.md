@@ -44,6 +44,14 @@ They can also put the **Open Activities** button on any message the bot sent in 
 
 The bot owner also sees a **Defaults** tab. It sets the look every server starts from, and turns games on or off in every server at once. A game the owner turns off leaves every menu, can't be played anywhere, and server admins can't turn it back on.
 
+## Play log
+
+The hub notes each time someone opens a game: the server, the game, whether they were on a phone or a computer, when they started and how long they played. Time with the Activity hidden or in the background doesn't count, and time in the menu isn't logged.
+
+Server admins read the totals for their own server in the **Stats** tab of the menu's settings: plays, players, typical play length and the share on phones for each game, plus plays per day and the busiest hours. The bot owner can also pick any server, every server together, or plays outside servers.
+
+The log stays on your bot, in `db.sqlite` in the hub's data folder. Nothing is sent anywhere else. Red's data deletion removes a user's plays.
+
 ## Setup (bot owner)
 
 The cog hosts the menu and every game on a small web server. Discord loads it over HTTPS, so it needs a public address.

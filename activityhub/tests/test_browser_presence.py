@@ -292,3 +292,8 @@ def test_people_coming_back_after_a_drop_are_not_arrivals(driver, live):
         """
     )
     assert result == [["7"], [], ["3"], [], ["1"], [], [], ["5"]]
+
+
+def test_the_menu_link_says_phone_or_computer(driver, live):
+    open_host(driver, live)
+    eventually(lambda: me(live) is not None and me(live).platform == "desktop")

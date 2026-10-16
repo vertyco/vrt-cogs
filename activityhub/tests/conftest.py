@@ -2,8 +2,10 @@ import pytest
 import pytest_asyncio
 from aiohttp.test_utils import TestClient, TestServer
 from aiohttp.web_runner import BaseRunner
+from piccolo.engine.sqlite import SQLiteEngine
 
 from activityhub.common.server import HubServer
+from activityhub.db.tables import TABLES
 from activityhub.tests.fakes import GUILD_ID, MEMBER_ID, DemoCog, make_hub, register, write_demo_web
 
 
@@ -81,3 +83,13 @@ async def client(server):
     await test_client.start_server()
     yield test_client
     await test_client.close()
+
+
+@pytest_asyncio.fixture
+async def playdb(tmp_path):
+    """The play log's tables on a fresh database file"""
+    engine = SQLiteEngine(path=str(tmp_path / "play.sqlite"))
+    for table in TABLES:
+        table._meta.db = engine
+        await table.create_table(if_not_exists=True)
+    return engine

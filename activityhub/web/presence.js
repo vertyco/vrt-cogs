@@ -27,7 +27,15 @@ export class Presence {
   constructor(host) {
     this.host = host;
     // What the bot knows about this player. The whole of it goes out each time, so a reconnect restores it all
-    this.state = { where: null, status: "", data: null, busy: false, away: document.hidden };
+    this.state = {
+      where: null,
+      status: "",
+      data: null,
+      busy: false,
+      away: document.hidden,
+      // "desktop" or "mobile" as Discord says, for the play log. Nobody else sees it
+      platform: host.platform ?? null,
+    };
     this.people = [];
     this.elsewhere = {};
     this.listeners = new Set();

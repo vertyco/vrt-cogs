@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import time
 import typing as t
 
 import discord
@@ -20,15 +21,19 @@ from .menu import (
     ordered_games,
     player_json,
 )
+from .playstats import Period, read_query, scope_for, stats_json
 from .replies import (
     BAD_REQUEST,
     INSTANCE_FAILED,
+    LOG_UNAVAILABLE,
     LOGIN_FAILED,
     MAX_BODY,
     NO_CACHE,
     NOT_ALLOWED,
     NOT_IN_SERVER,
     NOT_SET_UP,
+    NOT_YOUR_STATS,
+    NOTHING_TO_SAVE,
     SESSION_EXPIRED,
     error,
     read_object,
@@ -60,6 +65,7 @@ class HubRoutes:
         app.router.add_post("/hub/api/token", self.token)
         app.router.add_get("/hub/api/menu", self.menu_state)
         app.router.add_post("/hub/api/settings", self.settings)
+        app.router.add_get("/hub/api/stats", self.stats)
         app.router.add_get("/hub/api/ping", self.ping)
         app.router.add_get("/hub/ws", self.menu_link)
         app.router.add_get("/hub/{build}/{path:.+}", self.hub_file)
@@ -297,6 +303,8 @@ class HubRoutes:
         tab = body.get("tab")
         if not isinstance(tab, str) or tab not in await self.player_tabs(ctx):
             return error(NOT_ALLOWED, 403)
+        if tab == "stats":
+            return error(NOTHING_TO_SAVE, 400)
         try:
             await self.save_tab(ctx, tab, body)
         except SettingsError as e:
@@ -318,7 +326,7 @@ class HubRoutes:
             await group.order.set(merge_order(await group.order(), body.get("order"), self.hub.registry.games))
         elif tab == "server":
             await self.save_server(ctx.guild, body)
-        else:
+        elif tab == "defaults":
             await self.save_defaults(body)
 
     async def save_defaults(self, body: dict) -> None:
@@ -355,3 +363,25 @@ class HubRoutes:
         await group.disabled.set(disabled)
         await group.economy_labels.set(labels)
         await self.server.rooms.close_off(guild.id, disabled)
+
+    async def stats(self, request: web.Request) -> web.Response:
+        """The Stats tab's numbers. Checked on every request, like settings saves"""
+        ctx = self.server.request_context(request)
+        if ctx is None:
+            return error(SESSION_EXPIRED, 401)
+        asked = read_query(request.query)
+        if asked is None:
+            return error(BAD_REQUEST, 400)
+        is_owner = await self.bot.is_owner(ctx.author)
+        scope = scope_for(asked.server, ctx.guild_id, is_owner, await ctx.is_admin())
+        if scope is None:
+            return error(NOT_YOUR_STATS, 403)
+        if not self.hub.playlog.ready.is_set():
+            return error(LOG_UNAVAILABLE, 503)
+        period = Period.make(asked.days, asked.offset, time.time())
+        names = {key: game.name for key, game in self.hub.registry.games.items()}
+        return web.json_response(await stats_json(scope, period, names, self.guild_name, is_owner))
+
+    def guild_name(self, guild_id: int) -> str | None:
+        guild = self.bot.get_guild(guild_id)
+        return guild.name if guild else None

@@ -15,8 +15,9 @@ import {
   turnPanels,
 } from "./orb.js";
 import { PressHold, avatar, elsewhereLine, icon, personRow, statusText } from "./people.js";
+import { StatsPanel } from "./stats.js";
 
-const TAB_NAMES = { look: "My look", order: "My order", server: "This server", defaults: "Defaults" };
+const TAB_NAMES = { look: "My look", order: "My order", server: "This server", defaults: "Defaults", stats: "Stats" };
 // Each look tab edits one saved level and falls back to the levels before it
 const LEVELS = ["global", "guild", "user"];
 const TAB_LEVEL = { defaults: "global", server: "guild", look: "user" };
@@ -1831,6 +1832,10 @@ function selectTab(tab) {
 }
 
 function stagedFrom(tab) {
+  // Stats has nothing to stage, but an open panel always has something staged
+  if (tab === "stats") {
+    return {};
+  }
   const state = page.state;
   if (tab === "order") {
     return { order: state.games.map((game) => game.key), cleared: false };
@@ -1862,6 +1867,9 @@ function preview() {
     applyLook(page.state.look);
     const byKey = new Map(page.state.games.map((game) => [game.key, game]));
     renderGames(page.staged.order.map((key) => byKey.get(key)).filter(Boolean));
+  } else if (page.tab === "stats") {
+    applyLook(page.state.look);
+    renderGames(page.state.games);
   } else {
     applyLook(previewLook());
     renderGames(page.state.games);
@@ -1870,9 +1878,12 @@ function preview() {
 
 function renderPanel() {
   $("tabs").replaceChildren(...page.state.tabs.map(tabButton));
+  $("panel").classList.toggle("read-only", page.tab === "stats");
   const body = $("tab-body");
   if (page.tab === "order") {
     body.replaceChildren(orderEditor());
+  } else if (page.tab === "stats") {
+    body.replaceChildren(new StatsPanel((query) => askBot(`/hub/api/stats?${query}`), sessionExpired).root);
   } else {
     body.replaceChildren(
       ...lookEditor(),
@@ -2156,11 +2167,11 @@ function saveBody() {
   return body;
 }
 
-// A bot restart forgets every login. The save goes again once with a fresh login, like a game's request does, so
+// A bot restart forgets every login. A request goes again once with a fresh login, like a game's request does, so
 // the edits on screen aren't thrown away
-async function sendSettings(body) {
+async function askBot(path, body) {
   try {
-    return await request("/hub/api/settings", { body, session: page.host.login?.session });
+    return await request(path, { body, session: page.host.login?.session });
   } catch (e) {
     if (e.status !== 401 || !page.host.inDiscord) {
       throw e;
@@ -2170,14 +2181,14 @@ async function sendSettings(body) {
       console.error(failed);
       throw e;
     });
-    return request("/hub/api/settings", { body, session: login.session });
+    return request(path, { body, session: login.session });
   }
 }
 
 async function save() {
   status("Saving…");
   try {
-    page.state = await sendSettings(saveBody());
+    page.state = await askBot("/hub/api/settings", saveBody());
   } catch (e) {
     if (e.status === 401) {
       await sessionExpired();

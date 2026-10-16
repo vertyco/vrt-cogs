@@ -1,0 +1,150 @@
+/* The Stats tab in the settings panel */
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stats-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.stats-periods {
+  display: flex;
+  gap: 4px;
+}
+
+.stats-period {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.stats-period[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Drops to its own line on a phone rather than cutting the server's name short */
+.stats-server {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.stats-overall,
+.stats-note,
+.stats-tip {
+  margin: 0;
+}
+
+.stats-note,
+.stats-tip {
+  color: var(--muted);
+}
+
+.stats-tip {
+  min-height: 1.2em;
+  font-size: 0.8rem;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stats-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.stats-table th:first-child,
+.stats-table td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+/* The game's name takes the room the numbers leave, cut with an ellipsis */
+.stats-game {
+  overflow: hidden;
+  width: 100%;
+  max-width: 0;
+  text-overflow: ellipsis;
+}
+
+.stats-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stats-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.stats-bars,
+.stats-marks {
+  display: flex;
+  gap: 2px;
+}
+
+.stats-bars {
+  align-items: flex-end;
+  height: 96px;
+}
+
+.stats-bar {
+  flex: 1;
+  min-width: 0;
+  height: calc(var(--fill) * 100%);
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.stats-bar[data-plays="0"] {
+  opacity: 0.3;
+}
+
+.stats-bar:hover {
+  opacity: 0.8;
+}
+
+/* Marks spill over their empty neighbors; the end ones lean inward so they stay inside the chart */
+.stats-marks span {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.stats-marks span:first-child {
+  justify-content: flex-start;
+}
+
+.stats-marks span:last-child {
+  justify-content: flex-end;
+}

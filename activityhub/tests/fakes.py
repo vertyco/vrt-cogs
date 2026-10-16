@@ -12,6 +12,7 @@ from redbot.core.errors import BalanceTooHigh
 
 from activityhub.common.games import GameRegistry
 from activityhub.common.payouts import Payouts
+from activityhub.common.playlog import PlayLog
 from activityhub.common.sessions import ActivityContext, LaunchMemory, SessionStore
 from activityhub.main import ActivityHub
 
@@ -57,6 +58,9 @@ class FakeGroup:
 
     async def all(self):
         return copy.deepcopy(self.data)
+
+    async def clear(self):
+        self.data.clear()
 
 
 class FakeConfig:
@@ -189,6 +193,9 @@ class FakeBot:
     async def get_shared_api_tokens(self, service: str) -> dict:
         return dict(self.tokens) if service == "activityhub" else {}
 
+    async def wait_until_red_ready(self) -> None:
+        return None
+
 
 class FakeBank:
     """Red's bank functions the payouts use, keyed by user id. One balance per user, global or not"""
@@ -227,6 +234,10 @@ class Today:
         return self.day
 
 
+async def no_database() -> None:
+    """Stands in for opening the play log's database. Tests that need one use the playdb fixture"""
+
+
 def make_hub() -> SimpleNamespace:
     config = FakeConfig()
     bot = FakeBot()
@@ -238,6 +249,9 @@ def make_hub() -> SimpleNamespace:
         launches=LaunchMemory(),
         scores=ScoreBoard(config),
         payouts=Payouts(config, bot, money=FakeBank(), today=Today()),
+        playlog=PlayLog(),
+        opening=None,
+        open_playlog=no_database,
     )
 
 

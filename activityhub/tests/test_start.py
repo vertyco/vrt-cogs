@@ -7,6 +7,7 @@ import pytest
 from activityhub import main
 from activityhub.main import ActivityHub
 from activityhub.common.sockets import Rooms
+from activityhub.db.tables import Play
 from activityhub.tests.fakes import DemoCog, make_hub, write_demo_web
 
 
@@ -336,3 +337,50 @@ async def test_an_old_copy_failing_after_its_reload_keeps_the_new_refusal(tmp_pa
     await asyncio.wait_for(describing, 1)
     refused, reason = hub.registry.failed[new.qualified_name]
     assert refused is new and "Not A Key" in reason
+
+
+@pytest.mark.asyncio
+async def test_cog_load_opens_the_play_log_in_its_own_task(monkeypatch):
+    hub = loading_hub(monkeypatch, {})
+    go = asyncio.Event()
+
+    async def open_playlog():
+        await go.wait()
+        hub.playlog.opened()
+
+    hub.open_playlog = open_playlog
+    await asyncio.wait_for(ActivityHub.cog_load(hub), 1)
+    assert not hub.playlog.ready.is_set()
+    go.set()
+    await asyncio.wait_for(hub.opening, 1)
+    assert hub.playlog.ready.is_set()
+
+
+@pytest.mark.asyncio
+async def test_cog_unload_stops_opening_the_play_log(monkeypatch):
+    hub = loading_hub(monkeypatch, {})
+
+    async def never():
+        await asyncio.Event().wait()
+
+    hub.open_playlog = never
+    await asyncio.wait_for(ActivityHub.cog_load(hub), 1)
+    await ActivityHub.cog_unload(hub)
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(hub.opening, 1)
+
+
+@pytest.mark.asyncio
+async def test_cog_unload_writes_the_queued_plays(monkeypatch, playdb):
+    hub = loading_hub(monkeypatch, {})
+
+    async def open_playlog():
+        hub.playlog.opened()
+
+    hub.open_playlog = open_playlog
+    await asyncio.wait_for(ActivityHub.cog_load(hub), 1)
+    await asyncio.wait_for(hub.opening, 1)
+    hub.playlog.sync(("i-1", 2), 500, 2, "snake", "desktop", True)
+    hub.playlog.end(("i-1", 2))
+    await asyncio.wait_for(ActivityHub.cog_unload(hub), 7)
+    assert await Play.count() == 1

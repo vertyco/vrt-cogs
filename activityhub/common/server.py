@@ -39,7 +39,7 @@ class HubServer:
         self.bot = hub.bot
         self.web_dir = web_dir
         self.rooms = Rooms()
-        self.presence = Presence(self.game_on)
+        self.presence = Presence(self.game_on, hub.playlog)
         self.runner: web.AppRunner | None = None
         self.http: aiohttp.ClientSession | None = None
         self.watchdog: asyncio.Task | None = None

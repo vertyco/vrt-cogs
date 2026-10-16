@@ -698,6 +698,12 @@ input[type="color"]::-webkit-color-swatch {
   border-top: 1px solid var(--line);
 }
 
+/* Nothing on the Stats tab can be saved or reset */
+.panel.read-only #reset,
+.panel.read-only #save {
+  display: none;
+}
+
 .panel-status {
   flex: 1;
   margin: 0;

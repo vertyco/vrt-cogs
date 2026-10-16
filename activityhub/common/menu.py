@@ -61,12 +61,14 @@ def check_labels(body: dict, saved: bool) -> bool:
 
 
 def allowed_tabs(server_admin: bool, is_owner: bool) -> list[str]:
-    """Settings panel tabs a player may see and save"""
+    """Settings panel tabs a player may see. Stats is read-only"""
     tabs = ["look", "order"]
     if server_admin:
         tabs.append("server")
     if is_owner:
         tabs.append("defaults")
+    if server_admin or is_owner:
+        tabs.append("stats")
     return tabs
 
 
