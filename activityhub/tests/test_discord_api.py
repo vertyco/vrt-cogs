@@ -73,9 +73,19 @@ class SyncHttp:
         return payload
 
 
-def sync_bot(current: list[dict], embedded: bool = True):
+def sync_bot(current: list[dict], embedded: bool = True, user_install: bool = False):
+    async def info():
+        return SimpleNamespace(
+            flags=SimpleNamespace(embedded=embedded),
+            guild_integration_config=SimpleNamespace(),
+            user_integration_config=SimpleNamespace() if user_install else None,
+        )
+
     return SimpleNamespace(
-        application_id=APP_ID, http=SyncHttp(current), application_flags=SimpleNamespace(embedded=embedded)
+        application_id=APP_ID,
+        http=SyncHttp(current),
+        application_flags=SimpleNamespace(embedded=embedded),
+        application_info=info,
     )
 
 
@@ -99,14 +109,52 @@ async def test_sync_adds_a_default_entry_point_when_none_exists():
 @pytest.mark.asyncio
 async def test_sync_adds_nothing_without_activities():
     bot = sync_bot([SLASH], embedded=False)
-
-    async def info():
-        return SimpleNamespace(flags=SimpleNamespace(embedded=False))
-
-    bot.application_info = info
     discord_api.keep_entry_point(bot)
     await bot.http.bulk_upsert_global_commands(APP_ID, [SLASH])
     assert bot.http.synced == [[SLASH]]
+
+
+GUILD_ONLY_SLASH = {
+    "name": "activities",
+    "description": "Open the menu",
+    "type": 1,
+    "dm_permission": False,
+    "contexts": [0],
+    "integration_types": [0],
+}
+OTHER_SLASH = {"name": "other", "description": "Something else", "type": 1, "contexts": [0], "integration_types": [0]}
+KEPT_ENTRY_POINT = {"name": "play", "description": "Custom launch", "type": 4, "handler": 2}
+
+
+@pytest.mark.asyncio
+async def test_sync_opens_the_launch_commands_everywhere_with_user_install():
+    bot = sync_bot([SAVED_ENTRY_POINT], user_install=True)
+    discord_api.keep_entry_point(bot)
+    await bot.http.bulk_upsert_global_commands(APP_ID, [GUILD_ONLY_SLASH, OTHER_SLASH])
+    everywhere = {"integration_types": [0, 1], "contexts": [0, 1, 2]}
+    slash = {key: value for key, value in GUILD_ONLY_SLASH.items() if key != "dm_permission"} | everywhere
+    assert bot.http.synced == [[slash, OTHER_SLASH, KEPT_ENTRY_POINT | everywhere]]
+
+
+@pytest.mark.asyncio
+async def test_sync_keeps_the_launch_commands_in_servers_without_user_install():
+    bot = sync_bot([SAVED_ENTRY_POINT])
+    discord_api.keep_entry_point(bot)
+    await bot.http.bulk_upsert_global_commands(APP_ID, [GUILD_ONLY_SLASH, OTHER_SLASH])
+    assert bot.http.synced == [[GUILD_ONLY_SLASH, OTHER_SLASH, KEPT_ENTRY_POINT]]
+
+
+@pytest.mark.asyncio
+async def test_sync_keeps_the_launch_commands_as_they_are_when_discord_cant_say():
+    bot = sync_bot([SAVED_ENTRY_POINT], user_install=True)
+
+    async def down():
+        raise discord.HTTPException(SimpleNamespace(status=503, reason="Unavailable"), "down")
+
+    bot.application_info = down
+    discord_api.keep_entry_point(bot)
+    await bot.http.bulk_upsert_global_commands(APP_ID, [GUILD_ONLY_SLASH])
+    assert bot.http.synced == [[GUILD_ONLY_SLASH, KEPT_ENTRY_POINT]]
 
 
 @pytest.mark.asyncio

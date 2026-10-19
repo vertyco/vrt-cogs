@@ -43,6 +43,7 @@ FIELDS = {
     "requires",
     "platforms",
     "room",
+    "opens_in",
 }
 REQUIRED = ("key", "name", "web_dir")
 # The most characters a game's currency line can have, so the badge fits a card on a phone
@@ -52,6 +53,8 @@ ECONOMY_LIMIT = 40
 PLATFORMS = ("desktop", "mobile")
 # Who plays together: everyone in one Activity window, everyone in the server, or everyone the bot has
 ROOMS = ("window", "server", "everywhere")
+# Where a game opens: only in servers the bot is in, or in DMs and servers the bot isn't in too
+OPENS_IN = ("server", "everywhere")
 # Seconds a game's room function has to answer, since every action of that game waits on it
 ROOM_WAIT = 2
 SCOPE_NAME = re.compile(r"[a-z0-9_.]+")
@@ -103,6 +106,8 @@ class Game:
     platforms: list[str] = field(default_factory=lambda: list(PLATFORMS))
     # One of ROOMS, or an async def taking the player's ctx and returning one
     room: str | t.Callable = "window"
+    # One of OPENS_IN. Outside the bot's servers the menu marks a "server" game, and won't open it
+    opens_in: str = "everywhere"
 
     async def room_kind(self, ctx: ActivityContext) -> str:
         """
@@ -398,6 +403,12 @@ def check_room(value: t.Any) -> str | t.Callable:
     return check_ctx_function("room", value, refused)
 
 
+def check_opens_in(value: t.Any) -> str:
+    if not isinstance(value, str) or value not in OPENS_IN:
+        raise GameError(f'opens_in must be "server" or "everywhere", got {value!r}')
+    return value
+
+
 def check_picture(desc: dict, field_name: str, web_dir: Path) -> str | None:
     picture = desc.get(field_name)
     if picture is None:
@@ -471,6 +482,7 @@ async def validate_game(cog: t.Any, hub_version: str | None = None) -> Game:
         economy=check_economy(desc.get("economy")),
         platforms=check_platforms(desc.get("platforms", list(PLATFORMS))),
         room=check_room(desc.get("room", "window")),
+        opens_in=check_opens_in(desc.get("opens_in", "everywhere")),
     )
     warn_about_page(key, web_dir, html)
     return game

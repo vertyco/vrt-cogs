@@ -29,6 +29,12 @@ DEFAULT_ENTRY_POINT = {
     "type": ENTRY_POINT,
     "handler": DISCORD_LAUNCHES,
 }
+# Where an app can be installed: to a server, or to a person's own account (Discord's "User Install")
+GUILD_INSTALL, USER_INSTALL = 0, 1
+# Where a command can be used: servers, the DM with the bot, and every other DM and group DM
+EVERY_CONTEXT = [0, 1, 2]
+# The hub's slash command that opens the Activity
+LAUNCH_COMMAND = "activities"
 # Fields Discord adds to a fetched command that a bulk sync must not send back
 READ_ONLY_FIELDS = {"id", "application_id", "version", "guild_id"}
 # How long to wait after a 429 that doesn't say how long
@@ -157,12 +163,48 @@ async def with_entry_point(bot: Red, application_id: int, payload: list[dict]) -
     return payload
 
 
+async def install_types(bot: Red) -> list[int] | None:
+    """Where the app can be installed, as Discord's settings say right now. None when Discord couldn't say"""
+    try:
+        info = await bot.application_info()
+    except discord.HTTPException as e:
+        log.warning("Couldn't fetch application info to see where the app can be installed", exc_info=e)
+        return None
+    configs = ((GUILD_INSTALL, info.guild_integration_config), (USER_INSTALL, info.user_integration_config))
+    return [kind for kind, config in configs if config is not None]
+
+
+def opens_activity(command: dict) -> bool:
+    """The Entry Point, or the hub's own slash command"""
+    return command.get("type") == ENTRY_POINT or (command.get("type", 1) == 1 and command.get("name") == LAUNCH_COMMAND)
+
+
+def open_everywhere(command: dict, types: list[int]) -> dict:
+    """The command, usable wherever the app is installed: DMs and group DMs too. dm_permission is the older way of
+    saying where, which contexts replaces"""
+    kept = {key: value for key, value in command.items() if key != "dm_permission"}
+    return {**kept, "integration_types": types, "contexts": EVERY_CONTEXT}
+
+
+async def prepare_sync(bot: Red, application_id: int, payload: list[dict]) -> list[dict]:
+    """
+    The global command list with the Entry Point. When the app has User Install on, the commands that open the
+    Activity work in DMs, group DMs and servers the bot isn't in too. Discord keeps a command's old places when an
+    install type is turned on later, so each sync sets them again
+    """
+    payload = await with_entry_point(bot, application_id, payload)
+    types = await install_types(bot)
+    if types is None or USER_INSTALL not in types:
+        return payload
+    return [open_everywhere(command, types) if opens_activity(command) else command for command in payload]
+
+
 def keep_entry_point(bot: Red) -> t.Callable:
     """Make the bot's global slash sync carry the Entry Point along. Returns the wrapper so unloading can remove it"""
     original = bot.http.bulk_upsert_global_commands
 
     async def bulk_upsert(application_id: int, payload: list[dict]) -> t.Any:
-        return await original(application_id, await with_entry_point(bot, application_id, payload))
+        return await original(application_id, await prepare_sync(bot, application_id, payload))
 
     bot.http.bulk_upsert_global_commands = bulk_upsert  # type: ignore[assignment]
     return bulk_upsert

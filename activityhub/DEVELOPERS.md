@@ -849,7 +849,7 @@ Friends who open the Activity land in the menu, not in your game: each of them p
 | `1009` | A message of 1 MB or more. The hub closes the whole connection, and `leave` still runs. | Not until you send less. |
 | `1011` | Your `join` handler raised. | No. |
 | `4001` | The login expired while connecting, and logging in again failed. The hub takes the player back to the menu by itself. | No. |
-| `4003` | Your game was turned off in this server, or by the bot owner for every server. | No. |
+| `4003` | Your game was turned off in this server, or by the bot owner for every server, or it has `"opens_in": "server"` and the player is outside the bot's servers. | No. |
 | `4004` | Your `activityhub_game()` has no `"socket"`. | No. |
 | `4029` | The page sent more than the message limit allows (see below). The bot's log names the player. | No. |
 | `4100`-`4999` | Your own codes, from `conn.close(code)` in your Python. | Your call. |
@@ -1683,6 +1683,7 @@ The tables, by where you see the problem:
 | `keys starting with 'hub-' are kept for ActivityHub's own games` | Your key starts with `hub-`. | Pick a key that doesn't. |
 | `platforms can only hold "desktop" and "mobile" (all Discord tells the hub), got ...` | A platform name Discord doesn't use, like `"ios"`. Discord only says whether a player is on desktop or mobile. | Use `["desktop"]` or `["mobile"]`, or leave `platforms` out. |
 | `platforms can't be empty: leave it out to run everywhere` | `platforms` is `[]`. | Leave it out, or list where your game works. |
+| `opens_in must be "server" or "everywhere", got ...` | Another value, like `"servers"` or `["server"]`. | Use `"server"`, or leave `opens_in` out to open everywhere. |
 | `activityhub_game() raised ...` | Your method crashed. | The bot's log has the full error. |
 | Listed, but not in the menu in one server | A server admin turned it off there. | The server's **This server** settings tab turns it back on. |
 | Listed with `[turned off]` | The bot owner turned it off everywhere. | The owner's **Defaults** settings tab turns it back on. |
@@ -1782,6 +1783,7 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
   ```
 
 - **Desktop only or mobile only.** If your game can't work on one of them (say it needs a keyboard), set `"platforms": ["desktop"]` in `activityhub_game()`. On a phone the menu then dims your card with a "Desktop only" note, and the hub shows a message instead of opening your game, whether the player taps your card, presses Join, or comes from a launch button. Discord only tells the hub "desktop" or "mobile", so there is no way to pick iOS or Android. A game that runs everywhere can read `hub.platform` to adapt, like showing touch buttons on phones.
+- **Servers only.** When a bot owner turns on User Install, people can open the hub in DMs, group DMs and servers your bot isn't in. There `ctx.guild` is `None`: no server bank, no server Config, no members. If your game can't work without its server (Vegas: every table and bet belongs to one), set `"opens_in": "server"` in `activityhub_game()`, with `"requires": "0.13.0"`. Outside the bot's servers the menu then dims your card with a "Servers only" note, and the hub shows a message instead of opening your game, whether the player taps your card, presses Join, or comes from a launch button. Your actions, raw routes and live connection refuse it there too. Leave it out if your game still plays without a server, even with less (no payouts or server leaderboard): that is how the included games work.
 - **Taps wait on iPhones unless you say otherwise.** Your page is a frame inside Discord, and phones ignore a frame's viewport tag. So an iPhone holds every tap for about a third of a second, to see whether a second tap zooms. CSS stops the wait, and only two values do it: `manipulation` (scrolling still works) and `none` (your page takes the finger itself, like a playfield). Put one on the page, and on every box that scrolls (`overflow: auto` or `scroll`), since a scrolling box starts over at the default:
 
   ```css
@@ -1822,7 +1824,7 @@ Your users need ActivityHub too, and Red doesn't install required cogs by itself
 - [ ] The key is final.
 - [ ] `requires` names the oldest ActivityHub your game works with.
 - [ ] The page works in the browser preview, and shows a sensible message when `hub.offline` is `true`.
-- [ ] The page works inside Discord, in a server and (if you support it) in a DM.
+- [ ] The page works inside Discord, in a server and in a DM. If it can't work outside a server, `"opens_in": "server"` says so.
 - [ ] Every action checks what the page sent, and never trusts a score or amount from it.
 - [ ] Payouts use `ctx.author` and have limits.
 - [ ] If your game uses the server's currency, `economy` says how in one short line.

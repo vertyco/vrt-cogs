@@ -31,11 +31,13 @@ const DATA_MAX = 1024;
 const LONE_SURROGATE = /(?:^|[^\\])(?:\\\\)*\\u[dD][89a-fA-F]/;
 // What Discord says a device is, in the platform part of the Activity's address
 const PLATFORMS = ["desktop", "mobile"];
-// A game's card note, and the message shown instead of opening it, on a device the game doesn't work on
-const ONLY_ON = { desktop: "Desktop only", mobile: "Mobile only" };
+// A game's card note, and the message shown instead of opening it, on a device the game doesn't work on, or outside
+// the bot's servers for a game that only opens in them
+const ONLY_ON = { desktop: "Desktop only", mobile: "Mobile only", server: "Servers only" };
 const WORKS_ON = {
   desktop: "only works on desktop: Discord's computer app or discord.com in a browser.",
   mobile: "only works on mobile: Discord's phone and tablet app.",
+  server: "only opens in a Discord server this bot is in.",
 };
 
 // An invisible box padded by the room Discord's own buttons (the back pill and Leave) and the phone's notch take
@@ -378,20 +380,33 @@ export class Host {
     return this.games.get(key)?.icon || null;
   }
 
-  // Whether this device can open the game
+  // Why the player can't open the game here: the one platform it works on when this device isn't it, "server" for a
+  // game that only opens in the bot's servers when this isn't one, else null. The preview opens every game
+  blocker(key) {
+    const game = this.games.get(key);
+    if (this.platform && game?.platforms && !game.platforms.includes(this.platform)) {
+      return game.platforms[0];
+    }
+    if (this.inDiscord && game?.opensIn === "server" && !this.login?.player?.guildId) {
+      return "server";
+    }
+    return null;
+  }
+
+  // Whether the player can open the game on this device, in this place
   canOpen(key) {
-    const platforms = this.games.get(key)?.platforms;
-    return !this.platform || !platforms || platforms.includes(this.platform);
+    return !this.blocker(key);
   }
 
-  // "Desktop only" or "Mobile only" for a game this device can't open, else null
+  // "Desktop only", "Mobile only" or "Servers only" for a game the player can't open here, else null
   onlyOn(key) {
-    return this.canOpen(key) ? null : ONLY_ON[this.games.get(key).platforms[0]];
+    const blocker = this.blocker(key);
+    return blocker ? ONLY_ON[blocker] : null;
   }
 
-  // Shown instead of opening a game this device can't run. The player stays where they are
+  // Shown instead of opening a game the player can't open here. The player stays where they are
   refuseOpen(key) {
-    this.people.tell(`${this.gameName(key)} ${WORKS_ON[this.games.get(key).platforms[0]]}`);
+    this.people.tell(`${this.gameName(key)} ${WORKS_ON[this.blocker(key)]}`);
   }
 
   // hub.status(): the open game's line about its player, and data for its own pages. Cut by whole characters, so an

@@ -6,7 +6,7 @@ from aiohttp.test_utils import make_mocked_request
 
 from activityhub.common import discord_api
 from activityhub.common.files import build_id
-from activityhub.common.replies import LOGIN_FAILED
+from activityhub.common.replies import LOGIN_FAILED, SERVER_ONLY, TURNED_OFF
 from activityhub.tests.fakes import (
     APP_ID,
     GUILD_ID,
@@ -14,7 +14,9 @@ from activityhub.tests.fakes import (
     MEMBER_ID,
     OUTSIDER_ID,
     UNKNOWN_GUILD_ID,
+    DemoCog,
     context_for,
+    write_demo_web,
 )
 
 TOKEN_BODY = {"code": "abc", "instance_id": "i-9"}
@@ -216,6 +218,17 @@ async def test_game_off_everywhere(server, hub):
     assert await server.game_off(GUILD_ID, "demo") is True
     assert await server.game_off(None, "demo") is True
     assert await server.game_off(GUILD_ID, "other") is False
+
+
+@pytest.mark.asyncio
+async def test_a_servers_only_game_is_off_outside_the_bots_servers(server, hub, tmp_path):
+    local = DemoCog(write_demo_web(tmp_path / "local"), key="local", name="Local", cog_name="Local", opens_in="server")
+    assert await hub.registry.add(local) is not None
+    assert await server.why_off(None, "local") == SERVER_ONLY
+    assert await server.game_off(None, "local") is True
+    assert await server.why_off(GUILD_ID, "local") is None
+    await hub.config.disabled.set(["local"])
+    assert await server.why_off(GUILD_ID, "local") == TURNED_OFF
 
 
 @pytest.mark.asyncio

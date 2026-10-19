@@ -184,6 +184,8 @@ def finish_page(prefix: str) -> discord.Embed:
         "proxy, and says which one is missing. Add your public host, like `{prefix}activityhub check {example}`, to "
         "also test that address directly.\n\n"
         "**Handy later**\n"
+        "To open the hub in DMs and servers the bot isn't in too, tick **User Install** under **Installation** in "
+        "the Developer Portal, then run `{prefix}slash sync` again.\n"
         "`{prefix}activityhub view` shows the current settings.\n"
         "`{prefix}activityhub webserver <host> <port>` moves the web server (the default is `{host} {port}`). If you "
         "move it, point your tunnel or proxy at the new address too.\n"

@@ -7,7 +7,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
-from ..common.discord_api import activities_enabled, launch_activity
+from ..common.discord_api import LAUNCH_COMMAND, activities_enabled, launch_activity
 from ..common.games import Game
 from ..views.launch import (
     STYLES,
@@ -114,10 +114,17 @@ class UserCommands(MixinMeta):
         if interaction.guild is not None and key in await self.config.guild(interaction.guild).disabled():
             await interaction.response.send_message(_("This activity is turned off in this server."), ephemeral=True)
             return False
+        in_server = interaction.guild_id is not None and self.bot.get_guild(interaction.guild_id) is not None
+        if not in_server and self.registry.games[key].opens_in == "server":
+            await interaction.response.send_message(
+                _("This activity only opens in a server this bot is in."), ephemeral=True
+            )
+            return False
         self.launches.remember(interaction.user.id, key)
         return True
 
-    @app_commands.command(name="activities", description="Open the activities menu")
+    @app_commands.command(name=LAUNCH_COMMAND, description="Open the activities menu")
+    # The slash sync opens it in DMs and group DMs too when the app has User Install on (discord_api.prepare_sync)
     @app_commands.guild_only()
     async def activities_slash(self, interaction: discord.Interaction):
         """Open the activities menu"""
@@ -131,7 +138,7 @@ class UserCommands(MixinMeta):
 
         Server admins can add the button to a message the bot already sent with `[p]activityhub pin`.
         """
-        await ctx.send(_("Pick a game to play together."), view=launch_view())
+        await ctx.send(_("Click to open the Activity Hub"), view=launch_view())
 
     @OwnerCommands.activityhub_group.command(name="pin")
     @commands.guild_only()
@@ -163,7 +170,7 @@ class UserCommands(MixinMeta):
         except ValueError as e:
             await ctx.send(str(e))
             return
-        name = game.name if game else _("Open Activities")
+        name = game.name if game else _("Open Activity Hub")
         custom_id = custom_id_for(game.key if game else None)
         view = editable_view(message)
         if has_button(view, custom_id):
@@ -224,7 +231,7 @@ class UserCommands(MixinMeta):
         if game is not None:
             game = unquote(game)
         if not game:
-            key, name = None, _("Open Activities")
+            key, name = None, _("Open Activity Hub")
         else:
             try:
                 found = self.find_game(game)

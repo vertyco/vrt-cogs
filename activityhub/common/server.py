@@ -13,7 +13,7 @@ from .files import build_id
 from .game_routes import GameRoutes
 from .hub_routes import HubRoutes
 from .presence import Presence
-from .replies import MAX_BODY
+from .replies import MAX_BODY, SERVER_ONLY, TURNED_OFF
 from .sessions import ActivityContext
 from .sockets import CLOSE_GOING_AWAY, Rooms
 
@@ -130,12 +130,20 @@ class HubServer:
         return self.context_for(header.removeprefix("Bearer "))
 
     async def game_off(self, guild_id: int | None, key: str) -> bool:
-        """Whether the bot owner turned this game off everywhere, or an admin turned it off in that server"""
+        """
+        Whether the bot owner turned this game off everywhere, an admin turned it off in that server, or it only
+        opens in the bot's servers and guild_id is None (a DM, or a server the bot isn't in)
+        """
+        return await self.why_off(guild_id, key) is not None
+
+    async def why_off(self, guild_id: int | None, key: str) -> str | None:
+        """What game_off is True for, worded for the player, or None when the game can be played there"""
         if key in await self.hub.config.disabled():
-            return True
+            return TURNED_OFF
         if guild_id is None:
-            return False
-        return key in await self.hub.config.guild_from_id(guild_id).disabled()
+            game = self.hub.registry.games.get(key)
+            return SERVER_ONLY if game is not None and game.opens_in == "server" else None
+        return TURNED_OFF if key in await self.hub.config.guild_from_id(guild_id).disabled() else None
 
     async def game_on(self, guild_id: int | None, key: str) -> bool:
         """Whether a game is installed and on in that server"""

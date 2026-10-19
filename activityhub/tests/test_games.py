@@ -919,3 +919,21 @@ async def test_a_broken_room_function_keeps_the_player_in_their_window(caplog, m
     assert "picky: room failed, so the player plays in their own window" in caplog.text
     assert "picky: room returned 'guild'" in caplog.text
     assert "picky: room took longer than 0.05 seconds, so the player plays in their own window" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_opens_in_defaults_to_everywhere(web_dir):
+    assert (await validate_game(GameCog(web_dir))).opens_in == "everywhere"
+
+
+@pytest.mark.asyncio
+async def test_opens_in_can_be_servers_only(web_dir):
+    assert (await validate_game(GameCog(web_dir, opens_in="server"))).opens_in == "server"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value", ["servers", "Server", "window", ["server"], None, 1])
+async def test_opens_in_only_knows_server_and_everywhere(web_dir, value):
+    with pytest.raises(GameError) as refused:
+        await validate_game(GameCog(web_dir, opens_in=value))
+    assert str(refused.value) == f'opens_in must be "server" or "everywhere", got {value!r}'

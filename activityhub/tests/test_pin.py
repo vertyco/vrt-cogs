@@ -117,7 +117,7 @@ async def test_pressing_the_button_while_the_hub_is_unloaded_says_so():
 async def test_pin_keeps_the_other_buttons():
     message = FakeMessage([row(button("tickets:open"), button("tickets:close"))])
     ctx = await pin(message)
-    assert ctx.sent == ["Added the Open Activities button to that message."]
+    assert ctx.sent == ["Added the Open Activity Hub button to that message."]
     assert message.custom_ids() == ["tickets:open", "tickets:close", CUSTOM_ID]
     # discord.py stores a view that isn't finished for the message, and its copied buttons would take the presses
     # meant for the cog that posted them
@@ -147,9 +147,9 @@ async def test_pin_refuses_a_message_in_another_server():
 
 @pytest.mark.asyncio
 async def test_pin_twice_says_it_is_already_there():
-    message = FakeMessage([row(button(CUSTOM_ID, "Open Activities"))])
+    message = FakeMessage([row(button(CUSTOM_ID, "Open Activity Hub"))])
     ctx = await pin(message)
-    assert ctx.sent == ["That message already has the Open Activities button."] and not message.edits
+    assert ctx.sent == ["That message already has the Open Activity Hub button."] and not message.edits
 
 
 @pytest.mark.asyncio
@@ -169,9 +169,9 @@ async def test_a_failed_edit_is_logged_and_reported(caplog):
 
 @pytest.mark.asyncio
 async def test_unpin_keeps_the_other_buttons():
-    message = FakeMessage([row(button("tickets:open"), button(CUSTOM_ID, "Open Activities"))])
+    message = FakeMessage([row(button("tickets:open"), button(CUSTOM_ID, "Open Activity Hub"))])
     ctx = await unpin(message)
-    assert ctx.sent == ["Took the Open Activities button off that message."]
+    assert ctx.sent == ["Took the Open Activity Hub button off that message."]
     assert message.custom_ids() == ["tickets:open"]
     assert message.edits[0].is_finished()
 
@@ -180,7 +180,7 @@ async def test_unpin_keeps_the_other_buttons():
 async def test_unpin_without_the_button_says_so():
     message = FakeMessage([row(button("tickets:open"))])
     ctx = await unpin(message)
-    assert ctx.sent == ["That message doesn't have the Open Activities button."] and not message.edits
+    assert ctx.sent == ["That message doesn't have the Open Activity Hub button."] and not message.edits
 
 
 @pytest.mark.asyncio
@@ -192,7 +192,7 @@ async def test_pin_and_unpin_on_a_components_v2_message():
     assert isinstance(pinned, discord.ui.LayoutView)
     assert [type(item) for item in pinned.children] == [discord.ui.TextDisplay, discord.ui.ActionRow]
     # The next command reads the message as Discord now shows it
-    message.components = [text, row(button(CUSTOM_ID, "Open Activities"))]
+    message.components = [text, row(button(CUSTOM_ID, "Open Activity Hub"))]
     await unpin(message)
     # The row the button sat in goes too, since Discord refuses an empty one
     assert [type(item) for item in message.edits[-1].children] == [discord.ui.TextDisplay]
@@ -203,14 +203,14 @@ async def test_pin_without_a_look_uses_the_default_button():
     message = FakeMessage()
     await pin(message)
     button = pinned_button(message)
-    assert (button.label, button.emoji, button.style) == ("Open Activities", None, discord.ButtonStyle.success)
+    assert (button.label, button.emoji, button.style) == ("Open Activity Hub", None, discord.ButtonStyle.success)
 
 
 @pytest.mark.asyncio
 async def test_pin_with_a_label_emoji_and_color():
     message = FakeMessage([row(button("tickets:open"))])
     ctx = await pin(message, "Play games emoji: 🎮 color: Blurple")
-    assert ctx.sent == ["Added the Open Activities button to that message."]
+    assert ctx.sent == ["Added the Open Activity Hub button to that message."]
     pinned = pinned_button(message)
     assert pinned.label == "Play games"
     assert str(pinned.emoji) == "🎮"
@@ -224,7 +224,7 @@ async def test_pin_with_a_custom_server_emoji():
     await pin(message, "emoji: <:pog:123456789012345678>")
     emoji = pinned_button(message).emoji
     assert (emoji.name, emoji.id) == ("pog", 123456789012345678)
-    assert pinned_button(message).label == "Open Activities"
+    assert pinned_button(message).label == "Open Activity Hub"
 
 
 @pytest.mark.asyncio
@@ -232,7 +232,7 @@ async def test_pin_again_changes_only_the_parts_given():
     pinned = {"type": 2, "style": 1, "custom_id": CUSTOM_ID, "label": "Play", "emoji": {"name": "🎮"}}
     message = FakeMessage([row(button("tickets:open"), pinned)])
     ctx = await pin(message, "color: red")
-    assert ctx.sent == ["Changed the Open Activities button on that message."]
+    assert ctx.sent == ["Changed the Open Activity Hub button on that message."]
     changed = pinned_button(message)
     assert (changed.label, str(changed.emoji), changed.style) == ("Play", "🎮", discord.ButtonStyle.danger)
     assert message.custom_ids() == ["tickets:open", CUSTOM_ID]
@@ -242,7 +242,7 @@ async def test_pin_again_changes_only_the_parts_given():
 @pytest.mark.asyncio
 async def test_pin_again_on_a_components_v2_message_changes_the_button():
     text = discord.components.TextDisplay({"type": 10, "id": 1, "content": "Welcome!"})
-    message = FakeMessage([text, row(button(CUSTOM_ID, "Open Activities"))], v2=True)
+    message = FakeMessage([text, row(button(CUSTOM_ID, "Open Activity Hub"))], v2=True)
     await pin(message, "Join in")
     assert isinstance(message.edits[-1], discord.ui.LayoutView)
     assert pinned_button(message).label == "Join in"
@@ -282,7 +282,7 @@ async def test_a_game_button_opens_that_game_after_a_restart():
 
 @pytest.mark.asyncio
 async def test_pin_a_game_next_to_the_menu_button():
-    message = FakeMessage([row(button(CUSTOM_ID, "Open Activities"))])
+    message = FakeMessage([row(button(CUSTOM_ID, "Open Activity Hub"))])
     ctx = await pin(message, "game: snake")
     assert ctx.sent == ["Added the Snake button to that message."]
     assert message.custom_ids() == [CUSTOM_ID, SNAKE_ID]
@@ -318,7 +318,7 @@ async def test_pin_a_game_twice_and_restyle_it():
 
 @pytest.mark.asyncio
 async def test_unpin_a_game_keeps_the_menu_button():
-    message = FakeMessage([row(button(CUSTOM_ID, "Open Activities"), button(SNAKE_ID, "Play Snake"))])
+    message = FakeMessage([row(button(CUSTOM_ID, "Open Activity Hub"), button(SNAKE_ID, "Play Snake"))])
     ctx = await unpin(message, "Snake")
     assert ctx.sent == ["Took the Snake button off that message."]
     assert message.custom_ids() == [CUSTOM_ID]

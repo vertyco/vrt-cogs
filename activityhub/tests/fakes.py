@@ -168,6 +168,20 @@ class FakeBot:
         self.admins = {ADMIN_ID}  # members holding Red's admin role
         self.mods = {MOD_ID}  # members holding Red's mod role
         self.tokens = {"client_secret": "secret"}
+        # Discord's app settings: whether User Install is on, and the app's global commands
+        self.user_install = False
+        self.commands = [{"type": 4, "name": "launch", "integration_types": [0]}]
+        self.http = SimpleNamespace(get_global_commands=self.global_commands)
+
+    async def application_info(self):
+        return SimpleNamespace(
+            flags=SimpleNamespace(embedded=True),
+            guild_integration_config=SimpleNamespace(),
+            user_integration_config=SimpleNamespace() if self.user_install else None,
+        )
+
+    async def global_commands(self, application_id: int) -> list[dict]:
+        return self.commands
 
     def get_user(self, user_id: int):
         return self.users.get(user_id)
@@ -351,6 +365,7 @@ class DemoCog:
         economy=None,
         platforms=None,
         room=None,
+        opens_in=None,
     ):
         self.qualified_name = cog_name
         self.web_dir = web_dir
@@ -361,6 +376,7 @@ class DemoCog:
         self.economy = economy
         self.platforms = platforms
         self.room = room
+        self.opens_in = opens_in
         self.events: list[tuple] = []
         self.join_error = False
         self.result: t.Any = None  # what the "give" action returns
@@ -399,6 +415,8 @@ class DemoCog:
             desc["platforms"] = self.platforms
         if self.room is not None:
             desc["room"] = self.room
+        if self.opens_in is not None:
+            desc["opens_in"] = self.opens_in
         return desc
 
     async def echo(self, ctx, data):

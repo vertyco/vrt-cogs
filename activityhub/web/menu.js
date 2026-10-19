@@ -262,8 +262,8 @@ function hideNotice() {
   layoutOrb();
 }
 
-// The cards, the pills, Join and a launch all come here. A game this device can't run says so instead, and false
-// comes back
+// The cards, the pills, Join and a launch all come here. A game the player can't open on this device or in this place
+// says so instead, and false comes back
 function openGame(key, follow = null) {
   if (!page.host.canOpen(key)) {
     page.host.refuseOpen(key);

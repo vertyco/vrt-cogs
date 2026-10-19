@@ -196,3 +196,17 @@ async def test_launch_must_be_the_first_reply(cog, discord_calls, first_reply):
         "hub.launch() must be the first reply to this interaction. Remove the defer() or send_message() before it."
     )
     assert discord_calls["launched"] == [] and cog.launches.wanted == {}
+
+
+@pytest.mark.asyncio
+async def test_a_servers_only_game_wont_launch_outside_the_bots_servers(tmp_path, discord_calls):
+    hub = make_hub()
+    local = DemoCog(write_demo_web(tmp_path / "local"), key="local", name="Local", cog_name="Local", opens_in="server")
+    assert await hub.registry.add(local) is not None
+    cog = HubCog(hub)
+    refused = "This activity only opens in a server this bot is in."
+    for inter in (interaction(in_guild=False), SimpleNamespace(**{**vars(interaction(False)), "guild_id": 999})):
+        assert await cog.launch(inter, "local") is False
+        assert inter.response.sent == [(refused, True)]
+    assert not discord_calls["launched"]
+    assert await cog.launch(interaction(), "local") is True

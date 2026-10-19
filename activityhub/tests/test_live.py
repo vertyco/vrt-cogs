@@ -222,8 +222,17 @@ async def test_turned_off_game_closes_4003(client, hub, demo):
 
 
 @pytest.mark.asyncio
+async def test_a_servers_only_game_closes_4003_outside_the_bots_servers(client, hub, tmp_path):
+    cog = DemoCog(write_demo_web(tmp_path / "local"), key="local", name="Local", cog_name="Local", opens_in="server")
+    assert await hub.registry.add(cog) is not None
+    ws = await open_live(client, hub, path="/games/local/ws", guild_id=None)
+    assert await close_code(ws) == 4003
+    assert not any(event[0] == "join" for event in cog.events)
+
+
+@pytest.mark.asyncio
 async def test_game_turned_off_while_the_connection_joins_closes_4003(client, hub, server, demo, monkeypatch):
-    real = server.game_off
+    real = server.why_off
     calls = []
 
     async def off_after_the_first_look(guild_id, key):
@@ -233,7 +242,7 @@ async def test_game_turned_off_while_the_connection_joins_closes_4003(client, hu
         await hub.config.guild_from_id(GUILD_ID).disabled.set([key])
         return await real(guild_id, key)
 
-    monkeypatch.setattr(server, "game_off", off_after_the_first_look)
+    monkeypatch.setattr(server, "why_off", off_after_the_first_look)
     ws = await open_live(client, hub)
     assert await next_json(ws) == READY
     assert await close_code(ws) == 4003

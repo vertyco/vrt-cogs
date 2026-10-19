@@ -15,6 +15,7 @@ NO_CACHE = {"Cache-Control": "no-cache"}
 BAD_REQUEST = "Bad request."
 SESSION_EXPIRED = "Your session expired. Go back to the menu to log in again."
 TURNED_OFF = "This activity is turned off in this server."
+SERVER_ONLY = "This activity only opens in a server this bot is in."
 NOT_SET_UP = "The bot owner hasn't finished setting up Activities yet."
 LOGIN_FAILED = "Discord login failed. Try opening the activity again."
 INSTANCE_FAILED = "Discord couldn't confirm where this activity is running. Try opening it again."

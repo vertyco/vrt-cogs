@@ -19,7 +19,6 @@ from .replies import (
     PAGE_MISSING,
     SESSION_EXPIRED,
     SOMETHING_WRONG,
-    TURNED_OFF,
     error,
     notice_page,
     read_object,
@@ -210,8 +209,9 @@ class GameRoutes:
     async def page(self, request: web.Request, game: Game) -> web.Response:
         if request.method not in READ_METHODS:
             raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
-        if await self.turned_off_here(request, game):
-            return self.notice(TURNED_OFF, 403)
+        reason = await self.turned_off_here(request, game)
+        if reason:
+            return self.notice(reason, 403)
         try:
             html = (game.web_dir / "index.html").read_text(encoding="utf-8")
             build = build_id(game.web_dir)
@@ -223,11 +223,11 @@ class GameRoutes:
         tags = f'<base href="/games/{game.key}/{build}/" />{self.importmap_tag(game)}'
         return web.Response(text=inject_head(html, tags), content_type="text/html", headers=NO_CACHE)
 
-    async def turned_off_here(self, request: web.Request, game: Game) -> bool:
+    async def turned_off_here(self, request: web.Request, game: Game) -> str | None:
         # A page load carries no session, so this can only trust the address's guild_id. It is a courtesy:
         # the real locks are on actions, raw routes and the live connection, which use the proven server
         guild_id = request.query.get("guild_id", "")
-        return guild_id.isdigit() and await self.server.game_off(int(guild_id), game.key)
+        return await self.server.why_off(int(guild_id), game.key) if guild_id.isdigit() else None
 
     async def file(self, request: web.Request, game: Game, path: str) -> web.StreamResponse:
         if request.method not in READ_METHODS:
@@ -255,8 +255,9 @@ class GameRoutes:
         ctx = self.server.request_context(request)
         if ctx is None:
             return error(SESSION_EXPIRED, 401)
-        if await self.server.game_off(ctx.guild_id, game.key):
-            return error(TURNED_OFF, 403)
+        reason = await self.server.why_off(ctx.guild_id, game.key)
+        if reason:
+            return error(reason, 403)
         ctx = await game.context(ctx)
         handler = game.actions.get(name)
         if handler is None:
@@ -308,8 +309,9 @@ class GameRoutes:
             # passed. hub.fetch logs in again and retries, so a handler only sees ctx=None for requests with no
             # login at all
             return web.json_response({"error": SESSION_EXPIRED}, status=401, headers=EXPIRED_HEADER)
-        if ctx is not None and await self.server.game_off(ctx.guild_id, game.key):
-            return error(TURNED_OFF, 403)
+        reason = await self.server.why_off(ctx.guild_id, game.key) if ctx is not None else None
+        if reason:
+            return error(reason, 403)
         if ctx is not None:
             ctx = await game.context(ctx)
         try:
@@ -336,8 +338,9 @@ class GameRoutes:
         if ctx is None:
             await ws.close(code=CLOSE_SESSION, message=b"Session missing or expired")
             return ws
-        if await self.server.game_off(ctx.guild_id, game.key):
-            await ws.close(code=CLOSE_TURNED_OFF, message=b"Turned off in this server")
+        reason = await self.server.why_off(ctx.guild_id, game.key)
+        if reason:
+            await ws.close(code=CLOSE_TURNED_OFF, message=reason.encode())
             return ws
         conn = Connection(ws, await game.context(ctx), game, self.server.rooms)
         conn.follow = self.server.presence.follow_target(ctx, first.get("follow"))

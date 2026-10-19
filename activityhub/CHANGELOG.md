@@ -1,5 +1,16 @@
 # ActivityHub Changelog
 
+## 0.13.0
+
+- The hub can open in DMs, group DMs and servers the bot isn't in. Turn on **User Install** for the app in the Developer Portal, then run `[p]slash sync`: the sync makes Discord's Launch button and `/activities` work in those places too. Until Discord verifies the app, only the bot owner and the app's developer team can open it there.
+- `[p]activityhub check` says whether the hub can open outside the bot's servers, and what to do if it can't.
+- Outside the bot's servers, a game that needs a server shows a "Servers only" note on its card, and a message instead of opening.
+- `[p]activities` now says "Click to open the Activity Hub", and its button (and a pinned button with no label of its own) reads **Open Activity Hub** instead of **Open Activities**. Buttons already on messages keep their old label.
+
+For game developers:
+
+- New `opens_in` field in `activityhub_game()`: `"server"` for a game that only opens in servers the bot is in, `"everywhere"` (the default) for one that also opens in DMs and servers the bot isn't in. Elsewhere the menu marks a `"server"` game and won't open it, and its actions, raw routes and live connection refuse the player. See "Servers only" in DEVELOPERS.md.
+
 ## 0.12.0
 
 - Settings has a new **Stats** tab for server admins and the bot owner. It shows how often each game gets played, by how many people, for how long, and how many plays were on phones, plus plays per day and the busiest hours of the day, for the last 7 days, 30 days or all time. Admins see their own server. The bot owner can pick any server, all of them together, or plays outside servers.

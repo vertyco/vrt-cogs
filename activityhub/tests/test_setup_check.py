@@ -4,6 +4,7 @@ import struct
 from types import SimpleNamespace
 
 import aiohttp
+import discord
 import pytest
 import pytest_asyncio
 from aiohttp import web
@@ -26,6 +27,7 @@ from activityhub.common.setup_check import (
     FAIL,
     PASS,
     WARN,
+    check_everywhere,
     check_games,
     check_mapping,
     check_secret,
@@ -207,11 +209,11 @@ async def test_run_checks_tests_the_mapping_through_discord(monkeypatch):
     hub.bot.application_flags = SimpleNamespace(embedded=True)
     results = await setup_check.run_checks(hub, "https://games.example.com/", "!")
     assert pinged == [f"https://{APP_ID}.discordsays.com", "https://games.example.com"]
-    assert [status for status, text in results] == [PASS, PASS, PASS, WARN, PASS, WARN]
+    assert [status for status, text in results] == [PASS, PASS, PASS, WARN, WARN, PASS, WARN]
     pinged.clear()
     results = await setup_check.run_checks(hub, None, "!")
     assert pinged == [f"https://{APP_ID}.discordsays.com"]
-    assert len(results) == 5
+    assert len(results) == 6
 
 
 @pytest.mark.asyncio
@@ -250,3 +252,37 @@ def test_check_games(tmp_path):
     assert check_games(hub)[0] == WARN
     register(hub, DemoCog(write_demo_web(tmp_path / "demo")))
     assert check_games(hub) == (PASS, "Activities installed (1): Demo")
+
+
+@pytest.mark.asyncio
+async def test_check_everywhere_without_user_install():
+    status, text = await check_everywhere(checking_hub(), "!")
+    assert status == WARN and "turn on User Install" in text and "`!slash sync`" in text
+
+
+@pytest.mark.asyncio
+async def test_check_everywhere_before_the_sync():
+    hub = checking_hub()
+    hub.bot.user_install = True
+    status, text = await check_everywhere(hub, "!")
+    assert status == WARN and "still only opens in servers" in text and "`!slash sync`" in text
+
+
+@pytest.mark.asyncio
+async def test_check_everywhere_after_the_sync():
+    hub = checking_hub()
+    hub.bot.user_install = True
+    hub.bot.commands = [{"type": 1, "name": "activities"}, {"type": 4, "name": "launch", "integration_types": [0, 1]}]
+    status, text = await check_everywhere(hub, "!")
+    assert status == PASS and "developer team" in text
+
+
+@pytest.mark.asyncio
+async def test_check_everywhere_when_discord_cant_say():
+    async def down(application_id):
+        raise discord.HTTPException(SimpleNamespace(status=503, reason="Unavailable"), "down")
+
+    hub = checking_hub()
+    hub.bot.http = SimpleNamespace(get_global_commands=down)
+    status, text = await check_everywhere(hub, "!")
+    assert status == WARN and "Couldn't ask Discord" in text

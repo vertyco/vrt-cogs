@@ -3,20 +3,24 @@ import logging
 import typing as t
 
 import aiohttp
+import discord
 from redbot.core.i18n import Translator
 
 from .discord_api import (
     DISCORD_TIMEOUT,
     DNS,
     DROPPED,
+    ENTRY_POINT,
     NO_MAPPING,
     NOT_HUB,
     REFUSED,
     STATUS,
     TIMEOUT,
     TLS,
+    USER_INSTALL,
     PingFailed,
     activities_enabled,
+    install_types,
     ping_hub,
     proxy_url,
     secret_works,
@@ -71,6 +75,32 @@ async def check_activities(hub: t.Any) -> tuple[str, str]:
     if await activities_enabled(hub.bot):
         return PASS, _("Activities are turned on for this bot.")
     return FAIL, _("Activities are off for this bot. Turn them on in the Developer Portal under Activities > Settings.")
+
+
+async def check_everywhere(hub: t.Any, prefix: str) -> tuple[str, str]:
+    """Whether the hub opens outside this bot's servers: User Install on, and the Entry Point synced with it"""
+    types = await install_types(hub.bot)
+    try:
+        commands = await hub.bot.http.get_global_commands(hub.bot.application_id)
+    except discord.HTTPException as e:
+        log.warning("Couldn't fetch the global commands", exc_info=e)
+        commands = None
+    if types is None or commands is None:
+        return WARN, _("Couldn't ask Discord where the hub can open. Try again in a moment.")
+    if USER_INSTALL not in types:
+        return WARN, _(
+            "The hub only opens in servers this bot is in. To open it in DMs and other servers too, turn on "
+            "User Install in the Developer Portal under Installation, then run `{}slash sync`."
+        ).format(prefix)
+    entry = next((command for command in commands if command.get("type") == ENTRY_POINT), None)
+    if entry is None or USER_INSTALL not in (entry.get("integration_types") or []):
+        return WARN, _(
+            "User Install is on, but Discord's Launch button still only opens in servers. Run `{}slash sync`."
+        ).format(prefix)
+    return PASS, _(
+        "The hub opens in DMs and other servers too. Until Discord verifies this app, only you and your "
+        "developer team can open it outside this bot's servers."
+    )
 
 
 async def try_ping(http: aiohttp.ClientSession, base_url: str, application_id: int) -> str | PingFailed:
@@ -178,10 +208,10 @@ async def run_checks(hub: t.Any, public_host: str | None, prefix: str) -> list[t
         pings = [try_ping(http, proxy_url(app_id), app_id)]
         if host:
             pings.append(try_ping(http, f"https://{host}", app_id))
-        secret, activities, mapped, *public = await asyncio.gather(
-            check_secret(hub, http, prefix), check_activities(hub), *pings
+        secret, activities, everywhere, mapped, *public = await asyncio.gather(
+            check_secret(hub, http, prefix), check_activities(hub), check_everywhere(hub, prefix), *pings
         )
-    results = [await check_server(hub, prefix), secret, activities]
+    results = [await check_server(hub, prefix), secret, activities, everywhere]
     seen = None if isinstance(mapped, PingFailed) else mapped
     if host:
         results.append(await check_public(hub, public[0], host, seen))

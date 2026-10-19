@@ -82,6 +82,7 @@ def test_game_json():
         "thumbnail": "/games/mid/abc123/art/wide.png",
         "economy": None,
         "platforms": ["desktop", "mobile"],
+        "opensIn": "everywhere",
     }
     plain = game_json(game("mid", "Middle"), "abc123", "Bet credits")
     assert plain["icon"] is None and plain["thumbnail"] is None and plain["economy"] == "Bet credits"
@@ -126,3 +127,9 @@ def test_the_menu_data_carries_each_games_platforms(tmp_path):
     desk = Game(key="desk", name="Desk", web_dir=tmp_path, cog=None, platforms=["desktop"])
     assert game_json(desk, "b")["platforms"] == ["desktop"]
     assert game_json(Game(key="any", name="Any", web_dir=tmp_path, cog=None), "b")["platforms"] == ["desktop", "mobile"]
+
+
+def test_the_menu_data_says_where_each_game_opens(tmp_path):
+    local = Game(key="local", name="Local", web_dir=tmp_path, cog=None, opens_in="server")
+    assert game_json(local, "b")["opensIn"] == "server"
+    assert game_json(Game(key="any", name="Any", web_dir=tmp_path, cog=None), "b")["opensIn"] == "everywhere"

@@ -2586,6 +2586,36 @@ def test_on_a_phone_a_desktop_only_game_is_marked_and_says_why_instead_of_openin
     assert driver.execute_script("return document.querySelector('.hub-confirm-leave').hidden") is False
 
 
+def add_servers_only_game(live, tmp_path):
+    folder = write_demo_web(tmp_path / "local")
+    register(live.hub, DemoCog(folder, key="local", name="Local Game", cog_name="Local", opens_in="server"))
+    live.hub.config.globals["look"] = {"theme": "standard"}
+
+
+def test_outside_the_bots_servers_a_servers_only_game_is_marked_and_says_why(driver, live, tmp_path):
+    add_servers_only_game(live, tmp_path)
+    live.location = {"guild_id": None, "channel_id": 5}
+    open_menu(driver, live, "?frame_id=f&instance_id=i-1&channel_id=5&platform=desktop")
+    card = driver.find_element(By.CSS_SELECTOR, '.card[data-key="local"]')
+    assert "wrong-platform" in card.get_attribute("class") and "Servers only" in card.text
+    assert "wrong-platform" not in driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').get_attribute("class")
+    card.click()
+    wait_for(driver, f"!{CONFIRM}.hidden")
+    assert driver.find_element(By.CSS_SELECTOR, ".hub-confirm-text").text == (
+        "Local Game only opens in a Discord server this bot is in."
+    )
+    assert driver.find_elements(By.ID, "game-frame") == []
+
+
+def test_in_the_bots_servers_a_servers_only_game_opens(driver, live, tmp_path):
+    add_servers_only_game(live, tmp_path)
+    open_menu(driver, live, DISCORD_QUERY)
+    card = driver.find_element(By.CSS_SELECTOR, '.card[data-key="local"]')
+    assert "wrong-platform" not in card.get_attribute("class") and "Servers only" not in card.text
+    card.click()
+    wait_for(driver, "document.body.classList.contains('playing')")
+
+
 def test_on_desktop_a_mobile_only_game_is_marked_and_says_why(driver, live, tmp_path):
     folder = write_demo_web(tmp_path / "pocket")
     register(live.hub, DemoCog(folder, key="pocket", name="Pocket Game", cog_name="Pocket", platforms=["mobile"]))

@@ -6,12 +6,26 @@ import pytest
 
 from activityhub.bundled.games import bundled_games
 from activityhub.common.files import build_id
-from activityhub.common.replies import SESSION_EXPIRED
-from activityhub.tests.fakes import GUILD_ID, MEMBER_ID, OWNER_ID, DemoCog, session_headers, write_demo_web
+from activityhub.common.replies import SERVER_ONLY, SESSION_EXPIRED
+from activityhub.tests.fakes import (
+    GUILD_ID,
+    MEMBER_ID,
+    OWNER_ID,
+    DemoCog,
+    session_headers,
+    write_demo_web,
+)
 
 
 async def turn_off(hub, key="demo"):
     await hub.config.guild_from_id(GUILD_ID).disabled.set([key])
+
+
+async def servers_only(hub, folder):
+    """A game that only opens in the bot's servers"""
+    cog = DemoCog(write_demo_web(folder), key="local", name="Local", cog_name="Local", opens_in="server")
+    assert await hub.registry.add(cog) is not None
+    return cog
 
 
 def page_imports(text):
@@ -401,3 +415,14 @@ async def test_an_included_games_page_also_gets_the_shared_frame(client, server,
     assert page_imports(text) == {"activityhub": f"{hub_root}sdk.js", "activityhub/arcade.js": f"{hub_root}arcade.js"}
     # A link to index.html itself gets the same page
     assert page_imports(await (await client.get("/games/snake/b/index.html")).text()) == page_imports(text)
+
+
+@pytest.mark.asyncio
+async def test_a_servers_only_game_refuses_players_outside_the_bots_servers(client, hub, tmp_path):
+    await servers_only(hub, tmp_path / "local")
+    outside = session_headers(hub, guild_id=None)
+    resp = await client.post("/games/local/api/echo", json={}, headers=outside)
+    assert resp.status == 403 and (await resp.json())["error"] == SERVER_ONLY
+    assert (await client.get("/games/local/raw/hello", headers=outside)).status == 403
+    assert (await client.post("/games/local/api/echo", json={}, headers=session_headers(hub))).status == 200
+    assert (await client.get("/games/local/raw/hello", headers=session_headers(hub))).status == 200

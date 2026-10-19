@@ -24,7 +24,7 @@ class LaunchButton(
     discord.ui.DynamicItem[discord.ui.Button], template=r"activityhub:open(?::(?P<key>[a-z0-9-]{2,32}))?"
 ):
     """
-    The Open Activities button, or with a game key, a button that opens that game. discord.py finds it by its
+    The Open Activity Hub button, or with a game key, a button that opens that game. discord.py finds it by its
     custom_id on any message, so a button posted or pinned anywhere keeps working after restarts, and nothing records
     which messages have one. Its label, emoji and color live only on the message, so a pinned button keeps its own look
     """
@@ -38,7 +38,7 @@ class LaunchButton(
     ) -> None:
         super().__init__(
             discord.ui.Button(
-                label=label or _("Open Activities"),
+                label=label or _("Open Activity Hub"),
                 emoji=emoji,
                 style=style or discord.ButtonStyle.success,
                 custom_id=custom_id_for(key),

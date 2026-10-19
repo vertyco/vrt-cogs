@@ -87,6 +87,8 @@ def game_json(game: Game, build: str, line: str | None = None) -> dict:
         "economy": line,
         # Where the game works, so the menu can mark it on the other platform
         "platforms": game.platforms,
+        # "server" when it only opens in the bot's servers, so the menu can mark it everywhere else
+        "opensIn": game.opens_in,
     }
 
 
