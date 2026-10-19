@@ -1,6 +1,6 @@
 {
   "author": ["Vertyco"],
-  "description": "Turn-based artillery for ActivityHub, ported from 2DPlay's Flash game Tanks. Up to five players aim, set their power and fire across hills that blow apart, with wind shifting every turn. Damage earns money for the shop between rounds: 14 weapons, shields, parachutes, teleports and upgrades. The host can fill any seat with a computer tank at one of five difficulties, and a global leaderboard ranks everyone by match wins. Works on desktop and on phones held either way. Needs ActivityHub 0.5.0 or later.",
+  "description": "Turn-based artillery for ActivityHub, a remake of 2DPlay's Flash game Tanks with all-new art and sound. Up to five players aim, set their power and fire across hills that blow apart, with wind shifting every turn. Damage earns money for the shop between rounds: 14 weapons, shields, parachutes, teleports and upgrades. The host can fill any seat with a computer tank at one of five difficulties, and a global leaderboard ranks everyone by match wins. Works on desktop and on phones held either way. Needs ActivityHub 0.5.0 or later.",
   "disabled": false,
   "end_user_data_statement": "This cog stores each player's Discord user ID, Discord display name, and their Tanks match wins, kills and matches played, for the global leaderboard.",
   "hidden": true,
@@ -10,7 +10,7 @@
   "permissions": [],
   "required_cogs": {},
   "requirements": [],
-  "short": "Turn-based artillery for ActivityHub, ported from the Flash game Tanks",
+  "short": "Turn-based artillery for ActivityHub, a remake of the Flash game Tanks",
   "tags": ["activity", "games", "fun", "multiplayer", "vert"],
   "type": "COG"
 }

@@ -1,5 +1,14 @@
 # Tanks Changelog
 
+## 0.3.0
+
+- All-new art and sound. Tanks is now a remake: the rules, weapons, prices and every number stay the same, and none of the Flash game's pictures or sounds remain.
+- New tanks, barrels, shells, shields, parachutes, trees and 26 shop icons, all drawn in one cartoon style.
+- Three new landscapes (snowy peaks, green hills and a desert of red rock), with a line along the top of the ground.
+- New explosions with a shock ring, and a new teleport light column, tank wreck and turn marker. Each lasts exactly as long as before, and every blast still covers the crater it digs.
+- New sound effects from Kenney's free packs, each played a little higher or lower and louder or quieter every time.
+- New menu icon and preview picture.
+
 ## 0.2.1
 
 - On a phone held upright, the shop, setup and results screens scroll again. A long shop ran off the bottom of the screen with no way to reach the items below or the Done button.

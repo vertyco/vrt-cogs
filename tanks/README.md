@@ -1,9 +1,9 @@
 # Tanks
 
-Turn-based artillery for [ActivityHub](../activityhub/README.md), ported from 2DPlay's Flash game "Tanks" (around 2000). Each player aims a barrel, sets the power and fires across hills that blow apart, with the wind shifting every turn. Damage earns money, and money buys weapons and gear between rounds.
+Turn-based artillery for [ActivityHub](../activityhub/README.md), a remake of 2DPlay's Flash game "Tanks" (around 2000) with all-new art and sound. Each player aims a barrel, sets the power and fires across hills that blow apart, with the wind shifting every turn. Damage earns money, and money buys weapons and gear between rounds.
 
 - **Up to five tanks.** People take seats; the host can put a computer tank in any empty seat, at one of the original's five difficulties. Everyone else in the voice channel watches.
-- **The whole original game.** All 14 weapons (from the small missile to the air strike), shields, parachutes, repair kits, teleports and upgrades, with the original's prices, three landscapes, art and sounds.
+- **The whole original game.** All 14 weapons (from the small missile to the air strike), shields, parachutes, repair kits, teleports and upgrades, with the original's prices and three landscapes.
 - **Turns on a clock.** A minute for each turn and for the shop by default (the host picks 30 seconds to 2 minutes, or no limit), so nobody waits on an idle player. One person against computer tanks keeps nobody waiting, so they get no clock. A player who drops keeps their tank, and a computer plays it for them after a minute away.
 - **Global leaderboard.** Match wins across every server on the bot, with kills breaking ties.
 - **Desktop and phones.** The original's keys on a keyboard; drag to aim, sliders and buttons on a touch screen. Works held upright or sideways.
@@ -28,7 +28,7 @@ The bot runs the whole game: the ground, every shot, damage, money and turn orde
 
 ## Credits
 
-Tanks is a port of 2DPlay's Flash game "Tanks", and uses its art and sounds. Drawing uses PixiJS (MIT License).
+Tanks is a remake of 2DPlay's Flash game "Tanks": the rules and numbers come from the original, and all art and sound are new. The tanks, shots, shields, trees, landscapes and shop icons are drawn for this cog, and the explosions, teleport and turn marker are drawn in the page. The sound effects are from Kenney's Sci-Fi Sounds, Impact Sounds, Interface Sounds and RPG Audio (CC0). Drawing uses PixiJS (MIT License).
 
 ## For developers
 

@@ -54,13 +54,43 @@ const NAME_ROWS = 5;
 const TICK_END = 13;
 // The original's tank colors, one per seat
 const COLORS = [0xf02400, 0x00cc33, 0x0033ff, 0xf0df0f, 0xea9300];
-const GROUND_COLORS = { 1: 0xffffff, 2: 0x78ab00, 3: 0xeaddb5 };
+const GROUND_COLORS = { 1: 0xf7fbff, 2: 0x4f9a2f, 3: 0xe6c27f };
+// A line along the ground's top in each landscape: blue shadow on snow, fresh grass, darker sand
+const GROUND_EDGES = { 1: 0xbfd2ea, 2: 0x8fd14f, 3: 0xc99a55 };
+const GROUND_EDGE_WIDTH = 1.5;
 const SHIELD_ART = { 3: "shield_weak", 4: "shield", 5: "shield_strong", 6: "shield_super" };
-// The teleport's frames: the beam starts at the tank, the tank vanishes, the beam moves to the spot, the tank
-// appears there. Its first frame is the picking cursor
+// The teleport's frames, as the bot times them (the first is never played): a light column rises at the tank, the
+// tank vanishes, the column moves to the spot, and the tank appears there
 const TELEPORT_HIDE = 17;
 const TELEPORT_MOVE = 35;
 const TELEPORT_SHOW = 41;
+const TELEPORT_END = 48;
+const BEAM_COLOR = 0x4fd8ff;
+const BEAM_WIDE = 7;
+const BEAM_TALL = 60;
+// Firing kicks the barrel back along itself for its first frames, then it slides forward again
+const RECOIL_FRAMES = 15;
+const RECOIL_KICK = 2;
+const RECOIL_PX = 2.2;
+// The turn marker: two gold rings pulse out round the tank and a small arrow bobs over it, for 35 frames
+const TURN_FRAMES = 35;
+const TURN_COLOR = 0xffd23f;
+const OUTLINE = 0x27303f;
+// A destroyed tank: a flash, a puff of smoke and pieces of its body thrown out, for 11 frames. Each piece is
+// [x speed, y speed, size] in pixels a frame, the same on every screen
+const WRECK_FRAMES = 11;
+const WRECK_FALL = 0.35;
+const DEBRIS = [
+  [-1.6, -2.4, 2.2],
+  [1.4, -2.8, 1.8],
+  [-0.6, -3.4, 1.4],
+  [2.2, -1.6, 1.6],
+  [-2.4, -1.2, 1.2],
+  [0.5, -2.2, 2.4],
+];
+// The shock ring round a blast is this flat, as the fireball is about twice as wide as it is tall
+const RING_FLAT = 0.48;
+const RING_COLOR = 0xfff1c4;
 // How quickly a tank slides to where the bot last put it
 const FOLLOW_RATE = 15;
 // Your own driving runs ahead of the bot by at most this many pixels
@@ -115,19 +145,52 @@ export function layoutNames(boxes) {
   return placed;
 }
 
-// An animation's frames, named prefix_01, prefix_02 and so on
-function frameNames(art, prefix) {
-  return Object.keys(art.info)
-    .filter((name) => name.startsWith(`${prefix}_`) && /_\d+$/.test(name))
-    .sort();
-}
-
 function place(art, name, x = 0, y = 0) {
   const node = new Sprite(art.texture(name));
   const info = art.info[name];
   node.anchor.set(info.ax / info.w, info.ay / info.h);
   node.position.set(x, y);
   return node;
+}
+
+// How wide the teleport's light column is on each frame: it opens at the tank until the tank vanishes, closes, and
+// opens again at the spot until the tank appears there
+function beamWidth(frame) {
+  const close = 6;
+  if (frame < TELEPORT_HIDE) {
+    return (BEAM_WIDE * (frame - 1)) / (TELEPORT_HIDE - 1);
+  }
+  if (frame < TELEPORT_HIDE + close) {
+    return BEAM_WIDE * (1 - (frame - TELEPORT_HIDE) / close);
+  }
+  if (frame < TELEPORT_MOVE) {
+    return 0;
+  }
+  if (frame < TELEPORT_SHOW) {
+    return (BEAM_WIDE * (frame - TELEPORT_MOVE + 1)) / (TELEPORT_SHOW - TELEPORT_MOVE);
+  }
+  return BEAM_WIDE * (1 - (frame - TELEPORT_SHOW) / (TELEPORT_END - TELEPORT_SHOW));
+}
+
+// The light column, standing on its node's point: a soft outer glow, a bright core fading toward the top, a pool of
+// light on the ground and sparks rising through it
+function drawBeam(column, width, frame) {
+  column.clear();
+  if (width <= 0) {
+    return;
+  }
+  const bands = 5;
+  for (let band = 0; band < bands; band += 1) {
+    const top = -BEAM_TALL + (band * BEAM_TALL) / bands;
+    const alpha = (band + 1) / bands;
+    column.rect(-width / 2, top, width, BEAM_TALL / bands).fill({ color: BEAM_COLOR, alpha: 0.3 * alpha });
+    column.rect(-width / 5, top, width / 2.5, BEAM_TALL / bands).fill({ color: 0xffffff, alpha: 0.75 * alpha });
+  }
+  column.ellipse(0, 3, width * 1.4, width * 0.4).fill({ color: BEAM_COLOR, alpha: 0.5 });
+  for (let spark = 0; spark < 4; spark += 1) {
+    const rise = (frame * 3 + spark * 15) % BEAM_TALL;
+    column.circle(Math.sin(spark * 2.1 + frame * 0.5) * width * 0.6, -rise, 0.8).fill({ color: 0xffffff, alpha: 0.9 });
+  }
 }
 
 // One tank: its shield and parachute behind it, its tracks, its body in the seat's color, and its barrel
@@ -140,8 +203,9 @@ class TankView {
     const color = place(art, "tank_body");
     color.tint = COLORS[seat];
     this.body.addChild(place(art, "tank_tracks"), color);
-    this.barrelFrames = frameNames(art, "barrel").map((name) => art.texture(name));
-    this.barrel = place(art, "barrel_01");
+    this.barrel = place(art, "barrel");
+    this.barrelAnchor = this.barrel.anchor.x;
+    this.barrelWidth = art.info.barrel.w;
     this.recoil = -1;
     // Made once and only given new text, since a new Text each frame would cost a texture each time
     this.label = new Text({ text: "", style: NAME_STYLE });
@@ -250,13 +314,17 @@ class TankView {
       return;
     }
     this.recoil += dt * STEP_RATE;
-    const frame = Math.floor(this.recoil);
-    if (frame >= this.barrelFrames.length) {
+    if (this.recoil >= RECOIL_FRAMES) {
       this.recoil = -1;
-      this.barrel.texture = this.barrelFrames[0];
+      this.barrel.anchor.x = this.barrelAnchor;
       return;
     }
-    this.barrel.texture = this.barrelFrames[frame];
+    const back =
+      this.recoil < RECOIL_KICK
+        ? this.recoil / RECOIL_KICK
+        : 1 - (this.recoil - RECOIL_KICK) / (RECOIL_FRAMES - RECOIL_KICK);
+    // The barrel points left from its anchor, so moving the anchor left within it slides it back toward the tank
+    this.barrel.anchor.x = this.barrelAnchor - (RECOIL_PX * back) / this.barrelWidth;
   }
 }
 
@@ -302,6 +370,7 @@ class Scene {
     this.landscape = null;
     this.tops = null;
     this.groundColor = GROUND_COLORS[1];
+    this.groundEdge = GROUND_EDGES[1];
     this.groundDirty = false;
     this.trees = [];
     this.tanks = new Map();
@@ -315,7 +384,7 @@ class Scene {
     this.aimLine = new Graphics();
     this.aimLine.visible = false;
     this.cursor = place(art, "strike_cursor");
-    this.target = place(art, "teleport_01");
+    this.target = place(art, "teleport_target");
     this.layers.marks.addChild(this.aimLine, this.cursor, this.target);
     this.cursor.visible = false;
     this.target.visible = false;
@@ -375,6 +444,7 @@ class Scene {
     }
     this.landscape = landscape;
     this.groundColor = GROUND_COLORS[landscape];
+    this.groundEdge = GROUND_EDGES[landscape];
     this.groundDirty = true;
     const name = `land${landscape}`;
     const [x, y] = this.art.at[name];
@@ -554,12 +624,13 @@ class Scene {
     this.tanks.get(seat)?.fire();
   }
 
-  // The shell's explosion: the fireball grows, then a glow fades out
+  // The shell's explosion: the fireball swells with a shock ring racing out, then smoke rolls up and fades
   blast(x, y, key, rotation) {
     const { scale, frames } = this.art.blasts[BLAST_ART[key]];
     const node = new Container();
     node.position.set(x, y);
     node.scale.set(scale[0], scale[1]);
+    const ring = node.addChild(new Graphics());
     const sprites = {};
     this.layers.shells.addChild(node);
     this.flipbooks.push(
@@ -568,6 +639,14 @@ class Scene {
         root.children.forEach((child) => {
           child.visible = false;
         });
+        if (frame.ring) {
+          const [radius, alpha] = frame.ring;
+          ring.visible = true;
+          ring
+            .clear()
+            .ellipse(0, frame.y, radius, radius * RING_FLAT)
+            .stroke({ color: RING_COLOR, width: 1.2 + radius * 0.06, alpha });
+        }
         if (!frame.art) {
           return;
         }
@@ -583,40 +662,72 @@ class Scene {
     this.onEvent("boom", BIG_BOOMS.has(key) ? "boom_big" : MEDIUM_BOOMS.has(key) ? "boom_medium" : "boom_small");
   }
 
+  // A destroyed tank: a flash, smoke, and pieces of it in its seat's color thrown up and falling
   die(seat, x, y) {
     this.tanks.get(seat).view = null;
-    this.animate("tank_boom", x, y, this.layers.tanks);
+    const node = new Container();
+    node.position.set(x, y);
+    const fire = node.addChild(place(this.art, "fireball"));
+    const smoke = node.addChild(place(this.art, "smoke"));
+    const bits = node.addChild(new Graphics());
+    this.layers.tanks.addChild(node);
+    this.flipbooks.push(
+      new Flipbook(node, WRECK_FRAMES, (root, frame) => {
+        const t = frame / (WRECK_FRAMES - 1);
+        fire.visible = frame < 5;
+        fire.scale.set(0.12 + frame * 0.07, 0.16 + frame * 0.09);
+        smoke.visible = frame >= 3;
+        smoke.scale.set(0.5 + t * 0.7, 0.4 + t * 0.5);
+        smoke.y = -2 - t * 6;
+        smoke.alpha = 0.9 * (1 - t);
+        bits.clear();
+        for (const [vx, vy, size] of DEBRIS) {
+          const px = vx * frame;
+          const py = vy * frame + WRECK_FALL * frame * frame;
+          bits.rect(px - size / 2, py - size / 2, size, size);
+        }
+        bits.fill(COLORS[seat]).stroke({ color: OUTLINE, width: 0.4 });
+      }),
+    );
     this.onEvent("die", seat);
   }
 
   beam(seat, x0, y0, x1, y1) {
-    const names = frameNames(this.art, "teleport").slice(1);
     const tank = this.tank(seat);
-    const node = place(this.art, names[0], x0, y0);
+    const node = new Graphics();
     this.layers.effects.addChild(node);
     this.flipbooks.push(
-      new Flipbook(node, names.length, (sprite, index) => {
-        // Frame 2 of the original is the first one played
+      new Flipbook(node, TELEPORT_END - 1, (column, index) => {
+        // The first frame is never played
         const frame = index + 2;
-        sprite.texture = this.art.texture(names[index]);
-        sprite.position.set(frame >= TELEPORT_MOVE ? x1 : x0, frame >= TELEPORT_MOVE ? y1 : y0);
+        const there = frame >= TELEPORT_MOVE;
+        column.position.set(there ? x1 : x0, there ? y1 : y0);
+        drawBeam(column, beamWidth(frame), frame);
         tank.hidden = frame >= TELEPORT_HIDE && frame < TELEPORT_SHOW;
       }),
     );
   }
 
-  // The arrow over the tank whose turn it is
+  // Gold rings pulsing out round the tank whose turn it is, with a small arrow bobbing over it
   blink(view) {
-    this.animate("blink", view.x, view.y - 10, this.layers.effects);
-  }
-
-  animate(prefix, x, y, layer) {
-    const names = frameNames(this.art, prefix);
-    const node = place(this.art, names[0], x, y);
-    layer.addChild(node);
+    const node = new Graphics();
+    node.position.set(view.x, view.y);
+    this.layers.effects.addChild(node);
     this.flipbooks.push(
-      new Flipbook(node, names.length, (sprite, frame) => {
-        sprite.texture = this.art.texture(names[frame]);
+      new Flipbook(node, TURN_FRAMES, (marker, frame) => {
+        const fade = Math.min(1, frame / 3, (TURN_FRAMES - 1 - frame) / 4);
+        marker.clear();
+        for (const start of [0, 0.5]) {
+          const phase = ((frame / TURN_FRAMES) * 2 + start) % 1;
+          const radius = 7 + phase * 9;
+          marker.ellipse(0, 2, radius, radius * 0.42).stroke({ color: TURN_COLOR, width: 1.2, alpha: (1 - phase) * fade });
+        }
+        const bob = Math.abs(Math.sin((frame / TURN_FRAMES) * Math.PI * 3)) * 1.5;
+        const top = -14.5 - bob;
+        marker
+          .poly([-3, top, 3, top, 0, top + 4])
+          .fill({ color: TURN_COLOR, alpha: fade })
+          .stroke({ color: OUTLINE, width: 0.6, alpha: fade, join: "round" });
       }),
     );
   }
@@ -643,16 +754,21 @@ class Scene {
     this.flipbooks = this.flipbooks.filter((book) => book.step(dt));
   }
 
-  // The ground as one shape: a step for each column, from its top down past the bottom of the field
+  // The ground as one shape: a step for each column, from its top down past the bottom of the field, with a line
+  // along its top
   drawGround() {
     this.groundDirty = false;
-    const points = [0, HEIGHT + 1];
-    this.tops.forEach((top, column) => {
-      const y = Math.min(HEIGHT + 1, top);
-      points.push(column, y, column + 1, y);
+    const top = [];
+    this.tops.forEach((y, column) => {
+      const clipped = Math.min(HEIGHT + 1, y);
+      top.push(column, clipped, column + 1, clipped);
     });
-    points.push(WIDTH, HEIGHT + 1);
-    this.ground.clear().poly(points).fill(this.groundColor);
+    this.ground
+      .clear()
+      .poly([0, HEIGHT + 1, ...top, WIDTH, HEIGHT + 1])
+      .fill(this.groundColor)
+      .poly(top, false)
+      .stroke({ color: this.groundEdge, width: GROUND_EDGE_WIDTH, join: "round" });
   }
 
   fit() {

@@ -1,8 +1,8 @@
-// Tanks' sound: the original's effects, played through the Web Audio API so several can overlap.
+// Tanks' sound: short effects from Kenney's free packs, played through the Web Audio API so several can overlap.
 const VOLUME = 0.7;
 // Every game on the hub shares one storage, so the key carries the game's name
 const SOUND_KEY = "tanks:sound";
-// The events the page plays sounds for, and the original's sound for each
+// The events the page plays sounds for, and the sound file for each
 const FILES = {
   turret: "turret",
   click: "click",
@@ -14,6 +14,9 @@ const FILES = {
 };
 // The barrel's turning sound restarts at most this often while it keeps turning
 const TURRET_GAP_MS = 120;
+// Each play shifts the pitch and volume a little either way, so a sound heard again and again never repeats exactly
+const PITCH_SPREAD = 0.08;
+const VOLUME_SPREAD = 0.15;
 
 function readSetting() {
   try {
@@ -109,7 +112,10 @@ export class Sound {
     }
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(this.out);
+    source.playbackRate.value = 1 + (Math.random() * 2 - 1) * PITCH_SPREAD;
+    const gain = this.ctx.createGain();
+    gain.gain.value = 1 - Math.random() * VOLUME_SPREAD;
+    source.connect(gain).connect(this.out);
     source.start();
   }
 

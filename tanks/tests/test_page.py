@@ -32,8 +32,7 @@ ART = [
     "tree2",
     "tank_tracks",
     "tank_body",
-    "tank_boom_01",
-    "barrel_01",
+    "barrel",
     "shell",
     "fireball",
     "smoke",
@@ -42,8 +41,7 @@ ART = [
     "shield",
     "shield_strong",
     "shield_super",
-    "teleport_01",
-    "blink_01",
+    "teleport_target",
     "strike_cursor",
 ]
 SOUNDS = ["tank_death", "boom_big", "boom_medium", "boom_small", "click", "shop", "turret"]

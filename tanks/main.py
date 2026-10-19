@@ -14,13 +14,13 @@ log = logging.getLogger("red.vrt.tanks")
 
 class Tanks(commands.Cog):
     """
-    Turn-based artillery for ActivityHub, ported from 2DPlay's Flash game Tanks.
+    Turn-based artillery for ActivityHub, a remake of 2DPlay's Flash game Tanks.
 
     Up to five players aim, set their power and fire across hills that blow apart, with computer tanks in any seat.
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.1"
+    __version__ = "0.3.0"
 
     def __init__(self, bot: Red):
         super().__init__()
