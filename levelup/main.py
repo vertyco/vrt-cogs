@@ -82,7 +82,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "5.2.11"
+    __version__ = "5.2.12"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -186,10 +186,16 @@ class LevelUp(
 
                 log.debug(f"Running profile subprocess: {' '.join(cmd)}")
 
+                # Red puts its pip lib folder on sys.path at runtime only, so hand the bot's path list
+                # to the subprocess or it can't import requirements installed with [p]pipinstall
+                env = os.environ.copy()
+                env["PYTHONPATH"] = os.pathsep.join(sys.path)
+
                 proc = await asyncio.create_subprocess_exec(
                     *cmd,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
+                    env=env,
                 )
 
                 try:
@@ -302,10 +308,10 @@ class LevelUp(
         env = os.environ.copy()
         env["LEVELUP_CUSTOM_FONTS_DIR"] = str(self.custom_fonts)
 
-        # Add the cog's parent directory to PYTHONPATH so uvicorn can import levelup
+        # The cog's parent directory lets uvicorn import levelup, and the bot's own path list carries
+        # Red's pip lib folder (runtime only) so requirements installed with [p]pipinstall import too
         cog_parent = str(Path(__file__).parent.parent)
-        existing_pythonpath = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = f"{cog_parent}{os.pathsep}{existing_pythonpath}" if existing_pythonpath else cog_parent
+        env["PYTHONPATH"] = os.pathsep.join([cog_parent, *sys.path])
 
         # Create log file in Red's logs directory
         logs_dir = core_data_path() / "logs"

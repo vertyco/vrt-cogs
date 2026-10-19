@@ -1,3 +1,9 @@
+# [5.2.12] (2026-10-19)
+
+## Bug Fixes
+
+- Profiles and level-up images no longer fail with "No module named 'colorgram'" (or any other missing module) when the cog's requirements were installed with `[p]pipinstall` or by Downloader. The image generator and the managed API run as separate processes and could not see Red's library folder where those packages live
+
 # [5.2.11] (2026-10-09)
 
 ## Improvements
