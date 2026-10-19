@@ -19,6 +19,9 @@ const TICK_RATE = 20;
 // Held keys move the barrel and power once per step of the original's clock, as the original did
 const ANGLE_STEP = 2;
 const POWER_STEP = 1;
+// A held − or + button beside a slider waits this long after its first step, then steps at the original's pace
+const NUDGE_DELAY_MS = 350;
+const NUDGE_EVERY_MS = 1000 / STEP_RATE;
 // Aim and drive go out at most once per update of the bot's loop
 const SEND_MS = 1000 / TICK_RATE;
 // How close to your own tank a press has to start to aim by dragging, in field pixels
@@ -316,6 +319,8 @@ function shownAim() {
 
 function renderControls() {
   const mine = myTurn();
+  // On your turn the angle and power show beside their sliders, so the bar above leaves them out
+  $("info").classList.toggle("mine", mine);
   // A seated player keeps the controls' room between turns, so the field doesn't jump in size every turn
   $("controls").hidden = !(page.mySeat !== null && page.state.stage === "playing");
   $("controls").classList.toggle("waiting", !mine);
@@ -326,9 +331,24 @@ function renderControls() {
   const tank = page.state.tanks[page.mySeat];
   panels.renderWeapons(kit, page.live ? page.live[6] : kit.weapon);
   panels.renderItems(kit, tank, useItem);
-  $("angle").value = String(page.aim.angle);
-  $("power").max = String(Math.min(100, tank.health));
-  $("power").value = String(Math.round(page.aim.power));
+  showAim(tank.health);
+}
+
+// The sliders and the numbers beside them. Power can't go past the tank's health, so the bar is shaded from there
+function showAim(health) {
+  const angle = page.aim.angle;
+  const power = Math.round(page.aim.power);
+  $("angle").value = String(angle);
+  $("power").value = String(power);
+  $("angle-value").textContent = `${angle}°`;
+  $("power-value").textContent = String(power);
+  paintSlider($("angle"), angle / 180, 1);
+  paintSlider($("power"), power / 100, Math.min(100, health) / 100);
+}
+
+function paintSlider(input, fill, reach) {
+  input.style.setProperty("--fill", `${fill * 100}%`);
+  input.style.setProperty("--reach", `${reach * 100}%`);
 }
 
 function hintFor(state) {
@@ -540,8 +560,41 @@ function bindButtons() {
   $("weapon").addEventListener("change", () => send({ weapon: Number($("weapon").value) }));
   $("angle").addEventListener("input", () => setAim(Number($("angle").value), page.aim.power));
   $("power").addEventListener("input", () => setAim(page.aim.angle, Number($("power").value)));
+  holdToNudge($("angle-down"), -1, 0);
+  holdToNudge($("angle-up"), 1, 0);
+  holdToNudge($("power-down"), 0, -1);
+  holdToNudge($("power-up"), 0, 1);
   holdToDrive($("drive-left"), -1);
   holdToDrive($("drive-right"), 1);
+}
+
+// A − or + button beside a slider: one step on a tap, then steady steps while it's held
+function holdToNudge(element, angleStep, powerStep) {
+  let timer = null;
+  const step = () => setAim(page.aim.angle + angleStep, page.aim.power + powerStep);
+  const stop = () => {
+    clearTimeout(timer);
+    clearInterval(timer);
+    timer = null;
+  };
+  element.addEventListener("pointerdown", (event) => {
+    // Keeps focus off the button, so Space still fires
+    event.preventDefault();
+    stop();
+    step();
+    timer = setTimeout(() => {
+      timer = setInterval(step, NUDGE_EVERY_MS);
+    }, NUDGE_DELAY_MS);
+  });
+  for (const name of ["pointerup", "pointercancel", "pointerleave"]) {
+    element.addEventListener(name, stop);
+  }
+  // Enter or Space on a focused button, which sends a click with no pointer press before it
+  element.addEventListener("click", (event) => {
+    if (event.detail === 0) {
+      step();
+    }
+  });
 }
 
 function click(id, handler) {
@@ -582,8 +635,7 @@ function setAim(angle, power) {
   page.touchedAt = performance.now();
   page.scene.setLive(page.live, page.aim);
   panels.renderInfo(page.state, page.live, page.aim);
-  $("angle").value = String(next.angle);
-  $("power").value = String(next.power);
+  showAim(health);
   queueAim();
 }
 

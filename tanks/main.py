@@ -20,7 +20,7 @@ class Tanks(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.0"
+    __version__ = "0.4.0"
 
     def __init__(self, bot: Red):
         super().__init__()

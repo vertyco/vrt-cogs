@@ -26,8 +26,8 @@
       <main class="play">
         <div class="info" id="info" hidden>
           <span class="turn" id="info-turn"></span>
-          <span>Angle <b id="info-angle"></b></span>
-          <span>Power <b id="info-power"></b></span>
+          <span class="aim">Angle <b id="info-angle"></b></span>
+          <span class="aim">Power <b id="info-power"></b></span>
           <span>Health <b id="info-health"></b></span>
           <span>Fuel <b id="info-fuel"></b></span>
           <span class="weapon" id="info-weapon"></span>
@@ -54,8 +54,20 @@
       </aside>
 
       <section class="controls" id="controls" aria-label="Your turn" hidden>
-        <label class="slider">Angle <input type="range" id="angle" min="0" max="180" step="1" /></label>
-        <label class="slider">Power <input type="range" id="power" min="0" max="100" step="1" /></label>
+        <div class="slider">
+          <label for="angle">Angle</label>
+          <output class="value" id="angle-value" for="angle"></output>
+          <button type="button" class="nudge" id="angle-down" aria-label="Turn the barrel left">&minus;</button>
+          <input type="range" id="angle" min="0" max="180" step="1" />
+          <button type="button" class="nudge" id="angle-up" aria-label="Turn the barrel right">+</button>
+        </div>
+        <div class="slider">
+          <label for="power">Power</label>
+          <output class="value" id="power-value" for="power"></output>
+          <button type="button" class="nudge" id="power-down" aria-label="Less power">&minus;</button>
+          <input type="range" id="power" min="0" max="100" step="1" />
+          <button type="button" class="nudge" id="power-up" aria-label="More power">+</button>
+        </div>
         <div class="row">
           <button type="button" class="button hold" id="drive-left" aria-label="Drive left">&#9664;</button>
           <button type="button" class="button hold" id="drive-right" aria-label="Drive right">&#9654;</button>

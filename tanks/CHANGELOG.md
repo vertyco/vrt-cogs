@@ -1,5 +1,12 @@
 # Tanks Changelog
 
+## 0.4.0
+
+- The angle and power show right beside their sliders, in big numbers that change as you drag. On your turn the bar above the field leaves them out.
+- Each slider has a − and + button for exact aiming: tap for one step, or hold to keep going.
+- The power slider always runs 0 to 100. When damage limits your power, the part past your limit turns red instead of the slider shrinking.
+- The sliders are bigger and easier to grab on phones, and on a phone held sideways each slider fits on one row.
+
 ## 0.3.0
 
 - All-new art and sound. Tanks is now a remake: the rules, weapons, prices and every number stay the same, and none of the Flash game's pictures or sounds remain.

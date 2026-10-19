@@ -186,6 +186,10 @@ h1 {
   color: var(--red);
 }
 
+.info.mine .aim {
+  display: none;
+}
+
 .field-box {
   position: relative;
   flex: 1;
@@ -373,19 +377,112 @@ h1 {
   visibility: hidden;
 }
 
+/* Each slider: its name and number, then − bar +. The number is the angle or power you'd fire with */
 .slider {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto 40px minmax(60px, 1fr) 40px;
+  grid-template-areas: "label value down range up";
   align-items: center;
-  gap: 8px;
-  flex: 1 1 200px;
+  gap: 6px;
+  flex: 1 1 300px;
   font-weight: 600;
 }
 
+.slider label {
+  grid-area: label;
+}
+
+.slider .value {
+  grid-area: value;
+  color: var(--yellow);
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  /* Room for "180°", so the bar doesn't shift as the number changes */
+  min-width: 4ch;
+}
+
+.nudge {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--paper);
+  font: inherit;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.nudge:active {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+.slider .nudge:first-of-type {
+  grid-area: down;
+}
+
+.slider .nudge:last-of-type {
+  grid-area: up;
+}
+
+/* The bar: yellow up to the thumb, gray after it, and red past the most power the tank's health allows. The page
+   sets --fill and --reach */
 .slider input {
-  flex: 1;
+  --fill: 50%;
+  --reach: 100%;
+  --track: linear-gradient(to right, transparent var(--reach), rgba(229, 72, 59, 0.75) var(--reach)),
+    linear-gradient(to right, var(--yellow) var(--fill), #4a5266 var(--fill));
+  grid-area: range;
+  width: 100%;
   min-width: 0;
-  height: 32px;
-  accent-color: var(--yellow);
+  height: 36px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.slider input::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--track);
+}
+
+.slider input::-moz-range-track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--track);
+}
+
+.slider input::-webkit-slider-thumb {
+  width: 26px;
+  height: 26px;
+  margin-top: -8px;
+  border: 3px solid var(--paper);
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.slider input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--paper);
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
 }
 
 .row {
@@ -736,13 +833,28 @@ select.button {
     flex: none;
   }
 
+  /* The name sits over its number at the left, so each slider stays one row tall in the narrow column */
   .slider {
     flex: none;
-    font-size: 0.85rem;
+    grid-template-columns: 3.1rem 30px minmax(0, 1fr) 30px;
+    grid-template-areas: "label down range up" "value down range up";
+    gap: 0 4px;
+    font-size: 0.75rem;
+  }
+
+  .slider .value {
+    font-size: 0.95rem;
+    text-align: left;
+  }
+
+  .nudge {
+    width: 30px;
+    height: 30px;
+    font-size: 1.2rem;
   }
 
   .slider input {
-    height: 26px;
+    height: 30px;
   }
 
   .row {
@@ -852,12 +964,9 @@ select.button {
   }
 
   .slider {
-    flex: 1 1 140px;
+    flex: 1 1 100%;
+    grid-template-columns: 3.4rem auto 40px minmax(0, 1fr) 40px;
     font-size: 0.85rem;
-  }
-
-  .slider input {
-    height: 28px;
   }
 
   .row {
