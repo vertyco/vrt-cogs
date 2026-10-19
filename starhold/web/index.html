@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Starhold</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-screen="title">
+    <div class="scene" id="scene"></div>
+    <div class="safe" id="safe" aria-hidden="true"></div>
+
+    <button type="button" class="icon-button corner-left" id="back" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 L8 12 L15 19" /></svg>
+    </button>
+    <div class="corner-right" id="corner-right">
+      <div class="people-slot" id="people-corner-slot"><div class="people" id="people"></div></div>
+      <button type="button" class="icon-button" id="open-payouts" aria-label="Payout settings" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+      </button>
+    </div>
+
+    <section class="screen title" id="title" aria-label="Title">
+      <h1 class="logo" id="logo" aria-label="Starhold"><span aria-hidden="true">STARHOLD</span></h1>
+      <div class="menu">
+        <button type="button" class="button primary big" id="play-button">Play</button>
+        <button type="button" class="button" id="scores-button">High scores</button>
+        <button type="button" class="button" id="how-button">How to play</button>
+        <button type="button" class="button" id="sound-button">Turn music off</button>
+      </div>
+    </section>
+
+    <section class="screen help" id="help" aria-label="How to play" hidden>
+      <div class="card">
+        <h2>How to play</h2>
+        <p>Scrap mechs march down the road to your reactor core. Each one that gets there costs lives. Lose them all and the run is over.</p>
+        <p>Tap a glowing pad to see the towers. Tap one to see what it does, and tap it again to build it. With a mouse, point at it and click. Tap a built tower to see it, upgrade it or sell it. Each upgrade hits harder and reaches further. At level 3, pick one of its two final forms.</p>
+        <p>Blasters and Tesla coils hit flying Buzzers. Missile pods can't. A Drone bay's drones wall off the road: ground robots pile up there until the drones fall. Tap a robot to see what it is.</p>
+        <p>Between waves, a robot head on the road counts down to the next one. Tap it to see what's coming, and tap again to call it early for bonus money.</p>
+        <p>Tap Strike or Stasis in the bottom corners, then tap the map to fire it there.</p>
+        <p>Each kill scores its points times the wave it came in. Every 10th wave brings a Scrap Colossus.</p>
+        <button type="button" class="button" id="help-close">Back</button>
+      </div>
+    </section>
+
+    <div class="hud" id="hud" hidden>
+      <div class="bar" id="bar">
+        <div class="stats" id="stats">
+          <p class="stat lives" id="lives-box" aria-label="Lives">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.1 5.3 3 1.7-1.9 3.2-3 5.3-3 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z" /></svg>
+            <span id="lives">20</span>
+          </p>
+          <p class="stat money" aria-label="Money">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 L21 7 L21 17 L12 22 L3 17 L3 7 Z" /><path d="M12 7 L16.5 9.5 L16.5 14.5 L12 17 L7.5 14.5 L7.5 9.5 Z" /></svg>
+            <span id="money">250</span>
+          </p>
+          <p class="stat wave" aria-label="Wave">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6V2.5" /><circle cx="12" cy="2.5" r="1" fill="currentColor" /><rect x="4" y="6" width="16" height="13" rx="3.5" /><circle cx="9" cy="11.5" r="1.6" fill="currentColor" /><circle cx="15" cy="11.5" r="1.6" fill="currentColor" /><path d="M9 15.5h6" /></svg>
+            <span id="wave">0</span>
+          </p>
+          <p class="stat score" aria-label="Score">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5-4.9-4.5 6.6-.8z" /></svg>
+            <span id="score">0</span>
+          </p>
+        </div>
+        <ol class="strip" id="strip" aria-label="Playing here now" hidden></ol>
+        <div class="controls" id="controls">
+          <div class="people-slot" id="people-play-slot"></div>
+          <button type="button" class="icon-button" id="pause" aria-label="Pause">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
+          </button>
+        </div>
+      </div>
+      <button type="button" class="power left" id="power-strike" aria-label="Orbital strike">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2" fill="currentColor" /><path d="M12 1v4M12 19v4M1 12h4M19 12h4" /></svg>
+        <span id="power-strike-label">Strike</span>
+      </button>
+      <button type="button" class="power right" id="power-stasis" aria-label="Stasis field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7" /><path d="M9 3.5L12 6l3-2.5M9 20.5L12 18l3 2.5" /></svg>
+        <span id="power-stasis-label">Stasis</span>
+      </button>
+      <div class="info" id="info" hidden>
+        <div class="info-head">
+          <img class="info-icon" id="info-icon" alt="" hidden />
+          <p class="info-title"><span id="info-name"></span><span class="info-tag" id="info-tag"></span></p>
+        </div>
+        <p class="info-text" id="info-text"></p>
+        <ul class="info-rows" id="info-rows"></ul>
+        <p class="info-hint" id="info-hint" hidden></p>
+      </div>
+      <p class="news" id="news" role="status" hidden>
+        <img class="news-icon" id="news-icon" alt="" hidden />
+        <span><span class="news-new">New robot</span> <b id="news-name"></b><span class="news-text" id="news-text"></span></span>
+      </p>
+    </div>
+
+    <div class="pause-menu" id="pause-menu" hidden>
+      <div class="card">
+        <h2>Paused</h2>
+        <button type="button" class="button primary big" id="resume">Resume</button>
+        <button type="button" class="button" id="end-run">End run</button>
+      </div>
+    </div>
+
+    <section class="screen over" id="over" aria-label="Game over" hidden>
+      <div class="card result">
+        <div class="result-main">
+          <h2>Game over</h2>
+          <p class="big" id="final-score">0</p>
+          <p class="dim" id="final-wave"></p>
+          <p class="standing" id="standing"></p>
+        </div>
+        <div class="result-actions">
+          <div class="cashin" id="cashin" hidden>
+            <p class="cashin-text" id="cashin-text"></p>
+            <button type="button" class="button primary" id="cashin-button">Cash in</button>
+          </div>
+          <div class="row">
+            <button type="button" class="button primary" id="again">Play again</button>
+            <button type="button" class="button" id="over-scores">High scores</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="toast" id="toast" role="status" hidden></p>
+    <p class="banner" id="banner" role="status" hidden>Reconnecting...</p>
+    <div class="message" id="message" role="alert" hidden>
+      <p id="message-text"></p>
+      <button type="button" class="button" id="message-close">OK</button>
+    </div>
+
+    <dialog class="panel" id="scores" aria-labelledby="scores-title">
+      <h2 id="scores-title">High Scores</h2>
+      <p class="dim">Each player's best run on this server.</p>
+      <ol class="leaders" id="leaders"></ol>
+      <p class="you" id="you"></p>
+      <button type="button" class="button" id="close-scores">Close</button>
+    </dialog>
+
+    <dialog class="panel payouts" id="payouts" aria-labelledby="payouts-title">
+      <h2 id="payouts-title">Payouts</h2>
+      <p class="dim">After a run, players can cash in its score: each point pays the rate, up to the most per cash-in. Starting another run gives up a score that wasn't cashed in, so players save their cash-ins for their best runs. Cash-ins come back at midnight UTC.</p>
+      <p class="dim" id="payouts-global" hidden>The bank is global, so these payouts apply in every server, and cash-ins count across servers.</p>
+      <label class="payout-switch"><input type="checkbox" id="payouts-on" /> Starhold pays out</label>
+      <div class="payout-numbers">
+        <label><span id="payouts-rate-label">Credits per point</span><input type="number" id="payouts-rate" min="0" step="any" /></label>
+        <label><span>Most per cash-in</span><input type="number" id="payouts-cap" min="1" step="1" /></label>
+        <label><span>Cash-ins a day</span><input type="number" id="payouts-plays" min="1" step="1" /></label>
+      </div>
+      <p class="dim" id="payouts-day"></p>
+      <p class="dim" id="payouts-today"></p>
+      <p class="payout-status" id="payouts-status" role="status"></p>
+      <div class="actions">
+        <button type="button" class="button primary" id="save-payouts">Save</button>
+        <button type="button" class="button" id="reset-payouts">Reset</button>
+        <button type="button" class="button" id="close-payouts">Close</button>
+      </div>
+    </dialog>
+
+    <dialog class="panel" id="confirm" aria-labelledby="confirm-text">
+      <p class="confirm-text" id="confirm-text"></p>
+      <div class="actions">
+        <button type="button" class="button primary" id="confirm-yes">Start a new run</button>
+        <button type="button" class="button" id="confirm-no">Keep this run</button>
+      </div>
+    </dialog>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

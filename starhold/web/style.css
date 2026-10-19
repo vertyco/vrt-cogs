@@ -1,0 +1,1157 @@
+@font-face {
+  font-family: "Rajdhani";
+  src: url("fonts/rajdhani-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nunito";
+  src: url("fonts/nunito.woff2") format("woff2");
+  font-weight: 200 1000;
+  font-display: swap;
+}
+
+:root {
+  --ink: #e8f7ff;
+  --dim: #8fb4c8;
+  --deep: #050a10;
+  --panel: rgba(8, 20, 30, 0.88);
+  --line: #2fb9e6;
+  --teal: #3ff0d0;
+  --glow: #6ff3ff;
+  --danger: #ff5d86;
+  /* The hub's people button takes its colors from these */
+  --accent: #3ff0d0;
+  --on-accent: #03141a;
+  --display: "Rajdhani", "Segoe UI", sans-serif;
+  --body: "Nunito", "Segoe UI", sans-serif;
+  --gap: 8px;
+  /* Every button is at least a thumb wide */
+  --touch: 44px;
+  /* Room taken by Discord's buttons and the phone's notch. The hub copies Discord's sizes into this frame */
+  --safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  color-scheme: dark;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--deep);
+  color: var(--ink);
+  font-family: var(--body);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 3px solid var(--glow);
+  outline-offset: 2px;
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Taps on the map act on touch-down, with no wait for a double tap and no scrolling */
+.scene canvas {
+  display: block;
+  touch-action: none;
+}
+
+body.aiming .scene canvas {
+  cursor: crosshair;
+}
+
+/* Measured by the page to keep everything clear of Discord's buttons */
+.safe {
+  position: fixed;
+  inset: 0;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ---------- Buttons ---------- */
+
+.button {
+  min-height: var(--touch);
+  padding: 8px 18px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(#123247, #0b1f2d);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow:
+    0 0 12px rgba(47, 185, 230, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button.primary {
+  border-color: var(--teal);
+  background: linear-gradient(#18806f, #0d4d44);
+}
+
+.button.big {
+  min-height: 56px;
+  font-size: 26px;
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.icon-button {
+  width: var(--touch);
+  height: var(--touch);
+  padding: 9px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.icon-button svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Corners: Back on the left, the people button and the payout gear on the right ---------- */
+
+.corner-left {
+  position: fixed;
+  z-index: 4;
+  left: calc(var(--safe-left) + 10px);
+  top: calc(var(--safe-top) + 10px);
+}
+
+.corner-right {
+  position: fixed;
+  z-index: 4;
+  right: calc(var(--safe-right) + 10px);
+  top: calc(var(--safe-top) + 10px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* During a run the people button sits in the run's own controls */
+body[data-screen="play"] .corner-right {
+  display: none !important;
+}
+
+/* The payout gear only on the title */
+body:not([data-screen="title"]) #open-payouts {
+  display: none !important;
+}
+
+.people-slot {
+  display: flex;
+  align-items: center;
+}
+
+.people {
+  display: flex;
+  --hub-people-size: var(--touch);
+}
+
+/* ---------- Screens outside a run ---------- */
+
+.screen {
+  position: fixed;
+  z-index: 3;
+  inset: calc(var(--safe-top) + 64px) calc(var(--safe-right) + 12px) calc(var(--safe-bottom) + 12px)
+    calc(var(--safe-left) + 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+/* Centered with auto margins rather than justify-content, which would put the top of a tall card out of scroll reach */
+.screen > :first-child {
+  margin-top: auto;
+}
+
+.screen > :last-child {
+  margin-bottom: auto;
+}
+
+/* The STARHOLD logo: metal lettering with a teal glow, faint scanlines and a slow light sweep, all in CSS so it stays
+   sharp at any size. The glow is a filter, because a text-shadow would paint over a background-clipped fill */
+.logo {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(40px, min(12vw, 16vh), 96px);
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: transparent;
+  background-image:
+    repeating-linear-gradient(180deg, rgba(8, 18, 28, 0.24) 0 2px, transparent 2px 5px),
+    linear-gradient(100deg, transparent 42%, rgba(210, 255, 255, 0.9) 50%, transparent 58%),
+    linear-gradient(180deg, #f4f8fb 0%, #b9c6d2 38%, #55626e 52%, #c9d6e0 70%, #8796a3 100%);
+  background-size:
+    100% 5px,
+    250% 100%,
+    100% 100%;
+  background-position:
+    0 0,
+    130% 0,
+    0 0;
+  background-repeat: repeat, no-repeat, no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 6px rgba(56, 232, 224, 0.55)) drop-shadow(0 0 18px rgba(30, 140, 220, 0.35));
+  animation: logo-sweep 7s ease-in-out infinite;
+}
+
+@keyframes logo-sweep {
+  0% {
+    background-position:
+      0 0,
+      130% 0,
+      0 0;
+  }
+  60%,
+  100% {
+    background-position:
+      0 30px,
+      -30% 0,
+      0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo {
+    animation: none;
+  }
+}
+
+.menu {
+  display: grid;
+  gap: 10px;
+  width: min(80vw, 300px);
+}
+
+/* Upright, the card is one stack; the two groups only matter when a phone is held sideways */
+.result-main,
+.result-actions {
+  display: contents;
+}
+
+/* A phone held sideways has little height: the title's four buttons must fit without scrolling */
+@media (max-height: 500px) {
+  .screen {
+    gap: 6px;
+  }
+
+  .menu {
+    gap: 6px;
+  }
+
+  .button.big {
+    min-height: var(--touch);
+    font-size: 22px;
+  }
+}
+
+.card {
+  width: min(92vw, 440px);
+  box-sizing: border-box;
+  padding: 20px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: 0 0 24px rgba(47, 185, 230, 0.18);
+}
+
+.card h2 {
+  margin: 0 0 10px;
+  font-family: var(--display);
+  font-size: 30px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.help p {
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+.result {
+  text-align: center;
+}
+
+.result .big {
+  margin: 0;
+  color: var(--glow);
+  font-family: var(--display);
+  font-size: 56px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dim {
+  color: var(--dim);
+}
+
+.standing {
+  min-height: 1.4em;
+  font-weight: 800;
+}
+
+.standing .new {
+  color: var(--teal);
+}
+
+.cashin {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid rgba(63, 240, 208, 0.5);
+  border-radius: 12px;
+}
+
+.cashin-text {
+  margin: 0 0 10px;
+  font-weight: 800;
+}
+
+.row,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Sideways phone: the game over card has no room to stack. After the card rules above, so these win */
+@media (max-height: 500px) {
+  .screen.over {
+    top: calc(var(--safe-top) + 8px);
+  }
+
+  .result {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    width: min(calc(100vw - 140px), 720px);
+    padding: 12px 16px;
+  }
+
+  .result h2 {
+    margin-bottom: 2px;
+    font-size: 24px;
+  }
+
+  .result .big {
+    font-size: 40px;
+  }
+
+  .result-main,
+  .result-actions {
+    display: block;
+  }
+
+  .cashin {
+    margin: 0 0 8px;
+  }
+}
+
+/* ---------- The run: the map fills the screen, one bar over its top, round powers in its bottom corners ---------- */
+
+.hud {
+  position: fixed;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+/* Lives, money, wave and score on the left, the people button and pause on the right. On a turned map the friends
+   strip sits between them; on an upright one it sits under the bar, placed by the page */
+.bar {
+  position: fixed;
+  top: calc(var(--safe-top) + 6px);
+  left: calc(var(--safe-left) + 6px);
+  right: calc(var(--safe-right) + 6px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--touch);
+}
+
+.hud > .bar {
+  pointer-events: none;
+}
+
+.stats {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.controls {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  pointer-events: auto;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 8px 0 7px;
+  border-radius: 10px;
+  background: var(--panel);
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stat svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.stat.lives {
+  color: #ffd7e1;
+}
+
+.stat.lives.low {
+  color: var(--danger);
+}
+
+.stat.money {
+  color: #bff7ff;
+}
+
+.stat.wave {
+  color: #9fe3ff;
+}
+
+.stat.score {
+  color: #fff1c2;
+}
+
+/* Phones: tighter, so the bar keeps big numbers and a people button full of faces on one line */
+@media (max-width: 420px) {
+  .bar,
+  .controls {
+    gap: 4px;
+  }
+
+  .stats {
+    gap: 3px;
+  }
+
+  .stat {
+    gap: 3px;
+    padding: 0 5px;
+    font-size: 16px;
+  }
+
+  .stat svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.power {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 6px);
+  width: 56px;
+  height: 56px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0;
+  border: 2px solid #3a4a55;
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--dim);
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+  --cool: 0;
+}
+
+.power.left {
+  left: calc(var(--safe-left) + 6px);
+}
+
+.power.right {
+  right: calc(var(--safe-right) + 6px);
+}
+
+.power svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Cooling down: the seconds left, big, in place of the icon, and a teal ring filling clockwise round the edge as it
+   recharges */
+.power:not(.ready) svg {
+  display: none;
+}
+
+.power:not(.ready) span {
+  font-size: 20px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.power::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--teal) calc((1 - var(--cool)) * 360deg), rgba(143, 180, 200, 0.18) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  pointer-events: none;
+}
+
+.power.ready::after {
+  display: none;
+}
+
+/* Ready: a bright teal edge and a glow that breathes, so a ready power reads at a glance */
+.power.ready {
+  border-color: var(--teal);
+  color: var(--ink);
+  animation: power-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes power-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(63, 240, 208, 0.35);
+  }
+
+  50% {
+    box-shadow: 0 0 22px rgba(63, 240, 208, 0.85);
+  }
+}
+
+/* The moment it is ready again: the button pops and a ring of light flies out of it */
+.power::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 3px solid #b8fff4;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.power.ready.fresh {
+  animation:
+    power-pop 0.5s ease-out,
+    power-glow 1.6s ease-in-out 0.5s infinite;
+}
+
+.power.fresh::before {
+  animation: power-ring 0.8s ease-out;
+}
+
+@keyframes power-pop {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(184, 255, 244, 0);
+  }
+
+  35% {
+    transform: scale(1.18);
+    box-shadow: 0 0 30px rgba(184, 255, 244, 0.95);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(63, 240, 208, 0.35);
+  }
+}
+
+@keyframes power-ring {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .power.ready,
+  .power.ready.fresh {
+    animation: none;
+    box-shadow: 0 0 16px rgba(63, 240, 208, 0.6);
+  }
+
+  .power.fresh::before {
+    animation: none;
+  }
+}
+
+.power.lit {
+  border-color: #b8fff4;
+  background: #145a50;
+  box-shadow: 0 0 22px rgba(184, 255, 244, 0.7);
+  animation: none;
+}
+
+/* ---------- The info card: by the ring or the wave button, or at the bottom for a robot, placed by the page ---------- */
+
+.info {
+  position: fixed;
+  z-index: 3;
+  box-sizing: border-box;
+  padding: 8px 10px 9px;
+  border: 1px solid rgba(95, 243, 255, 0.45);
+  border-radius: 10px;
+  background: var(--panel);
+  pointer-events: none;
+}
+
+.hud > .info {
+  pointer-events: none;
+}
+
+.info p {
+  margin: 0;
+}
+
+.info-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.info-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.info-tag {
+  color: var(--teal);
+  font-size: 14px;
+}
+
+.info-text {
+  margin-top: 2px;
+  color: var(--dim);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.info-rows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px 12px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.info-rows li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.info-rows span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dim);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-rows b {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.info-row-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.info-hint {
+  margin-top: 6px;
+  color: var(--teal);
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.info-hint.short {
+  color: var(--danger);
+}
+
+/* Phones held sideways: tighter, so the tallest card still fits beside the ring */
+@media (max-height: 500px) {
+  .info {
+    padding: 6px 9px 7px;
+  }
+
+  .info-title {
+    font-size: 17px;
+  }
+
+  .info-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .info-text,
+  .info-rows {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .info-rows {
+    gap: 0 12px;
+    margin-top: 4px;
+  }
+
+  .info-hint {
+    margin-top: 3px;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+}
+
+/* ---------- A new robot's note, under the bar ---------- */
+
+.news {
+  position: fixed;
+  z-index: 3;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(340px, calc(100vw - 32px));
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid rgba(255, 93, 134, 0.7);
+  border-radius: 12px;
+  background: var(--panel);
+  font-size: 13px;
+  line-height: 1.3;
+  animation: news-in 0.25s ease-out;
+}
+
+.hud > .news {
+  pointer-events: none;
+}
+
+@keyframes news-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.news-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.news-new {
+  color: var(--danger);
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.news b {
+  font-family: var(--display);
+  font-size: 16px;
+}
+
+.news-text {
+  display: block;
+  color: var(--dim);
+}
+
+/* ---------- Who's here: the friends strip ---------- */
+
+.strip {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* In the bar on a turned map; on an upright one, in the moon under the bar where the page puts it */
+body.wide .strip {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+body.tall .strip {
+  position: fixed;
+  overflow: hidden;
+}
+
+.strip li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 3px 9px 3px 4px;
+  border: 1px solid rgba(47, 185, 230, 0.35);
+  border-radius: 999px;
+  background: rgba(5, 14, 22, 0.86);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.strip li.mine {
+  border-color: var(--teal);
+  box-shadow: inset 0 0 0 1px var(--teal);
+}
+
+.strip li.away {
+  opacity: 0.45;
+}
+
+.strip .avatar {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #284a5c;
+  object-fit: cover;
+}
+
+/* With no picture, the first letter of the name */
+.strip span.avatar {
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  font-size: 11px;
+}
+
+/* Names are other players' words: kept apart from the text around them, whichever way they are written */
+.strip .name {
+  min-width: 30px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  unicode-bidi: isolate;
+}
+
+/* A phone's strip has room for faces with their wave and score; names show on bigger screens */
+@media (max-width: 520px), (max-height: 520px) {
+  .strip .name {
+    display: none;
+  }
+}
+
+.strip .wave {
+  flex: none;
+  color: var(--dim);
+}
+
+.strip .points {
+  flex: none;
+  margin-left: auto;
+  padding-left: 4px;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.strip li.more {
+  padding: 3px 10px;
+}
+
+/* ---------- The pause menu ---------- */
+
+.pause-menu {
+  position: fixed;
+  z-index: 5;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 8, 13, 0.55);
+}
+
+.pause-menu .card {
+  display: grid;
+  gap: 10px;
+  width: min(80vw, 300px);
+  text-align: center;
+}
+
+/* ---------- Notes, messages and dialogs ---------- */
+
+.toast {
+  position: fixed;
+  z-index: 6;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 90px);
+  transform: translateX(-50%);
+  /* max-content so the box isn't squeezed by its left offset; the max-width wraps a long sentence 16px inside */
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 10px 18px;
+  border: 2px solid var(--teal);
+  border-radius: 12px;
+  background: var(--panel);
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+}
+
+.banner {
+  position: fixed;
+  z-index: 6;
+  top: calc(var(--safe-top) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #0b2a3a;
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.message {
+  position: fixed;
+  z-index: 10;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(88vw, 420px);
+  box-sizing: border-box;
+  padding: 24px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.message p {
+  margin: 0 0 16px;
+}
+
+.panel {
+  width: min(92vw, 460px);
+  box-sizing: border-box;
+  padding: 22px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: #0a1822;
+  color: var(--ink);
+  font-family: var(--body);
+}
+
+.panel::backdrop {
+  background: rgba(2, 8, 13, 0.6);
+}
+
+.panel h2 {
+  margin: 0 0 4px;
+  font-family: var(--display);
+  font-size: 28px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.panel .dim {
+  margin: 0 0 12px;
+}
+
+.confirm-text {
+  margin: 0 0 16px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.leaders {
+  display: grid;
+  gap: 6px;
+  max-height: 50vh;
+  margin: 0 0 14px;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.leaders li {
+  display: grid;
+  grid-template-columns: 3.5ch minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #102634;
+}
+
+.leaders li.mine {
+  box-shadow: inset 0 0 0 2px var(--teal);
+}
+
+.leaders .place {
+  color: var(--teal);
+  font-family: var(--display);
+  font-weight: 700;
+}
+
+.leaders .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  unicode-bidi: isolate;
+}
+
+.leaders .best {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.you {
+  margin: 0 0 14px;
+  font-weight: 700;
+}
+
+.payout-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+
+.payout-switch input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--teal);
+}
+
+.payout-numbers {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.payout-numbers label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.payout-numbers input {
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #06121a;
+  color: var(--ink);
+  font: inherit;
+}
+
+.payout-status {
+  min-height: 1.3em;
+  margin: 0 0 10px;
+  font-weight: 800;
+}

@@ -21,6 +21,7 @@ json5
 kaleido
 markdownify
 matplotlib
+mini-racer
 msgpack
 numpy
 openai

@@ -1,0 +1,48 @@
+The License - #GameAudioGDC Bundle
+Version 2.0 - Effective 27 August 2026
+Source: https://sonniss.com/gdc-bundle-license/ (copied 15 October 2026)
+
+UNLIMITED USER LICENSE
+All of the sound effects contained within the #GameAudioGDC bundle are licensed to the end-user. By downloading and using any of the sound effects, you acknowledge and agree to be bound by the terms and conditions laid out within this document.
+
+THE #GAMEAUDIOGDC BUNDLE LICENSING AGREEMENT
+This EULA is a legal agreement between yourself (the Licensee) and Sonniss, the Licensor. In this Agreement, the party who is granting the right to use the licensed sound effects will be referred to as “Licensor” or “Sonniss”, and the party who is receiving the right to use the licensed sound effects will be referred to as “Licensee”. These Terms are linked from every download page and apply to every download. By downloading and using any of the sound effects, you accept them. If you do not accept them, please do not download or use the sound effects.
+
+GRANT OF LICENSE
+Upon downloading this sound effects collection, the Licensor grants the Licensee, a worldwide, non-exclusive, royalty-free license to use all or any of the sound effects in accordance with the terms and conditions laid out in this Agreement.
+
+RIGHTS GRANTED
+a) Licensee may use the licensed sound effects on an unlimited number of projects for the entirety of their life time.
+b) Licensee may use and modify the licensed sound effects for personal and commercial projects without attribution to the original creator.
+c) Licensee may publicly perform a reproduction of the sound effects over any form of medium, as long as they are synchronized within the Licensee’s project. (Games, films, videos, podcasts, apps and interactive projects all count, as set out in (d) below.) This right does not extend to supplying the sound effects themselves, whether as files or as the output of a device or service, where the sound effects rather than a project of the Licensee’s are what is being supplied.
+d) Licensee may use the licensed sound effects for the purposes of synchronization with audio and visual projects the Licensee is involved with, which includes but is not limited to: games, films, television & interactive projects.
+
+COPYRIGHT
+Other than the license rights granted in this agreement, all right, title and interest in the sound effects contained within this collection, is and shall always remain the property of their respective copyright holders. All rights not expressly granted to the Licensee under this Agreement are reserved by the Licensor and by the respective copyright holders.
+
+INDEMNITY
+Licensee and Licensor hereby agree to indemnify each other from, and against any and all claims, demands, suits, actions, causes of action, damages, liabilities, charges and expenses, including attorneys fees incurred by each party with respect to any matter that arises as a result of any claim that the Licensed sound effects infringe or violate any rights of any third party or any breach of this agreement.
+
+RESTRICTIONS
+a) Licensee may not modify any of the sound effects with intent to claim authorship of the original recording.
+b) Licensee may not sell any of the sound effects as they come. (Although the sound effects may be sold as incorporated into licensee project).
+c) For clarity and avoidance of doubt, Licensee may not distribute, publish, sub-license or otherwise supply the sound effects as sound effects to any other person, without the Licensor’s prior written permission. This applies whether the sound effects are unmodified, modified or re-designed, and whether they are supplied on their own or as part of a sound effects library, sample pack, asset pack, project template, software development kit or anything similar. Re-designed and manipulated sounds remain licensed material under this Agreement.
+This does not restrict the Licensee’s finished projects, which may be shared, published and sold in the normal way. It does not prevent the Licensee sharing the sound effects with people in the Licensee’s own team or organisation who are working on the Licensee’s projects. And anyone else is welcome to download the bundle from Sonniss for themselves, free, at any time. Seeding any official torrent that Sonniss has published for a bundle, or any part of one, is permitted, and stays permitted even if that torrent is later removed from our site. This applies only to torrents published by Sonniss itself, not to torrents, repacks or re-uploads created by anyone else.
+
+NO AI TRAINING OR USAGE
+For clarity and avoidance of doubt, the Licensee is expressly prohibited from using any sound effects licensed under this Agreement for the purpose of training artificial intelligence technologies. This includes, but is not limited to, technologies capable of generating sound effects or works in a similar style or genre as the licensed sound effects. The Licensee shall not use, reproduce, or otherwise leverage the licensed sound effects in any manner for purposes of developing, training, or enhancing artificial intelligence technologies, nor sublicense these rights to any third party, without the Licensor’s specific and express written permission.
+
+LIABILITY
+Licensor shall not be liable for any loss of business or business profits, business interruption, or any other form of direct or indirect loss resulting directly or indirectly from the use of any of the licensed sound effects.
+
+JURISDICTION
+These Terms are to be governed by and interpreted according to English law. This means a Contract for downloading sound effects through Sonniss, and any dispute or claim arising out of or in connection with it or these Terms will be governed by English law. All disputes arising under them will be subject to the exclusive jurisdiction of the English courts.
+This is a binding legal agreement between you (the Licensee), and us (the Licensor). By downloading and using any of the sound effects from the #GameAudioGDC bundle constitutes the acceptance of these terms.
+
+WARRANTY
+Sonniss LTD warrants that it has full authority to license and distribute all of the sound effects libraries under the terms of this agreement and that our products do not infringe on the rights of any third party.
+
+WHICH VERSION APPLIES
+This is version 2.0 of this Agreement, effective 27 August 2026. It applies to sound effects downloaded from the #GameAudioGDC bundle on or after that date.
+If you downloaded before that date, the version of this Agreement that was published on the day you downloaded is the version that governs your use of those files. Nothing in this version changes it, and nothing in it is applied backwards. Every earlier version is archived at sonniss.com/gdc-bundle-license/previous-versions/.
+The version that counts is always the one published at sonniss.com/gdc-bundle-license/. Some bundle downloads include a copy of the licence inside the files for convenience; that copy shows the version that was current when the bundle was built. If it differs from the published version, the version published on the day you downloaded is the one that governs. It is the same rule as above, working in both directions: a newer version is never applied backwards to you, and an older copy inside a bundle does not carry old terms forward.

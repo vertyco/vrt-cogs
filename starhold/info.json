@@ -1,0 +1,32 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "A sci-fi tower defense for ActivityHub. Scrap-built mechs march down a winding road on a moon base toward your reactor core: build and upgrade four high-tech towers on the spots beside the road, pick a final form for each, fire Orbital strikes and Stasis fields, and survive endless waves, with a Scrap Colossus every tenth wave. Each player plays their own run, with friends' live waves and scores beside the map, on desktop or a phone held either way, and each server keeps a high score table. Server admins can let players cash in their scores for credits, Neopets style, with a rate, a cap per cash-in and a few cash-ins a day; the bot checks every paid score by replaying the run. Needs ActivityHub 0.8.0 or later.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores each player's Discord user ID with their display name and best score on each server's Starhold high score table, and, for the daily cash-in limit, the date they last cashed in a score and how many times they did that day. Each server (or the whole bot, when the bank is global) also keeps the total paid out on its latest day of cash-ins and the user IDs of the players paid that day. Runs in progress are kept in memory only.",
+  "hidden": true,
+  "install_msg": "Thank you for installing Starhold!\n\nStarhold is a game for ActivityHub, which must be installed and set up first:\n`[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`\n`[p]cog install vrt-cogs activityhub`\n`[p]load activityhub`\nThen follow ActivityHub's README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nOnce both are loaded, Starhold shows up in the hub's menu. Payouts start off: server admins turn them on from the gear button on Starhold's title screen.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [
+    3,
+    10,
+    0
+  ],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [
+    "mini-racer"
+  ],
+  "short": "A sci-fi tower defense for ActivityHub",
+  "tags": [
+    "activity",
+    "games",
+    "economy",
+    "strategy",
+    "towerdefense",
+    "fun",
+    "vert"
+  ],
+  "type": "COG"
+}
