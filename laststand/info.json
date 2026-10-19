@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "The Last Stand: Union City for ActivityHub, ported from Con Artist Games' 2010 Flash zombie survival RPG with its original art and sounds. Build a survivor, then fight and search your way across 11 areas and 285 rooms of Union City to find your partner and escape by boat, with quests, shops, companions, 12 skills and Run & Gun or Survivor mode. Each Discord user gets three save slots kept by the bot, the same on every server. Single player, no currency involved, works on desktop and on phones held sideways. Needs ActivityHub 0.8.0 or later.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores each player's Discord user ID and up to three saved games (the character's name, look, level, location and progress) in the bot's data folder. Saves are deleted when a user requests data deletion.",
+  "hidden": true,
+  "install_msg": "Thank you for installing The Last Stand: Union City!\n\nUnion City is a game for ActivityHub, which must be installed and set up first:\n`[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`\n`[p]cog install vrt-cogs activityhub`\n`[p]load activityhub`\nThen follow ActivityHub's README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nOnce both are loaded, The Last Stand: Union City shows up in the hub's menu.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Zombie survival RPG for ActivityHub, ported from the Flash game The Last Stand: Union City",
+  "tags": ["activity", "games", "fun", "vert"],
+  "type": "COG"
+}

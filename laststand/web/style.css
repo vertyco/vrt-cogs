@@ -1,0 +1,318 @@
+/* The original's embedded fonts, under the exact names its text fields use. A family the original embedded in two
+   pieces (AlternateGothic2 BT, Arial) is one merged file here. Most files hold only the glyphs the original used, so
+   a missing glyph falls back to the next font of the text's stack. The weight range keeps the browser from thickening
+   a bold field's letters: the embedded face is already the weight the original drew */
+
+@font-face {
+  font-family: "AlternateGothic2 BT";
+  font-weight: 100 900;
+  src: url("fonts/AlternateGothic2-BT.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Arial";
+  font-weight: 100 900;
+  src: url("fonts/Arial.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Calibri";
+  font-weight: 100 900;
+  src: url("fonts/Calibri.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Courier New";
+  font-weight: 100 900;
+  src: url("fonts/Courier-New.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "DIN-Black";
+  font-weight: 100 900;
+  src: url("fonts/DIN-Black.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "DIN-Bold";
+  font-weight: 100 900;
+  src: url("fonts/DIN-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "DINChadstone";
+  font-weight: 100 900;
+  src: url("fonts/DINChadstone.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "DIN-Regular";
+  font-weight: 100 900;
+  src: url("fonts/DIN-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "HarleyHand1";
+  font-weight: 100 900;
+  src: url("fonts/HarleyHand1.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Kuenst480 BT";
+  font-weight: 100 900;
+  src: url("fonts/Kuenst480-BT.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Machine BT";
+  font-weight: 100 900;
+  src: url("fonts/Machine-BT.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Rockwell Extra Bold";
+  font-weight: 100 900;
+  src: url("fonts/Rockwell-Extra-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "standard 07_56";
+  font-weight: 100 900;
+  src: url("fonts/standard-07_56.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Tahoma";
+  font-weight: 100 900;
+  src: url("fonts/Tahoma.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Times New Roman";
+  font-weight: 100 900;
+  src: url("fonts/Times-New-Roman.ttf") format("truetype");
+}
+:root {
+  /* The hub's people button and its arrival notes take the original's dusk orange */
+  --accent: #8a3d1c;
+  --on-accent: #ffffff;
+  --letters: #e8e4da;
+  /* Room taken by Discord's buttons and the phone's notch. The hub copies Discord's sizes into this frame */
+  --safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  color-scheme: dark;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  /* Taps don't wait for a possible double-tap zoom on an iPhone */
+  touch-action: manipulation;
+}
+
+/* The original's stage color, which also makes the bars around the scaled stage */
+body {
+  background: #000000;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#stage {
+  position: fixed;
+  top: var(--safe-top);
+  right: var(--safe-right);
+  bottom: var(--safe-bottom);
+  left: var(--safe-left);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Drags on the stage are the game's, not the page's scrolling or zooming */
+  touch-action: none;
+}
+
+/* The canvas takes focus on a click so the game gets the keyboard; it never shows a focus ring */
+#stage canvas {
+  display: block;
+  outline: none;
+}
+
+#loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  color: var(--letters);
+  font: 22px "AlternateGothic2 BT", "Alternate Gothic No2 BT", "League Gothic", "Oswald", "Arial Narrow", Impact, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* Back to the hub's menu, on every screen. It sits in the black bars round the original's stage, which the page keeps
+   wide enough for it */
+#back {
+  position: fixed;
+  z-index: 3;
+  top: calc(var(--safe-top) + 8px);
+  left: calc(var(--safe-left) + 8px);
+  width: 36px;
+  height: 36px;
+  padding: 7px;
+  border: 1px solid rgba(232, 228, 218, 0.5);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--letters);
+  cursor: pointer;
+}
+
+#back svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (hover: hover) {
+  #back:hover {
+    border-color: var(--letters);
+    background: rgba(40, 24, 16, 0.85);
+  }
+}
+
+/* The hub's people button. It stays out of sight until the page has put it somewhere */
+#people {
+  position: fixed;
+  z-index: 3;
+  visibility: hidden;
+  --hub-people-size: 30px;
+}
+
+#people[data-placed] {
+  visibility: visible;
+}
+
+#people[data-placed="corner"] {
+  top: calc(var(--safe-top) + 8px);
+  right: calc(var(--safe-right) + 8px);
+}
+
+/* The hub's faces, icon and padding are fixed sizes; here they follow the button's size */
+#people .hub-people-button {
+  padding: 0 calc(var(--hub-people-size) * 0.22);
+}
+
+#people .hub-icon {
+  width: calc(var(--hub-people-size) * 0.5);
+  height: calc(var(--hub-people-size) * 0.5);
+}
+
+#people .hub-avatar.small {
+  width: calc(var(--hub-people-size) * 0.62);
+  height: calc(var(--hub-people-size) * 0.62);
+  font-size: calc(var(--hub-people-size) * 0.3);
+}
+
+#people .hub-stack .hub-avatar + .hub-avatar {
+  margin-left: calc(var(--hub-people-size) * -0.22);
+}
+
+:focus-visible {
+  outline: 2px solid var(--letters);
+  outline-offset: 2px;
+}
+
+/* The name box of character creation: an input laid over the art's own name field, sized and placed by create.js. It is
+   the only page element over the stage, and only while the name page shows */
+#name-box {
+  position: fixed;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  text-align: left;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* The people button's arrival notes slide out under it; with no room under it they come out above it */
+#people[data-note="up"] .hub-note {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+/* With too little stage to fit the faces beside the count, only the count shows */
+#people[data-compact] .hub-stack {
+  display: none;
+}
+
+/* The friends' faces beside their sections on the city map. They are page elements over the canvas, so they take no
+   presses; each row is placed by together.js in the canvas's pixels */
+#map-folk {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  --face: 20px;
+}
+
+.map-folk {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.map-face {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--face);
+  height: var(--face);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.85);
+  font: 700 calc(var(--face) * 0.5) system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.map-face + .map-face {
+  margin-left: calc(var(--face) * -0.25);
+}
+
+.map-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.map-face.away {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.map-more,
+.map-name {
+  color: var(--letters);
+  font: 700 max(10px, calc(var(--face) * 0.55)) system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 2px #000;
+}
