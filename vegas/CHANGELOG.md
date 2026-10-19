@@ -1,5 +1,11 @@
 # Vegas Changelog
 
+## 0.4.1
+
+Needs ActivityHub 0.13.0 or later.
+
+- Opened outside the bot's servers (a DM, or a server the bot isn't in), the ActivityHub menu marks Vegas "Servers only" and says why instead of opening a casino that can't take bets there.
+
 ## 0.4.0
 
 Needs ActivityHub 0.8.0 or later.

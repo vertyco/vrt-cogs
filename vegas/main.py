@@ -37,7 +37,7 @@ class Vegas(VegasCommands, VegasSetCommands, Actions, Sockets, commands.Cog, met
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.4.0"
+    __version__ = "0.4.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -127,7 +127,9 @@ class Vegas(VegasCommands, VegasSetCommands, Actions, Sockets, commands.Cog, met
             "economy": self.economy_line,
             "actions": self.action_handlers(),
             "socket": {"join": self.join, "message": self.message, "leave": self.leave},
-            "requires": "0.8.0",
+            # Every floor and bet belongs to one server
+            "opens_in": "server",
+            "requires": "0.13.0",
         }
 
     async def economy_line(self, ctx: t.Any) -> str:
