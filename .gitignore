@@ -163,9 +163,7 @@ tests/
 !marblemunch/tests/
 !tanks/tests/
 !boulderbash/tests/
-!ageofwar/tests/
 !vegas/tests/
-!botarena3/tests/
 /levelup/data/backgrounds/Thumbs.db
 testcog/
 /reqbackup.txt
