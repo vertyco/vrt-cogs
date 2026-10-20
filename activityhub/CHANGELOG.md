@@ -1,5 +1,13 @@
 # ActivityHub Changelog
 
+## 0.13.1
+
+- Settings tabs that don't fit on one line now wrap onto the next, so every tab shows. Before, the last tabs (like Stats) sat past the edge of a row you had to scroll sideways, with nothing showing it could scroll.
+
+For game developers:
+
+- DEVELOPERS.md's checklist now asks a game that makes sound to have its own volume controls inside the game. The hub has no volume setting.
+
 ## 0.13.0
 
 - The hub can open in DMs, group DMs and servers the bot isn't in. Turn on **User Install** for the app in the Developer Portal, then run `[p]slash sync`: the sync makes Discord's Launch button and `/activities` work in those places too. Until Discord verifies the app, only the bot owner and the app's developer team can open it there.

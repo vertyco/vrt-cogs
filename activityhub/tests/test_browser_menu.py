@@ -274,6 +274,38 @@ def test_server_tab_turns_a_game_off(driver, live):
     assert driver.execute_script(f"return {CARDS}") == ["second"]
 
 
+# The settings tabs that don't sit wholly inside the tab row's box
+TABS_CUT_OFF = """
+const row = document.getElementById("tabs").getBoundingClientRect();
+return [...document.querySelectorAll("#tabs .tab")]
+  .filter((tab) => {
+    const box = tab.getBoundingClientRect();
+    return box.left < row.left - 0.5 || box.right > row.right + 0.5 || box.top < row.top - 0.5 || box.bottom > row.bottom + 0.5;
+  })
+  .map((tab) => tab.dataset.tab);
+"""
+
+
+@pytest.mark.parametrize("theme", ["standard", "orb"])
+@pytest.mark.parametrize("width", [1280, 375])
+def test_every_settings_tab_shows_without_scrolling(driver, live, theme, width):
+    # A tab past the edge of a row that scrolls sideways with no scrollbar is a tab nobody finds
+    live.hub.config.globals["look"] = {"theme": theme}
+    live.user_id = OWNER_ID
+    driver.execute_cdp_cmd(
+        "Emulation.setDeviceMetricsOverride",
+        {"width": width, "height": 740, "deviceScaleFactor": 1, "mobile": width < 500},
+    )
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        driver.execute_script("document.getElementById('gear').click()")
+        wait_for(driver, "getComputedStyle(document.getElementById('panel')).transform === 'none'")
+        assert len(driver.find_elements(By.CSS_SELECTOR, "#tabs .tab")) == 5
+        assert driver.execute_script(TABS_CUT_OFF) == []
+    finally:
+        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+
+
 def test_defaults_tab_turns_a_game_off_everywhere(driver, live):
     live.hub.config.globals["look"] = {"theme": "standard"}
     live.user_id = OWNER_ID

@@ -507,16 +507,14 @@ body.panel-open .panel {
   border-bottom: 1px solid var(--line);
 }
 
-/* Four tabs fit on a phone too; when they don't, they scroll sideways without a scrollbar in the way */
+/* Tabs that don't fit on one line wrap onto the next, so every tab shows. A row that scrolls sideways hides its last
+   tabs from anyone who doesn't think to scroll it */
 .tabs {
   display: flex;
   flex: 1;
+  flex-wrap: wrap;
   gap: 2px;
-  overflow-x: auto;
-  overscroll-behavior: contain;
-  /* A scrolling box starts touch-action over (WebKit), so it says manipulation again: no wait for a second tap */
-  touch-action: manipulation;
-  scrollbar-width: none;
+  min-width: 0;
 }
 
 .tab {

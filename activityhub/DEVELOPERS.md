@@ -1838,6 +1838,7 @@ Your users need ActivityHub too, and Red doesn't install required cogs by itself
 - [ ] If you use a live connection: the page shows when it's reconnecting (`conn.onReconnecting`), `join` sends the full state, and the page says something useful in `conn.onClose`.
 - [ ] Your game sets a status line (`hub.status`), and `hub.busy(true)` while a round is on.
 - [ ] The people button doesn't cover anything, on a computer and on a phone.
+- [ ] If your game makes sound, players can turn it down inside the game, music and sound effects each on its own if it has both. The hub has no volume setting of its own, and turning the computer down also turns down everyone's voices in Discord. Block Blaster's settings show one way: a volume slider under each sound switch.
 - [ ] `info.json` has an `end_user_data_statement`, and your cog deletes a player's data when Red asks it to (`red_delete_data_for_user`).
 - [ ] `info.json`'s `install_msg` (or your README) says how to get ActivityHub.
 
