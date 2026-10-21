@@ -1,3 +1,9 @@
+# [5.2.13] (2026-10-21)
+
+## Bug Fixes
+
+- Leaving voice without LevelUp having seen the join (for example after the bot reconnects to Discord, or when leveling is turned on while people are in voice) is now logged as a warning instead of an error
+
 # [5.2.12] (2026-10-19)
 
 ## Bug Fixes

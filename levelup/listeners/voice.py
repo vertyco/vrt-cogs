@@ -157,7 +157,7 @@ class VoiceListener(MixinMeta):
         data = voice.pop(member.id, None)
         if not data:
             # User wasnt in the voice cache, maybe cog was reloaded while user was in VC?
-            log.error(
+            log.warning(
                 f"User {member.name} left VC but wasnt in voice cache in {member.guild}\nBefore: {before}\nAfter: {after}"
             )
             return
