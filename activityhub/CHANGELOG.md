@@ -1,5 +1,9 @@
 # ActivityHub Changelog
 
+## 0.13.3
+
+- The hub's web server no longer writes a line to the bot's log for every file a player's game loads. Opening one game used to add dozens of `aiohttp.access` lines.
+
 ## 0.13.2
 
 - The Orb menu turns much more smoothly on phones. Swiping the ring used to redraw every game button on every frame; now the buttons slide and light up without being redrawn. On a 120 Hz Android phone a swipe went from about 63 to about 109 frames a second (with the orb change below), and dropped frames went from 45% to 6%.

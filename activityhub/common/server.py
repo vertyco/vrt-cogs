@@ -70,7 +70,8 @@ class HubServer:
 
     async def start(self, host: str, port: int) -> None:
         self.http = aiohttp.ClientSession(timeout=discord_api.DISCORD_TIMEOUT)
-        runner = web.AppRunner(self.make_app())
+        # No access log: a game page fetches dozens of files, and a line per file buries the bot's log
+        runner = web.AppRunner(self.make_app(), access_log=None)
         try:
             await runner.setup()
             await web.TCPSite(runner, host, port).start()
