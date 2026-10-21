@@ -2,6 +2,7 @@ import logging
 
 import pytest
 
+from activityhub.main import ActivityHub
 from activityhub.tests.fakes import (
     ADMIN_ID,
     GUILD_ID,
@@ -41,6 +42,7 @@ async def test_preview_without_a_session(client, hub, demo, second):
     assert keys(state) == ["second", "demo"]
     assert state["games"][1]["icon"].startswith("/games/demo/") and state["games"][1]["icon"].endswith("/icon.svg")
     assert state["look"]["layout"] == "list"
+    assert state["version"] == ActivityHub.__version__
 
 
 @pytest.mark.asyncio
@@ -57,6 +59,7 @@ async def test_member_state(client, hub, demo, second):
     status, state = await menu(client, session_headers(hub))
     assert status == 200
     assert state["player"]["id"] == str(MEMBER_ID)
+    assert state["version"] == ActivityHub.__version__
     assert state["look"] == {
         "theme": "orb",
         "layout": "compact",

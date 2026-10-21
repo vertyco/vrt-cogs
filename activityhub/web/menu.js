@@ -365,6 +365,7 @@ function render() {
   renderHeader();
   renderGames(page.state.games);
   $("gear").hidden = page.state.tabs.length === 0;
+  $("hub-version").textContent = `ActivityHub ${page.state.version}`;
   peopleChanged();
 }
 
@@ -495,6 +496,10 @@ function gameIcon(game) {
 
 // How far apart the pods sit along the ring, for a pod of size 1
 const ROW_SPACING = 1.24;
+// The step in a tab's top edge sits this share of the middle row's tab back from its end (orb.css)
+const PLATE_STEP = 0.56;
+// How near the middle row a picker's pill gets its lit parts' layers (orb.css): a little before it starts to light
+const LIGHTING_ROWS = 1.5;
 // How far the scroll wheel turns before the selection moves one pill
 const WHEEL_STEP = 50;
 // How far the mouse moves, after the wheel or the arrow keys moved the selection, before pointing picks a pill again
@@ -543,6 +548,13 @@ function renderOrb(games) {
   requestAnimationFrame(() => list.classList.add("placed"));
 }
 
+// A part of a tab's picture (orb.css): its edge, with the lit fill and the dark fill over it
+function platePart(name) {
+  const part = el("span", name);
+  part.append(el("span", "plate-lit"), el("span", "plate-dark"));
+  return part;
+}
+
 // The pod holds the game's icon, or a cog for Settings, and the tab holds its name
 function orbPill(item) {
   const pill = el("button", item.key ? "card pill" : "pill settings-pill");
@@ -550,10 +562,16 @@ function orbPill(item) {
   pill.dataset.key = item.key;
   pill.classList.toggle("wrong-platform", Boolean(item.key && page.host.onlyOn(item.key)));
   const pod = el("span", "pod");
-  pod.append(item.key ? gameIcon(item) : gearIcon());
+  // The picker fades a lit copy of the icon in over the plain one (orb.css)
+  const icon = () => (item.key ? gameIcon(item) : gearIcon());
+  const lit = icon();
+  lit.classList.add("lit-icon");
+  pod.append(icon(), lit);
   const plate = el("span", "plate");
-  plate.append(cardText(item));
-  pill.append(pod, plate);
+  const view = el("span", "plate-window");
+  view.append(platePart("plate-bg"));
+  plate.append(platePart("plate-cap"), view, cardText(item));
+  pill.append(pod, plate, el("span", "clamp"));
   // Pointing at a pill selects it once the mouse moves. When the list scrolls, the pills glide along the ring under
   // a still mouse, and that isn't the player pointing
   pill.addEventListener("pointermove", (event) => {
@@ -652,6 +670,7 @@ function measureRing() {
       row = Math.min(pod * spread, reach / half);
     }
     page.ring = { cx, cy, radius, pod, row, half, edge };
+    fitTabs(pills[0]);
     return;
   }
   const rows = Math.min(pills.length, Math.floor((2 * reach) / row) + 1);
@@ -660,6 +679,7 @@ function measureRing() {
     row = Math.min(pod * spread, (2 * reach) / (rows - 1));
   }
   page.ring = { cx, cy, radius, pod, row, rows, edge };
+  fitTabs(pills[0]);
 }
 
 // Each pod's place on the ring for its row, counted from the middle row
@@ -669,10 +689,27 @@ function ringSpot(at) {
   return [cx + Math.sqrt(Math.max(0, radius ** 2 - dy ** 2)), cy + dy];
 }
 
+// A tab past the edge of the screen slides its picture back under the pod, so it ends at the edge (orb.css)
 function placePill(pill, at) {
   const [x, y] = ringSpot(at);
+  const { pod, span, edge } = page.ring;
   pill.style.transform = `translate(${x}px, ${y}px)`;
-  pill.style.maxWidth = `${page.ring.edge - x + page.ring.pod / 2}px`;
+  pill.querySelector(".plate-bg").style.transform = `translateX(${Math.min(0, edge - (x - pod / 2 + span))}px)`;
+}
+
+// Where the step in every tab's top edge sits, and how long a name can be before it's cut, both from the middle row's
+// tab, as wide as the edge of the screen leaves it (orb.css). Measured with the ring, never while it turns
+function fitTabs(pill) {
+  const { pod, edge } = page.ring;
+  const plate = pill.querySelector(".plate");
+  const [x] = ringSpot(0);
+  const start = x - pod / 2 + plate.offsetLeft;
+  const shown = Math.min(x - pod / 2 + pill.offsetWidth, edge) - start;
+  const padding = getComputedStyle(plate);
+  const list = $("orb-list").style;
+  list.setProperty("--plate-step", `${shown * PLATE_STEP}px`);
+  list.setProperty("--name-max", `${shown - parseFloat(padding.paddingLeft) - parseFloat(padding.paddingRight)}px`);
+  page.ring.span = pill.offsetWidth;
 }
 
 // With more pills than rows, the rows scroll to keep the selected pill in view. On a touch screen the ring is a picker
@@ -704,7 +741,8 @@ function placePills() {
 
 // The picker turns to page.pick, the game in the middle row, which is part way between two games while a finger turns
 // it. A pod passing the last row fades away over the next one, and each pill is lit by how near the middle it is
-// (orb.css), in steps too small to see, so the pills far from the middle aren't styled again every frame
+// (orb.css), in steps too small to see, so the pills far from the middle aren't styled again every frame. The pills
+// within a row and a half of the middle are lighting: their lit parts get layers of their own, ready before they blend
 function placePicker(pills) {
   const { row, half } = page.ring;
   pills.forEach((pill, i) => {
@@ -713,6 +751,7 @@ function placePicker(pills) {
     placePill(pill, clamp(at, -half - 1, half + 1));
     pill.style.opacity = shown < 1 ? String(shown) : "";
     pill.classList.toggle("off-ring", shown < 0.5);
+    pill.classList.toggle("lighting", Math.abs(at) < LIGHTING_ROWS);
     const lit = String(Math.round(clamp(1 - Math.abs(at), 0, 1) * 100) / 100);
     if (pill.style.getPropertyValue("--lit") !== lit) {
       pill.style.setProperty("--lit", lit);
@@ -1156,6 +1195,7 @@ function stopTurning() {
 function pillCount() {
   return document.querySelectorAll("#games .pill").length;
 }
+
 
 // A finger's press shows on the card, pod or button under it at once in the Orb, where nothing scrolls, and a moment
 // later in the Standard list, where a finger landing may be starting a scroll. It goes as soon as the finger slides,

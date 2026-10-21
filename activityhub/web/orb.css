@@ -224,7 +224,6 @@ body[data-theme="orb"]:not(.panel-open) .menu {
 }
 
 .goo-shape {
-  mix-blend-mode: screen;
   animation: orb-spin 34s linear infinite reverse;
 }
 
@@ -309,10 +308,18 @@ body[data-theme="orb"]:not(.panel-open) .menu {
   content: "";
 }
 
-/* The slow swirl inside */
+/* The slow swirl inside. Its blur is drawn once into the layer that turns (::before), so the graphics chip spins a
+   finished picture instead of blurring the swirl again every frame */
 .orb-core {
   position: absolute;
   inset: 14%;
+  animation: orb-spin 20s linear infinite;
+  will-change: transform;
+}
+
+.orb-core::before {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
   background: conic-gradient(
     rgb(var(--orb-pale) / 0),
@@ -324,9 +331,7 @@ body[data-theme="orb"]:not(.panel-open) .menu {
     rgb(var(--orb-pale) / 0)
   );
   filter: blur(6px);
-  mix-blend-mode: screen;
-  animation: orb-spin 20s linear infinite;
-  will-change: transform;
+  content: "";
 }
 
 /* A phone running hot (menu.js heatChanged) holds the scene's endless motion still, and it carries on from there once
@@ -601,26 +606,6 @@ body[data-theme="orb"] .notice {
    the edge, and the fill sits 1px inside it. It starts under its pod, so the pod looks plugged into it. The selected
    tab is lit all over */
 .orb-menu .pill .plate {
-  --plate-lit: linear-gradient(
-    180deg,
-    rgb(var(--orb-pale)) 0%,
-    rgb(var(--orb-light)) 30%,
-    rgb(var(--orb-main)) 78%,
-    rgb(var(--orb-mid)) 100%
-  );
-  --shape: polygon(
-    0 10px,
-    8px 2px,
-    10px 2px,
-    14px 0,
-    44% 0,
-    calc(44% + 6px) 6px,
-    calc(100% - 12px) 6px,
-    100% 18px,
-    100% 100%,
-    10px 100%,
-    0 calc(100% - 10px)
-  );
   position: relative;
   isolation: isolate;
   display: flex;
@@ -630,38 +615,136 @@ body[data-theme="orb"] .notice {
   height: var(--plate-h);
   margin-left: calc(var(--pod) * -0.22);
   padding: 5px 16px 0 calc(var(--pod) * 0.22 + 12px);
-  background: rgb(var(--orb-light) / 0.42);
-  clip-path: var(--shape);
   transition:
     transform 0.15s ease,
-    background-color 0.15s,
     color 0.15s;
 }
 
-.orb-menu .pill .plate::before {
+/* The tab's picture comes in two parts, so turning the ring never lays a tab out or draws it again: its left end
+   (plate-cap) stays with the pod, and the rest (plate-bg) keeps one length and slides through a window
+   (plate-window) after the end, so it finishes at the screen's edge (menu.js placePill). The step in its top edge
+   sits the same way back from its end on every row, and a long name is cut where the middle row runs out of room
+   (menu.js fitTabs). Each part draws the edge, then the lit fill (plate-lit), then the dark fill (plate-dark), and
+   each is cut to its shape inside its own box, where cutting costs nothing as the ring turns */
+.orb-menu .pill :is(.plate-cap, .plate-window) {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: -1;
+}
+
+.orb-menu .pill .plate-cap {
+  --part: polygon(0 10px, 8px 2px, 10px 2px, 14px 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  left: 0;
+  width: 16px;
+}
+
+.orb-menu .pill .plate-window {
+  left: 16px;
+  right: 0;
+  overflow: clip;
+}
+
+.orb-menu .pill .plate-bg {
+  --part: polygon(
+    0 10px,
+    8px 2px,
+    10px 2px,
+    14px 0,
+    calc(100% - var(--plate-step, 56%)) 0,
+    calc(100% - var(--plate-step, 56%) + 6px) 6px,
+    calc(100% - 12px) 6px,
+    100% 18px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -16px;
+  right: 0;
+}
+
+.orb-list.placed .plate-bg {
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.orb-list.turning .plate-bg {
+  transition: none;
+}
+
+.orb-menu .pill :is(.plate-cap, .plate-bg)::before,
+.orb-menu .pill :is(.plate-lit, .plate-dark) {
+  position: absolute;
+  inset: 0;
+}
+
+.orb-menu .pill :is(.plate-cap, .plate-bg)::before {
+  background: rgb(var(--orb-light) / 0.42);
+  clip-path: var(--part);
+  content: "";
+  transition: background-color 0.15s;
+}
+
+.orb-menu .pill .plate-lit {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.orb-menu .pill .plate-lit::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgb(var(--orb-pale)) 0%,
+    rgb(var(--orb-light)) 30%,
+    rgb(var(--orb-main)) 78%,
+    rgb(var(--orb-mid)) 100%
+  );
+  clip-path: var(--part);
+  content: "";
+}
+
+.orb-menu .pill .plate-dark {
+  transition: opacity 0.15s;
+}
+
+.orb-menu .pill .plate-dark::before {
   position: absolute;
   inset: 1px;
-  z-index: -1;
   background: linear-gradient(
     180deg,
     rgb(var(--orb-dark) / 0.85) 0%,
     rgb(var(--orb-deep) / 0.92) 55%,
     rgb(var(--orb-ink) / 0.95) 100%
   );
-  clip-path: var(--shape);
+  clip-path: var(--part);
   content: "";
-  transition: opacity 0.15s;
+}
+
+/* The end's fill runs on into the rest of the tab, with no edge between them */
+.orb-menu .pill .plate-cap .plate-dark::before {
+  right: 0;
+}
+
+.orb-menu .pill .text {
+  max-width: var(--name-max, none);
 }
 
 @media (hover: hover) {
   :where(body:not(.hover-held)) .orb-menu .pill:hover .plate {
-    background: rgb(var(--orb-pale) / 0.7);
     color: rgb(var(--orb-text));
+  }
+
+  :where(body:not(.hover-held)) .orb-menu .pill:hover :is(.plate-cap, .plate-bg)::before {
+    background: rgb(var(--orb-pale) / 0.7);
   }
 }
 
-/* A small clamp holds the tab to its pod, across the pod's rim */
-.orb-menu .pill::after {
+/* A small clamp holds the tab to its pod, across the pod's rim. Its size is inside its border */
+.orb-menu .pill .clamp {
+  box-sizing: content-box;
   position: absolute;
   left: calc(var(--pod) * 0.74);
   top: calc(50% - var(--plate-h) / 2 + 1px);
@@ -671,11 +754,10 @@ body[data-theme="orb"] .notice {
   border: 1px solid rgb(var(--orb-light) / 0.55);
   border-radius: 1px 4px 1px 4px;
   background: rgb(var(--orb-deep));
-  content: "";
   pointer-events: none;
 }
 
-.orb-menu .pill.selected::after {
+.orb-menu .pill.selected .clamp {
   border-color: rgb(var(--orb-white) / 0.9);
   background: rgb(var(--orb-mid));
 }
@@ -686,12 +768,15 @@ body[data-theme="orb"] .notice {
 }
 
 .orb-menu .pill.selected .plate {
-  background: var(--plate-lit);
   color: rgb(var(--orb-ink));
   transform: translateX(8px);
 }
 
-.orb-menu .pill.selected .plate::before {
+.orb-menu .pill.selected .plate-lit {
+  opacity: 1;
+}
+
+.orb-menu .pill.selected .plate-dark {
   opacity: 0;
 }
 
@@ -708,7 +793,11 @@ body[data-theme="orb"] .notice {
 
 /* On a touch screen's picker the selected look slides from game to game with the ring instead of jumping: menu.js
    sets each pill's --lit from how near the middle row it is (1 there, 0 a row away), and every part of the look blends
-   by it. Each pill moves as a layer of its own, so its name glides instead of being drawn again every frame */
+   by it. Each pill and its tab's picture move as layers of their own, so the ring turns without drawing them again.
+   Every part of the blend is a move, a fade or a filter, which the graphics chip applies to a layer by itself: the few
+   pills near the middle row (lighting, from menu.js) give each blending part a layer, so they light up without being
+   drawn again either. Only those few, since every layer takes memory, and only they carry the glow, since a filter
+   costs the graphics chip a pass of its own every frame even at nothing */
 @property --lit {
   syntax: "<number>";
   inherits: true;
@@ -717,8 +806,29 @@ body[data-theme="orb"] .notice {
 
 .orb-menu .orb-list.picker .pill {
   --lit: 0;
-  filter: drop-shadow(0 0 10px rgb(var(--orb-main) / calc(0.45 * var(--lit))));
+  filter: none;
   will-change: transform;
+}
+
+.orb-menu .orb-list.picker .pill.lighting {
+  filter: drop-shadow(0 0 10px rgb(var(--orb-main) / calc(0.45 * var(--lit))));
+  will-change: transform, filter;
+}
+
+.orb-menu .orb-list.picker .pill.lighting::before {
+  will-change: transform, opacity;
+}
+
+.orb-menu .orb-list.picker .pill.lighting .pod,
+.orb-menu .orb-list.picker .pill.lighting .plate {
+  will-change: transform;
+}
+
+.orb-menu .orb-list.picker .pill.lighting .pod::before,
+.orb-menu .orb-list.picker .pill.lighting .lit-icon,
+.orb-menu .orb-list.picker .pill.lighting .clamp::after,
+.orb-menu .orb-list.picker .pill.lighting :is(.plate-lit, .plate-dark) {
+  will-change: opacity;
 }
 
 .orb-menu .orb-list.picker.placed .pill {
@@ -734,48 +844,103 @@ body[data-theme="orb"] .notice {
 
 .orb-menu .orb-list.picker .pod {
   background: var(--pod-glass);
-  box-shadow:
-    0 0 0 2px rgb(var(--orb-ink) / calc(0.85 + 0.05 * var(--lit))),
-    0 0 0 3px color-mix(in srgb, rgb(var(--orb-white) / 0.85) calc(var(--lit) * 100%), rgb(var(--orb-light) / 0.3)),
-    0 0 calc(18px + 10px * var(--lit)) calc(4px * var(--lit))
-      color-mix(in srgb, rgb(var(--orb-light) / 0.7) calc(var(--lit) * 100%), rgb(var(--orb-main) / 0.28));
+  box-shadow: none;
   transform: scale(calc(1 + 0.14 * var(--lit)));
   transition: filter 0.15s;
 }
 
-/* The lit glass, over the plain glass and under the icon */
+/* The plain rim and glow, just under the pod and growing with it, which fade as the lit ones fade in. Over the tab,
+   like the pod */
+.orb-menu .orb-list.picker .pill::before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  width: var(--pod);
+  height: var(--pod);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px rgb(var(--orb-ink) / 0.85),
+    0 0 0 3px rgb(var(--orb-light) / 0.3),
+    0 0 18px rgb(var(--orb-main) / 0.28);
+  opacity: calc(1 - var(--lit));
+  transform: scale(calc(1 + 0.14 * var(--lit)));
+  content: "";
+  pointer-events: none;
+}
+
+/* The lit glass, rim and glow, over the plain glass and under the icon */
 .orb-menu .orb-list.picker .pod::before {
   position: absolute;
   inset: 0;
   z-index: -1;
   border-radius: 50%;
   background: var(--pod-lit);
+  box-shadow:
+    0 0 0 2px rgb(var(--orb-ink) / 0.9),
+    0 0 0 3px rgb(var(--orb-white) / 0.85),
+    0 0 28px 4px rgb(var(--orb-light) / 0.7);
   opacity: var(--lit);
   content: "";
 }
 
-.orb-menu .orb-list.picker .pill.pressed .pod {
+.orb-menu .orb-list.picker .pill.pressed .pod,
+.orb-menu .orb-list.picker .pill.pressed::before {
   transform: scale(calc(0.9 + 0.12 * var(--lit)));
 }
 
+.orb-menu .orb-list.picker .pill.pressed::before {
+  filter: brightness(0.78);
+}
+
+/* The lit icon fades in over the plain one, which stays dim, in the same place */
+.orb-menu .pod .lit-icon {
+  display: none;
+}
+
+.orb-menu .orb-list.picker .pod > :is(.icon, .gear-icon) {
+  grid-area: 1 / 1;
+}
+
 .orb-menu .orb-list.picker .pod .icon {
-  filter: brightness(calc(0.78 + 0.22 * var(--lit))) saturate(calc(0.85 + 0.15 * var(--lit)));
+  filter: brightness(0.78) saturate(0.85);
   transition: none;
 }
 
 .orb-menu .orb-list.picker .gear-icon {
-  fill: color-mix(in srgb, rgb(var(--orb-white)) calc(var(--lit) * 100%), rgb(var(--orb-light) / 0.85));
+  fill: rgb(var(--orb-light) / 0.85);
 }
 
-.orb-menu .orb-list.picker .pill::after {
-  border-color: color-mix(in srgb, rgb(var(--orb-white) / 0.9) calc(var(--lit) * 100%), rgb(var(--orb-light) / 0.55));
-  background: color-mix(in srgb, rgb(var(--orb-mid)) calc(var(--lit) * 100%), rgb(var(--orb-deep)));
+.orb-menu .orb-list.picker .pod .lit-icon {
+  display: grid;
+  opacity: var(--lit);
+  filter: none;
+}
+
+.orb-menu .orb-list.picker .gear-icon.lit-icon {
+  display: block;
+  fill: rgb(var(--orb-white));
+}
+
+.orb-menu .orb-list.picker .clamp {
+  border-color: rgb(var(--orb-light) / 0.55);
+  background: rgb(var(--orb-deep));
+}
+
+/* The lit clamp, over the plain one */
+.orb-menu .orb-list.picker .clamp::after {
+  position: absolute;
+  inset: -1px;
+  border: 1px solid rgb(var(--orb-white) / 0.9);
+  border-radius: inherit;
+  background: rgb(var(--orb-mid));
+  opacity: var(--lit);
+  content: "";
 }
 
 /* The name turns dark as quickly as it can without a jump, halfway to the middle: blended slowly, it would fade into
    the half lit tab under it */
 .orb-menu .orb-list.picker .plate {
-  background: rgb(var(--orb-light) / 0.42);
   color: color-mix(
     in srgb,
     rgb(var(--orb-ink)) calc(clamp(0, (var(--lit) - 0.45) * 10, 1) * 100%),
@@ -785,20 +950,19 @@ body[data-theme="orb"] .notice {
   transition: filter 0.15s;
 }
 
-.orb-menu .orb-list.picker .plate::before {
-  opacity: calc(1 - var(--lit));
+.orb-menu .orb-list.picker .plate-bg {
+  will-change: transform;
+}
+
+/* The lit tab shows through as its dark fill fades, as the tab nears the middle */
+.orb-menu .orb-list.picker .plate-lit {
+  opacity: var(--lit);
   transition: none;
 }
 
-/* The lit tab, under the tab's dark fill, which fades as the tab nears the middle */
-.orb-menu .orb-list.picker .plate::after {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  background: var(--plate-lit);
-  clip-path: var(--shape);
-  opacity: var(--lit);
-  content: "";
+.orb-menu .orb-list.picker .plate-dark {
+  opacity: calc(1 - var(--lit));
+  transition: none;
 }
 
 /* The screen shows the selected game's description, currency line and platform note; screen readers still read them
@@ -1389,7 +1553,7 @@ body[data-theme="orb"] .swatch[aria-pressed="true"] {
 
 /* The count can't rise out of its pod above the clamp across the pod's rim, so on a pod with a count the clamp goes
    under the pod instead, still over the tab */
-.orb-menu .pill.has-bubble::after {
+.orb-menu .pill.has-bubble .clamp {
   z-index: 0;
 }
 

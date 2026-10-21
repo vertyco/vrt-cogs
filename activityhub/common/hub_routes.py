@@ -219,6 +219,7 @@ class HubRoutes:
             "globalSwitches": [],
             "economyLabels": None,
             "launch": None,
+            "version": self.hub.registry.hub_version,
         }
 
     async def player_state(self, ctx: ActivityContext) -> dict:
@@ -240,6 +241,7 @@ class HubRoutes:
             "globalSwitches": await self.global_switches() if "defaults" in tabs else [],
             "economyLabels": await self.labels_switch(ctx, tabs),
             "launch": None,
+            "version": self.hub.registry.hub_version,
         }
 
     async def global_switches(self) -> list[dict]:

@@ -1,5 +1,12 @@
 # ActivityHub Changelog
 
+## 0.13.2
+
+- The Orb menu turns much more smoothly on phones. Swiping the ring used to redraw every game button on every frame; now the buttons slide and light up without being redrawn. On a 120 Hz Android phone a swipe went from about 63 to about 109 frames a second (with the orb change below), and dropped frames went from 45% to 6%.
+- The orb in the middle costs the phone far less to draw: its swirl's blur is drawn once instead of every frame, and the swirl and goo no longer use a blend that makes the phone copy what's under them every frame. They look the same.
+- The Settings panel shows the hub's version in small letters at the bottom left.
+- In the Orb menu on a phone, the step in each tab's top edge now sits the same distance back from its end on every row, and a game name too long for the middle row's tab is cut at that length on every row.
+
 ## 0.13.1
 
 - Settings tabs that don't fit on one line now wrap onto the next, so every tab shows. Before, the last tabs (like Stats) sat past the edge of a row you had to scroll sideways, with nothing showing it could scroll.

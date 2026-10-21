@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
 
+from activityhub.main import ActivityHub
 from activityhub.tests.browser import (
     DISCORD_QUERY,
     WAITS_FOR_DOUBLE_TAP,
@@ -170,6 +171,7 @@ def test_in_discord_header_and_member_tabs(driver, live):
     open_settings(driver)
     tabs = [tab.text for tab in driver.find_elements(By.CSS_SELECTOR, "#tabs .tab")]
     assert tabs == ["My look", "My order"]
+    assert driver.find_element(By.ID, "hub-version").text == f"ActivityHub {ActivityHub.__version__}"
 
 
 def test_look_previews_live_and_saves(driver, live):
@@ -286,6 +288,15 @@ return [...document.querySelectorAll("#tabs .tab")]
 """
 
 
+# The version sits on one line, clear of the Reset button
+VERSION_CROWDED = """
+const version = document.getElementById("hub-version");
+const box = version.getBoundingClientRect();
+const reset = document.getElementById("reset").getBoundingClientRect();
+return !version.textContent || version.scrollWidth > version.clientWidth || box.height > 20 || box.right > reset.left;
+"""
+
+
 @pytest.mark.parametrize("theme", ["standard", "orb"])
 @pytest.mark.parametrize("width", [1280, 375])
 def test_every_settings_tab_shows_without_scrolling(driver, live, theme, width):
@@ -302,6 +313,7 @@ def test_every_settings_tab_shows_without_scrolling(driver, live, theme, width):
         wait_for(driver, "getComputedStyle(document.getElementById('panel')).transform === 'none'")
         assert len(driver.find_elements(By.CSS_SELECTOR, "#tabs .tab")) == 5
         assert driver.execute_script(TABS_CUT_OFF) == []
+        assert driver.execute_script(VERSION_CROWDED) is False
     finally:
         driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
 
@@ -734,10 +746,10 @@ def test_orb_picker_lights_each_game_by_how_near_the_middle_it_is_and_blends_the
         plain_device(driver)
 
 
-# Whether the picker still turns, and the middle of the selected game's plate with its game, to tap it
+# Whether the picker still turns, and the middle of the selected game's name with its game, to tap it
 CAUGHT_PILL = """
 const pill = document.querySelector('#games .pill.selected');
-const plate = pill.querySelector('.plate').getBoundingClientRect();
+const plate = pill.querySelector('.name').getBoundingClientRect();
 return {
   turning: document.getElementById('orb-list').classList.contains('turning'),
   key: pill.dataset.key,
@@ -752,6 +764,31 @@ window.addEventListener('pointerdown', (event) => {
   window.tappedPill = event.target.closest('#games .pill')?.dataset.key ?? null;
 }, { capture: true, once: true });
 """
+
+
+# Each tab as laid out, not as drawn: the width the page gives it
+TAB_WIDTHS = "[...document.querySelectorAll('#games .pill .plate')].map((plate) => plate.offsetWidth)"
+
+
+def test_turning_the_orb_picker_never_lays_out_a_tab_again(driver, live, tmp_path):
+    # A tab laid out again on every frame of a swipe is drawn again too, which costs a phone frames, so its picture
+    # slides under its pod to end at the edge of the screen instead
+    for i in range(6):
+        folder = write_demo_web(tmp_path / f"x{i}")
+        register(live.hub, DemoCog(folder, key=f"x{i}", name=f"X {i}", cog_name=f"X{i}"))
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        wait_for(driver, RESTING)
+        before = driver.execute_script(f"return {TAB_WIDTHS}")
+        hold_drag(driver, (300, 760), (300, 600))
+        assert driver.execute_script("return document.getElementById('orb-list').classList.contains('turning')")
+        assert driver.execute_script(f"return {TAB_WIDTHS}") == before
+        touch(driver, "touchEnd")
+        wait_for(driver, RESTING)
+        assert driver.execute_script(f"return {TAB_WIDTHS}") == before
+    finally:
+        plain_device(driver)
 
 
 def test_orb_picker_spins_on_after_a_flick_and_a_finger_stops_it(driver, live, tmp_path):
@@ -1312,7 +1349,9 @@ def test_orb_theme_on_a_phone(driver, live, tmp_path):
         wait_for(driver, SETTLED)
         # A phone widens the page to fit whatever sticks out, so the page is checked against the phone's width
         assert driver.execute_script("return document.documentElement.scrollWidth") <= 375
-        rights = "[...document.querySelectorAll('#games .pill')].map((pill) => pill.getBoundingClientRect().right)"
+        # Each tab's picture and name end on the screen (a pill's own box runs on past it, out of sight)
+        rights = """[...document.querySelectorAll('#games .pill:not(.off-ring) :is(.plate-bg, .name)')]
+          .map((part) => part.getBoundingClientRect().right)"""
         assert max(driver.execute_script(f"return {rights}")) <= 375
         # The pods hold the icons, and the panel above the ring shows the selected game's description
         pill = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="demo"]')
