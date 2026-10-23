@@ -168,7 +168,7 @@ def generate_default_profile(
 
     if background_bytes:
         try:
-            card = Image.open(BytesIO(background_bytes))
+            card = Image.open(BytesIO(background_bytes), formats=imgtools.USER_IMAGE_FORMATS)
         except UnidentifiedImageError as e:
             if reraise:
                 raise e
@@ -294,7 +294,7 @@ def generate_default_profile(
         )
         if prestige_emoji:
             try:
-                prestige_icon = Image.open(BytesIO(prestige_emoji)).convert("RGBA")
+                prestige_icon = Image.open(BytesIO(prestige_emoji), formats=imgtools.USER_IMAGE_FORMATS).convert("RGBA")
                 prestige_icon = prestige_icon.resize((50, 50), Image.Resampling.LANCZOS)
                 placement = (round(stat_start + font.getlength(text) + 10), name_y + 65)
                 stats.paste(prestige_icon, placement, prestige_icon)
@@ -436,7 +436,7 @@ def generate_default_profile(
     # Paste role icon on top left of profile circle
     if role_icon_bytes:
         try:
-            role_icon_img = Image.open(BytesIO(role_icon_bytes)).convert("RGBA")
+            role_icon_img = Image.open(BytesIO(role_icon_bytes), formats=imgtools.USER_IMAGE_FORMATS).convert("RGBA")
             role_icon_img = role_icon_img.resize((70, 70), Image.Resampling.LANCZOS)
             stats.paste(role_icon_img, (10, 10), role_icon_img)
         except Exception as e:

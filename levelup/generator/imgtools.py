@@ -30,6 +30,9 @@ DEFAULT_BACKGROUNDS = ASSETS / "backgrounds"
 DEFAULT_FONTS = ASSETS / "fonts"
 DEFAULT_FONT = DEFAULT_FONTS / "BebasNeue.ttf"
 STOCK = ASSETS / "stock"
+# The only formats Pillow may try on images that members, admins or URLs supply (backgrounds, avatars, icons).
+# Pillow's rarer decoders have had memory bugs where a crafted file runs code, so those never see outside images
+USER_IMAGE_FORMATS = ("PNG", "JPEG", "WEBP", "GIF")
 
 
 def load_stock(name: str) -> Image.Image:
@@ -87,7 +90,7 @@ def download_image(url: str) -> t.Union[bytes, None]:
         # for expired or unavailable assets. Shipping that downstream produces a broken
         # image (Discord rejects it with HTTP 415 "failed to get asset"), so validate here.
         try:
-            Image.open(BytesIO(content)).verify()
+            Image.open(BytesIO(content), formats=USER_IMAGE_FORMATS).verify()
         except (UnidentifiedImageError, OSError, SyntaxError, ValueError) as e:
             log.warning(f"URL returned non-image content ({len(content)} bytes): {url} ({e})")
             return None
@@ -111,7 +114,7 @@ def open_avatar(avatar_bytes: t.Union[bytes, str, None]) -> Image.Image:
         avatar_bytes = download_image(avatar_bytes) if avatar_bytes.startswith("http") else None
     if avatar_bytes:
         try:
-            pfp = Image.open(BytesIO(avatar_bytes))
+            pfp = Image.open(BytesIO(avatar_bytes), formats=USER_IMAGE_FORMATS)
             pfp.load()  # force-decode now so bad bytes fail here, not deep in the render
             return pfp
         except (UnidentifiedImageError, OSError, SyntaxError, ValueError, TypeError) as e:

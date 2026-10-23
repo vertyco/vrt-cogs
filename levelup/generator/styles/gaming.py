@@ -156,7 +156,7 @@ def generate_gaming_profile(
     # Load images
     if background_bytes:
         try:
-            bg = Image.open(BytesIO(background_bytes))
+            bg = Image.open(BytesIO(background_bytes), formats=imgtools.USER_IMAGE_FORMATS)
         except UnidentifiedImageError as e:
             if reraise:
                 raise e
@@ -255,7 +255,7 @@ def generate_gaming_profile(
         # If we have a prestige emoji, make room for it
         if prestige and prestige_emoji:
             try:
-                p_icon = Image.open(BytesIO(prestige_emoji)).resize(
+                p_icon = Image.open(BytesIO(prestige_emoji), formats=imgtools.USER_IMAGE_FORMATS).resize(
                     (prestige_icon_size, prestige_icon_size), Image.Resampling.LANCZOS
                 )
                 if p_icon.mode != "RGBA":
@@ -396,7 +396,9 @@ def generate_gaming_profile(
         # --- Role icon (bottom right corner, near XP bar) ---
         if role_icon:
             try:
-                r_icon = Image.open(BytesIO(role_icon)).resize((28, 28), Image.Resampling.LANCZOS)
+                r_icon = Image.open(BytesIO(role_icon), formats=imgtools.USER_IMAGE_FORMATS).resize(
+                    (28, 28), Image.Resampling.LANCZOS
+                )
                 if r_icon.mode != "RGBA":
                     r_icon = r_icon.convert("RGBA")
                 # Place in bottom right, aligned with XP bar area

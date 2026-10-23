@@ -89,7 +89,7 @@ def generate_minimal_profile(
     # Load background
     if background_bytes:
         try:
-            bg = Image.open(BytesIO(background_bytes))
+            bg = Image.open(BytesIO(background_bytes), formats=imgtools.USER_IMAGE_FORMATS)
         except UnidentifiedImageError as e:
             if reraise:
                 raise e
@@ -202,7 +202,9 @@ def generate_minimal_profile(
             text_x = badge_padding
             if prestige_emoji:
                 try:
-                    p_icon = Image.open(BytesIO(prestige_emoji)).resize((22, 22), Image.Resampling.LANCZOS)
+                    p_icon = Image.open(BytesIO(prestige_emoji), formats=imgtools.USER_IMAGE_FORMATS).resize(
+                        (22, 22), Image.Resampling.LANCZOS
+                    )
                     if p_icon.mode != "RGBA":
                         p_icon = p_icon.convert("RGBA")
                     badge_img.paste(p_icon, (badge_padding, (badge_height - 22) // 2), p_icon)
@@ -322,7 +324,9 @@ def generate_minimal_profile(
         # --- Role icon (top left corner if present) ---
         if role_icon:
             try:
-                r_icon = Image.open(BytesIO(role_icon)).resize((32, 32), Image.Resampling.LANCZOS)
+                r_icon = Image.open(BytesIO(role_icon), formats=imgtools.USER_IMAGE_FORMATS).resize(
+                    (32, 32), Image.Resampling.LANCZOS
+                )
                 if r_icon.mode != "RGBA":
                     r_icon = r_icon.convert("RGBA")
                 stats.paste(r_icon, (padding, padding), r_icon)

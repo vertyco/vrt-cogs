@@ -1,3 +1,9 @@
+# [5.2.14] (2026-10-23)
+
+## Security
+
+- Profile backgrounds, avatars, level-up backgrounds, prestige emojis and role icons are now only opened as PNG, JPEG, WebP or GIF. A crafted image in a rarer format (such as FlashPix) could run code through a Pillow bug, and LevelUp opens images any member supplies. Images in other formats now fall back like any broken image
+
 # [5.2.13] (2026-10-21)
 
 ## Bug Fixes

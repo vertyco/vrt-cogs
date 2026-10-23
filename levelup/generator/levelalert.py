@@ -50,7 +50,7 @@ def generate_level_img(
 
     if background_bytes:
         try:
-            card = Image.open(BytesIO(background_bytes))
+            card = Image.open(BytesIO(background_bytes), formats=imgtools.USER_IMAGE_FORMATS)
         except UnidentifiedImageError as e:
             log.error("Error opening background image", exc_info=e)
             card = imgtools.get_random_background()

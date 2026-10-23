@@ -25,6 +25,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
+from ..generator.imgtools import USER_IMAGE_FORMATS
 from .const import COLORS
 
 _ = Translator("LevelUp", __file__)
@@ -373,7 +374,7 @@ def shrink_background(image_bytes: bytes) -> t.Tuple[bytes, str]:
     Returns the image bytes and a file extension for them.
     """
     try:
-        with Image.open(BytesIO(image_bytes)) as img:
+        with Image.open(BytesIO(image_bytes), formats=USER_IMAGE_FORMATS) as img:
             fmt = img.format or ""
             ext = UPLOAD_EXTENSIONS.get(fmt, "img")
             scale = max(UPLOAD_COVER_SIZE[0] / img.width, UPLOAD_COVER_SIZE[1] / img.height)
