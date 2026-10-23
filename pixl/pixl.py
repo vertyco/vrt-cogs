@@ -25,6 +25,9 @@ from .defaults import defaults
 from .utils import PixlGrids, delete, get_content_from_url, is_valid_url
 
 log = logging.getLogger("red.vrt.pixl")
+# The only formats Pillow may try on images downloaded from game image URLs.
+# Pillow's rarer decoders have had memory bugs where a crafted file runs code, so those never see downloads
+IMAGE_FORMATS = ("PNG", "JPEG", "WEBP", "GIF")
 dpy2 = True if discord.version_info.major >= 2 else False
 if dpy2:
     InteractionClient = None
@@ -48,7 +51,7 @@ class Pixl(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.4.0"
+    __version__ = "0.4.1"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -104,7 +107,7 @@ class Pixl(commands.Cog):
                 return result
 
             # Test if the image can be opened by Pillow
-            img = await asyncio.to_thread(Image.open, BytesIO(image_bytes))
+            img = await asyncio.to_thread(Image.open, BytesIO(image_bytes), formats=IMAGE_FORMATS)
             # Force load the image data to ensure it's valid
             img.load()
             # Test conversion to RGB to catch other potential issues
@@ -261,7 +264,7 @@ class Pixl(commands.Cog):
                     continue
 
                 # Open and validate the image
-                game_image = await asyncio.to_thread(Image.open, BytesIO(imgbytes))
+                game_image = await asyncio.to_thread(Image.open, BytesIO(imgbytes), formats=IMAGE_FORMATS)
                 # Force load the image data to ensure it's valid
                 game_image.load()
                 # Convert to RGBA if needed
@@ -939,7 +942,7 @@ class Pixl(commands.Cog):
                 return result
 
             # Test if the image can be opened
-            img = await asyncio.to_thread(Image.open, BytesIO(image_bytes))
+            img = await asyncio.to_thread(Image.open, BytesIO(image_bytes), formats=IMAGE_FORMATS)
             img.load()  # Force load to verify data is valid
 
             result["valid"] = True
@@ -1078,7 +1081,7 @@ class Pixl(commands.Cog):
                     return
 
                 # Open and validate the image
-                image = await asyncio.to_thread(Image.open, BytesIO(bytefile))
+                image = await asyncio.to_thread(Image.open, BytesIO(bytefile), formats=IMAGE_FORMATS)
                 # Force load the image data
                 image.load()
                 # Test conversion if needed
