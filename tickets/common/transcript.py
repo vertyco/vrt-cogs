@@ -59,7 +59,11 @@ DISCORD_CDN_CSS_PATTERN = re.compile(
 )
 
 # Image extensions that can be compressed to WebP
-COMPRESSIBLE_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff"}
+COMPRESSIBLE_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
+
+# The only formats Pillow may try on attachments, whatever their extension says.
+# Pillow's rarer decoders have had memory bugs where a crafted file runs code, so those never see attachments
+ATTACHMENT_IMAGE_FORMATS = ("PNG", "JPEG", "WEBP", "GIF")
 
 # Extensions that should be embedded as images (excluding GIFs for now due to animation complexity)
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tiff", ".ico"}
@@ -140,7 +144,7 @@ def compress_image_to_webp(
         If compression fails, returns original data with False
     """
     try:
-        img = Image.open(BytesIO(image_data))
+        img = Image.open(BytesIO(image_data), formats=ATTACHMENT_IMAGE_FORMATS)
 
         # Handle different image modes
         if img.mode in ("RGBA", "LA", "P"):

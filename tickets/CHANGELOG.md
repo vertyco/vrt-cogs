@@ -1,5 +1,9 @@
 # Tickets Changelog
 
+## v3.8.2
+
+- **Security**: Transcripts only open attached images as PNG, JPEG, WebP or GIF when shrinking them, whatever the file's extension says. A crafted image in a rarer format (such as FlashPix) could run code through a Pillow bug. BMP and TIFF attachments are now kept as they are instead of being converted to WebP.
+
 ## v3.8.1
 
 - **Fix**: The stats retention setting (`[p]ticketstats retention`, default 90 days) now actually deletes old stats. Before, nothing ever ran the cleanup, so stats history grew forever. The cleanup now runs once a day.
