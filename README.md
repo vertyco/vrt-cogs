@@ -73,6 +73,7 @@ Games for ActivityHub, played together inside your bot's Discord Activity.
 
 | Cog | Description |
 |-----|-------------|
+| [ActivityCookiecutter](activitycookiecutter/README.md) | <details><summary>A bare two-player starter to copy</summary> For cog developers: the smallest live two-player game, made to be copied when starting a new one. Two players steer dots on a shared field while everyone else watches, every file explains itself in comments, and its README walks through each piece and the copy steps.</details> |
 | [ActivityHub](activityhub/README.md) | <details><summary>One Discord Activity, a menu of games</summary> Turns your bot's Discord Activity into a menu that every game below plugs into. Comes with Snake, Brick Breaker and 2048, each with a per-server leaderboard, and runs the web server, Discord login and launching. Cog developers: see [DEVELOPERS.md](activityhub/DEVELOPERS.md) to add your own game.</details> |
 | [BoulderBash](boulderbash/README.md) | <details><summary>Smash clumps of matching stone blocks</summary> A remake of Neopets' Destruct-O-Match III with all-new art, sound and music. Five modes, ten special blocks, Undo and Shuffle, a high score table per server, and optional score cash-ins for credits.</details> |
 | [MarbleMunch](marblemunch/README.md) | <details><summary>Hungry hippos for up to four players</summary> Stretch your hippo out to munch the most marbles, with computer hippos in empty seats and a global leaderboard of wins. Also the worked multiplayer example in ActivityHub's DEVELOPERS.md.</details> |

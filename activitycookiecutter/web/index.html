@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Activity Cookiecutter</title>
+    <!-- Paths never start with "/": the hub serves this page from its own folder, and adds a <base> tag for it -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <button type="button" id="back">Back</button>
+      <h1>Activity Cookiecutter</h1>
+      <!-- game.js puts the hub's people button here -->
+      <span id="people"></span>
+    </header>
+
+    <!-- The playfield: game.js draws the dots on it every frame -->
+    <main class="stage">
+      <canvas id="field"></canvas>
+    </main>
+
+    <footer class="foot">
+      <p id="hint" role="status">Loading...</p>
+      <button type="button" id="invite" hidden>Invite a friend</button>
+    </footer>
+
+    <!-- type="module" lets game.js import the hub's helper -->
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

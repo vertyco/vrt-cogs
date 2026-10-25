@@ -1,0 +1,86 @@
+/* Phones ignore a frame's viewport tag, so without this every tap waits a moment to see if a second tap zooms */
+html {
+  touch-action: manipulation;
+}
+
+/* The hub's people button takes its colours from these two */
+:root {
+  --accent: #5865f2;
+  --on-accent: #ffffff;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #1e1f22;
+  color: #f2f3f5;
+  font-family: system-ui, sans-serif;
+}
+
+/* On phones, Discord's own buttons float over the top of the page and a notch can cover an edge. The hub passes on
+   how much room they take, so the bar keeps clear of them */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  padding-top: calc(8px + var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px)));
+  padding-left: calc(12px + var(--discord-safe-area-inset-left, 0px));
+  padding-right: calc(12px + var(--discord-safe-area-inset-right, 0px));
+}
+
+.bar h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Takes the space left between the bar and the footer; game.js fits the field inside it. A phone held sideways can
+   have its notch on either side */
+.stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 calc(12px + var(--discord-safe-area-inset-right, 0px)) 0
+    calc(12px + var(--discord-safe-area-inset-left, 0px));
+}
+
+/* The field takes the finger itself, so steering never scrolls or zooms the page */
+#field {
+  display: block;
+  touch-action: none;
+  border-radius: 8px;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
+  padding-bottom: calc(8px + var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  text-align: center;
+}
+
+.foot p {
+  margin: 0;
+}
+
+button {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #4e5058;
+  color: #ffffff;
+  font: inherit;
+  cursor: pointer;
+}
+
+#invite {
+  background: var(--accent);
+  color: var(--on-accent);
+}

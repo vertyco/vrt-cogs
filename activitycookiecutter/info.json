@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "A bare-bones two-player ActivityHub game to copy when starting a new one. Two players each move a dot around a shared field, anyone else in the Activity watches, and every file explains itself in comments. Its README walks through each piece. Needs ActivityHub 0.10.0 or later.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores no data about users.",
+  "hidden": true,
+  "install_msg": "Thank you for installing Activity Cookiecutter!\n\nActivity Cookiecutter is a game for ActivityHub, which must be installed and set up first:\n`[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`\n`[p]cog install vrt-cogs activityhub`\n`[p]load activityhub`\nThen follow ActivityHub's README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nOnce both are loaded, Activity Cookiecutter shows up in the hub's menu.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "A bare two-player ActivityHub game to copy",
+  "tags": ["activity", "games", "multiplayer", "template", "vert"],
+  "type": "COG"
+}
