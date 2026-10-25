@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Sell your server's economy credits through GlassRelay. Buyers pay on your GlassRelay store and get credits at a rate you set.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores the Discord IDs of buyers and the GlassRelay payments credited to them. These purchase records are kept for the server's bookkeeping when a user asks for their data to be deleted.",
+  "hidden": false,
+  "install_msg": "Thank you for installing GlassRelay! Type `[p]help GlassRelay` to get started.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["aiosqlite"],
+  "short": "Red economy integration for GlassRelay.com",
+  "tags": ["glassrelay", "economy", "credits", "bank", "store", "donations", "supporter"],
+  "type": "COG"
+}
