@@ -19,6 +19,8 @@ from .common.models import DB, ScheduledCommand
 log = logging.getLogger("red.vrt.taskr")
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 _ = Translator("Taskr", __file__)
+# After load, a task whose command isn't registered yet is skipped instead of disabled
+STARTUP_GRACE_SECONDS = 900
 
 
 @cog_i18n(_)
@@ -26,7 +28,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Schedule bot commands with ease"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.18"
+    __version__ = "1.0.19"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -37,6 +39,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self._save_path = cog_data_path(self) / "taskr.json"
         self._saving = False
         self._last_save = perf_counter()
+        self._loaded_at = perf_counter()
         # Snapshots of the schedule state each job was built from, keyed by task id.
         # Used to detect edits, since the live task object is passed to the job by reference.
         self.job_snapshots: dict[str, ScheduledCommand] = {}
@@ -292,11 +295,24 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
 
         try:
             if not context.valid:
+                if context.command is None and perf_counter() - self._loaded_at < STARTUP_GRACE_SECONDS:
+                    # Other cogs may still be loading after a restart, skip this run but keep the task
+                    log.warning("Task %s skipped, command not registered yet (startup grace)", task)
+                    return
                 log.warning("Task %s failed to run", task)
+                txt = _(
+                    "Task {} failed to run because its command could not be found\nThe task has been disabled"
+                ).format(f"`{task.name}`")
+                await self.send_modlog(guild, content=txt)
                 await self.remove_job(task)
                 return
             elif not await discord.utils.async_all([check(context) for check in context.command.checks]):
                 log.warning("Task %s failed to run, author failed permission checks", task)
+                txt = _(
+                    "Task {} failed to run because its author failed the command's permission checks\n"
+                    "The task has been disabled"
+                ).format(f"`{task.name}`")
+                await self.send_modlog(guild, content=txt)
                 await self.remove_job(task)
                 return
         except Exception as e:
