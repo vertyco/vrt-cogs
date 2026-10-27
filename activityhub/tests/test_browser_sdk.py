@@ -18,6 +18,7 @@ from activityhub.tests.browser import (
 )
 from activityhub.tests.fakes import GUILD_ID, MANAGER_ID, MEMBER_ID, DemoCog, make_hub, register, write_demo_web
 
+PHONE_QUERY = DISCORD_QUERY.replace("platform=desktop", "platform=mobile")
 # A game page that starts its own Discord toolkit, the real one, instead of using hub.discord
 OWN_SDK_JS = """import { DiscordSDK } from "./discord-sdk.js";
 new DiscordSDK("1000").ready();
@@ -371,6 +372,24 @@ def test_listeners_a_game_added_to_discord_go_when_it_closes(driver, live):
     driver.switch_to.default_content()
     driver.execute_script("window.fakeDiscordBus.emit('SPEAKING_START', { user_id: '2' })")
     assert driver.execute_script("return window.heard") == [["open 2", {"user_id": "2"}]]
+
+
+def test_a_game_listening_for_heat_hears_the_phones_last_heat_at_once(driver, live):
+    # Discord sends the heat when a page subscribes, but the toolkit only asks for the first listener: the menu's
+    assert open_host(driver, live, PHONE_QUERY) == "online"
+    wait_for(driver, "window.fakeDiscordBus.count('THERMAL_STATE_UPDATE') === 1")
+    driver.execute_script("window.fakeDiscordBus.emit('THERMAL_STATE_UPDATE', { thermal_state: 2 })")
+    open_game(driver)
+    script = """
+        window.heard = [];
+        await hub.discord.subscribe('THERMAL_STATE_UPDATE', (update) => window.heard.push(update.thermal_state));
+        done(window.heard);
+    """
+    assert in_game(driver, script) == [2]
+    driver.switch_to.default_content()
+    driver.execute_script("window.fakeDiscordBus.emit('THERMAL_STATE_UPDATE', { thermal_state: 3 })")
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    assert driver.execute_script("return window.heard") == [2, 3]
 
 
 def test_a_listener_the_game_removed_itself_is_left_alone(driver, live):

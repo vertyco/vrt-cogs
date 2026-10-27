@@ -27,7 +27,7 @@ REFERENCE = (HUB / "REFERENCE.md").read_text(encoding="utf-8")
 SDK = (HUB / "web" / "sdk.js").read_text(encoding="utf-8")
 TYPES = (DEVKIT / "activityhub.d.ts").read_text(encoding="utf-8")
 # Exports of sdk.js that the hub's own pages use. They aren't part of the API, so the type file leaves them out
-INTERNAL_EXPORTS = {"request", "liveConnection", "liveOpener"}
+INTERNAL_EXPORTS = {"request", "liveConnection", "liveOpener", "HEAT_EVENT"}
 # The hub's own working parts on a live connection. They aren't part of the API, so the type hints leave them out
 INTERNAL_CONN_MEMBERS = {
     "close_after_sends",

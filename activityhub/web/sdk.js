@@ -4,6 +4,8 @@
 import { buttonWrap, fillButton, PREVIEW_TEXT, useStyles } from "./people.js";
 
 const GAME_PATH = /^\/games\/([a-z0-9-]+)\//;
+// Internal: the Discord event saying how hot the phone is, which the menu listens to on phones
+export const HEAT_EVENT = "THERMAL_STATE_UPDATE";
 // Each browser has its own words for a request that never got an answer ("Failed to fetch", "Load failed")
 const UNREACHABLE = "Couldn't reach the bot. Check your connection and try again.";
 
@@ -367,10 +369,11 @@ export function liveConnection(open, showLatency) {
 // The menu's Discord toolkit as one game page sees it. The toolkit outlives this frame, so a listener left
 // behind keeps running after the game closes, and one that throws stops later listeners too, since the
 // toolkit's event bus has no try/catch. Every listener this page added is removed when the page goes away.
-function frameDiscord(sdk) {
+function frameDiscord(host) {
+  const sdk = host.sdk;
   // event name -> listener -> the arguments it was subscribed with
   const subscribed = new Map();
-  const subscribe = (event, listener, ...args) => {
+  const subscribe = async (event, listener, ...args) => {
     // The toolkit adds the listener before asking Discord, so it stays even when Discord refuses
     if (typeof listener === "function") {
       if (!subscribed.has(event)) {
@@ -378,7 +381,13 @@ function frameDiscord(sdk) {
       }
       subscribed.get(event).set(listener, args);
     }
-    return sdk.subscribe(event, listener, ...args);
+    const result = await sdk.subscribe(event, listener, ...args);
+    // Discord sends the phone's heat as soon as a page subscribes. The toolkit only asks Discord for the first
+    // listener, which is the menu's, so the game's listener gets the last heat from here instead
+    if (event === HEAT_EVENT && host.heat && subscribed.get(event)?.has(listener)) {
+      listener(host.heat);
+    }
+    return result;
   };
   const unsubscribe = (event, listener, ...args) => {
     subscribed.get(event)?.delete(listener);
@@ -471,7 +480,7 @@ function onlineHub(host, login) {
   const expiredFetch = (resp) => resp.status === 401 && resp.headers.get("X-ActivityHub") === "session-expired";
   return {
     player: login.player,
-    discord: frameDiscord(host.sdk),
+    discord: frameDiscord(host),
     offline: false,
     platform: host.platform,
     // { keepalive: true } lets a save sent on pagehide reach the bot after the game's frame is gone

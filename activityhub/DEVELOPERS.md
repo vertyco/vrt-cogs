@@ -44,6 +44,7 @@ You don't need to know anything about Discord Activities, web servers or Discord
 | Let players upload files | [8. Uploads](#8-uploads-and-other-raw-requests) |
 | Use extra Discord features, like the player's Discord status | [9. Extra Discord permissions](#9-extra-discord-permissions) |
 | Open my game from my own command or button | [10. Opening your game from a command or button](#10-opening-your-game-from-a-command-or-button) |
+| Turn effects down on a hot phone, or fit Discord's small window and a sideways phone | [Phone heat, the small window and turning sideways](#phone-heat-the-small-window-and-turning-sideways) |
 | Use a bundler (Vite, esbuild) or a game engine (Godot, Unity) | [11. Files and caching](#11-files-and-caching) and [14. Discord's limits](#14-discords-limits) |
 | Test my Python without Discord | [Testing your Python without Discord](#testing-your-python-without-discord) |
 | Copy ready-made files: the quick start cog, type hints, test stand-ins | [ActivityHub's `devkit` folder](devkit/) |
@@ -183,6 +184,7 @@ Most steps in Discord's own Activity guides don't apply here. This table shows w
 | Opening it | The Entry Point command (the Play button in Discord's App Launcher) or a launch reply to a command. | The Entry Point command opens the hub's menu, and players pick your game there. `hub.launch()` opens your game straight from your own button or slash command. |
 | Turning it off | Up to you. | Server admins can turn your game off in their server, and the bot owner in every server, from the menu's settings. The hub enforces it. |
 | Phone layout | Your page reads Discord's safe area sizes (the room Discord's own buttons take) from CSS. | The same, under the same names: the hub copies them into your frame. |
+| Phone heat, small window, turning sideways | Your page subscribes to `THERMAL_STATE_UPDATE`, `ACTIVITY_LAYOUT_MODE_UPDATE` and `ORIENTATION_UPDATE`. | The same, through `hub.discord.subscribe()`. The heat arrives as soon as you subscribe, as it does in your own Activity. See [phone heat](#phone-heat-the-small-window-and-turning-sideways). |
 
 What stays the same:
 
@@ -1808,6 +1810,46 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
     }
   });
   ```
+
+### Phone heat, the small window and turning sideways
+
+**In short:** Discord tells your page three things about the player's screen: how hot their phone is running, whether the Activity shrank to a small window, and which way the screen is turned. Listen for them with `hub.discord.subscribe()`. They need no setup and no extra permission, and the hub removes your listeners when your game closes.
+
+| Event | What it says | The number in `update` | What to do with it |
+|---|---|---|---|
+| `THERMAL_STATE_UPDATE` | How hot the phone is running. Only Discord's phone apps send it, and on Android only from Android 10 on. | `thermal_state`: `0` cool, `1` warm, `2` hot, `3` very hot | From `2` up, do less work: draw fewer frames a second, and turn off particles, glow and shadows. A hot phone slows itself down anyway, and drains its battery faster. The menu stops its moving background from `2` up. |
+| `ACTIVITY_LAYOUT_MODE_UPDATE` | How big Discord shows the Activity. | `layout_mode`: `0` full size, `1` a small floating window (Discord calls it picture in picture), `2` one tile in the call's grid of video tiles | In `1` and `2` the Activity is small. Hide small text and side panels, or pause a solo round until it's full size again. |
+| `ORIENTATION_UPDATE` | Which way the screen is turned. That is the way Discord draws the screen, which isn't always the way the phone is held. | `screen_orientation`: `0` upright, `1` sideways | Switch your layout, like moving a side panel below the playfield when the phone is upright. |
+
+Each number can also be `-1`, which means Discord doesn't know. Treat it like the normal case: cool, full size, upright.
+
+```js
+import { connect } from "activityhub";
+
+const hub = await connect();
+// Your game's own settings
+const game = { effects: true, paused: false };
+
+if (hub.discord) {
+  await hub.discord.subscribe("ACTIVITY_LAYOUT_MODE_UPDATE", (update) => {
+    game.paused = update.layout_mode === 1 || update.layout_mode === 2;
+  });
+  // Only phones get hot or turn sideways
+  if (hub.platform === "mobile") {
+    await hub.discord.subscribe("THERMAL_STATE_UPDATE", (update) => {
+      game.effects = update.thermal_state < 2;
+    });
+    await hub.discord.subscribe("ORIENTATION_UPDATE", (update) => {
+      document.body.classList.toggle("sideways", update.screen_orientation === 1);
+    });
+  }
+}
+```
+
+- **The heat and the screen's direction arrive at once.** Discord sends the current heat and the current direction as soon as you subscribe, then again after every change. So you never ask for them first. The menu is already listening for the heat, so the hub hands your listener the phone's last heat itself. That needs ActivityHub 0.13.4 or later: an older hub sends nothing until the heat next changes.
+- **The window size may not arrive at once.** Discord doesn't promise to send the current size when you subscribe. Start as if full size (`0`), and change when an update comes.
+- **Write the numbers, not Discord's names.** Discord's own guide writes names like `Common.ThermalStateTypeObject.SERIOUS`. `hub.discord` doesn't come with those names, so write the number from the table, like `2`.
+- **To keep a phone's screen one way,** call `hub.discord.commands.setOrientationLockState({ lock_state: 3 })`. `lock_state` is `1` to let the screen turn, `2` to keep it upright and `3` to keep it sideways. Set it back to `1` on `pagehide`, so the next game can turn.
 
 ## 15. Checklist before you share your game
 

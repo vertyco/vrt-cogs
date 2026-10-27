@@ -1,5 +1,12 @@
 # ActivityHub Changelog
 
+## 0.13.4
+
+For game developers:
+
+- A game that listens for Discord's `THERMAL_STATE_UPDATE` (how hot the phone is) now hears the phone's current heat as soon as it subscribes, as Discord promises. Before, the menu was already listening, so Discord's toolkit never asked Discord again, and the game heard nothing until the heat next changed.
+- DEVELOPERS.md has a new part, "Phone heat, the small window and turning sideways": how to turn effects down on a hot phone, fit Discord's small floating window, and switch layouts when the phone turns.
+
 ## 0.13.3
 
 - The hub's web server no longer writes a line to the bot's log for every file a player's game loads. Opening one game used to add dozens of `aiohttp.access` lines.

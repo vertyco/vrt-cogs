@@ -2,7 +2,7 @@
 // toolkit handshake per Activity frame, so games run in an inner frame and borrow this login, and this
 // page must never navigate or reload itself while inside Discord.
 import { DiscordSDK } from "./vendor/discord-sdk.js";
-import { request } from "./sdk.js";
+import { HEAT_EVENT, request } from "./sdk.js";
 import { PeopleUI } from "./people.js";
 import { Presence } from "./presence.js";
 
@@ -153,6 +153,8 @@ export class Host {
     this.frame = null;
     this.gameKey = null;
     this.showTimer = null;
+    // Discord's last word on how hot the phone is, as it sent it: { thermal_state }
+    this.heat = null;
     this.safeArea = safeAreaProbe();
     // Padding changes resize the empty probe, and a phone turning sideways resizes the window
     new ResizeObserver(() => this.shareSafeArea()).observe(this.safeArea, { box: "border-box" });
@@ -213,7 +215,10 @@ export class Host {
       return;
     }
     this.sdk
-      .subscribe("THERMAL_STATE_UPDATE", (update) => this.events.onHeat?.(update.thermal_state))
+      .subscribe(HEAT_EVENT, (update) => {
+        this.heat = update;
+        this.events.onHeat?.(update.thermal_state);
+      })
       .catch((e) => console.warn("ActivityHub: Discord didn't say how hot the phone is", e));
   }
 
