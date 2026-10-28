@@ -205,8 +205,7 @@ class AssistantListener(MixinMeta):
             return
 
         conf = self.db.get_conf(message.guild)
-        has_endpoint = bool(conf.endpoint_override or self.db.endpoint_override)
-        if not conf.enabled or (not conf.api_key and not has_endpoint):
+        if not conf.enabled or not await self.can_call_llm(conf):
             return
 
         channel = message.channel

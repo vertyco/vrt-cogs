@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.24.5
+
+- **Fix**: A server signed in with only a Codex login (no API key, no endpoint override) was refused everywhere with "No model API key or endpoint override is configured!": `[p]chat`, `[p]assistant set model`, auto-replies, jobs and scheduled tasks all checked for a key or override and never looked at the Codex login. A server, global or host `auth.json` Codex login now counts, and the message names Codex login as an option.
+
 ## v8.24.4
 
 - **Fix**: The cog could fail to load with `AttributeError: module 'chromadb' has no attribute 'api'`. The type hints reached `ClientAPI` through the `chromadb` package attribute, which is missing when the `chromadb` module has been re-imported while `chromadb.api` stayed loaded. `ClientAPI` is now imported directly from `chromadb.api`, which works either way.

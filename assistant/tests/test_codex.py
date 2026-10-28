@@ -498,6 +498,30 @@ async def test_get_codex_auth_skips_auth_file_when_endpoint_override(monkeypatch
 
 
 @pytest.mark.asyncio
+async def test_can_call_llm_with_only_a_codex_login(monkeypatch):
+    monkeypatch.setattr(codex, "read_auth_file", lambda: None)
+    conf = GuildSettings(codex_auth=fresh_auth("guild"))
+    api = FakeAPI(DB(configs={1: conf}))
+    assert await api.can_call_llm(conf)
+
+    conf.codex_auth = None
+    api.db.codex_auth = fresh_auth("global")
+    assert await api.can_call_llm(conf)
+
+    api.db.codex_auth = None
+    monkeypatch.setattr(codex, "read_auth_file", lambda: fresh_auth("file", source="file"))
+    assert await api.can_call_llm(conf)
+
+
+@pytest.mark.asyncio
+async def test_can_call_llm_false_without_key_endpoint_or_codex(monkeypatch):
+    monkeypatch.setattr(codex, "read_auth_file", lambda: None)
+    conf = GuildSettings()
+    api = FakeAPI(DB(configs={1: conf}))
+    assert not await api.can_call_llm(conf)
+
+
+@pytest.mark.asyncio
 async def test_get_codex_auth_refreshes_and_persists(monkeypatch):
     stale = codex.auth_from_tokens(
         make_access_token(exp=time.time() + 10, account_id="global"), "old", "", source="device"

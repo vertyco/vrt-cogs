@@ -1178,9 +1178,9 @@ class API(MixinMeta):
 
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
         has_endpoint = bool(conf.endpoint_override or self.db.endpoint_override)
-        if not conf.api_key and not has_endpoint:
+        if not conf.api_key and not has_endpoint and self.pick_codex_auth(conf)[0] is None:
             if ctx:
-                txt = _("No model API key or endpoint override is configured!\n")
+                txt = _("No model API key, endpoint override, or Codex login is configured!\n")
                 if ctx.author.id == ctx.guild.owner_id:
                     txt += _("- Set this server's API key with `{}`\n").format(f"{ctx.clean_prefix}assist openaikey")
                 await ctx.send(txt)
