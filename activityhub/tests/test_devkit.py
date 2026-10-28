@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from activityhub.bundled.rng import Rng as BundledRng
+from activityhub.bundled import snake, twenty48
 from activityhub.common.sessions import ActivityContext
 from activityhub.common.sockets import Connection, Room
 from activityhub.devkit import fakes, hubtypes
@@ -212,4 +212,4 @@ def test_rng_py_and_rng_js_roll_the_same(page_rolls):
 
 
 def test_the_devkit_rng_is_the_one_the_included_games_use():
-    assert [rolls(Rng, seed) for seed in SEEDS] == [rolls(BundledRng, seed) for seed in SEEDS]
+    assert snake.Rng is Rng and twenty48.Rng is Rng

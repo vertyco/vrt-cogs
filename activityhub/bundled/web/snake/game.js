@@ -1,4 +1,4 @@
-import { startArcade } from "activityhub/arcade.js";
+import { startArcade, touchScreen } from "activityhub/arcade.js";
 import { OPPOSITE, SIZE, SnakeGame, tickMs } from "./rules.js";
 
 const KEYS = { arrowup: "U", arrowdown: "D", arrowleft: "L", arrowright: "R", w: "U", s: "D", a: "L", d: "R" };
@@ -7,6 +7,11 @@ const QUEUE_LIMIT = 3;
 const SWIPE_DISTANCE = 24;
 // A crash stays on screen this long before the results, so the player sees what happened
 const CRASH_MS = 500;
+// An arrow on the pad stays lit this long, so even the quickest tap shows
+const PRESS_MS = 120;
+// The room between the board and the arrow pad: under it on an upright screen, beside it on a sideways one
+const PAD_GAP = 16;
+const PAD_GAP_SIDE = 28;
 const COLORS = {
   board: "#10132a",
   boardAlt: "#141936",
@@ -23,6 +28,8 @@ const COLORS = {
 const canvas = document.getElementById("board");
 const ctx = canvas.getContext("2d");
 const stage = document.getElementById("stage");
+const playArea = document.getElementById("play");
+const dpad = document.getElementById("dpad");
 // The checkered board never changes, so it is drawn once per resize and copied in each frame
 const backdrop = document.createElement("canvas");
 
@@ -300,7 +307,7 @@ function play(seed) {
     left: null,
     particles: [],
   });
-  arcade.hint("Press an arrow key or swipe to start");
+  arcade.hint(touchScreen.matches ? "Tap an arrow or swipe to start" : "Press an arrow key or swipe to start");
   wake();
 }
 
@@ -351,8 +358,18 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
+// A pad arrow turns the moment the finger lands, and never also counts as the start of a swipe
+for (const button of dpad.querySelectorAll("button")) {
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    steer(button.dataset.heading);
+    button.classList.add("pressed");
+    setTimeout(() => button.classList.remove("pressed"), PRESS_MS);
+  });
+}
+
 stage.addEventListener("pointerdown", (event) => {
-  state.swipe = { x: event.clientX, y: event.clientY };
+  state.swipe = event.target.closest(".dpad") ? null : { x: event.clientX, y: event.clientY };
 });
 
 // A swipe the browser took over (a scroll or a system gesture) must not finish as a move later
@@ -381,7 +398,16 @@ window.addEventListener("pointerup", () => {
 // ---------- Setup ----------
 
 function resize() {
-  const room = Math.min(stage.clientWidth, stage.clientHeight) - 24;
+  // The stage's own padding is 12 pixels on each side
+  const width = stage.clientWidth - 24;
+  const height = stage.clientHeight - 24;
+  const touch = touchScreen.matches;
+  stage.classList.toggle("touch", touch);
+  dpad.hidden = !touch;
+  const side = touch && width > height;
+  playArea.classList.toggle("side", side);
+  const pad = touch ? dpad.offsetWidth + (side ? PAD_GAP_SIDE : PAD_GAP) : 0;
+  const room = side ? Math.min(width - pad, height) : Math.min(width, height - pad);
   const cells = Math.max(8, Math.floor(room / SIZE));
   const px = cells * SIZE;
   const dpr = window.devicePixelRatio || 1;
@@ -399,8 +425,10 @@ const arcade = await startArcade({
   accent: "#2f855a",
   help: "Eat apples to grow longer and faster. Hitting a wall or your own tail ends the round.",
   controls: [
-    ["Arrow keys / WASD", "Steer"],
-    ["Swipe", "Steer on a touch screen"],
+    ["Arrow keys / WASD", "Steer", "keys"],
+    ["Swipe", "Steer on a touch screen", "keys"],
+    ["Arrow pad", "Steer", "touch"],
+    ["Swipe", "Steer", "touch"],
   ],
   play,
   pause,
@@ -410,3 +438,4 @@ const arcade = await startArcade({
 
 // Follows the play area, which also changes when the window or the Discord frame does
 new ResizeObserver(resize).observe(stage);
+touchScreen.addEventListener("change", resize);

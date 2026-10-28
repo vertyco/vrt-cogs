@@ -1,5 +1,27 @@
 # ActivityHub Changelog
 
+## 0.14.0
+
+The included games play better on phones:
+
+- Snake has an arrow pad on touch screens, under the board on an upright phone and beside it on a sideways one. An arrow turns the snake the moment your finger lands. Swiping still works too.
+- 2048 slides the tiles as soon as your finger has swiped far enough, instead of waiting for it to lift.
+- In Brick Breaker, a finger drags the paddle from anywhere on the screen, so it never has to cover the paddle or the ball, and a tap anywhere launches the ball.
+- On a phone, each game's title card lists the finger controls instead of the keyboard ones, and the hints say tap instead of press.
+
+Also:
+
+- Opening the menu, coming back to it from a game, and opening a game no longer hold up the rest of the bot while the hub looks over every game's files. With many games installed that was thousands of files each time.
+- The menu no longer fails to load while a game's page is being rebuilt. A file deleted halfway through the hub's look at the game's folder used to make the whole menu fail.
+- A data deletion request no longer waits a minute when the play log's database failed to open. It can't open later, so the request now ends at once, with the same note in the bot's log.
+- `[p]activityhub pin` and `unpin` now also take a game name in curly single quotes, like `game: ‘Snake’`, which phones type.
+- A game the bot owner turned off everywhere is now fully off. Its raw routes refuse requests with no login too, and its page says it's turned off even when the address names no server.
+
+For game developers:
+
+- A changed page that sends `NaN` or `Infinity` in its JSON is refused like any other text that isn't JSON. Before, they could reach your action handler as numbers that aren't finite.
+- A game whose `economy` function is too slow now gets the "took longer than 2 seconds" note in the bot's log on Python 3.10 too, instead of an error with a traceback.
+
 ## 0.13.4
 
 For game developers:

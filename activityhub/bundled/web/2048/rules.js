@@ -3,7 +3,7 @@
 
 export const SIZE = 4;
 
-// Mulberry32, the same random number generator as bundled/rng.py
+// Mulberry32, the same random number generator as devkit/rng.py
 export function makeRng(seed) {
   let state = seed >>> 0;
   function next() {

@@ -1,4 +1,4 @@
-import { startArcade } from "activityhub/arcade.js";
+import { startArcade, touchScreen } from "activityhub/arcade.js";
 
 // Logical playfield size; the canvas is scaled to fit whatever frame Discord gives us
 const W = 480;
@@ -28,6 +28,7 @@ const MAX_SPEED = 620;
 const MAX_BOUNCE = (60 * Math.PI) / 180;
 const MIN_VERTICAL = 0.3;
 const READY_HINT = "Click, tap or press Space to launch";
+const READY_HINT_TOUCH = "Tap to launch, then drag anywhere to move";
 
 // Score values, mirrored in bundled/bricks.py
 const POINTS_PER_BRICK = 10;
@@ -200,7 +201,7 @@ function resetBall() {
 function enterReady() {
   resetBall();
   game.mode = "ready";
-  arcade.hint(READY_HINT);
+  arcade.hint(touchScreen.matches ? READY_HINT_TOUCH : READY_HINT);
   wake();
 }
 
@@ -820,8 +821,13 @@ function act() {
   }
 }
 
+function steering() {
+  return game.mode === "ready" || game.mode === "playing";
+}
+
+// The mouse puts the paddle right under the pointer
 function aim(event) {
-  if (game.mode !== "ready" && game.mode !== "playing") {
+  if (!steering()) {
     return;
   }
   const rect = canvas.getBoundingClientRect();
@@ -830,10 +836,44 @@ function aim(event) {
   wake();
 }
 
-window.addEventListener("pointermove", aim);
-canvas.addEventListener("pointerdown", (event) => {
-  aim(event);
+// A finger moves the paddle as far as it moves itself, from wherever it touched, so it never has to cover the
+// paddle or the ball. Going back the other way moves the paddle at once, even after it stopped at a wall
+let drag = null;
+
+function dragTo(event) {
+  const rect = canvas.getBoundingClientRect();
+  const [low, high] = paddleLimits();
+  game.paddle.x = clamp(game.paddle.x + ((event.clientX - drag.x) / rect.width) * W, low, high);
+  drag.x = event.clientX;
+  wake();
+}
+
+window.addEventListener("pointermove", (event) => {
+  if (event.pointerType !== "touch") {
+    aim(event);
+  } else if (drag && event.pointerId === drag.id && steering()) {
+    dragTo(event);
+  }
+});
+
+stage.addEventListener("pointerdown", (event) => {
+  if (event.pointerType === "touch") {
+    drag = { id: event.pointerId, x: event.clientX };
+  } else {
+    aim(event);
+  }
   act();
+});
+
+window.addEventListener("pointerup", (event) => {
+  if (drag && event.pointerId === drag.id) {
+    drag = null;
+  }
+});
+
+// A drag the browser took over, or the arcade dropped as its settings dialog opened, ends here
+window.addEventListener("pointercancel", () => {
+  drag = null;
 });
 
 window.addEventListener("keydown", (event) => {
@@ -888,9 +928,11 @@ const arcade = await startArcade({
   accent: "#c05621",
   help: "Bounce the ball off your paddle and break every brick to clear the level. Catch falling power-ups. You have 3 balls.",
   controls: [
-    ["Mouse / finger", "Move the paddle"],
-    ["Arrow keys / A D", "Move the paddle"],
-    ["Space / click", "Launch the ball"],
+    ["Mouse", "Move the paddle", "keys"],
+    ["Arrow keys / A D", "Move the paddle", "keys"],
+    ["Space / click", "Launch the ball", "keys"],
+    ["Drag anywhere", "Move the paddle", "touch"],
+    ["Tap", "Launch the ball", "touch"],
   ],
   play,
   pause,

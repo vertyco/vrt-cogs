@@ -1,6 +1,6 @@
 import typing as t
 
-from .rng import Rng
+from ..devkit.rng import Rng
 
 # Rules mirrored in web/2048/rules.js. A round is replayed move by move from its seed
 SIZE = 4

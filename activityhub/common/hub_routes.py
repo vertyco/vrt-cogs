@@ -209,9 +209,11 @@ class HubRoutes:
     async def preview_state(self) -> dict:
         """What the menu shows outside Discord: every game, the owner's look, no settings"""
         global_look = await self.hub.config.look()
+        # Fingerprinting walks every file of every game, which can be thousands, so it runs off the bot's worker
+        games = await asyncio.to_thread(games_json, ordered_games(await self.allowed_games(), []))
         return {
             "player": None,
-            "games": games_json(ordered_games(await self.allowed_games(), [])),
+            "games": games,
             "look": effective_look(global_look),
             "looks": {"builtin": BUILTIN_LOOK, "global": global_look, "guild": {}, "user": {}},
             "tabs": [],
@@ -231,9 +233,11 @@ class HubRoutes:
         tabs = await self.player_tabs(ctx)
         switches = [{"key": g.key, "name": g.name, "on": g.key not in disabled} for g in ordered_games(installed, [])]
         shown = ordered_games(visible, order)
+        # Off the bot's worker, like the preview's
+        games = await asyncio.to_thread(games_json, shown, await self.economy_lines(ctx, shown))
         return {
             "player": player_json(ctx),
-            "games": games_json(shown, await self.economy_lines(ctx, shown)),
+            "games": games,
             "look": effective_look(looks["global"], looks["guild"], looks["user"]),
             "looks": looks,
             "tabs": tabs,
@@ -249,23 +253,20 @@ class HubRoutes:
         games = ordered_games(self.hub.registry.games.values(), [])
         return [{"key": g.key, "name": g.name, "on": g.key not in blocked} for g in games]
 
-    async def labels_group(self, guild: discord.Guild | None) -> t.Any:
-        """Where the currency labels switch is saved: once for every server when they share one balance"""
-        return self.hub.config if await self.hub.payouts.bank.is_global() else self.hub.config.guild(guild)
-
     async def labels_switch(self, ctx: ActivityContext, tabs: list[str]) -> dict | None:
         """The currency labels switch and the tab holding it, or None when this player has no such tab"""
         tab = "defaults" if await self.hub.payouts.bank.is_global() else "server"
         if tab not in tabs:
             return None
-        return {"tab": tab, "on": await (await self.labels_group(ctx.guild)).economy_labels()}
+        # The switch is saved where the payouts are: once for every server when they share one balance
+        return {"tab": tab, "on": await (await self.hub.payouts.group(ctx.guild)).economy_labels()}
 
     async def economy_lines(self, ctx: ActivityContext, games: list[Game]) -> dict[str, str | None]:
         """
         Each shown game's currency line for this player. None outside a server, since a server's bank is what it
         ties into
         """
-        if ctx.guild is None or not await (await self.labels_group(ctx.guild)).economy_labels():
+        if ctx.guild is None or not await (await self.hub.payouts.group(ctx.guild)).economy_labels():
             return {}
         return await economy.lines(games, ctx)
 

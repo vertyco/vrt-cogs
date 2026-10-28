@@ -10,7 +10,7 @@ const START = [
 export const DIRECTIONS = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] };
 export const OPPOSITE = { U: "D", D: "U", L: "R", R: "L" };
 
-// Mulberry32, the same random number generator as bundled/rng.py
+// Mulberry32, the same random number generator as devkit/rng.py
 export function makeRng(seed) {
   let state = seed >>> 0;
   function next() {

@@ -137,9 +137,13 @@ class HubServer:
         """
         return await self.why_off(guild_id, key) is not None
 
+    async def off_everywhere(self, key: str) -> bool:
+        """Whether the bot owner turned this game off for every server"""
+        return key in await self.hub.config.disabled()
+
     async def why_off(self, guild_id: int | None, key: str) -> str | None:
         """What game_off is True for, worded for the player, or None when the game can be played there"""
-        if key in await self.hub.config.disabled():
+        if await self.off_everywhere(key):
             return TURNED_OFF
         if guild_id is None:
             game = self.hub.registry.games.get(key)

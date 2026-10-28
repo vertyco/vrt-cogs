@@ -86,14 +86,19 @@ def dumps(data: t.Any) -> str:
     return raw.decode()
 
 
+def refuse_constant(name: str) -> t.NoReturn:
+    raise ValueError(f"{name} isn't JSON")
+
+
 def loads(text: str | bytes) -> t.Any:
     """JSON from a page, read with orjson. Raises ValueError when it isn't JSON"""
     try:
         return orjson.loads(text)
     except orjson.JSONDecodeError as e:
-        # orjson refuses a few things the json module reads, like half of an emoji that a page cut in two
+        # orjson refuses a few things the json module reads, like half of an emoji that a page cut in two. The json
+        # module also reads NaN and Infinity, which no page's JSON.stringify writes, so those stay refused
         log.debug("orjson couldn't read a page's JSON, trying the json module: %s", e)
-        return json.loads(text)
+        return json.loads(text, parse_constant=refuse_constant)
 
 
 def error(message: str, status: int) -> web.Response:

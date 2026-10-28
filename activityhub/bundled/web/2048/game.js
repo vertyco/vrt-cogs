@@ -180,17 +180,22 @@ window.addEventListener("pointercancel", () => {
   state.swipe = null;
 });
 
-window.addEventListener("pointerup", (event) => {
+// The tiles slide as soon as the finger has gone far enough, not when it lifts. One swipe is one move
+window.addEventListener("pointermove", (event) => {
   if (!state.swipe) {
     return;
   }
   const dx = event.clientX - state.swipe.x;
   const dy = event.clientY - state.swipe.y;
-  state.swipe = null;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_DISTANCE) {
     return;
   }
+  state.swipe = null;
   move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "R" : "L") : dy > 0 ? "D" : "U");
+});
+
+window.addEventListener("pointerup", () => {
+  state.swipe = null;
 });
 
 // ---------- Setup ----------
@@ -218,8 +223,9 @@ const arcade = await startArcade({
   accent: "#805ad5",
   help: "Slide the tiles. Two tiles with the same number merge into one, and you score its new value. Reach 2048, then keep going.",
   controls: [
-    ["Arrow keys / WASD", "Slide"],
-    ["Swipe", "Slide on a touch screen"],
+    ["Arrow keys / WASD", "Slide", "keys"],
+    ["Swipe", "Slide on a touch screen", "keys"],
+    ["Swipe", "Slide", "touch"],
   ],
   // Nothing moves until the player does, so the game never needs to stop by itself
   autoPause: false,

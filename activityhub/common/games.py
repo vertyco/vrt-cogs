@@ -11,7 +11,6 @@ from pathlib import Path
 
 from .files import hidden, resolve_inside, served_files
 from .sessions import ActivityContext
-from ..bundled.games import BundledGame
 
 log = logging.getLogger("red.vrt.activityhub.games")
 
@@ -108,6 +107,8 @@ class Game:
     room: str | t.Callable = "window"
     # One of OPENS_IN. Outside the bot's servers the menu marks a "server" game, and won't open it
     opens_in: str = "everywhere"
+    # One of the games that come with the hub, which may use a hub- key and the shared arcade frame
+    included: bool = False
 
     async def room_kind(self, ctx: ActivityContext) -> str:
         """
@@ -310,7 +311,7 @@ def check_web_dir(value: t.Any, cog: t.Any) -> tuple[Path, str]:
     return web_dir, html
 
 
-def check_text(desc: dict, cog: t.Any) -> tuple[str, str, str]:
+def check_text(desc: dict, included: bool) -> tuple[str, str, str]:
     key, name, description = desc["key"], desc["name"], desc.get("description", "")
     if not isinstance(key, str) or KEY_PATTERN.fullmatch(key) is None:
         reason = f"key must be 2-32 characters of a-z, 0-9 and hyphens, got {key!r}"
@@ -318,7 +319,7 @@ def check_text(desc: dict, cog: t.Any) -> tuple[str, str, str]:
         if KEY_PATTERN.fullmatch(suggestion):
             reason += f" (try {suggestion!r})"
         raise GameError(reason)
-    if key.startswith("hub-") and not isinstance(cog, BundledGame):
+    if key.startswith("hub-") and not included:
         raise GameError("keys starting with 'hub-' are kept for ActivityHub's own games")
     if not isinstance(name, str) or not name.strip():
         raise GameError("name must be a non-empty string")
@@ -461,10 +462,10 @@ def warn_about_page(key: str, web_dir: Path, html: str) -> None:
         )
 
 
-async def validate_game(cog: t.Any, hub_version: str | None = None) -> Game:
+async def validate_game(cog: t.Any, hub_version: str | None = None, included: bool = False) -> Game:
     """Turn a cog's activityhub_game() description into a Game, or raise GameError saying what is wrong"""
     desc = await read_description(cog, hub_version)
-    key, name, description = check_text(desc, cog)
+    key, name, description = check_text(desc, included)
     web_dir, html = check_web_dir(desc["web_dir"], cog)
     scopes = check_scopes(desc.get("scopes", []), cog)
     game = Game(
@@ -483,6 +484,7 @@ async def validate_game(cog: t.Any, hub_version: str | None = None) -> Game:
         platforms=check_platforms(desc.get("platforms", list(PLATFORMS))),
         room=check_room(desc.get("room", "window")),
         opens_in=check_opens_in(desc.get("opens_in", "everywhere")),
+        included=included,
     )
     warn_about_page(key, web_dir, html)
     return game
@@ -499,10 +501,13 @@ class GameRegistry:
         # Cog name to the key it was refused because another cog held it, so it can have another go once that frees
         self.clashes: dict[str, str] = {}
 
-    async def add(self, cog: t.Any, still_loaded: t.Callable[[], bool] = lambda: True) -> Game | None:
+    async def add(
+        self, cog: t.Any, still_loaded: t.Callable[[], bool] = lambda: True, included: bool = False
+    ) -> Game | None:
         """
         Register a cog's game. Returns None when the cog has no game, its description was refused, or
-        still_loaded() says the cog unloaded (or was replaced by a reloaded copy) while it described itself
+        still_loaded() says the cog unloaded (or was replaced by a reloaded copy) while it described itself.
+        included is for the games that come with the hub, and only the hub passes it
         """
         if not hasattr(cog, "activityhub_game"):
             return None
@@ -511,7 +516,7 @@ class GameRegistry:
         self.clashes.pop(cog_name, None)
         game, reason = None, ""
         try:
-            game = await validate_game(cog, self.hub_version)
+            game = await validate_game(cog, self.hub_version, included)
         except GameError as e:
             reason = str(e)
         except Exception as e:

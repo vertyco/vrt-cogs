@@ -50,8 +50,16 @@ def served_files(root: Path) -> t.Iterator[Path]:
 
 def build_id(root: Path) -> str:
     """Short fingerprint of a folder's files, so their addresses change whenever any of them change"""
-    stamp = "".join(f"{p.relative_to(root).as_posix()}{p.stat().st_mtime_ns}" for p in sorted(served_files(root)))
-    return hashlib.sha1(stamp.encode()).hexdigest()[:10]
+    parts = []
+    for path in sorted(served_files(root)):
+        try:
+            changed = path.stat().st_mtime_ns
+        except OSError as e:
+            # A bundler rebuilding the folder can delete a file between the walk and this look at it
+            log.debug("Left %s out of the fingerprint: %s", path, e)
+            continue
+        parts.append(f"{path.relative_to(root).as_posix()}{changed}")
+    return hashlib.sha1("".join(parts).encode()).hexdigest()[:10]
 
 
 def resolve_inside(root: Path, relative: str) -> Path | None:

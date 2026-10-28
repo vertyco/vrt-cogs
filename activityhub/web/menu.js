@@ -14,7 +14,7 @@ import {
   turnArm,
   turnPanels,
 } from "./orb.js";
-import { PressHold, avatar, elsewhereLine, icon, personRow, statusText } from "./people.js";
+import { PressHold, avatar, elsewhereLine, icon, initial, personRow, statusText } from "./people.js";
 import { StatsPanel } from "./stats.js";
 
 const TAB_NAMES = { look: "My look", order: "My order", server: "This server", defaults: "Defaults", stats: "Stats" };
@@ -141,10 +141,6 @@ function el(tag, className, text) {
     node.textContent = text;
   }
   return node;
-}
-
-function initial(name) {
-  return (name || "?").trim().charAt(0).toUpperCase() || "?";
 }
 
 // ---------- Loading ----------

@@ -40,7 +40,7 @@ def clock(hub):
     clock = Clock()
     hub.scores = ScoreBoard(hub.config, clock=clock)
     for game in bundled_games(hub.scores, hub.payouts):
-        assert register(hub, game) is not None
+        assert register(hub, game, included=True) is not None
     return clock
 
 

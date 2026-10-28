@@ -52,7 +52,7 @@ def live(tmp_path, driver):
     for user in hub.bot.users.values():
         user.display_avatar.url = OFFLINE_AVATAR
     for game in bundled_games(hub.scores, hub.payouts):
-        register(hub, game)
+        register(hub, game, included=True)
     server = LiveHub(hub, hub_web_copy(tmp_path, index=TEST_HOST_PAGE))
     server.start()
     driver.set_window_size(900, 800)
@@ -908,13 +908,16 @@ for (const [dx, dy] of [[120, 0], [-120, 0], [0, 120], [0, -120]]) {
   }
   const dialog = document.querySelector('dialog.arcade-payouts');
   const target = dialog && dialog.open ? dialog : stage;
-  target.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x + dx, clientY: y + dy, pointerId: 7 }));
+  const end = { bubbles: true, clientX: x + dx, clientY: y + dy, pointerId: 7 };
+  target.dispatchEvent(new PointerEvent('pointermove', end));
+  target.dispatchEvent(new PointerEvent('pointerup', end));
   out.push({ dialogOpen: Boolean(dialog && dialog.open), gearShown: !gear.hidden, moved: tiles() !== before });
   if (dialog && dialog.open) {
     dialog.close();
   }
-  // A finger lifting later, with the settings closed again, can't finish the old swipe either
-  window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x + dx, clientY: y + dy, pointerId: 7 }));
+  // A finger sliding on and lifting later, with the settings closed again, can't finish the old swipe either
+  window.dispatchEvent(new PointerEvent('pointermove', end));
+  window.dispatchEvent(new PointerEvent('pointerup', end));
   out[out.length - 1].movedAfter = tiles() !== before;
 }
 return out;

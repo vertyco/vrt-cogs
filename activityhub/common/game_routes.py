@@ -5,7 +5,6 @@ import typing as t
 
 from aiohttp import WSMsgType, web
 
-from ..bundled.games import BundledGame
 from .files import build_id, file_response, inject_head, resolve_inside
 from .games import Game
 from .replies import (
@@ -19,6 +18,7 @@ from .replies import (
     PAGE_MISSING,
     SESSION_EXPIRED,
     SOMETHING_WRONG,
+    TURNED_OFF,
     error,
     notice_page,
     read_object,
@@ -191,7 +191,7 @@ class GameRoutes:
         """
         hub_root = f"/hub/{self.server.hub_build()}/"
         imports = {"activityhub": f"{hub_root}sdk.js"}
-        if game is not None and isinstance(game.cog, BundledGame):
+        if game is not None and game.included:
             imports["activityhub/arcade.js"] = f"{hub_root}arcade.js"
         return f'<script type="importmap">{json.dumps({"imports": imports})}</script>'
 
@@ -214,7 +214,8 @@ class GameRoutes:
             return self.notice(reason, 403)
         try:
             html = (game.web_dir / "index.html").read_text(encoding="utf-8")
-            build = build_id(game.web_dir)
+            # A big game folder takes a while to fingerprint, so it runs off the bot's worker
+            build = await asyncio.to_thread(build_id, game.web_dir)
         except (OSError, UnicodeDecodeError) as e:
             # A bundler rebuilding the page can leave index.html missing or half written for a moment.
             # The notice page keeps the frame's button back to the menu, which aiohttp's own 500 page wouldn't
@@ -227,7 +228,9 @@ class GameRoutes:
         # A page load carries no session, so this can only trust the address's guild_id. It is a courtesy:
         # the real locks are on actions, raw routes and the live connection, which use the proven server
         guild_id = request.query.get("guild_id", "")
-        return await self.server.why_off(int(guild_id), game.key) if guild_id.isdigit() else None
+        if guild_id.isdigit():
+            return await self.server.why_off(int(guild_id), game.key)
+        return TURNED_OFF if await self.server.off_everywhere(game.key) else None
 
     async def file(self, request: web.Request, game: Game, path: str) -> web.StreamResponse:
         if request.method not in READ_METHODS:
@@ -309,7 +312,11 @@ class GameRoutes:
             # passed. hub.fetch logs in again and retries, so a handler only sees ctx=None for requests with no
             # login at all
             return web.json_response({"error": SESSION_EXPIRED}, status=401, headers=EXPIRED_HEADER)
-        reason = await self.server.why_off(ctx.guild_id, game.key) if ctx is not None else None
+        if ctx is not None:
+            reason = await self.server.why_off(ctx.guild_id, game.key)
+        else:
+            # No login means no proven server, so only the bot owner's switch for every server applies
+            reason = TURNED_OFF if await self.server.off_everywhere(game.key) else None
         if reason:
             return error(reason, 403)
         if ctx is not None:

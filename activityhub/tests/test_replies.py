@@ -34,3 +34,10 @@ def test_loads_reads_what_the_json_module_reads():
     assert loads('"\\ud83d"') == "\ud83d"
     with pytest.raises(ValueError):
         loads("not json")
+
+
+@pytest.mark.parametrize("text", ['{"score": NaN}', '{"score": Infinity}', '{"score": -Infinity}'])
+def test_loads_refuses_nan_and_infinity(text):
+    # Not JSON, and no page's JSON.stringify writes them, so only a changed page sends them
+    with pytest.raises(ValueError):
+        loads(text)

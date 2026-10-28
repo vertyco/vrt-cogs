@@ -1,7 +1,7 @@
 import typing as t
 from collections import deque
 
-from .rng import Rng
+from ..devkit.rng import Rng
 
 # Rules mirrored in web/snake/rules.js. A round is replayed tick by tick from its seed and turns
 SIZE = 20

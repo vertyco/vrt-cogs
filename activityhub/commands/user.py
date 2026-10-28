@@ -27,7 +27,7 @@ _ = Translator("ActivityHub", __file__)
 
 
 # Phones type curly quotes
-QUOTES = {'"': '"', "'": "'", "“": "”"}
+QUOTES = {'"': '"', "'": "'", "“": "”", "‘": "’"}
 
 
 def unquote(text: str) -> str:

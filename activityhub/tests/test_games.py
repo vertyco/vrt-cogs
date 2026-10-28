@@ -801,7 +801,10 @@ class HubSnake(Snake):
 @pytest.mark.asyncio
 async def test_an_included_game_can_use_a_hub_key():
     hub = make_hub()
-    assert (await validate_game(HubSnake(hub.scores, hub.payouts))).key == "hub-snake"
+    assert (await validate_game(HubSnake(hub.scores, hub.payouts), included=True)).key == "hub-snake"
+    # Only the hub registering it as included counts, not which class the game comes from
+    with pytest.raises(GameError):
+        await validate_game(HubSnake(hub.scores, hub.payouts))
 
 
 @pytest.mark.asyncio

@@ -333,11 +333,11 @@ DEMO_THUMBNAIL = (
 )
 
 
-def register(hub, cog) -> t.Any:
+def register(hub, cog, included: bool = False) -> t.Any:
     """Register a game from synchronous test code, where no event loop is running"""
     loop = asyncio.new_event_loop()
     try:
-        return loop.run_until_complete(hub.registry.add(cog))
+        return loop.run_until_complete(hub.registry.add(cog, included=included))
     finally:
         loop.close()
 

@@ -6,7 +6,7 @@ import pytest
 
 from activityhub.bundled import bricks, snake, twenty48
 from activityhub.bundled.games import WEB_DIR
-from activityhub.bundled.rng import Rng
+from activityhub.devkit.rng import Rng
 
 SEEDS = [0, 1, 7, 123456789, 2**32 - 1, 3141592653]
 

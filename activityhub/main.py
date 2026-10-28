@@ -34,7 +34,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.13.4"
+    __version__ = "0.14.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -71,6 +71,10 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.sessions.forget_user(user_id)
         self.launches.forget_user(user_id)
         self.playlog.forget_user(user_id)
+        if self.playlog.broken:
+            # It failed to open, so it never will this load: waiting would only hold up the request
+            log.error("The play log's database couldn't open, so user %s's plays couldn't be deleted", user_id)
+            return
         try:
             await asyncio.wait_for(self.playlog.ready.wait(), DELETE_WAIT)
         except asyncio.TimeoutError as e:
@@ -89,7 +93,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         try:
             await self.start_server()
             for game in bundled_games(self.scores, self.payouts):
-                await self.registry.add(game)
+                await self.registry.add(game, included=True)
             # Last, so a cog added during the server start isn't missed. This cog isn't in bot.cogs yet while it
             # loads, so this sees every other cog that is already loaded. Each game cog describes itself in its own
             # task. Its activityhub_game() may wait on something (even the bot being ready, which happens only after

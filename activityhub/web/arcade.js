@@ -10,6 +10,8 @@
 //   stop()      end the round now and return { score, proof } for it
 // It calls arcade.begin() when the player's first move gets the round going (until then a new round waits, and
 // counts as between rounds), and arcade.over(score, proof) when a round ends by itself.
+// Each row of options.controls is [keys, what they do], with an optional third entry: "touch" for a row only
+// touch screens show, "keys" for one only keyboards and mice show. touchScreen says which the player has.
 import { connect } from "activityhub";
 
 const MUTE_KEY = "activityhub-arcade-muted";
@@ -33,6 +35,8 @@ const MARKS = new Map([
 // A narrow window gets a smaller strip: fewer entries, and only the player's own name
 const phone = window.matchMedia("(max-width: 520px)");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+// A finger is the main way to play: a phone or a tablet, not a computer that also has a touch screen
+export const touchScreen = window.matchMedia("(pointer: coarse)");
 // What a person sees as single characters, so a flag or a joined emoji is never split. Older browsers have no
 // segmenter and count code points instead
 const segmenter =
@@ -564,11 +568,14 @@ class Arcade {
   }
 
   controls() {
-    const rows = [...(this.options.controls || []), ["Esc / P", "Pause"]];
+    const rows = [...(this.options.controls || []), ["Esc / P", "Pause", "keys"]];
+    const kind = touchScreen.matches ? "touch" : "keys";
     return el(
       "ul",
       { class: "arcade-controls" },
-      rows.map(([keys, does]) => el("li", {}, [el("kbd", { text: keys }), el("span", { text: does })])),
+      rows
+        .filter(([, , only]) => !only || only === kind)
+        .map(([keys, does]) => el("li", {}, [el("kbd", { text: keys }), el("span", { text: does })])),
     );
   }
 

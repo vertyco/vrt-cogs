@@ -232,6 +232,14 @@ async def test_deleting_gives_up_when_the_database_never_opens(monkeypatch, capl
 
 
 @pytest.mark.asyncio
+async def test_deleting_does_not_wait_on_a_database_that_failed(caplog):
+    hub = make_hub()
+    hub.playlog.failed()
+    await asyncio.wait_for(ActivityHub.red_delete_data_for_user(hub, requester="user", user_id=2), 1)
+    assert "couldn't be deleted" in caplog.text
+
+
+@pytest.mark.asyncio
 async def test_deleting_waits_for_a_write_already_on_its_way(monkeypatch, playdb):
     hub = make_hub()
     hub.playlog = PlayLog(gather=0)

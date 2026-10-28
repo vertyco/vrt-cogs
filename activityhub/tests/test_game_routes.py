@@ -6,7 +6,7 @@ import pytest
 
 from activityhub.bundled.games import bundled_games
 from activityhub.common.files import build_id
-from activityhub.common.replies import SERVER_ONLY, SESSION_EXPIRED
+from activityhub.common.replies import SERVER_ONLY, SESSION_EXPIRED, TURNED_OFF
 from activityhub.tests.fakes import (
     GUILD_ID,
     MEMBER_ID,
@@ -82,6 +82,14 @@ async def test_page_of_a_turned_off_game_says_so(client, hub, demo):
     assert '"activityhub": "/hub/' in text
     assert (await client.get("/games/demo/?guild_id=999")).status == 200
     assert (await client.get("/games/demo/?guild_id=abc")).status == 200
+
+
+@pytest.mark.asyncio
+async def test_page_of_a_game_off_everywhere_says_so_without_a_server(client, hub, demo):
+    await hub.config.disabled.set(["demo"])
+    for address in ("/games/demo/", "/games/demo/?guild_id=abc", "/games/demo/?guild_id=999"):
+        resp = await client.get(address)
+        assert resp.status == 403 and "turned off" in await resp.text()
 
 
 @pytest.mark.asyncio
@@ -371,6 +379,15 @@ async def test_raw_routes_refuse_turned_off_sessions(client, hub, demo):
 
 
 @pytest.mark.asyncio
+async def test_raw_routes_refuse_everyone_when_off_everywhere(client, hub, demo):
+    await hub.config.disabled.set(["demo"])
+    for headers in (session_headers(hub), {}):
+        resp = await client.get("/games/demo/raw/hello", headers=headers)
+        assert resp.status == 403 and (await resp.json())["error"] == TURNED_OFF
+    assert demo.events == []
+
+
+@pytest.mark.asyncio
 async def test_raw_route_errors(client, demo, caplog):
     teapot = await client.post("/games/demo/raw/teapot")
     assert teapot.status == 403 and await teapot.text() == "no tea"
@@ -409,7 +426,7 @@ async def test_an_activityhub_field_deeper_in_a_reply_is_fine(client, hub, demo)
 @pytest.mark.asyncio
 async def test_an_included_games_page_also_gets_the_shared_frame(client, server, hub):
     for game in bundled_games(hub.scores, hub.payouts):
-        await hub.registry.add(game)
+        await hub.registry.add(game, included=True)
     text = await (await client.get("/games/snake/")).text()
     hub_root = f"/hub/{server.hub_build()}/"
     assert page_imports(text) == {"activityhub": f"{hub_root}sdk.js", "activityhub/arcade.js": f"{hub_root}arcade.js"}

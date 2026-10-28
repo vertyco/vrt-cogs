@@ -138,7 +138,7 @@ async def test_a_failed_cog_load_releases_the_port(monkeypatch, hub, server, fai
     hub.server = server
     hub.start_server = lambda: ActivityHub.start_server(hub)
 
-    async def add(cog):
+    async def add(cog, included=False):
         assert server.running
         raise failure
 

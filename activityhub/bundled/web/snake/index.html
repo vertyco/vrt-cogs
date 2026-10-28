@@ -7,7 +7,25 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main id="stage"><canvas id="board"></canvas></main>
+    <main id="stage">
+      <div id="play" class="play">
+        <canvas id="board"></canvas>
+        <div id="dpad" class="dpad" hidden>
+          <button type="button" class="up" data-heading="U" aria-label="Up">
+            <svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" /></svg>
+          </button>
+          <button type="button" class="left" data-heading="L" aria-label="Left">
+            <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg>
+          </button>
+          <button type="button" class="right" data-heading="R" aria-label="Right">
+            <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg>
+          </button>
+          <button type="button" class="down" data-heading="D" aria-label="Down">
+            <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg>
+          </button>
+        </div>
+      </div>
+    </main>
     <script type="module" src="game.js"></script>
   </body>
 </html>
