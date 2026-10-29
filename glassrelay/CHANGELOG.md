@@ -1,5 +1,9 @@
 # GlassRelay Changelog
 
+## 0.0.2
+
+- When `[p]glassrelay key` turns a key away and the menu then times out, the menu keeps saying why the key failed instead of only saying it timed out.
+
 ## 0.0.1
 
 - The cog keeps its settings, products and credited payments in its own SQLite file.

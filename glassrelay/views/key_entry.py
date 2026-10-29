@@ -38,6 +38,8 @@ class KeyEntry(ui.LayoutView):
         self.steps = steps
         self.on_key = on_key
         self.message: discord.Message | None = None
+        # Why the last key failed, kept on screen when the menu times out
+        self.error: str | None = None
         self.button = ui.Button(label="Enter API key", style=discord.ButtonStyle.primary)
         self.button.callback = self.open_form
         self.show(steps, with_button=True)
@@ -58,7 +60,10 @@ class KeyEntry(ui.LayoutView):
     async def on_timeout(self) -> None:
         if self.message is None:
             return
-        self.show("This menu timed out. Run the command again.", with_button=False)
+        text = "This menu timed out. Run the command again."
+        if self.error:
+            text = f"{self.error}\n\n{text}"
+        self.show(text, with_button=False)
         try:
             await self.message.edit(view=self)
         except discord.HTTPException as e:
@@ -80,5 +85,6 @@ class KeyEntry(ui.LayoutView):
             self.show(text, with_button=False)
         else:
             # Keep the button so they can try another key
+            self.error = text
             self.show(f"{text}\n\n{self.steps}", with_button=True)
         await interaction.edit_original_response(view=self)
