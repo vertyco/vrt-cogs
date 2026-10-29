@@ -1,5 +1,9 @@
 # GlassRelay Changelog
 
+## 0.0.3
+
+- When Cloudflare, in front of GlassRelay, blocks the bot's server with a robot check, the cog says the bot is being blocked instead of blaming the key, and logs a warning. Buyers running `[p]claim` are told GlassRelay is blocking the bot.
+
 ## 0.0.2
 
 - When `[p]glassrelay key` turns a key away and the menu then times out, the menu keeps saying why the key failed instead of only saying it timed out.

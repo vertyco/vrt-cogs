@@ -39,6 +39,12 @@ def error_text(error: Exception, prefix: str) -> str:
     if not isinstance(error, APIError):
         log.warning("Couldn't reach GlassRelay", exc_info=error)
         return "I couldn't reach GlassRelay. Try again in a minute."
+    if error.blocked:
+        log.warning(f"Cloudflare in front of GlassRelay showed this bot a robot check (status {error.status})")
+        return (
+            "GlassRelay's firewall is blocking this bot's server. This is not a problem with your key. "
+            "Let GlassRelay support know the bot is being blocked."
+        )
     log.info(f"GlassRelay call failed with status {error.status}")
     if error.status == 401:
         return (
@@ -62,6 +68,9 @@ def buyer_error_text(error: Exception) -> str:
     if not isinstance(error, APIError):
         log.warning("Couldn't reach GlassRelay", exc_info=error)
         return "I couldn't reach GlassRelay. Try again in a minute."
+    if error.blocked:
+        log.warning(f"Cloudflare in front of GlassRelay showed this bot a robot check (status {error.status})")
+        return "GlassRelay is blocking this bot right now. Let a server admin know."
     log.info(f"GlassRelay call failed with status {error.status}")
     if error.status in (401, 403):
         return "This server's GlassRelay connection isn't working. Let a server admin know."

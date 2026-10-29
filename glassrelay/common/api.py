@@ -11,12 +11,16 @@ PAGE_SIZE = 200  # the most GlassRelay returns per page
 
 
 class APIError(Exception):
-    """GlassRelay answered with an error status"""
+    """GlassRelay answered with an error status.
 
-    def __init__(self, status: int, retry_after: int = 0):
+    blocked means Cloudflare, in front of GlassRelay, answered with a robot check, so the call never reached GlassRelay.
+    """
+
+    def __init__(self, status: int, retry_after: int = 0, blocked: bool = False):
         super().__init__(f"GlassRelay returned status {status}")
         self.status = status
         self.retry_after = retry_after
+        self.blocked = blocked
 
 
 class Client:
@@ -29,7 +33,8 @@ class Client:
     async def get(self, path: str, params: dict | None = None) -> dict:
         async with self.session.get(BASE_URL + path, headers=self.headers, params=params) as res:
             if res.status != 200:
-                raise APIError(res.status, int(res.headers.get("Retry-After", 0)))
+                blocked = res.headers.get("cf-mitigated") == "challenge"
+                raise APIError(res.status, int(res.headers.get("Retry-After", 0)), blocked)
             return await res.json()
 
     async def get_storefront(self) -> dict:

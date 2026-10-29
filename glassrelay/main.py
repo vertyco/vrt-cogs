@@ -18,7 +18,7 @@ class GlassRelay(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Sell your server's economy credits through GlassRelay."""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def __init__(self, bot: Red):
         super().__init__()
