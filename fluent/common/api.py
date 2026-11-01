@@ -137,7 +137,7 @@ class TranslateManager:
         client = openai.AsyncClient(api_key=self.openai_key)
         try:
             response = await client.beta.chat.completions.parse(
-                model="gpt-5-nano",
+                model="gpt-6-luna",
                 messages=[
                     {"role": "developer", "content": f"Translate the given text to `{target_lang}`"},
                     {"role": "user", "content": text},
