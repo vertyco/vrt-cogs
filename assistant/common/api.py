@@ -15,6 +15,7 @@ import aiohttp
 import discord
 import openai
 import tiktoken
+from discord.ext import tasks
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.create_embedding_response import CreateEmbeddingResponse
@@ -278,6 +279,23 @@ class API(MixinMeta):
             await self.store_codex_auth(renewed, scope, conf)
             log.info(f"Refreshed Codex login ({scope}), expires in {int(codex.expires_at(renewed) - time.time())}s")
             return renewed, scope
+
+    @tasks.loop(hours=1)
+    async def codex_keepalive(self):
+        """Renew the stored server and global Codex logins even when nobody is chatting.
+
+        Chat only renews the login it uses, so an idle login would expire. The host's
+        auth.json is skipped; the Codex CLI keeps that one alive.
+        """
+        logins = [(conf, guild_id) for guild_id, conf in self.db.configs.items() if conf.codex_auth]
+        if self.db.codex_auth:
+            # A blank server config resolves to the global login.
+            logins.append((GuildSettings(), 0))
+        for conf, guild_id in logins:
+            try:
+                await self.get_codex_auth(conf, guild_id)
+            except (CodexLoginExpired, codex.CodexRefreshFailed) as e:
+                log.warning(f"Could not renew the Codex login for guild {guild_id or 'global'}", exc_info=e)
 
     async def ensure_codex_model(self, model: str, auth: CodexAuth) -> str:
         """Return ``model`` if the subscription serves it, else the Codex default model."""

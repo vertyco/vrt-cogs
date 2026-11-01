@@ -83,7 +83,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.24.5"
+    __version__ = "8.24.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -158,6 +158,7 @@ class Assistant(
                 pass
         self.cancel_all_message_queues()
         self.save_loop.cancel()
+        self.codex_keepalive.cancel()
         for event_name, func in self.raw_listeners.items():
             self.bot.remove_listener(func, event_name)
         self.raw_listeners.clear()
@@ -273,6 +274,7 @@ class Assistant(
 
         await asyncio.sleep(30)
         self.save_loop.start()
+        self.codex_keepalive.start()
 
     async def save_conf(self):
         if self.saving:

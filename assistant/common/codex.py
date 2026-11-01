@@ -32,6 +32,8 @@ CODEX_ORIGINATOR = "codex_cli_rs"
 CODEX_CLIENT_VERSION = "0.153.4"
 CODEX_DEFAULT_MODEL = "gpt-5.5"
 CODEX_REFRESH_WINDOW_SECONDS = 300
+# Refresh tokens expire when left unused, so like the Codex CLI a login is renewed once it is 8 days old.
+CODEX_RENEW_AFTER_SECONDS = 8 * 24 * 3600
 CODEX_DEVICE_TIMEOUT_SECONDS = 900
 CODEX_CATALOG_TTL_SECONDS = 3600
 CODEX_HTTP_TIMEOUT_SECONDS = 30
@@ -114,8 +116,14 @@ def expires_at(auth: CodexAuth) -> float:
 
 
 def needs_refresh(auth: CodexAuth, now: t.Optional[float] = None) -> bool:
+    """True when the access token is about to expire, or the login is old enough to renew early.
+
+    A pasted login has no refresh token, so it can only run until its access token expires.
+    """
     now = time.time() if now is None else now
-    return expires_at(auth) <= now + CODEX_REFRESH_WINDOW_SECONDS
+    if expires_at(auth) <= now + CODEX_REFRESH_WINDOW_SECONDS:
+        return True
+    return bool(auth.refresh_token) and now - auth.last_refresh >= CODEX_RENEW_AFTER_SECONDS
 
 
 async def refresh(auth: CodexAuth, session: aiohttp.ClientSession) -> CodexAuth:

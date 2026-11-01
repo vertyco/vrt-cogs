@@ -75,6 +75,16 @@ def test_needs_refresh_window():
     assert codex.expires_at(fresh) == now + 3600
 
 
+def test_needs_refresh_renews_old_login_early():
+    now = time.time()
+    old = codex.auth_from_tokens(make_access_token(exp=now + 86400), "r", "", source="device")
+    old.last_refresh = now - codex.CODEX_RENEW_AFTER_SECONDS
+    assert codex.needs_refresh(old, now=now) is True
+    # A pasted login cannot be renewed, so it is left alone until it really expires.
+    old.refresh_token = ""
+    assert codex.needs_refresh(old, now=now) is False
+
+
 class StubResponse:
     def __init__(self, status: int, payload):
         self.status = status
@@ -565,6 +575,26 @@ async def test_get_codex_auth_clears_expired_login(monkeypatch):
         await api.get_codex_auth(GuildSettings())
     assert api.db.codex_auth is None
     assert api.saved == 1
+
+
+@pytest.mark.asyncio
+async def test_codex_keepalive_renews_idle_stored_logins(monkeypatch):
+    def old_auth(account: str) -> codex.CodexAuth:
+        auth = fresh_auth(account)
+        auth.last_refresh = time.time() - codex.CODEX_RENEW_AFTER_SECONDS
+        return auth
+
+    renewed = {"guild": fresh_auth("guild"), "global": fresh_auth("global")}
+    refresh = AsyncMock(side_effect=lambda auth, session: renewed[auth.account_id])
+    monkeypatch.setattr(codex, "refresh", refresh)
+    monkeypatch.setattr(codex, "read_auth_file", lambda: old_auth("file"))
+    idle = GuildSettings(codex_auth=old_auth("guild"))
+    recent = GuildSettings(codex_auth=fresh_auth("recent"))
+    api = FakeAPI(DB(configs={1: idle, 2: recent, 3: GuildSettings()}, codex_auth=old_auth("global")))
+    await api.codex_keepalive()
+    assert idle.codex_auth is renewed["guild"]
+    assert api.db.codex_auth is renewed["global"]
+    assert refresh.await_count == 2
 
 
 @pytest.mark.asyncio

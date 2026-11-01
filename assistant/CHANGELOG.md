@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.24.6
+
+- **Change**: A Codex login now stays signed in while nobody uses it. OpenAI's access token lasts about 10 days and the renewal token behind it expires if it goes unused, but the cog only renewed a login when someone chatted, so a quiet server could lose its login. The cog now renews each stored server and global Codex login once it is 8 days old (the same schedule the Codex CLI uses), checking every hour in the background, and chat renews on that schedule too. Pasted tokens have nothing to renew with and still last only until they expire. The host's `auth.json` is still left to the Codex CLI.
+
 ## v8.24.5
 
 - **Fix**: A server signed in with only a Codex login (no API key, no endpoint override) was refused everywhere with "No model API key or endpoint override is configured!": `[p]chat`, `[p]assistant set model`, auto-replies, jobs and scheduled tasks all checked for a key or override and never looked at the Codex login. A server, global or host `auth.json` Codex login now counts, and the message names Codex login as an option.
