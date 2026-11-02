@@ -29,6 +29,10 @@ LAG_CHECK_SECONDS = 0.5
 LAG_WARN_SECONDS = 0.25
 # At most one warning this often, so a bot that keeps freezing doesn't fill its log
 LAG_WARN_EVERY = 60
+# How often the web server's port is checked. On Windows, Python closes a listening port for good when one client
+# drops while connecting, and the bot runs on with nobody new able to reach any game
+PORT_CHECK_SECONDS = 0.25
+PORT_RETRY_SECONDS = 5
 
 
 class HubServer:
@@ -43,6 +47,7 @@ class HubServer:
         self.runner: web.AppRunner | None = None
         self.http: aiohttp.ClientSession | None = None
         self.watchdog: asyncio.Task | None = None
+        self.port_watch: asyncio.Task | None = None
         self.lag_quiet_until = 0.0
         # The token endpoint is public, so a flood of fake codes could keep Discord answering 429. Logins pause
         # until this time.monotonic() after one, instead of piling up 429s against the bot's IP address
@@ -84,12 +89,16 @@ class HubServer:
             raise
         self.runner = runner
         self.watchdog = asyncio.create_task(self.watch_lag())
+        self.port_watch = asyncio.create_task(self.watch_port(host, port))
         log.info("ActivityHub web server listening on %s:%s", host, port)
 
     async def stop(self) -> None:
         if self.watchdog:
             self.watchdog.cancel()
             self.watchdog = None
+        if self.port_watch:
+            self.port_watch.cancel()
+            self.port_watch = None
         if self.runner:
             await self.runner.cleanup()
             self.runner = None
@@ -116,6 +125,38 @@ class HubServer:
                 lag * 1000,
                 players,
             )
+
+    def port_open(self) -> bool:
+        """Whether the web server still listens. Asking a socket Python closed for its address raises OSError"""
+        try:
+            return bool(self.runner.addresses)
+        except OSError:
+            return False
+
+    async def reopen_port(self, host: str, port: int) -> None:
+        """A new listening socket on the same server, so players already connected aren't touched"""
+        for site in self.runner.sites:
+            await site.stop()
+        await web.TCPSite(self.runner, host, port).start()
+
+    async def watch_port(self, host: str, port: int) -> None:
+        """Reopen the web server's port whenever it closes while the server is meant to be running"""
+        while True:
+            await asyncio.sleep(PORT_CHECK_SECONDS)
+            if self.port_open():
+                continue
+            try:
+                await self.reopen_port(host, port)
+            except OSError as e:
+                log.error("Couldn't reopen the web server's port %s:%s, trying again soon", host, port, exc_info=e)
+                await asyncio.sleep(PORT_RETRY_SECONDS)
+            else:
+                log.warning(
+                    "Python closed the web server's port %s:%s after a connection failed, so it was reopened. "
+                    "Players already connected weren't affected",
+                    host,
+                    port,
+                )
 
     def hub_build(self) -> str:
         return build_id(self.web_dir)

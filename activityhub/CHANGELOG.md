@@ -1,5 +1,9 @@
 # ActivityHub Changelog
 
+## 0.14.1
+
+- On Windows, one player's connection failing as it opened could shut the hub's web server off for good, and nobody new could open any game until the cog was reloaded. The hub now notices within a quarter of a second and opens it again by itself. Players already connected aren't affected, and the bot's log says when it happens.
+
 ## 0.14.0
 
 The included games play better on phones:
