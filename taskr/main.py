@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import typing as t
+from datetime import timedelta
 from io import BytesIO
 from time import perf_counter
 
@@ -14,13 +15,14 @@ from redbot.core.i18n import Translator, cog_i18n
 from .abc import CompositeMetaClass
 from .commands import Commands
 from .common import utils
-from .common.models import DB, ScheduledCommand
+from .common.models import DB, ScheduledCommand, default_now
 
 log = logging.getLogger("red.vrt.taskr")
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 _ = Translator("Taskr", __file__)
-# After load, a task whose command isn't registered yet is skipped instead of disabled
-STARTUP_GRACE_SECONDS = 900
+# A task is disabled only once its command has been missing this long. A cog that is
+# reloading, hung or still starting up costs the task some runs, not the task itself.
+COMMAND_MISSING_LIMIT = timedelta(hours=24)
 
 
 @cog_i18n(_)
@@ -28,7 +30,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Schedule bot commands with ease"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.19"
+    __version__ = "1.0.20"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -39,7 +41,6 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self._save_path = cog_data_path(self) / "taskr.json"
         self._saving = False
         self._last_save = perf_counter()
-        self._loaded_at = perf_counter()
         # Snapshots of the schedule state each job was built from, keyed by task id.
         # Used to detect edits, since the live task object is passed to the job by reference.
         self.job_snapshots: dict[str, ScheduledCommand] = {}
@@ -264,6 +265,25 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
             await self.send_modlog(self.bot.get_guild(task.guild_id), content=txt)
             await self.remove_job(task)
 
+    def skip_missing_command(self, task: ScheduledCommand, context: commands.Context) -> bool:
+        """Update the task's missing-command clock. True if this run should be skipped with the task kept."""
+        # A job can hold an older copy of the task, the one in the DB is what gets saved
+        stored = self.db.tasks.get(task.id, task)
+        if context.command is not None:
+            if stored.command_missing_since is not None:
+                stored.command_missing_since = None
+                self.save()
+            return False
+        first_miss = stored.command_missing_since is None
+        if first_miss:
+            stored.command_missing_since = default_now()
+        self.save(maybe=not first_miss)
+        missing_for = default_now() - stored.command_missing_since
+        if missing_for >= COMMAND_MISSING_LIMIT:
+            return False
+        log.warning("Task %s skipped, its command has been missing for %s", task, missing_for)
+        return True
+
     async def _run_task(self, task: ScheduledCommand):
         guild = self.bot.get_guild(task.guild_id)
         if not guild:
@@ -293,12 +313,11 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         finally:
             self.db.refresh_task(task)
 
+        if self.skip_missing_command(task, context):
+            return
+
         try:
             if not context.valid:
-                if context.command is None and perf_counter() - self._loaded_at < STARTUP_GRACE_SECONDS:
-                    # Other cogs may still be loading after a restart, skip this run but keep the task
-                    log.warning("Task %s skipped, command not registered yet (startup grace)", task)
-                    return
                 log.warning("Task %s failed to run", task)
                 txt = _(
                     "Task {} failed to run because its command could not be found\nThe task has been disabled"

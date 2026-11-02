@@ -77,6 +77,9 @@ class ScheduledCommand(Base):
     id: str = Field(default_factory=make_id)
     created_on: datetime = Field(default_factory=default_now)
     last_run: t.Optional[datetime] = Field(default=None)
+    # When a scheduled run first found the command missing. Cleared when the command resolves or the task is turned on.
+    # Saved to disk, so the clock keeps counting on a bot that restarts more often than Taskr's limit.
+    command_missing_since: t.Optional[datetime] = Field(default=None)
 
     name: str
 

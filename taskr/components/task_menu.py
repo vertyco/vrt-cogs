@@ -650,6 +650,7 @@ class TaskMenu(BaseMenu):
                     ephemeral=True,
                 )
             schedule.enabled = True
+            schedule.command_missing_since = None
             log.debug(f"User {self.ctx.author} enabled scheduled command {schedule.name}.")
         else:
             schedule.enabled = False
@@ -1056,6 +1057,7 @@ class TaskMenu(BaseMenu):
                     "id",
                     "created_on",
                     "last_run",
+                    "command_missing_since",
                     "name",
                     "guild_id",
                     "channel_id",
