@@ -29,7 +29,7 @@ class CommandLock(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -66,8 +66,14 @@ class CommandLock(commands.Cog):
     async def before_invoke_hook(self, ctx: commands.Context):
         if await self.is_immune(ctx):
             return True
-        if isinstance(ctx.channel, discord.Thread) and await self.config.guild(ctx.guild).threads_bypass():
-            return True
+        # Does not include form posts, which are threads with a parent channel
+        bypass_threads = await self.config.guild(ctx.guild).threads_bypass()
+        is_thread = isinstance(ctx.channel, discord.Thread)
+        if is_thread:
+            if not isinstance(ctx.channel.parent, discord.ForumChannel):
+                # Not a form post, so bypass is allowed
+                if bypass_threads:
+                    return True
         allowed_channels = await self.get_allowed_channels(ctx)
         channel = ctx.channel.parent if isinstance(ctx.channel, discord.Thread) else ctx.channel
         if channel in allowed_channels:
