@@ -4,9 +4,13 @@
 // press. A search box finds any element by name. The panels close themselves as soon as painting starts and fade back
 // while a stroke is in progress. On an upright phone all of it lives in a bottom sheet (sheet.js) where the open tab's
 // grid stays showing; the small sheet keeps the main tools and tucks the rest behind More.
+// On a phone, Hide tools gives the world the screen: sideways the toolbar slides off the edges and the top bar
+// becomes a slim column at the right edge, upright the sheet shrinks to its top row. The chip there shows what is in
+// hand; tapping it peeks at every tool over the world, and picking something or starting to paint hides them again.
 import { ELEMENT_TOOLS } from "../input.js";
 import { onKey } from "../keys.js";
 import { EL, ELEMENTS, SHAPE, TABS } from "../sim/index.js";
+import { addBarButton, addBarItem } from "./bar.js";
 import { attachHint } from "./hint.js";
 import { icon } from "./icons.js";
 import { buildSheet } from "./sheet.js";
@@ -18,6 +22,11 @@ const SWATCH_PX = 40;
 const SWATCH_EVERY = 200;
 // Room kept beside a tab scrolled into view
 const GAP = 8;
+// The short sideways phone layout, where the tools are a rail and a strip down the edges
+const SIDEWAYS_QUERY = "(max-height: 500px)";
+const TOUCH_QUERY = "(pointer: coarse)";
+// How long the brush ring shows in the middle of the world after the size slider moves
+const SIZE_RING_MS = 900;
 
 // [key, name, icon, what it does, tucked]. Tucked tools wait behind More in the upright phone's small sheet.
 const TOOLS = [
@@ -34,6 +43,7 @@ const TOOLS = [
   ["picker", "Picker", "picker", "tap the world to pick the element there", true],
 ];
 const TOOL_NAMES = new Map(TOOLS.map(([key, name]) => [key, name]));
+const TOOL_ICONS = new Map(TOOLS.map(([key, , name]) => [key, name]));
 const TUCKED = new Set(TOOLS.filter((tool) => tool[4]).map(([key]) => key));
 const SHAPES = [
   [SHAPE.ROUND, "Round brush", "round", "paints a filled circle"],
@@ -201,8 +211,8 @@ function buildSizer(painter, refresh) {
 }
 
 // The tool row: tools, brush shapes, the two switches, and search, each group set apart. sheetOpen() says whether the
-// phone's sheet shows everything, for the More button's hint.
-function buildTools(painter, refresh, sheetOpen) {
+// phone's sheet shows everything, for the More button's hint; picked() runs once a tool is chosen.
+function buildTools(painter, refresh, sheetOpen, picked) {
   const row = make("div", "tools glass");
   row.setAttribute("role", "toolbar");
   row.setAttribute("aria-label", "Tools");
@@ -213,6 +223,7 @@ function buildTools(painter, refresh, sheetOpen) {
     button.addEventListener("click", () => {
       painter.tool = key;
       refresh();
+      picked();
     });
     return button;
   });
@@ -247,15 +258,37 @@ function buildTools(painter, refresh, sheetOpen) {
   return { row, tools, more, shapes, empty, mirror, find };
 }
 
+// While the tools are hidden, the chip says what is in hand: the element's swatch with the tool's icon on its corner,
+// or the tool's icon alone for a tool that paints no element. Tapping it peeks at every tool.
+function buildChip(describe) {
+  const button = make("button", "bar-button chip");
+  button.type = "button";
+  button.id = "bar-chip";
+  const canvas = swatch(ELEMENTS[EL.sand]);
+  const badge = make("span", "chip-tool");
+  button.append(canvas, badge);
+  attachHint(button, () => `${describe()}: tap to change`);
+  return { button, canvas, badge, tool: null };
+}
+
 /**
  * Builds the toolbar into the page. Returns { setElement(id), refresh(), close(), margins(), onResize(fn),
- * drawSwatches(renderer, now), tick(), holdSheet(node), releaseSheet() }. drawSwatches and tick run every frame;
- * drawSwatches decides itself which swatches need drawing.
- * margins() is the room the toolbar takes from each side of the stage: { left, right, bottom }.
+ * drawSwatches(renderer, now), tick(), holdSheet(node), releaseSheet(), adopt(button), sizeShown(now) }.
+ * drawSwatches and tick run every frame; drawSwatches decides itself which swatches need drawing.
+ * margins() is the room the toolbar and the bar take from each side of the stage (see margins below), and
+ * onResize(fn) calls fn(glide) whenever that room changes, glide when the change should be animated.
  */
 export function buildToolbar(state) {
   const painter = state.painter;
   const resizeListeners = [];
+  const sideways = window.matchMedia(SIDEWAYS_QUERY);
+  const touch = window.matchMedia(TOUCH_QUERY);
+  // Hidden tools, and a peek at them while hidden
+  let tucked = false;
+  let peek = false;
+  // Bar buttons (Undo) that sit in the sheet's top row on an upright phone
+  const adopted = [];
+  let sizeShownUntil = 0;
   const panel = make("section", "panel glass");
   panel.id = "panel";
   panel.hidden = true;
@@ -292,6 +325,7 @@ export function buildToolbar(state) {
     recency.unshift(id);
   }
 
+  // On a touch screen the sideways panel, which covers most of the world, gets out of the way once an element is picked
   function choose(id) {
     painter.element = id;
     if (!ELEMENT_TOOLS.has(painter.tool)) {
@@ -299,7 +333,11 @@ export function buildToolbar(state) {
     }
     noteUsed(id);
     closeSearch();
+    if (!sheet.upright && touch.matches) {
+      openKey = null;
+    }
     refresh();
+    setPeek(false);
   }
 
   function fillPanel(key) {
@@ -324,11 +362,15 @@ export function buildToolbar(state) {
     revealTab();
   };
   const rail = buildRail(openTab);
-  const sizer = buildSizer(painter, () => refresh());
+  const sizer = buildSizer(painter, () => {
+    sizeShownUntil = performance.now() + SIZE_RING_MS;
+    refresh();
+  });
   const toolRow = buildTools(
     painter,
     () => refresh(),
     () => sheet.open,
+    () => setPeek(false),
   );
   const dock = make("div", "dock");
   dock.id = "dock";
@@ -345,17 +387,93 @@ export function buildToolbar(state) {
   field.setAttribute("aria-label", "Search elements");
   const results = make("div", "panel-grid");
   search.append(field, results);
+  const bar = document.getElementById("bar");
   const sheet = buildSheet(
     { rail, panel, search, dock },
     {
-      bar: document.getElementById("bar"),
+      bar,
       view: state.view,
       onMode: (upright) => showMode(upright),
-      onResize: () => notify(),
+      onResize: (glide) => notify(glide),
       onState: () => refresh(),
+      onTuck: (on) => setTucked(on),
     },
   );
   toolRow.more.addEventListener("click", () => sheet.toggle());
+
+  // Hide tools and the chip: in the bar when sideways, at the left end of the sheet's top row when upright
+  const toggle = addBarButton({ id: "tools", label: "Hide tools", order: 95, onClick: () => setTucked(!tucked) });
+  attachHint(toggle, () => (tucked ? "Show tools" : "Hide tools: the world gets the whole screen"));
+  const chip = buildChip(() => {
+    const what = TOOL_NAMES.get(painter.tool);
+    return ELEMENT_TOOLS.has(painter.tool) ? `${ELEMENTS[painter.element].name}, ${what}` : what;
+  });
+  chip.button.addEventListener("click", () => setPeek(!peek));
+  addBarItem(97, chip.button);
+
+  // The sheet keeps its own room for the hidden tools; sideways, the world takes the screen at once, gliding there
+  function setTucked(on) {
+    if (tucked === on && !peek) {
+      return;
+    }
+    tucked = on;
+    peek = false;
+    if (!sheet.upright) {
+      openKey = null;
+      closeSearch();
+    }
+    showTucked();
+    // The sheet keeps the state while it is off the page too, for a phone turned upright later
+    sheet.tuck(on);
+    if (!sheet.upright) {
+      notify(true);
+    }
+  }
+
+  // A peek sideways also opens the panel of the element in hand, since changing the element is what it is mostly for
+  function setPeek(on) {
+    if (!tucked || peek === on) {
+      return;
+    }
+    peek = on;
+    if (!sheet.upright) {
+      openKey = on ? (ELEMENTS[painter.element]?.tab ?? TABS[0].key) : null;
+      if (on) {
+        fillPanel(openKey);
+        panel.scrollTop = 0;
+      } else {
+        closeSearch();
+      }
+    }
+    showTucked();
+    sheet.peek(on);
+  }
+
+  function showTucked() {
+    document.body.classList.toggle("tucked", tucked);
+    document.body.classList.toggle("peek", peek);
+    const label = tucked ? "Show tools" : "Hide tools";
+    toggle.replaceChildren(icon(tucked ? "shrink" : "expand"));
+    toggle.title = label;
+    toggle.setAttribute("aria-label", label);
+    toggle.setAttribute("aria-pressed", String(tucked));
+    refresh();
+  }
+
+  // Discord's own buttons and the phone's notch take room at each edge. Discord's sizes can arrive after the page has
+  // laid itself out, so the world fits itself again whenever they change.
+  const probe = make("div", "safe-probe");
+  probe.setAttribute("aria-hidden", "true");
+  document.body.append(probe);
+  new ResizeObserver(() => {
+    sheet.fit();
+    notify(false);
+  }).observe(probe, { box: "border-box" });
+  function safe() {
+    const style = getComputedStyle(probe);
+    const side = (name) => parseFloat(style.getPropertyValue(`padding-${name}`)) || 0;
+    return { top: side("top"), right: side("right"), bottom: side("bottom"), left: side("left") };
+  }
 
   // In the sheet the open tab is kept in view in the sideways-scrolling tab row, and the chevron at its right edge
   // only shows while more tabs wait past it
@@ -375,6 +493,7 @@ export function buildToolbar(state) {
     railEnd();
   }
   function railEnd() {
+    rail.classList.toggle("at-start", rail.scrollLeft <= 2);
     rail.classList.toggle("at-end", rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 2);
   }
   rail.addEventListener("scroll", railEnd, { passive: true });
@@ -475,6 +594,23 @@ export function buildToolbar(state) {
     sizer.input.value = String(painter.size);
     sizer.value.textContent = String(painter.size);
     sizer.hue.hidden = painter.element !== EL.coloredSand;
+    refreshChip(holding);
+  }
+
+  function refreshChip(holding) {
+    const element = ELEMENTS[painter.element];
+    chip.canvas.hidden = !holding;
+    if (holding && chip.canvas.dataset.element !== String(element.id)) {
+      drawFlat(chip.canvas, element);
+    }
+    if (chip.tool !== painter.tool) {
+      chip.tool = painter.tool;
+      chip.badge.replaceChildren(icon(TOOL_ICONS.get(painter.tool)));
+    }
+    chip.button.classList.toggle("bare", !holding);
+    const what = TOOL_NAMES.get(painter.tool);
+    chip.button.setAttribute("aria-label", `Change tools (${holding ? `${element.name}, ${what}` : what})`);
+    chip.button.setAttribute("aria-expanded", String(peek));
   }
 
   // More lights up when the tool in hand is tucked away behind it; its icon only changes when the sheet does
@@ -506,8 +642,14 @@ export function buildToolbar(state) {
     }
   };
   painter.onStart(closePanels);
+  painter.onStart(() => setPeek(false));
   painter.onStroke(closePanels);
   painter.onActive((active) => document.body.classList.toggle("painting", active));
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setPeek(false);
+    }
+  });
 
   // Keep focus on the world: a clicked button would otherwise take the next Space or Enter meant for the game
   for (const node of [rail, panel, dock]) {
@@ -539,22 +681,34 @@ export function buildToolbar(state) {
   document.body.append(rail, panel, search, dock);
   refresh();
 
-  // Turning to or from the upright phone layout moves the toolbar's parts in or out of the sheet
+  // Turning to or from the upright phone layout moves the toolbar's parts in or out of the sheet, and Hide tools, the
+  // chip and the adopted bar buttons between the bar and the sheet's top row
   function showMode(upright) {
     if (upright) {
       openKey ??= ELEMENTS[painter.element]?.tab ?? TABS[0].key;
       fillPanel(openKey);
       requestAnimationFrame(revealTab);
     } else {
-      openKey = null;
+      openKey = peek ? (ELEMENTS[painter.element]?.tab ?? TABS[0].key) : null;
       closeSearch();
     }
+    placeButtons(upright);
     refresh();
     notify();
   }
 
-  function notify() {
-    resizeListeners.forEach((fn) => fn());
+  function placeButtons(upright) {
+    if (upright) {
+      sheet.slot.append(toggle, ...adopted, chip.button);
+      return;
+    }
+    for (const button of [toggle, ...adopted, chip.button]) {
+      addBarItem(Number(button.dataset.order), button);
+    }
+  }
+
+  function notify(glide = false) {
+    resizeListeners.forEach((fn) => fn(glide));
     railEnd();
   }
 
@@ -578,7 +732,7 @@ export function buildToolbar(state) {
     if (animate) {
       swatchedAt = now;
     }
-    for (const canvas of [...showing, ...slotButtons.map((button) => button.firstChild)]) {
+    for (const canvas of [...showing, ...slotButtons.map((button) => button.firstChild), chip.canvas]) {
       if (animate || canvas.dataset.drawn === undefined) {
         if (renderer.drawSwatch(Number(canvas.dataset.element), canvas.getContext("2d"), now / 1000)) {
           canvas.dataset.drawn = "1";
@@ -590,18 +744,31 @@ export function buildToolbar(state) {
   // The dock can grow a row on a narrow screen, which moves the world
   new ResizeObserver(notify).observe(dock);
 
-  // Room the toolbar takes from the stage, so the world fits beside it rather than under it. On a short sideways
-  // phone the tool row is a strip down the right edge.
+  // Room the bar and the toolbar take from each side of the stage, so the world fits beside them rather than under
+  // them: { top, right, bottom, left }, plus `middle`, a screen x to centre a world with room to spare on, and `fill`,
+  // true when the world should fill the free height. On a short sideways phone the tool row is a strip down the right
+  // edge; with the tools hidden there, only the bar's slim column is left and the world centres on the screen. The
+  // parts' resting places are read (offsets, which ignore their slide in and out), so the world fits where they end up.
   function margins() {
-    const upright = sheet.upright;
-    const railBox = rail.getBoundingClientRect();
-    const toolBox = toolRow.row.getBoundingClientRect();
+    const width = window.innerWidth;
+    const barBottom = bar.offsetTop + bar.offsetHeight;
+    if (sheet.upright) {
+      const bottom = Math.max(0, window.innerHeight - sheet.top());
+      return { top: barBottom, right: 0, bottom, left: 0, middle: null, fill: tucked };
+    }
+    if (tucked && sideways.matches) {
+      const room = safe();
+      const right = Math.max(0, width - bar.offsetLeft);
+      return { ...room, right, middle: (room.left + width - room.right) / 2, fill: false };
+    }
     const strip = getComputedStyle(toolRow.row).position === "fixed";
-    const bottomEdge = upright ? sheet.top() : dock.getBoundingClientRect().top;
     return {
-      left: upright ? 0 : railBox.right,
-      right: strip ? Math.max(0, window.innerWidth - toolBox.left) : 0,
-      bottom: Math.max(0, window.innerHeight - bottomEdge),
+      top: barBottom,
+      right: strip ? Math.max(0, width - toolRow.row.offsetLeft) : 0,
+      bottom: Math.max(0, window.innerHeight - dock.offsetTop),
+      left: rail.offsetLeft + rail.offsetWidth,
+      middle: null,
+      fill: false,
     };
   }
 
@@ -614,6 +781,7 @@ export function buildToolbar(state) {
     refresh();
   }
 
+  showTucked();
   sheet.start();
 
   return {
@@ -628,5 +796,15 @@ export function buildToolbar(state) {
     /** On an upright phone `node` (the gallery) takes the sheet's place until releaseSheet() */
     holdSheet: (node) => sheet.hold(node),
     releaseSheet: () => sheet.release(),
+    /** A bar button (Undo) that moves to the sheet's top row on an upright phone, beside Hide tools */
+    adopt(button) {
+      const at = adopted.length;
+      adopted.push(button);
+      if (sheet.upright) {
+        sheet.slot.insertBefore(button, sheet.slot.children[at + 1] ?? null);
+      }
+    },
+    /** Whether the brush ring should show in the middle of the world, as the size slider just moved */
+    sizeShown: (now) => now < sizeShownUntil,
   };
 }

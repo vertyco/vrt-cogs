@@ -49,6 +49,8 @@ const PATHS = {
   search: '<circle cx="11" cy="11" r="6.5" /><path d="m16 16 5 5" />',
   more: '<circle cx="5.5" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="18.5" cy="12" r="1.2" />',
   less: '<path d="m6 9 6 6 6-6" />',
+  expand: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />',
+  shrink: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" />',
 };
 
 /** A fresh <svg> for the named icon. The icon takes the text color of the button it sits in */

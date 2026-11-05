@@ -3,11 +3,20 @@
 import { icon } from "./icons.js";
 
 const group = document.getElementById("bar-right");
-// An upright touch phone has room for only so many full-size buttons, so the least used ones move into a More menu
-const TUCK_QUERY = "(orientation: portrait) and (max-width: 640px) and (pointer: coarse)";
-const TUCKED = ["bar-music", "bar-sound", "bar-settings", "bar-help"];
+// A phone's bar has room for only so many full-size buttons, so the least used ones move into a More menu, where
+// each one shows its name. Upright the bar is a single row, so the gallery's two buttons go there too.
+const UPRIGHT_QUERY = "(orientation: portrait) and (max-width: 640px)";
+const PHONE_QUERY = `${UPRIGHT_QUERY}, (pointer: coarse) and (max-height: 500px)`;
+const TUCKED = [
+  ["bar-save", UPRIGHT_QUERY],
+  ["bar-gallery", UPRIGHT_QUERY],
+  ["bar-music", PHONE_QUERY],
+  ["bar-sound", PHONE_QUERY],
+  ["bar-settings", PHONE_QUERY],
+  ["bar-help", PHONE_QUERY],
+];
 // Pressing one of these opens a panel of its own, so the More menu gets out of its way
-const OPENS_PANEL = new Set(["bar-settings", "bar-help"]);
+const OPENS_PANEL = new Set(["bar-save", "bar-gallery", "bar-settings", "bar-help"]);
 
 /** Puts any element into the bar's right-hand group, left to right by `order` (ties keep the order they were added) */
 export function addBarItem(order, element) {
@@ -36,7 +45,6 @@ export function addBarButton({ id, label, icon, order, onClick }) {
 
 /** The More button and its menu. Call it once, after every button it may hold is in the bar. */
 export function buildBarMore() {
-  const query = window.matchMedia(TUCK_QUERY);
   const menu = document.createElement("div");
   menu.className = "bar-more glass";
   menu.id = "bar-more-menu";
@@ -52,7 +60,10 @@ export function buildBarMore() {
     onClick: () => setOpen(menu.hidden),
   });
   more.setAttribute("aria-controls", menu.id);
-  const buttons = TUCKED.map((id) => document.getElementById(id)).filter(Boolean);
+  const queries = new Map([UPRIGHT_QUERY, PHONE_QUERY].map((query) => [query, window.matchMedia(query)]));
+  const buttons = TUCKED.map(([id, query]) => [document.getElementById(id), queries.get(query)]).filter(
+    ([button]) => button,
+  );
 
   function setOpen(open) {
     menu.hidden = !open;
@@ -64,16 +75,17 @@ export function buildBarMore() {
     }
   }
 
+  // Each button goes in the menu while its own query matches, in bar order, and back into the bar otherwise
   function place() {
-    if (query.matches) {
-      menu.append(...buttons);
-    } else {
-      setOpen(false);
-      for (const button of buttons) {
+    setOpen(false);
+    const tucked = buttons.filter(([, query]) => query.matches).map(([button]) => button);
+    menu.append(...tucked);
+    for (const [button, query] of buttons) {
+      if (!query.matches) {
         addBarItem(Number(button.dataset.order), button);
       }
     }
-    more.hidden = !query.matches;
+    more.hidden = tucked.length === 0;
   }
 
   menu.addEventListener("click", (event) => {
@@ -94,6 +106,8 @@ export function buildBarMore() {
     }
   });
   window.addEventListener("resize", () => setOpen(false));
-  query.addEventListener("change", place);
+  for (const query of queries.values()) {
+    query.addEventListener("change", place);
+  }
   place();
 }

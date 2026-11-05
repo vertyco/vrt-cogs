@@ -16,7 +16,7 @@ import {
 import { Runner } from "./runner.js";
 import { startSaving } from "./save.js";
 import { Shared } from "./shared.js";
-import { createWorld, EL, ELEMENTS, hashWorld, SHAPE, stepWorld, STROKE } from "./sim/index.js";
+import { createWorld, EL, ELEMENTS, H, hashWorld, SHAPE, stepWorld, STROKE, W } from "./sim/index.js";
 import { paintingKind, Sound } from "./sound.js";
 import { addBarItem, buildBarMore } from "./ui/bar.js";
 import { buildCursors } from "./ui/cursors.js";
@@ -45,6 +45,8 @@ let lastFrame = null;
 let slowSince = null;
 
 document.getElementById("back").addEventListener("click", () => backToMenu());
+// An iPhone only shows a pressed button's look (:active in style.css) on a page that listens for touches
+document.addEventListener("touchstart", () => {}, { passive: true });
 
 let hub;
 try {
@@ -61,7 +63,6 @@ try {
 addBarItem(100, hub.peopleButton());
 
 const stage = document.getElementById("stage");
-const bar = document.getElementById("bar");
 const world = createWorld({ seed: Math.floor(Math.random() * 0x100000000) });
 const view = new View();
 const runner = new Runner(world);
@@ -122,20 +123,23 @@ try {
 }
 setupOverlay(document.getElementById("overlay"));
 
-// The world fits the stage between the bar above and the toolbar beside and below it
+// The world fits the stage between the bar above and the toolbar beside and below it. With glide (the tools coming or
+// going), it moves to its new place smoothly.
 let fitted = false;
-function layout() {
+function layout(glide = false) {
   const width = stage.clientWidth;
   const height = stage.clientHeight;
   const room = state.toolbar.margins();
   view.margins = {
-    top: bar.getBoundingClientRect().bottom + GAP,
+    top: room.top + GAP,
     right: room.right + GAP,
     bottom: room.bottom + GAP,
     left: room.left + GAP,
   };
+  view.middle = room.middle;
+  view.fill = room.fill;
   if (fitted) {
-    view.resize(width, height);
+    view.resize(width, height, glide);
   } else {
     view.fit(width, height);
     fitted = true;
@@ -148,16 +152,28 @@ new ResizeObserver(() => layout()).observe(stage);
 layout();
 state.toolbar.onResize(layout);
 
-// The brush ring where the cursor is: the brush's real footprint, dashed for spray
-addLayer(10, (ctx, v, s) => {
+// The cell in the middle of the part of the world on screen
+function middleCell(v) {
+  const a = v.area;
+  const left = Math.max(a.x, v.panX);
+  const right = Math.min(a.x + a.w, v.panX + W * v.scale);
+  const top = Math.max(a.y, v.panY);
+  const bottom = Math.min(a.y + a.h, v.panY + H * v.scale);
+  return v.cellAt((left + right) / 2, (top + bottom) / 2, true);
+}
+
+// The brush ring where the cursor is: the brush's real footprint, dashed for spray. While the size slider moves, a
+// finger has no cursor on the world, so the ring shows the new size in the middle of the world instead.
+addLayer(10, (ctx, v, s, now) => {
   const painter = s.painter;
-  const cell = painter.pointer;
+  const sizing = painter.paint === null && s.toolbar.sizeShown(now);
+  const cell = sizing ? middleCell(v) : painter.pointer;
   if (cell === null) {
     return;
   }
   const scale = v.scale;
   // Tools that act on one cell show a one-cell ring
-  const size = POINT_TOOLS.has(painter.tool) ? 1 : painter.size;
+  const size = POINT_TOOLS.has(painter.tool) && !sizing ? 1 : painter.size;
   ctx.beginPath();
   if (painter.shape === SHAPE.SQUARE) {
     const low = -(size >> 1);
@@ -180,6 +196,8 @@ addOutlineLayer();
 addCreatureLayer();
 addCellInfoLayer();
 state.undo = buildUndo(state, setWorld);
+// Upright, Undo sits by the thumb in the sheet's top row, and the bar keeps room for the world's name
+state.toolbar.adopt(state.undo.button);
 wirePainting();
 runner.onBatchDone(() => state.sound.world(runner.takeHeard(), state.world.tally));
 buildSpeedControl();
@@ -229,6 +247,7 @@ function setWorld(next) {
 }
 
 function frame(now) {
+  view.tick(now);
   runner.frame(now);
   state.renderer?.draw(state.world, view, now / 1000);
   state.toolbar.drawSwatches(state.renderer, now);

@@ -31,11 +31,30 @@
   --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
   --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  /* Hide tools: how long the toolbar takes to slide away and the world to glide into the room (view.js matches it) */
+  --glide: 0.22s;
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
   color-scheme: dark;
 }
 
 [hidden] {
   display: none !important;
+}
+
+/* Every press acts at once. A frame's page can't turn off a phone's double-tap zoom with its viewport tag, and a box
+   that scrolls starts over at "auto", so every element says it. The world and the sheet's handle take every gesture. */
+* {
+  touch-action: manipulation;
+}
+
+/* The room Discord's buttons and the phone's notch take at each edge, measured by toolbar.js */
+.safe-probe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
 }
 
 html,
@@ -52,6 +71,20 @@ body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* A list scrolled to its end stops there instead of tugging at the page behind it */
+.rail,
+.panel,
+.search,
+.worldmenu,
+.worldspanel,
+.gallery,
+.gallery-save,
+.settings,
+.help {
+  overscroll-behavior: contain;
 }
 
 :focus-visible {
@@ -129,8 +162,10 @@ body {
   height: 22px;
 }
 
-.bar-button:hover:not(:disabled) {
-  background: var(--glass-hover);
+@media (hover: hover) {
+  .bar-button:hover:not(:disabled) {
+    background: var(--glass-hover);
+  }
 }
 
 .bar-button:disabled {
@@ -154,8 +189,10 @@ body {
   cursor: pointer;
 }
 
-.bar-world:hover {
-  background: rgba(255, 255, 255, 0.22);
+@media (hover: hover) {
+  .bar-world:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
 }
 
 .bar-world-name {
@@ -177,6 +214,62 @@ body {
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+/* Hide tools only shows in the phone layouts, and the chip only while the tools are hidden */
+#bar-tools,
+#bar-chip {
+  display: none;
+}
+
+/* What is in hand: the element's swatch with the tool's icon on its corner */
+.chip {
+  position: relative;
+}
+
+.chip .swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.chip .chip-tool {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: var(--ink);
+  background: var(--glass-strong);
+  border-radius: 7px;
+  box-shadow: 0 0 0 1px var(--glass-edge);
+  pointer-events: none;
+}
+
+.chip .chip-tool svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* A tool that paints no element (the eraser, heat, the hand...) shows its icon alone, full size */
+.chip.bare .chip-tool {
+  position: static;
+  width: auto;
+  height: auto;
+  background: none;
+  box-shadow: none;
+}
+
+.chip.bare .chip-tool svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* During a peek the chip is lit: tapping it again puts the tools away */
+.chip[aria-expanded="true"] {
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 /* A connection that failed says so beside the Back button, which keeps working */
@@ -318,9 +411,11 @@ body {
   cursor: pointer;
 }
 
-.tab:hover {
-  color: var(--ink);
-  background: var(--glass-hover);
+@media (hover: hover) {
+  .tab:hover {
+    color: var(--ink);
+    background: var(--glass-hover);
+  }
 }
 
 .tab.open {
@@ -347,9 +442,10 @@ body {
   white-space: nowrap;
 }
 
+/* Over the recent row, which it covers while open */
 .panel {
   position: fixed;
-  z-index: 15;
+  z-index: 16;
   top: var(--under-bar);
   left: calc(var(--safe-left) + 8px + var(--rail-w) + 8px);
   width: 300px;
@@ -389,8 +485,10 @@ body {
   cursor: pointer;
 }
 
-.element:hover {
-  background: var(--glass-hover);
+@media (hover: hover) {
+  .element:hover {
+    background: var(--glass-hover);
+  }
 }
 
 .element.picked {
@@ -468,10 +566,12 @@ body.painting .sheet {
   cursor: pointer;
 }
 
-.slot:hover,
-.tool:hover {
-  color: var(--ink);
-  background: var(--glass-hover);
+@media (hover: hover) {
+  .slot:hover,
+  .tool:hover {
+    color: var(--ink);
+    background: var(--glass-hover);
+  }
 }
 
 .slot .swatch {
@@ -805,8 +905,10 @@ body.painting .sheet {
   vertical-align: middle;
 }
 
-.seg button:hover {
-  background: var(--glass-hover);
+@media (hover: hover) {
+  .seg button:hover {
+    background: var(--glass-hover);
+  }
 }
 
 .seg button[aria-pressed="true"] {
@@ -827,8 +929,10 @@ body.painting .sheet {
   cursor: pointer;
 }
 
-.menu-action:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.22);
+@media (hover: hover) {
+  .menu-action:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.22);
+  }
 }
 
 .menu-action:disabled {
@@ -843,8 +947,10 @@ body.painting .sheet {
   cursor: default;
 }
 
-.seg button:disabled:hover {
-  background: transparent;
+@media (hover: hover) {
+  .seg button:disabled:hover {
+    background: transparent;
+  }
 }
 
 .menu-hint {
@@ -859,8 +965,10 @@ body.painting .sheet {
   background: rgba(255, 90, 90, 0.16);
 }
 
-.menu-danger:hover:not(:disabled) {
-  background: rgba(255, 90, 90, 0.3);
+@media (hover: hover) {
+  .menu-danger:hover:not(:disabled) {
+    background: rgba(255, 90, 90, 0.3);
+  }
 }
 
 /* ---------- Sharing: world menu rows, the Worlds panel, ask cards ---------- */
@@ -914,8 +1022,10 @@ body.painting .sheet {
   cursor: pointer;
 }
 
-.world-card:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.22);
+@media (hover: hover) {
+  .world-card:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.22);
+  }
 }
 
 .world-card:disabled {
@@ -1113,19 +1223,10 @@ body.painting .sheet {
   }
 }
 
-/* An upright phone: the bar takes two rows (the world and speed above, the buttons below) and the toolbar becomes a
-   bottom sheet (ui/sheet.js) under the world */
+/* An upright phone: the bar is one row (the world's name takes what the buttons leave), Undo moves down to the sheet's
+   top row by the thumb, the gallery and sound buttons wait behind More (ui/bar.js), and the toolbar becomes a bottom
+   sheet (ui/sheet.js) under the world */
 @media (orientation: portrait) and (max-width: 640px) {
-  :root {
-    --bar-h: 92px;
-  }
-
-  .bar {
-    flex-wrap: wrap;
-    align-content: center;
-    row-gap: 4px;
-  }
-
   .bar-title {
     display: none;
   }
@@ -1135,21 +1236,13 @@ body.painting .sheet {
   }
 
   .bar-right {
-    order: 3;
-    flex: 1 1 100%;
     margin-left: 0;
-    justify-content: space-between;
-  }
-
-  /* Ten buttons share the second row, so they give way a little instead of pushing the people button off the edge */
-  .bar-right {
     gap: 0;
-    min-width: 0;
   }
 
-  .bar-right .bar-button {
-    flex: 0 1 34px;
-    min-width: 26px;
+  /* Step once waits in the world menu, beside the speed, so a pause never squeezes the world's name */
+  #bar-step {
+    display: none;
   }
 
   /* The world is a small band at the top, so notes stand above the sheet instead of over it */
@@ -1205,8 +1298,10 @@ body.painting .sheet {
   cursor: pointer;
 }
 
-.gallery-close:hover {
-  background: var(--glass-hover);
+@media (hover: hover) {
+  .gallery-close:hover {
+    background: var(--glass-hover);
+  }
 }
 
 .gallery-close svg {
@@ -1317,8 +1412,10 @@ body.painting .sheet {
   height: 16px;
 }
 
-.gallery-like:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+@media (hover: hover) {
+  .gallery-like:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+  }
 }
 
 .gallery-like[aria-pressed="true"] {
@@ -1340,9 +1437,11 @@ body.painting .sheet {
   background: var(--accent);
 }
 
-.menu-action.accent:hover:not(:disabled) {
-  background: var(--accent);
-  filter: brightness(1.1);
+@media (hover: hover) {
+  .menu-action.accent:hover:not(:disabled) {
+    background: var(--accent);
+    filter: brightness(1.1);
+  }
 }
 
 .gallery-save {
@@ -1609,7 +1708,42 @@ body.painting .sheet {
   padding: 0 8px 28px;
   overflow: hidden;
   background: var(--glass-strong);
+  transition:
+    opacity 0.2s,
+    height var(--glide) var(--ease-out);
+}
+
+/* Under a finger the sheet follows it at once */
+.sheet.dragging {
   transition: opacity 0.2s;
+}
+
+/* With the tools hidden only the top row is left */
+.sheet.mini > :not(.sheet-head) {
+  display: none;
+}
+
+/* Hide tools, Undo and (while the tools are hidden) the chip, over the handle's left end */
+.sheet-slot {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.sheet-slot .bar-button {
+  width: 30px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+}
+
+.sheet #bar-tools,
+body.tucked .sheet #bar-chip {
+  display: inline-grid;
 }
 
 /* The top row: the drag handle across the whole width, with the zoom buttons over its right end */
@@ -1705,6 +1839,12 @@ body.painting .sheet {
   overflow-y: hidden;
 }
 
+/* Scrolled along, the tabs gone past the left edge fade out there rather than being cut off */
+.sheet .rail:not(.at-start) {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 28px);
+  mask-image: linear-gradient(to right, transparent, #000 28px);
+}
+
 /* Rides the right edge of the tab row while more tabs wait past it, over a fade of the sheet's own color */
 .sheet .rail-more {
   position: sticky;
@@ -1736,26 +1876,24 @@ body.painting .sheet {
   padding: 0 12px 0 8px;
 }
 
-/* Open, the grid is as tall as its elements, shrinking only when the sheet runs out of room */
+/* The grid shows whole rows, as many as the room under the world holds (sheet.js sets --grid-rows), whatever the
+   tab holds, so a new tab never moves the world; it scrolls. What a part row would take sits above the tools. */
 .sheet .panel,
 .sheet .search {
-  flex: 0 1 auto;
-  min-height: 0;
+  flex: none;
   overflow-y: auto;
   gap: 6px;
 }
 
-/* Small, the grid shows two rows of elements (it scrolls), and the tools only the main ones and More */
-.sheet.compact .panel {
-  flex: none;
-  height: calc(2 * var(--el-h) + 4px);
+.sheet .panel {
+  height: calc(var(--grid-rows, 5) * (var(--el-h) + 4px) - 4px);
 }
 
-.sheet.compact .search {
-  flex: none;
-  height: calc(var(--field-h) + 6px + 2 * var(--el-h) + 4px);
+.sheet .search {
+  height: calc(var(--field-h) + 6px + var(--grid-rows, 5) * (var(--el-h) + 4px) - 4px);
 }
 
+/* Small, the tools are only the main ones and More */
 .sheet.compact .recent,
 .sheet.compact .tool-tucked,
 .sheet.compact .tools-shapes,
@@ -1786,6 +1924,7 @@ body.painting .sheet {
 
 .sheet .dock {
   flex: none;
+  margin-top: auto;
   flex-direction: column;
   align-items: stretch;
   flex-wrap: nowrap;
@@ -1815,6 +1954,13 @@ body.painting .sheet {
   flex-wrap: wrap;
   justify-content: flex-start;
   row-gap: 4px;
+}
+
+/* A narrow phone fits the small sheet's six tools and Search in one row with slightly narrower buttons */
+@media (pointer: coarse) and (max-width: 374px) {
+  .sheet .tool {
+    width: 40px;
+  }
 }
 
 .sheet .tool-group {
@@ -1864,15 +2010,34 @@ body.painting .sheet .dock {
   backdrop-filter: none;
 }
 
-/* ---------- The bar's More menu (upright touch phones) ---------- */
+/* ---------- The bar's More menu (phones) ---------- */
 
+/* A list, each button with its name beside its icon */
 .bar-more {
   position: fixed;
   z-index: 23;
   display: flex;
+  flex-direction: column;
   gap: 2px;
-  padding: 4px;
+  min-width: 210px;
+  padding: 6px;
   background: var(--glass-strong);
+}
+
+.bar-more .bar-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: auto;
+  padding: 0 16px 0 11px;
+  font: inherit;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.bar-more .bar-button::after {
+  content: attr(aria-label);
 }
 
 /* ---------- Touch screens: full-size buttons ---------- */
@@ -1952,7 +2117,8 @@ body.painting .sheet .dock {
     height: 44px;
   }
 
-  .sheet-zoom {
+  .sheet-zoom,
+  .sheet-slot .bar-button {
     width: 44px;
     height: 40px;
   }
@@ -2029,23 +2195,161 @@ body.painting .sheet .dock {
   }
 }
 
-/* An upright touch phone: both bar rows hold full-size buttons; music, sound, settings and help wait behind More */
+/* An upright touch phone: one row of full-size buttons */
 @media (pointer: coarse) and (orientation: portrait) and (max-width: 640px) {
-  :root {
-    --bar-h: 100px;
-  }
-
   .bar {
+    gap: 4px;
     padding: 0 4px;
-  }
-
-  .bar-right .bar-button {
-    flex: 0 0 44px;
-    min-width: 44px;
   }
 
   .bar-speed {
     padding-right: 3px;
     margin-right: 3px;
+  }
+}
+
+/* ---------- Sideways phones: room for every recent element, a taller panel ---------- */
+
+@media (max-height: 500px) {
+  /* The recent row shares the bottom edge with the size box, so its slots give way a little instead of running under it */
+  .dock .recent {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .dock .slot {
+    flex: 0 1 44px;
+    min-width: 0;
+  }
+
+  /* An open panel covers the recent row too, so it shows more elements before it scrolls */
+  .panel,
+  .search {
+    max-height: calc(100% - var(--under-bar) - var(--safe-bottom) - 8px);
+  }
+}
+
+/* ---------- Hidden tools, sideways ---------- */
+
+/* Hide tools slides the rail off the left edge, the tool strip and size box off the right and the recent row off the
+   bottom, and the bar becomes a slim column at the right edge: the people button and Show tools at the top, Pause,
+   Undo and the chip at the bottom, under a thumb. A peek shows everything where it was, over the world. */
+@media (max-height: 500px) {
+  #bar-tools,
+  body.tucked #bar-chip {
+    display: inline-grid;
+  }
+
+  .rail,
+  .tools,
+  .recent,
+  .sizer {
+    transition:
+      opacity 0.2s,
+      transform var(--glide) var(--ease-out),
+      visibility 0s;
+  }
+
+  body.tucked:not(.peek) :is(.rail, .tools, .recent, .sizer) {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--glide),
+      transform var(--glide) var(--ease-out),
+      visibility 0s linear var(--glide);
+  }
+
+  body.tucked:not(.peek) .rail {
+    transform: translateX(calc(-100% - 16px - var(--safe-left)));
+  }
+
+  body.tucked:not(.peek) :is(.tools, .sizer) {
+    transform: translateX(calc(100% + 16px + var(--safe-right)));
+  }
+
+  body.tucked:not(.peek) .recent {
+    transform: translateY(calc(100% + 16px + var(--safe-bottom)));
+  }
+
+  body.tucked:not(.peek) .bar {
+    left: auto;
+    bottom: calc(var(--safe-bottom) + 8px);
+    height: auto;
+    flex-direction: column;
+    padding: 6px 4px;
+    animation: column-in var(--glide) var(--ease-out);
+  }
+
+  body.tucked:not(.peek) .bar > :not(.bar-right),
+  body.tucked:not(.peek) .bar-right > :not(.bar-speed, #bar-undo, #bar-tools, #bar-chip, .hub-people),
+  body.tucked:not(.peek) .bar-speed > :not(#bar-pause) {
+    display: none;
+  }
+
+  body.tucked:not(.peek) .bar-right {
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+  }
+
+  body.tucked:not(.peek) .bar-right > .hub-people {
+    order: -2;
+  }
+
+  body.tucked:not(.peek) #bar-tools {
+    order: -1;
+  }
+
+  body.tucked:not(.peek) .bar-speed {
+    margin: auto 0 0;
+    padding: 0;
+    border: 0;
+  }
+
+  body.tucked:not(.peek) #bar-chip {
+    order: 1;
+  }
+
+  body.tucked.peek .bar {
+    animation: bar-in var(--glide) var(--ease-out);
+  }
+
+  body.tucked:not(.peek) #notes {
+    top: calc(var(--safe-top) + 8px);
+    left: calc(var(--safe-left) + 8px);
+  }
+}
+
+@keyframes column-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+@keyframes bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+/* A touch screen has no hover, so a press tints the button under the finger instead */
+@media (hover: none) {
+  button:not(.sheet-handle):active:not(:disabled) {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.16));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .rail,
+  .tools,
+  .recent,
+  .sizer,
+  .sheet {
+    animation: none !important;
+    transition: none !important;
   }
 }

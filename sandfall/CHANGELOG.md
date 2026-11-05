@@ -1,5 +1,18 @@
 # Sandfall Changelog
 
+## 0.3.0
+
+Phones get much more room to draw, upright and sideways.
+
+- Hide tools: a new button tucks the toolbars away so the world fills the screen. Upright, the tools shrink to one row at the bottom and the world zooms in to fill the height. Sideways, the bar turns into a slim column on the right with the people button, Show tools, pause, undo and the element in hand. The same button brings everything back.
+- While the tools are hidden, tap the element in hand to bring them up for a quick change. Picking an element or starting to paint tucks them away again.
+- Upright, the bar fits on one row, and the tools sheet shows as many whole rows of elements as fit under the world (up to five), so a row is never cut in half. Drag its handle down to hide the tools or up to bring them back; a tap on it shows or hides the extra tools.
+- On phones, rarely used buttons (music, sound, settings, help, and upright also save and gallery) wait in the bar's More menu, which now shows each button's name.
+- Sideways, the recent colors row no longer runs off narrow screens, and an open element list sits above it instead of under it.
+- Moving the brush size slider shows the brush's size as a ring in the middle of the world for a moment.
+- The world glides to its new place when the tools come or go (no motion for players who turned motion down). Buttons light up while pressed on touch screens, hover highlights no longer stick after a tap, and taps no longer wait for a possible double-tap on iPhones.
+- The world makes room for Discord's notch and home bar areas even when Discord sends them after the game has opened.
+
 ## 0.2.1
 
 Needs ActivityHub 0.8.0 or later.
