@@ -135,7 +135,8 @@ export class View {
     if (glide === null) {
       return;
     }
-    const t = Math.min(1, (now - glide.start) / GLIDE_MS);
+    // A frame's time can be a little before the glide started (the frame began before the press that started it)
+    const t = Math.max(0, Math.min(1, (now - glide.start) / GLIDE_MS));
     if (t >= 1) {
       this.glide = null;
       return;
@@ -175,16 +176,21 @@ export class View {
     this.clamp();
   }
 
+  /** The screen point in the middle of the part of the world that is on screen, as drawn this frame */
+  visibleMiddle() {
+    const a = this.area;
+    const left = Math.max(a.x, this.panX);
+    const right = Math.min(a.x + a.w, this.panX + W * this.scale);
+    const top = Math.max(a.y, this.panY);
+    const bottom = Math.min(a.y + a.h, this.panY + H * this.scale);
+    return [(left + right) / 2, (top + bottom) / 2];
+  }
+
   /** Zooms by factor around the middle of the part of the world that is on screen, for the zoom buttons */
   zoomBy(factor) {
     this.glide = null;
-    const a = this.area;
-    const scale = this.base * this.zoom;
-    const left = Math.max(a.x, this.x);
-    const right = Math.min(a.x + a.w, this.x + W * scale);
-    const top = Math.max(a.y, this.y);
-    const bottom = Math.min(a.y + a.h, this.y + H * scale);
-    this.zoomAt((left + right) / 2, (top + bottom) / 2, factor);
+    const [x, y] = this.visibleMiddle();
+    this.zoomAt(x, y, factor);
   }
 
   pan(dx, dy) {

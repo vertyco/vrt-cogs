@@ -1,5 +1,21 @@
 # Sandfall Changelog
 
+## 0.3.1
+
+Music and sound effects get their own volume, plus fixes for the phone layouts.
+
+- Settings has a Music switch and a Sound effects switch, each with its own volume slider under it, in place of the one Volume slider that turned both down together. Both start at 70.
+- With Colored sand picked, its color slider takes the place of the tool's name, so the brush size slider keeps its full width (it used to shrink to a sliver, or vanish on a sideways phone). The color slider only shows while a tool paints Colored sand.
+- Picking an element only closes the element panel on a sideways phone, where it covers the world, not on tablets and touch laptops.
+- Turning an upright phone sideways keeps the part of the world you were looking at, instead of jumping back to the middle.
+- The world no longer drifts on its own when the tool rows change size, and it follows your finger while you drag the sheet's handle.
+- Pressing and holding Hide tools to read what it does no longer also hides the tools, and the button shows one hint instead of two.
+- The world fits itself again when a sideways phone is turned end over end and the notch moves to the other side.
+- With the tools hidden, the F key brings them up with the search box, which used to open out of sight. Opening a menu or the gallery puts peeked tools away again.
+- An upright window shorter than a phone keeps its top bar as a row when the tools are hidden.
+- For players who turned motion down, the sheet shrinks to its top row cleanly, and the world never jerks backward as it starts to glide.
+- The page does less work while the sheet's handle is dragged.
+
 ## 0.3.0
 
 Phones get much more room to draw, upright and sideways.

@@ -16,6 +16,8 @@ const TAP_PX = 6;
 const ZOOM_STEP = 1.5;
 // As long as the height's CSS transition, so the parts hidden in the top-row-only sheet stay in view while it shrinks
 const SHRINK_MS = 230;
+// A player who asks for less motion gets no height transition (style.css), so nothing waits for one
+const STILL = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 function make(tag, className, text) {
   const node = document.createElement(tag);
@@ -144,12 +146,13 @@ export function buildSheet(parts, { bar, view, onMode, onResize, onState, onTuck
     return open ? "big" : "small";
   }
 
-  // A sheet shrinking to its top row keeps its parts until it has shrunk, so they slide away under its edge
+  // A sheet shrinking to its top row keeps its parts until it has shrunk, so they slide away under its edge (at once
+  // when there is no slide)
   function setLook(name) {
     clearTimeout(shrinkTimer);
     node.classList.toggle("held", name === "held");
     node.classList.toggle("compact", name !== "big");
-    if (name === "mini" && !node.classList.contains("mini")) {
+    if (name === "mini" && !node.classList.contains("mini") && !STILL.matches) {
       shrinkTimer = setTimeout(() => node.classList.add("mini"), SHRINK_MS);
     } else {
       node.classList.toggle("mini", name === "mini");
@@ -274,9 +277,11 @@ export function buildSheet(parts, { bar, view, onMode, onResize, onState, onTuck
   query.addEventListener("change", mode);
   // The window changing size (a keyboard, a turned phone, the hub's frame) changes how much room is left. A turned
   // phone's resize comes before the query's change, so everything below asks whether the sheet is on the page, not
-  // whether the query matches: a sheet measured off the page measures nothing.
+  // whether the query matches: a sheet measured off the page measures nothing. Here both must hold: a sheet still on
+  // the page of a phone just turned sideways would measure the sideways screen and squash the world for a moment, and
+  // the world would lose its place. The query's change moves the sheet either way and measures it then.
   window.addEventListener("resize", () => {
-    if (node.isConnected) {
+    if (node.isConnected && query.matches) {
       show();
     }
   });

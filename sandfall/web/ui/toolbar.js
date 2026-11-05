@@ -325,7 +325,7 @@ export function buildToolbar(state) {
     recency.unshift(id);
   }
 
-  // On a touch screen the sideways panel, which covers most of the world, gets out of the way once an element is picked
+  // On a sideways phone the panel, which covers most of the world, gets out of the way once an element is picked
   function choose(id) {
     painter.element = id;
     if (!ELEMENT_TOOLS.has(painter.tool)) {
@@ -333,7 +333,7 @@ export function buildToolbar(state) {
     }
     noteUsed(id);
     closeSearch();
-    if (!sheet.upright && touch.matches) {
+    if (!sheet.upright && sideways.matches && touch.matches) {
       openKey = null;
     }
     refresh();
@@ -401,9 +401,12 @@ export function buildToolbar(state) {
   );
   toolRow.more.addEventListener("click", () => sheet.toggle());
 
-  // Hide tools and the chip: in the bar when sideways, at the left end of the sheet's top row when upright
-  const toggle = addBarButton({ id: "tools", label: "Hide tools", order: 95, onClick: () => setTucked(!tucked) });
+  // Hide tools and the chip: in the bar when sideways, at the left end of the sheet's top row when upright. The hint
+  // is the button's tooltip, and its click guard goes on first, so a long press that shows it doesn't hide the tools.
+  const toggle = addBarButton({ id: "tools", label: "Hide tools", order: 95 });
+  toggle.removeAttribute("title");
   attachHint(toggle, () => (tucked ? "Show tools" : "Hide tools: the world gets the whole screen"));
+  toggle.addEventListener("click", () => setTucked(!tucked));
   const chip = buildChip(() => {
     const what = TOOL_NAMES.get(painter.tool);
     return ELEMENT_TOOLS.has(painter.tool) ? `${ELEMENTS[painter.element].name}, ${what}` : what;
@@ -454,7 +457,6 @@ export function buildToolbar(state) {
     document.body.classList.toggle("peek", peek);
     const label = tucked ? "Show tools" : "Hide tools";
     toggle.replaceChildren(icon(tucked ? "shrink" : "expand"));
-    toggle.title = label;
     toggle.setAttribute("aria-label", label);
     toggle.setAttribute("aria-pressed", String(tucked));
     refresh();
@@ -466,8 +468,12 @@ export function buildToolbar(state) {
   probe.setAttribute("aria-hidden", "true");
   document.body.append(probe);
   new ResizeObserver(() => {
-    sheet.fit();
-    notify(false);
+    // An upright sheet measures itself again and tells the world; otherwise the world is told here
+    if (sheet.upright) {
+      sheet.fit();
+    } else {
+      notify();
+    }
   }).observe(probe, { box: "border-box" });
   function safe() {
     const style = getComputedStyle(probe);
@@ -515,6 +521,8 @@ export function buildToolbar(state) {
   }
 
   function openSearch() {
+    // Hidden tools come up for a search (the F key), or its box would open inside the sheet's bare top row unseen
+    setPeek(true);
     if (!sheet.upright) {
       openKey = null;
     }
@@ -593,7 +601,9 @@ export function buildToolbar(state) {
     }
     sizer.input.value = String(painter.size);
     sizer.value.textContent = String(painter.size);
-    sizer.hue.hidden = painter.element !== EL.coloredSand;
+    // Colored sand's color slider takes the place of the tool's name, so the size slider keeps its room
+    sizer.hue.hidden = !(paints && painter.element === EL.coloredSand);
+    sizer.box.classList.toggle("tinted", !sizer.hue.hidden);
     refreshChip(holding);
   }
 
@@ -741,8 +751,9 @@ export function buildToolbar(state) {
     }
   }
 
-  // The dock can grow a row on a narrow screen, which moves the world
-  new ResizeObserver(notify).observe(dock);
+  // The dock can grow a row on a narrow screen, which moves the world. Called bare, so the observer's entries never
+  // arrive as notify's glide
+  new ResizeObserver(() => notify()).observe(dock);
 
   // Room the bar and the toolbar take from each side of the stage, so the world fits beside them rather than under
   // them: { top, right, bottom, left }, plus `middle`, a screen x to centre a world with room to spare on, and `fill`,
@@ -772,8 +783,9 @@ export function buildToolbar(state) {
     };
   }
 
-  // Shuts the element panel and search, so a menu opening over them doesn't leave them showing behind
+  // Shuts the element panel and search, and ends a peek, so a menu opening over them doesn't leave them showing behind
   function close() {
+    setPeek(false);
     if (!sheet.upright) {
       openKey = null;
     }

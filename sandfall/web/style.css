@@ -47,11 +47,15 @@
   touch-action: manipulation;
 }
 
-/* The room Discord's buttons and the phone's notch take at each edge, measured by toolbar.js */
+/* The room Discord's buttons and the phone's notch take at each edge, measured by toolbar.js. Its size counts the left
+   and top room twice, so a phone turned end over end (the notch moving to the other side) still changes its size and
+   the world fits itself again */
 .safe-probe {
   position: fixed;
   top: 0;
   left: 0;
+  width: var(--safe-left);
+  height: var(--safe-top);
   visibility: hidden;
   pointer-events: none;
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
@@ -661,6 +665,11 @@ body.painting .sheet {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Colored sand's color slider takes the tool's place, so the size slider keeps its room */
+.sizer.tinted .tool-now {
+  display: none;
 }
 
 .sizer {
@@ -1661,6 +1670,15 @@ body.painting .sheet {
   accent-color: var(--accent);
 }
 
+/* A volume slider sits close under its sound's switch and spans the row */
+.setting-under {
+  margin-top: -6px;
+}
+
+.setting-under .setting-range {
+  flex: 1;
+}
+
 .switch {
   position: relative;
   flex: none;
@@ -2233,8 +2251,9 @@ body.painting .sheet .dock {
 
 /* Hide tools slides the rail off the left edge, the tool strip and size box off the right and the recent row off the
    bottom, and the bar becomes a slim column at the right edge: the people button and Show tools at the top, Pause,
-   Undo and the chip at the bottom, under a thumb. A peek shows everything where it was, over the world. */
-@media (max-height: 500px) {
+   Undo and the chip at the bottom, under a thumb. A peek shows everything where it was, over the world. An upright
+   window this short has the sheet, which hides its own tools, so its bar stays a row. */
+@media (max-height: 500px) and (orientation: landscape) {
   #bar-tools,
   body.tucked #bar-chip {
     display: inline-grid;

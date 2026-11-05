@@ -1,11 +1,11 @@
 // The top bar's right-hand group. Every part of the page adds its own button here and says where it sits, so the
 // order of the bar never depends on which script ran first.
 import { icon } from "./icons.js";
+import { UPRIGHT_QUERY } from "./sheet.js";
 
 const group = document.getElementById("bar-right");
 // A phone's bar has room for only so many full-size buttons, so the least used ones move into a More menu, where
 // each one shows its name. Upright the bar is a single row, so the gallery's two buttons go there too.
-const UPRIGHT_QUERY = "(orientation: portrait) and (max-width: 640px)";
 const PHONE_QUERY = `${UPRIGHT_QUERY}, (pointer: coarse) and (max-height: 500px)`;
 const TUCKED = [
   ["bar-save", UPRIGHT_QUERY],

@@ -25,7 +25,8 @@ const LIMITER_TRIM = 0.5;
 const DEFAULT_VOLUME = 70;
 const MUSIC_KEY = "sandfall:music";
 const EFFECTS_KEY = "sandfall:sfx";
-const VOLUME_KEY = "sandfall:volume";
+const MUSIC_VOLUME_KEY = "sandfall:music-volume";
+const EFFECTS_VOLUME_KEY = "sandfall:sfx-volume";
 
 // The world is read at most this often, so a burst of caught-up batches doesn't pile up sounds
 const WORLD_GAP_MS = 40;
@@ -61,26 +62,32 @@ function saveSetting(key, on) {
   }
 }
 
-function readVolume() {
+function clampVolume(volume) {
+  return Math.min(100, Math.max(0, Math.round(volume)));
+}
+
+function readVolume(key) {
   try {
-    const stored = localStorage.getItem(VOLUME_KEY);
+    const stored = localStorage.getItem(key);
     const volume = Number(stored);
-    if (stored === null || !Number.isFinite(volume)) {
-      return DEFAULT_VOLUME;
-    }
-    return Math.min(100, Math.max(0, Math.round(volume)));
+    return stored === null || !Number.isFinite(volume) ? DEFAULT_VOLUME : clampVolume(volume);
   } catch (e) {
-    console.warn("Sandfall: couldn't read the volume", e);
+    console.warn("Sandfall: couldn't read a volume", e);
     return DEFAULT_VOLUME;
   }
 }
 
-function saveVolume(volume) {
+function saveVolume(key, volume) {
   try {
-    localStorage.setItem(VOLUME_KEY, String(volume));
+    localStorage.setItem(key, String(volume));
   } catch (e) {
-    console.warn("Sandfall: couldn't save the volume", e);
+    console.warn("Sandfall: couldn't save a volume", e);
   }
+}
+
+// Loudness is felt on a curve, so a slider's low end isn't all the same quiet
+function gainFor(volume) {
+  return (volume / 100) ** 2;
 }
 
 /** The painting sound for the element under the brush: "powder", "liquid", "fire", or null for silence */
@@ -95,12 +102,14 @@ export function paintingKind(element) {
 export class Sound {
   constructor() {
     this.ctx = null;
-    this.master = null;
     this.musicOut = null;
     this.effectsOut = null;
+    // The last gain on the effects, after the limiter, which their slider turns
+    this.effectsVolumeOut = null;
     this.noiseBuffer = null;
     this.layers = {};
-    this.volume = readVolume();
+    this.musicVolume = readVolume(MUSIC_VOLUME_KEY);
+    this.sfxVolume = readVolume(EFFECTS_VOLUME_KEY);
     this.musicOn = readSetting(MUSIC_KEY);
     this.sfxOn = readSetting(EFFECTS_KEY);
     this.painted = null;
@@ -137,12 +146,9 @@ export class Sound {
   build() {
     const ctx = new AudioContext();
     this.ctx = ctx;
-    this.master = ctx.createGain();
-    this.master.gain.value = this.gainFor(this.volume);
-    this.master.connect(ctx.destination);
     this.musicOut = ctx.createGain();
-    this.musicOut.gain.value = MUSIC_LEVEL;
-    this.musicOut.connect(this.master);
+    this.musicOut.gain.value = MUSIC_LEVEL * gainFor(this.musicVolume);
+    this.musicOut.connect(ctx.destination);
     // The one limiter on every effect: however much is happening, the total stays under this ceiling
     const limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -16;
@@ -150,9 +156,9 @@ export class Sound {
     limiter.ratio.value = 20;
     limiter.attack.value = 0.003;
     limiter.release.value = 0.15;
-    const trim = ctx.createGain();
-    trim.gain.value = LIMITER_TRIM;
-    limiter.connect(trim).connect(this.master);
+    this.effectsVolumeOut = ctx.createGain();
+    this.effectsVolumeOut.gain.value = LIMITER_TRIM * gainFor(this.sfxVolume);
+    limiter.connect(this.effectsVolumeOut).connect(ctx.destination);
     this.effectsOut = ctx.createGain();
     this.effectsOut.gain.value = EFFECTS_LEVEL;
     this.effectsOut.connect(limiter);
@@ -203,11 +209,6 @@ export class Sound {
     }
   }
 
-  gainFor(volume) {
-    // Loudness is felt on a curve, so the slider's low end isn't all the same quiet
-    return (volume / 100) ** 2;
-  }
-
   /** Whether sound can come out right now */
   live() {
     return this.ctx !== null && this.ctx.state === "running";
@@ -250,11 +251,24 @@ export class Sound {
     this.applyPainting();
   }
 
-  setVolume(volume) {
-    this.volume = Math.min(100, Math.max(0, Math.round(volume)));
-    saveVolume(this.volume);
-    if (this.master) {
-      this.master.gain.setTargetAtTime(this.gainFor(this.volume), this.ctx.currentTime, 0.03);
+  /** The music's slider, 0 to 100 */
+  setMusicVolume(volume) {
+    this.musicVolume = clampVolume(volume);
+    saveVolume(MUSIC_VOLUME_KEY, this.musicVolume);
+    this.turn(this.musicOut, MUSIC_LEVEL * gainFor(this.musicVolume));
+  }
+
+  /** The sound effects' slider, 0 to 100 */
+  setSfxVolume(volume) {
+    this.sfxVolume = clampVolume(volume);
+    saveVolume(EFFECTS_VOLUME_KEY, this.sfxVolume);
+    this.turn(this.effectsVolumeOut, LIMITER_TRIM * gainFor(this.sfxVolume));
+  }
+
+  // Eases a gain to its new level, so dragging a slider never clicks. Before the first touch there is nothing to turn.
+  turn(out, level) {
+    if (out) {
+      out.gain.setTargetAtTime(level, this.ctx.currentTime, 0.03);
     }
   }
 
@@ -456,7 +470,8 @@ export class Sound {
       track: this.playing?.track.name ?? null,
       nextAt: this.nextAt,
       nextIn: Math.round(this.nextAt - performance.now()),
-      volume: this.volume,
+      musicVolume: this.musicVolume,
+      sfxVolume: this.sfxVolume,
       context: this.ctx?.state ?? "locked",
       painting: this.painted,
       levels: { ...this.levels },

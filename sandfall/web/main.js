@@ -16,7 +16,7 @@ import {
 import { Runner } from "./runner.js";
 import { startSaving } from "./save.js";
 import { Shared } from "./shared.js";
-import { createWorld, EL, ELEMENTS, H, hashWorld, SHAPE, stepWorld, STROKE, W } from "./sim/index.js";
+import { createWorld, EL, ELEMENTS, hashWorld, SHAPE, stepWorld, STROKE } from "./sim/index.js";
 import { paintingKind, Sound } from "./sound.js";
 import { addBarItem, buildBarMore } from "./ui/bar.js";
 import { buildCursors } from "./ui/cursors.js";
@@ -124,8 +124,10 @@ try {
 setupOverlay(document.getElementById("overlay"));
 
 // The world fits the stage between the bar above and the toolbar beside and below it. With glide (the tools coming or
-// going), it moves to its new place smoothly.
+// going), it moves to its new place smoothly. The canvases are only sized again when the stage's size changes, since
+// sizing a canvas clears it and layout also runs for every move of the sheet's handle.
 let fitted = false;
+let canvasSize = "";
 function layout(glide = false) {
   const width = stage.clientWidth;
   const height = stage.clientHeight;
@@ -145,29 +147,23 @@ function layout(glide = false) {
     fitted = true;
   }
   const ratio = window.devicePixelRatio || 1;
-  state.renderer?.resize(width, height, ratio);
-  resizeOverlay(width, height, ratio);
+  const size = `${width}x${height}@${ratio}`;
+  if (size !== canvasSize) {
+    canvasSize = size;
+    state.renderer?.resize(width, height, ratio);
+    resizeOverlay(width, height, ratio);
+  }
 }
 new ResizeObserver(() => layout()).observe(stage);
 layout();
 state.toolbar.onResize(layout);
-
-// The cell in the middle of the part of the world on screen
-function middleCell(v) {
-  const a = v.area;
-  const left = Math.max(a.x, v.panX);
-  const right = Math.min(a.x + a.w, v.panX + W * v.scale);
-  const top = Math.max(a.y, v.panY);
-  const bottom = Math.min(a.y + a.h, v.panY + H * v.scale);
-  return v.cellAt((left + right) / 2, (top + bottom) / 2, true);
-}
 
 // The brush ring where the cursor is: the brush's real footprint, dashed for spray. While the size slider moves, a
 // finger has no cursor on the world, so the ring shows the new size in the middle of the world instead.
 addLayer(10, (ctx, v, s, now) => {
   const painter = s.painter;
   const sizing = painter.paint === null && s.toolbar.sizeShown(now);
-  const cell = sizing ? middleCell(v) : painter.pointer;
+  const cell = sizing ? v.cellAt(...v.visibleMiddle(), true) : painter.pointer;
   if (cell === null) {
     return;
   }

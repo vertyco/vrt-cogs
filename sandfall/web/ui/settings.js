@@ -58,10 +58,12 @@ export function addToggle(label, get, set) {
   return addRow(row, () => button.setAttribute("aria-checked", String(get())));
 }
 
-/** Adds a slider row from `min` to `max` in whole steps. `get()` is its value now; `set(value)` runs as it moves */
-export function addSlider(label, min, max, get, set) {
-  const row = make("div", "setting");
-  const name = make("span", "setting-label", label);
+/**
+ * Adds a slider row from `min` to `max` in whole steps. `get()` is its value now; `set(value)` runs as it moves. An
+ * `under` slider belongs to the row above it, which already names it, so it shows no name and spans the row.
+ */
+export function addSlider(label, min, max, get, set, under = false) {
+  const row = make("div", under ? "setting setting-under" : "setting");
   const input = make("input", "setting-range");
   input.type = "range";
   input.min = String(min);
@@ -73,11 +75,21 @@ export function addSlider(label, min, max, get, set) {
     set(Number(input.value));
     value.textContent = input.value;
   });
-  row.append(name, input, value);
+  if (!under) {
+    row.append(make("span", "setting-label", label));
+  }
+  row.append(input, value);
   return addRow(row, () => {
     input.value = String(get());
     value.textContent = input.value;
   });
+}
+
+/** Shows every row's value again, for a setting changed from outside the panel (a key or a bar button) */
+export function refreshSettings() {
+  for (const refresh of rows) {
+    refresh();
+  }
 }
 
 /** Adds the gear button (bar order 60) and wires the panel to it. Returns { open, close } */
@@ -96,9 +108,7 @@ export function buildSettings(state) {
 
   function open() {
     state.toolbar?.close();
-    for (const refresh of rows) {
-      refresh();
-    }
+    refreshSettings();
     node.hidden = false;
     button.setAttribute("aria-expanded", "true");
   }
