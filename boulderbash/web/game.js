@@ -29,7 +29,12 @@ const OFFLINE_PLAY = "Open Boulder Bash in Discord to play.";
 const EFFECTS_KEY = "boulderbash:effects";
 // A phone held upright gets the stacked layout
 const TALL_BELOW = 0.8;
+// The sound panel keeps this far from the screen's edges, and this far from the Sound sign
+const PANEL_EDGE = 10;
+const PANEL_GAP = 14;
 const sound = new Sound();
+// The browser tests read the sound's levels from outside
+window.boulderbashSound = sound;
 const page = {
   hub: null,
   conn: null,
@@ -158,6 +163,9 @@ function showScreen(name) {
     hidePopup();
     hidePass();
   }
+  if (name !== "title") {
+    closeSoundPanel();
+  }
   layout();
   if (["title", "modes", "over"].includes(name) && before !== name) {
     page.scene?.entrance();
@@ -207,6 +215,9 @@ function layout() {
   }
   page.scene?.layout({ tall, screen: page.screen, safe, playArea });
   placePeople(stage, safe);
+  if (!$("sound-panel").hidden) {
+    placeSoundPanel();
+  }
 }
 
 function toast(text) {
@@ -735,10 +746,6 @@ function bindButtons() {
   click("help-more", () => showHelpPage((page.helpPage % 4) + 1));
   click("open-scores", openScores);
   click("close-scores", () => $("scores").close());
-  click("sound", () => {
-    sound.cycle();
-    showToggles();
-  });
   click("effects", () => {
     page.effects = !page.effects;
     saveEffects(page.effects);
@@ -760,9 +767,11 @@ function bindButtons() {
     $("message").hidden = true;
   });
   bindPayouts();
+  bindSoundPanel();
   window.addEventListener("pointerdown", closePopup, true);
   window.addEventListener("keydown", closePopup);
   showToggles();
+  showSound();
 }
 
 function bindPayouts() {
@@ -783,8 +792,111 @@ function bindPayouts() {
 }
 
 function showToggles() {
-  $("sound").textContent = sound.nextAction;
   $("effects").textContent = page.effects ? "Turn effects off" : "Turn effects on";
+}
+
+// ---------- The sound panel ----------
+
+function bindSoundPanel() {
+  click("sound", () => ($("sound-panel").hidden ? openSoundPanel() : closeSoundPanel()));
+  $("sfx-switch").addEventListener("click", () => {
+    sound.setSfx(!sound.sfxOn);
+    showSound();
+  });
+  $("music-switch").addEventListener("click", () => {
+    sound.setMusic(!sound.musicOn);
+    showSound();
+  });
+  // Letting go of the effects slider plays a click at its new loudness, so the player hears where it landed
+  bindSlider("sfx-volume", (volume) => sound.setSfxVolume(volume), () => sound.play("click"));
+  bindSlider("music-volume", (volume) => sound.setMusicVolume(volume));
+  // A tap anywhere else closes it, and still does what it tapped
+  window.addEventListener(
+    "pointerdown",
+    (event) => {
+      const panel = $("sound-panel");
+      if (!panel.hidden && !panel.contains(event.target) && !$("sound").contains(event.target)) {
+        closeSoundPanel();
+      }
+    },
+    true,
+  );
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || $("sound-panel").hidden) {
+      return;
+    }
+    const inside = $("sound-panel").contains(document.activeElement);
+    closeSoundPanel();
+    if (inside) {
+      $("sound").focus({ preventScroll: true });
+    }
+  });
+}
+
+// A slider sets its loudness as it moves, and saves it once let go
+function bindSlider(id, set, done = () => {}) {
+  const slider = $(id);
+  slider.addEventListener("input", () => {
+    set(Number(slider.value));
+    showSound();
+  });
+  slider.addEventListener("change", () => {
+    sound.saveVolumes();
+    done();
+  });
+}
+
+// Focus moves into the panel, so a keyboard player can go straight on to its switches
+function openSoundPanel() {
+  $("sound-panel").hidden = false;
+  $("sound").setAttribute("aria-expanded", "true");
+  placeSoundPanel();
+  $("sfx-switch").focus({ preventScroll: true });
+}
+
+function closeSoundPanel() {
+  $("sound-panel").hidden = true;
+  $("sound").setAttribute("aria-expanded", "false");
+}
+
+// Beside the Sound sign: level with it and left of every title sign where the screen has room, otherwise under it, or
+// over it when the screen is too short below. Always inside the safe area
+function placeSoundPanel() {
+  const panel = $("sound-panel");
+  const sign = $("sound").getBoundingClientRect();
+  const signs = [...$("title").querySelectorAll(".sign")];
+  const signsLeft = Math.min(...signs.map((node) => node.getBoundingClientRect().left));
+  const safe = safeArea();
+  const left = safe.left + PANEL_EDGE;
+  const top = safe.top + PANEL_EDGE;
+  const right = window.innerWidth - safe.right - PANEL_EDGE;
+  const bottom = window.innerHeight - safe.bottom - PANEL_EDGE;
+  const width = panel.offsetWidth;
+  const height = panel.offsetHeight;
+  let x = signsLeft - PANEL_GAP - width;
+  let y = sign.top + (sign.height - height) / 2;
+  if (x < left) {
+    x = sign.left + (sign.width - width) / 2;
+    y = sign.bottom + PANEL_GAP + height <= bottom ? sign.bottom + PANEL_GAP : sign.top - PANEL_GAP - height;
+  }
+  panel.style.left = `${Math.max(left, Math.min(x, right - width))}px`;
+  panel.style.top = `${Math.max(top, Math.min(y, bottom - height))}px`;
+}
+
+// The Sound sign's speaker is crossed out while music and effects are both off
+function showSound() {
+  $("sound").classList.toggle("muted", !sound.musicOn && !sound.sfxOn);
+  $("sfx-switch").setAttribute("aria-checked", String(sound.sfxOn));
+  $("music-switch").setAttribute("aria-checked", String(sound.musicOn));
+  showSlider("sfx-volume", sound.sfxVolume);
+  showSlider("music-volume", sound.musicVolume);
+}
+
+// The track fills up to the knob
+function showSlider(id, volume) {
+  const slider = $(id);
+  slider.value = String(volume);
+  slider.style.setProperty("--level", `${volume}%`);
 }
 
 start();

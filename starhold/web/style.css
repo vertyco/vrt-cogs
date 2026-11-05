@@ -264,6 +264,157 @@ body:not([data-screen="title"]) #open-payouts {
   width: min(80vw, 300px);
 }
 
+.sound-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.sound-button svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
+
+.sound-button.muted .waves,
+.sound-button:not(.muted) .cross {
+  display: none;
+}
+
+.sound-button[aria-expanded="true"] {
+  border-color: var(--teal);
+}
+
+/* The sound panel floats beside the Sound button, placed by panels.js */
+.sound-panel {
+  position: fixed;
+  width: min(240px, calc(100vw - 20px));
+  box-sizing: border-box;
+  padding: 6px 14px 4px;
+  border: 2px solid var(--teal);
+  border-radius: 14px;
+  background: #0a1822;
+  box-shadow:
+    0 0 18px rgba(63, 240, 208, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* The name and its switch on one line, the slider under them */
+.sound-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+}
+
+.sound-row + .sound-row {
+  margin-top: 2px;
+  padding-top: 2px;
+  border-top: 1px solid rgba(47, 185, 230, 0.25);
+}
+
+.sound-name {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* A thumb-sized button that draws a small pill with a knob */
+.switch {
+  position: relative;
+  width: 60px;
+  height: var(--touch);
+  margin-right: -6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.switch::before {
+  content: "";
+  position: absolute;
+  inset: 8px 6px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: #06121a;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: 11px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--dim);
+  transition: transform 0.15s;
+}
+
+.switch[aria-checked="true"]::before {
+  border-color: var(--teal);
+  background: #18806f;
+}
+
+.switch[aria-checked="true"]::after {
+  background: var(--ink);
+  box-shadow: 0 0 8px var(--glow);
+  transform: translateX(20px);
+}
+
+.volume {
+  --level: 100%;
+  grid-column: 1 / -1;
+  width: 100%;
+  height: var(--touch);
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.volume::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--teal) var(--level), #1d3a4c var(--level));
+}
+
+.volume::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--teal) var(--level), #1d3a4c var(--level));
+}
+
+.volume::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  border: 2px solid var(--teal);
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 8px var(--glow);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.volume::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--teal);
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 8px var(--glow);
+}
+
 /* Upright, the card is one stack; the two groups only matter when a phone is held sideways */
 .result-main,
 .result-actions {

@@ -322,7 +322,7 @@ class HubRoutes:
             # A missing look keeps its saved value
             look = await group.look()
             if "look" in body:
-                look = apply_look_change(look, body["look"])
+                look = apply_look_change(look, body["look"], player=True)
             await group.look.set(look)
         elif tab == "order":
             group = config.user(ctx.author)

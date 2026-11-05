@@ -26,7 +26,27 @@
         <button type="button" class="button primary big" id="play-button">Play</button>
         <button type="button" class="button" id="scores-button">High scores</button>
         <button type="button" class="button" id="how-button">How to play</button>
-        <button type="button" class="button" id="sound-button">Turn music off</button>
+        <button type="button" class="button sound-button" id="sound-button" aria-expanded="false" aria-controls="sound-panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3.5 9.5h3.8L12.5 5v14l-5.2-4.5H3.5z" fill="currentColor" />
+            <path class="waves" d="M16 9a4.2 4.2 0 0 1 0 6M18.8 6.4a8 8 0 0 1 0 11.2" />
+            <path class="cross" d="M16 9.5l5 5M21 9.5l-5 5" />
+          </svg>
+          <span>Sound</span>
+        </button>
+        <!-- Placed beside the Sound button by panels.js, wherever the screen has room -->
+        <div class="sound-panel" id="sound-panel" role="group" aria-label="Sound" hidden>
+          <div class="sound-row">
+            <span class="sound-name" id="sfx-name">Sound effects</span>
+            <button type="button" class="switch" id="sfx-switch" role="switch" aria-checked="true" aria-labelledby="sfx-name"></button>
+            <input type="range" class="volume" id="sfx-volume" min="0" max="100" step="5" value="100" aria-label="Sound effects volume" />
+          </div>
+          <div class="sound-row">
+            <span class="sound-name" id="music-name">Music</span>
+            <button type="button" class="switch" id="music-switch" role="switch" aria-checked="true" aria-labelledby="music-name"></button>
+            <input type="range" class="volume" id="music-volume" min="0" max="100" step="5" value="100" aria-label="Music volume" />
+          </div>
+        </div>
       </div>
     </section>
 

@@ -1,5 +1,9 @@
 # Starhold Changelog
 
+## 0.2.0
+
+- The title's Sound button opens a small sound panel beside it, with a switch and a volume slider each for sound effects and music. Volumes are saved on each device, and letting go of the effects slider plays a sound at the new level. The button's speaker is crossed out while both are off.
+
 ## 0.1.0
 
 Needs ActivityHub 0.8.0 or later.

@@ -1,5 +1,11 @@
 # Marble Munch Changelog
 
+## 0.6.0
+
+Needs ActivityHub 0.8.0 or later.
+
+- The music and sound effects buttons are now one sound button. It opens a small panel with an on/off switch and a volume slider for sound effects and for music. Letting go of the sound effects slider plays a sound at the new level. The volumes are saved on each device, and the button shows crossed out when both sounds are off.
+
 ## 0.5.0
 
 Needs ActivityHub 0.8.0 or later.

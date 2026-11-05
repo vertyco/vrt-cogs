@@ -30,7 +30,10 @@
         <button type="button" class="sign s1" id="start">Start Game</button>
         <button type="button" class="sign s2" id="how">How to Play</button>
         <button type="button" class="sign s3" id="open-scores">High Scores</button>
-        <button type="button" class="sign s4" id="sound">Turn music off</button>
+        <button type="button" class="sign s4 sound-sign" id="sound" aria-expanded="false" aria-controls="sound-panel">
+          <svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 9.5h3.5l5-4v13l-5-4H3.5z" fill="currentColor" /><path class="waves" d="M15.5 9a4.5 4.5 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /><path class="cross" d="M16 9.5l5 5M21 9.5l-5 5" /></svg>
+          Sound
+        </button>
         <button type="button" class="sign s5" id="effects">Turn effects off</button>
       </section>
 
@@ -124,6 +127,20 @@
       </section>
 
       <p class="toast" id="toast" role="status" hidden></p>
+    </div>
+
+    <!-- Opened by the title's Sound sign, and placed beside it by game.js -->
+    <div class="sound-panel" id="sound-panel" role="dialog" aria-label="Sound" hidden>
+      <div class="sound-row">
+        <span id="sfx-name">Sound effects</span>
+        <button type="button" class="switch" id="sfx-switch" role="switch" aria-labelledby="sfx-name" aria-checked="true"><span class="knob"></span></button>
+        <input type="range" class="volume" id="sfx-volume" min="0" max="100" step="5" value="100" aria-label="Sound effects volume" />
+      </div>
+      <div class="sound-row">
+        <span id="music-name">Music</span>
+        <button type="button" class="switch" id="music-switch" role="switch" aria-labelledby="music-name" aria-checked="true"><span class="knob"></span></button>
+        <input type="range" class="volume" id="music-volume" min="0" max="100" step="5" value="100" aria-label="Music volume" />
+      </div>
     </div>
 
     <p class="pass" id="pass" aria-live="polite" hidden></p>

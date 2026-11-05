@@ -1,5 +1,5 @@
 // Boulder Bash's sound: effects from files and a few voices made on the fly, and two songs (menus and play) that
-// crossfade into each other. The Sound sign cycles music and effects the way the original's did.
+// crossfade into each other. The title's sound panel turns music and effects on and off, and sets how loud each is.
 const SONGS = { menu: "music/canyon-stomp.mp3", play: "music/rock-breaker.mp3" };
 const FILES = [
   "click",
@@ -29,9 +29,13 @@ const EFFECTS_VOLUME = 0.7;
 const CROSSFADE = 2;
 const EFFECTS_FADE = 1;
 const SHUFFLE_FADE = 1;
+// A slider eases to its new loudness this quickly, so dragging it never clicks
+const VOLUME_FADE = 0.05;
 // Every game on the hub shares one storage, so the keys carry the game's name
 const MUSIC_KEY = "boulderbash:music";
 const SOUND_KEY = "boulderbash:sound";
+const MUSIC_VOLUME_KEY = "boulderbash:music-volume";
+const SFX_VOLUME_KEY = "boulderbash:sfx-volume";
 
 function readSetting(key) {
   try {
@@ -48,6 +52,35 @@ function saveSetting(key, on) {
   } catch (e) {
     console.warn("Boulder Bash: couldn't save a sound setting", e);
   }
+}
+
+// A slider's saved position, 0 to 100. Full, the game's own loudness, when none is saved or it isn't a number
+function readVolume(key) {
+  try {
+    const saved = localStorage.getItem(key);
+    const volume = saved ? Number(saved) : NaN;
+    return Number.isFinite(volume) ? clampVolume(volume) : 100;
+  } catch (e) {
+    console.warn("Boulder Bash: couldn't read a volume", e);
+    return 100;
+  }
+}
+
+function saveVolume(key, volume) {
+  try {
+    localStorage.setItem(key, String(volume));
+  } catch (e) {
+    console.warn("Boulder Bash: couldn't save a volume", e);
+  }
+}
+
+function clampVolume(volume) {
+  return Math.min(100, Math.max(0, Math.round(volume)));
+}
+
+// Loudness is heard on a curve, so the slider's low end isn't all the same quiet
+function gainFor(volume) {
+  return (volume / 100) ** 2;
 }
 
 function tone(ctx, out, { frequency, to = null, start, length, type = "sine", level = 0.3 }) {
@@ -121,6 +154,8 @@ export class Sound {
     this.effectsOut = null;
     this.musicOn = readSetting(MUSIC_KEY);
     this.sfxOn = readSetting(SOUND_KEY);
+    this.musicVolume = readVolume(MUSIC_VOLUME_KEY);
+    this.sfxVolume = readVolume(SFX_VOLUME_KEY);
     this.scene = "menu";
     this.buffers = {};
     this.songs = {};
@@ -140,8 +175,8 @@ export class Sound {
   unlock() {
     if (!this.ctx) {
       this.ctx = new AudioContext();
-      this.musicOut = this.output(this.musicOn ? MUSIC_VOLUME : 0);
-      this.effectsOut = this.output(this.sfxOn ? EFFECTS_VOLUME : 0);
+      this.musicOut = this.output(this.musicOn ? this.musicLevel : 0);
+      this.effectsOut = this.output(this.sfxOn ? this.effectsLevel : 0);
       this.loadEffects();
     }
     this.update();
@@ -188,36 +223,46 @@ export class Sound {
     this.startSong(this.scene);
   }
 
-  // The Sound sign's label names what it does next: music off, then sound off, then music on, then sound on
-  get nextAction() {
-    if (this.musicOn) {
-      return this.sfxOn ? "Turn music off" : "Turn sound on";
-    }
-    return this.sfxOn ? "Turn sound off" : "Turn music on";
+  // Each bus's loudness while it is on: the game's own level, turned down by its slider
+  get musicLevel() {
+    return MUSIC_VOLUME * gainFor(this.musicVolume);
   }
 
-  cycle() {
-    if (this.musicOn && this.sfxOn) {
-      this.setMusic(false);
-    } else if (this.sfxOn) {
-      this.setSfx(false);
-    } else if (!this.musicOn) {
-      this.setMusic(true);
-    } else {
-      this.setSfx(true);
-    }
+  get effectsLevel() {
+    return EFFECTS_VOLUME * gainFor(this.sfxVolume);
   }
 
   setMusic(on) {
     this.musicOn = on;
     saveSetting(MUSIC_KEY, on);
-    this.fade(this.musicOut, on ? MUSIC_VOLUME : 0, CROSSFADE);
+    this.fade(this.musicOut, on ? this.musicLevel : 0, CROSSFADE);
   }
 
   setSfx(on) {
     this.sfxOn = on;
     saveSetting(SOUND_KEY, on);
-    this.fade(this.effectsOut, on ? EFFECTS_VOLUME : 0, EFFECTS_FADE);
+    this.fade(this.effectsOut, on ? this.effectsLevel : 0, EFFECTS_FADE);
+  }
+
+  // The sliders, 0 to 100: heard at once while dragged, kept by saveVolumes once let go. A switched-off bus stays
+  // silent and takes the new level when switched on again
+  setMusicVolume(volume) {
+    this.musicVolume = clampVolume(volume);
+    if (this.musicOn) {
+      this.fade(this.musicOut, this.musicLevel, VOLUME_FADE);
+    }
+  }
+
+  setSfxVolume(volume) {
+    this.sfxVolume = clampVolume(volume);
+    if (this.sfxOn) {
+      this.fade(this.effectsOut, this.effectsLevel, VOLUME_FADE);
+    }
+  }
+
+  saveVolumes() {
+    saveVolume(MUSIC_VOLUME_KEY, this.musicVolume);
+    saveVolume(SFX_VOLUME_KEY, this.sfxVolume);
   }
 
   fade(out, volume, seconds) {

@@ -104,18 +104,78 @@ function bindTopBar() {
   $("open-stats").addEventListener("click", () => panels.showStats(null));
   $("open-tiers").addEventListener("click", () => panels.showTiers());
   $("open-settings").addEventListener("click", () => panels.showSettings());
-  const music = $("music");
-  const sfx = $("sfx");
-  music.setAttribute("aria-pressed", String(sound.musicOn));
-  sfx.setAttribute("aria-pressed", String(sound.sfxOn));
-  music.addEventListener("click", () => {
-    sound.setMusic(!sound.musicOn);
-    music.setAttribute("aria-pressed", String(sound.musicOn));
+  bindSound();
+}
+
+// ---------- Sound panel ----------
+
+// The sound button opens a small panel under it: a switch and a volume slider for the sound effects, and the same for
+// the music. A press anywhere else, Escape, or the button again closes it
+function bindSound() {
+  $("sound").addEventListener("click", () => showSound($("sound-panel").hidden));
+  // Caught on the way down, so a press that the floor or a table handles itself still closes the panel
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (!$("sound-spot").contains(event.target)) {
+        showSound(false);
+      }
+    },
+    true,
+  );
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || $("sound-panel").hidden) {
+      return;
+    }
+    const inside = $("sound-panel").contains(document.activeElement);
+    showSound(false);
+    if (inside) {
+      $("sound").focus();
+    }
   });
-  sfx.addEventListener("click", () => {
+  $("sfx-switch").addEventListener("click", () => {
     sound.setSfx(!sound.sfxOn);
-    sfx.setAttribute("aria-pressed", String(sound.sfxOn));
+    drawSound();
   });
+  $("music-switch").addEventListener("click", () => {
+    sound.setMusic(!sound.musicOn);
+    drawSound();
+  });
+  // Letting go of the effects slider lays a chip at the new volume, so the player hears it
+  bindVolume($("sfx-volume"), sound.sfxVolume, (volume) => sound.setSfxVolume(volume), () => sound.play("chip"));
+  bindVolume($("music-volume"), sound.musicVolume, (volume) => sound.setMusicVolume(volume), () => {});
+  drawSound();
+}
+
+function showSound(open) {
+  $("sound-panel").hidden = !open;
+  $("sound").setAttribute("aria-expanded", String(open));
+}
+
+// The switches, and the sound button crossed out once every sound is off
+function drawSound() {
+  $("sfx-switch").setAttribute("aria-checked", String(sound.sfxOn));
+  $("music-switch").setAttribute("aria-checked", String(sound.musicOn));
+  $("sound").classList.toggle("muted", !sound.sfxOn && !sound.musicOn);
+}
+
+// A slider is heard as it moves and saved once it is let go
+function bindVolume(slider, volume, set, letGo) {
+  drawVolume(slider, volume);
+  slider.addEventListener("input", () => {
+    set(Number(slider.value));
+    drawVolume(slider, Number(slider.value));
+  });
+  slider.addEventListener("change", () => {
+    sound.keepVolumes();
+    letGo();
+  });
+}
+
+// The track fills gold up to the knob
+function drawVolume(slider, volume) {
+  slider.value = String(volume);
+  slider.style.setProperty("--level", `${volume}%`);
 }
 
 // ---------- Messages from the bot ----------

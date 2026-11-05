@@ -148,11 +148,11 @@ h3,
 }
 
 .icon-button .off,
-.icon-button[aria-pressed="false"] .on {
+.icon-button.muted .on {
   display: none;
 }
 
-.icon-button[aria-pressed="false"] .off {
+.icon-button.muted .off {
   display: block;
 }
 
@@ -236,6 +236,162 @@ h3,
   .brand h1 {
     font-size: 19px;
   }
+}
+
+/* ---------- Sound panel ---------- */
+
+.sound-spot {
+  position: relative;
+}
+
+.sound-spot > .icon-button {
+  position: relative;
+}
+
+/* A finger needs 44 px, so the sound button's press area reaches into the gaps beside it */
+.sound-spot > .icon-button::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+
+/* Drops from the sound button over the floor or the table. It stacks over the hub's arrival notes, which slide out of
+   the people button further along the bar */
+.sound-panel {
+  position: absolute;
+  top: calc(100% + 16px);
+  right: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 250px;
+  padding: 4px 14px;
+  border: 2px solid var(--gold);
+  border-radius: 14px;
+  background: linear-gradient(#24120a, var(--night));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+}
+
+/* The name and its switch on one line, the volume slider on the line under them */
+.sound-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.sound-row + .sound-row {
+  border-top: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.sound-row > span {
+  flex: 1 1 0;
+}
+
+/* Felt green with a gold knob when on, dark wood with a dim knob when off. The button is the full 44 px a finger
+   needs, and draws the smaller track inside it */
+.sound-panel .switch {
+  position: relative;
+  flex: none;
+  width: 58px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.sound-panel .switch::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 50%;
+  height: 28px;
+  translate: 0 -50%;
+  box-sizing: border-box;
+  border: 2px solid var(--gold-deep);
+  border-radius: 999px;
+  background: #1c0f08;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.sound-panel .switch[aria-checked="true"]::before {
+  border-color: var(--gold);
+  background: linear-gradient(var(--felt-light), var(--felt));
+}
+
+.sound-panel .switch .knob {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  width: 18px;
+  height: 18px;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: var(--cream-dim);
+  transition: left 0.15s;
+}
+
+.sound-panel .switch[aria-checked="true"] .knob {
+  left: calc(100% - 26px);
+  background: var(--gold-light);
+}
+
+/* A gold track filled up to a gold knob */
+.volume {
+  --level: 100%;
+  flex: 1 0 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.volume::-webkit-slider-runnable-track {
+  box-sizing: border-box;
+  height: 10px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 5px;
+  background: linear-gradient(to right, var(--gold) var(--level), #1c0f08 var(--level));
+}
+
+.volume::-moz-range-track {
+  box-sizing: border-box;
+  height: 10px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 5px;
+  background: linear-gradient(to right, var(--gold) var(--level), #1c0f08 var(--level));
+}
+
+.volume::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--gold-light), var(--gold));
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.volume::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--gold-light), var(--gold));
 }
 
 /* ---------- Lobby ---------- */

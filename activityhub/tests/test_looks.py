@@ -47,6 +47,24 @@ def test_bad_values_are_refused(change):
         apply_look_change({}, change)
 
 
+def test_a_players_own_level_takes_a_volume():
+    assert apply_look_change({"layout": "list"}, {"volume": 0}, player=True) == {"layout": "list", "volume": 0}
+    assert apply_look_change({}, {"volume": 100}, player=True) == {"volume": 100}
+    assert apply_look_change({"volume": 40}, {"volume": None}, player=True) == {}
+
+
+@pytest.mark.parametrize("change", [{"volume": 40}, {"volume": None}])
+def test_server_and_bot_wide_levels_refuse_a_volume(change):
+    with pytest.raises(SettingsError, match="volume"):
+        apply_look_change({}, change)
+
+
+@pytest.mark.parametrize("volume", [-1, 101, 50.5, True, "50"])
+def test_bad_volumes_are_refused(volume):
+    with pytest.raises(SettingsError):
+        apply_look_change({}, {"volume": volume}, player=True)
+
+
 def test_unknown_fields_are_refused():
     with pytest.raises(SettingsError, match="Unknown look fields: font"):
         apply_look_change({}, {"font": "Comic Sans"})

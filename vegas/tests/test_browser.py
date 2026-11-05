@@ -13,6 +13,7 @@ from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 
 from vegas.common.catalog import GAMES
@@ -684,3 +685,213 @@ def test_a_closed_connection_says_not_connected_and_clears_busy(driver, live):
     on_loop(live, conn.close(4100))
     WebDriverWait(driver, 10).until(lambda _: me.status == "Not connected")
     assert me.busy is False
+
+
+# ---------- The sound panel ----------
+
+# Records the page's two sound outputs (the gains wired straight to the speakers, the music's made first) and counts
+# the sounds wired into each one since the page loaded
+SOUND_SPY = """
+window.outputs = [];
+window.fed = [0, 0];
+const realConnect = AudioNode.prototype.connect;
+AudioNode.prototype.connect = function (target, ...rest) {
+  if (target instanceof AudioDestinationNode) {
+    window.outputs.push(this);
+  } else if (window.outputs.includes(target)) {
+    window.fed[window.outputs.indexOf(target)] += 1;
+  }
+  return realConnect.call(this, target, ...rest);
+};
+"""
+MUSIC, EFFECTS = 0, 1
+# How loud the music and the effects are with their sliders at the top (sound.js)
+MUSIC_LEVEL, EFFECTS_LEVEL = 0.3, 0.7
+# What letting go of the effects slider does
+LET_GO = "document.getElementById('sfx-volume').dispatchEvent(new Event('change'))"
+
+
+@pytest.fixture
+def sound_spy(driver):
+    script = driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": SOUND_SPY})
+    yield
+    driver.execute_cdp_cmd("Page.removeScriptToEvaluateOnNewDocument", {"identifier": script["identifier"]})
+
+
+def open_sound(driver):
+    driver.find_element(By.ID, "sound").click()
+    browser.wait_for(driver, "!document.getElementById('sound-panel').hidden")
+
+
+def sound_is_open(driver):
+    return driver.execute_script("return !document.getElementById('sound-panel').hidden")
+
+
+def wait_for_level(driver, output, level):
+    """Wait until the music's or the effects' output has eased to this level"""
+    browser.wait_for(
+        driver, f"window.outputs.length === 2 && Math.abs(window.outputs[{output}].gain.value - {level}) < 0.001"
+    )
+
+
+def saved(driver, key):
+    return driver.execute_script("return localStorage.getItem(arguments[0])", key)
+
+
+def test_each_sound_slider_turns_its_own_sound_and_is_kept_for_next_time(driver, live, sound_spy):
+    open_casino(driver, live)
+    button = driver.find_element(By.ID, "sound")
+    assert button.get_attribute("aria-expanded") == "false" and button.get_attribute("aria-controls") == "sound-panel"
+    open_sound(driver)
+    assert button.get_attribute("aria-expanded") == "true"
+    # Both start at the top, which is as loud as the casino has always been
+    wait_for_level(driver, MUSIC, MUSIC_LEVEL)
+    wait_for_level(driver, EFFECTS, EFFECTS_LEVEL)
+    # Ten steps of 5 down to 50, a quarter of the loudness on the curve. The music stays where it was
+    driver.find_element(By.ID, "sfx-volume").send_keys(Keys.ARROW_LEFT * 10)
+    wait_for_level(driver, EFFECTS, EFFECTS_LEVEL * 0.25)
+    wait_for_level(driver, MUSIC, MUSIC_LEVEL)
+    driver.find_element(By.ID, "music-volume").send_keys(Keys.HOME + Keys.ARROW_RIGHT * 4)
+    wait_for_level(driver, MUSIC, MUSIC_LEVEL * 0.04)
+    wait_for_level(driver, EFFECTS, EFFECTS_LEVEL * 0.25)
+    assert saved(driver, "vegas:sfx-volume") == "50" and saved(driver, "vegas:music-volume") == "20"
+    # The next visit starts where the sliders were left
+    open_casino(driver, live)
+    assert driver.find_element(By.ID, "sfx-volume").get_attribute("value") == "50"
+    assert driver.find_element(By.ID, "music-volume").get_attribute("value") == "20"
+    open_sound(driver)
+    wait_for_level(driver, MUSIC, MUSIC_LEVEL * 0.04)
+    wait_for_level(driver, EFFECTS, EFFECTS_LEVEL * 0.25)
+    assert not problems(driver)
+
+
+def test_the_sound_switches_turn_their_sound_off_and_on_and_cross_out_the_button(driver, live, sound_spy):
+    open_casino(driver, live)
+    open_sound(driver)
+    sfx, music, button = (driver.find_element(By.ID, name) for name in ("sfx-switch", "music-switch", "sound"))
+    assert sfx.get_attribute("role") == "switch" and sfx.get_attribute("aria-checked") == "true"
+    # The song plays, and letting go of the effects slider lays a chip once the chips have loaded
+    browser.wait_for(driver, f"window.fed[{MUSIC}] > 0", timeout=15)
+    browser.wait_for(driver, f"({LET_GO}, window.fed[{EFFECTS}] > 0)")
+    sfx.click()
+    assert sfx.get_attribute("aria-checked") == "false" and saved(driver, "vegas:sfx") == "off"
+    assert "muted" not in button.get_attribute("class")
+    laid = driver.execute_script(f"{LET_GO}; return window.fed[{EFFECTS}]")
+    time.sleep(0.5)
+    assert driver.execute_script(f"{LET_GO}; return window.fed[{EFFECTS}]") == laid
+    music.click()
+    assert music.get_attribute("aria-checked") == "false" and saved(driver, "vegas:music") == "off"
+    assert "muted" in button.get_attribute("class")
+    # A switch leaves the volume alone
+    wait_for_level(driver, MUSIC, MUSIC_LEVEL)
+    wait_for_level(driver, EFFECTS, EFFECTS_LEVEL)
+    # Music back on starts the song again, which only happens once it was stopped
+    played = driver.execute_script(f"return window.fed[{MUSIC}]")
+    music.click()
+    browser.wait_for(driver, f"window.fed[{MUSIC}] > {played}")
+    assert saved(driver, "vegas:music") == "on" and "muted" not in button.get_attribute("class")
+    sfx.click()
+    browser.wait_for(driver, f"({LET_GO}, window.fed[{EFFECTS}] > {laid})")
+    assert saved(driver, "vegas:sfx") == "on"
+    # The next visit keeps the switches
+    music.click()
+    sfx.click()
+    open_casino(driver, live)
+    assert driver.find_element(By.ID, "sfx-switch").get_attribute("aria-checked") == "false"
+    assert driver.find_element(By.ID, "music-switch").get_attribute("aria-checked") == "false"
+    assert "muted" in driver.find_element(By.ID, "sound").get_attribute("class")
+    assert not problems(driver)
+
+
+def test_the_sound_panel_works_by_keyboard_and_closes_on_escape_a_press_outside_or_its_button(driver, live):
+    open_casino(driver, live)
+    walk_up(driver, "dice")
+    button = driver.find_element(By.ID, "sound")
+    button.click()
+    assert sound_is_open(driver)
+    button.click()
+    assert not sound_is_open(driver) and button.get_attribute("aria-expanded") == "false"
+    # Enter opens it, Tab walks into it, Space flips a switch, the arrows move a slider and Escape closes it
+    driver.execute_script("arguments[0].focus()", button)
+    ActionChains(driver).send_keys(Keys.ENTER).perform()
+    assert sound_is_open(driver)
+    ActionChains(driver).send_keys(Keys.TAB, Keys.SPACE).perform()
+    assert saved(driver, "vegas:sfx") == "off"
+    ActionChains(driver).send_keys(Keys.TAB, Keys.ARROW_LEFT).perform()
+    assert saved(driver, "vegas:sfx-volume") == "95"
+    ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+    assert not sound_is_open(driver)
+    assert driver.execute_script("return document.activeElement.id") == "sound"
+    # A press inside the panel leaves it open; one anywhere else closes it
+    button.click()
+    driver.find_element(By.ID, "music-name").click()
+    assert sound_is_open(driver)
+    driver.find_element(By.ID, "casino-name").click()
+    assert not sound_is_open(driver)
+    assert not problems(driver)
+
+
+def show_arrival_note(driver, live):
+    """Someone arrives, so the hub's note slides out of the people button"""
+    driver.switch_to.default_content()
+    driver.execute_script("window.activityhubHost.presence.quietUntil = 0")
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    live.add_person(fakes.MANAGER_ID, where="vegas")
+    browser.wait_for(driver, "document.querySelector('.hub-note') !== null")
+    browser.wait_for(driver, "document.querySelector('.hub-note').getAnimations().length === 0")
+
+
+# With room kept for Discord's buttons and a notch on every side: each control in the panel takes a press at its
+# middle and is big enough for a finger, the sound button's press area is 44 px across, and the panel stays inside
+# the screen and clear of the people button
+PRESSABLE = """
+const safe = 24;
+for (const side of ['top', 'right', 'bottom', 'left']) {
+  document.documentElement.style.setProperty(`--discord-safe-area-inset-${side}`, `${safe}px`);
+}
+const box = (node) => node.getBoundingClientRect();
+const middle = (rect) => [rect.left + rect.width / 2, rect.top + rect.height / 2];
+const pressed = (x, y) => document.elementFromPoint(x, y);
+const controls = [...document.querySelectorAll('#sound-panel .switch, #sound-panel .volume')];
+const panel = box(document.getElementById('sound-panel'));
+const people = box(document.querySelector('.tools .hub-people'));
+const [x, y] = middle(box(document.getElementById('sound')));
+return {
+  controls: controls.length,
+  missed: controls.filter((node) => !node.contains(pressed(...middle(box(node))))).map((node) => node.id),
+  small: controls.filter((node) => node.offsetHeight < 44 || node.offsetWidth < 44).map((node) => node.id),
+  inside: panel.left >= safe && panel.top >= safe && panel.right <= innerWidth - safe
+    && panel.bottom <= innerHeight - safe,
+  clear: panel.top >= people.bottom || panel.left >= people.right || panel.right <= people.left,
+  button: [[-21, 0], [21, 0], [0, -21], [0, 21]].every(
+    ([dx, dy]) => pressed(x + dx, y + dy)?.closest('#sound') != null
+  ),
+  note: document.querySelector('.hub-note') !== null,
+};
+"""
+PANEL_SIZES = [
+    pytest.param((1280, 800, 1, False), id="desktop"),
+    pytest.param((390, 844, 2, True), id="phone"),
+    pytest.param((360, 740, 2, True), id="narrow-phone"),
+    pytest.param((844, 390, 2, True), id="sideways"),
+]
+
+
+@pytest.mark.parametrize("size", PANEL_SIZES)
+def test_every_sound_control_can_be_pressed_even_while_an_arrival_note_shows(driver, live, size):
+    with at_size(driver, *size):
+        open_casino(driver, live)
+        walk_up(driver, "dice")
+        open_sound(driver)
+        show_arrival_note(driver, live)
+        found = driver.execute_script(PRESSABLE)
+        assert found == {
+            "controls": 4,
+            "missed": [],
+            "small": [],
+            "inside": True,
+            "clear": True,
+            "button": True,
+            "note": True,
+        }
+        assert not problems(driver)

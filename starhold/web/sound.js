@@ -1,6 +1,6 @@
 // Starhold's sound: effects mixed from recordings, played with small random changes in pitch and volume so repeats
 // never sound identical; robots' footsteps on their own beats; and two songs (menus and battle) that crossfade into
-// each other. The Sound button cycles music and effects the way Boulder Bash's does.
+// each other. The sound panel turns music and effects on and off, and sets how loud each one plays.
 import { findRobot } from "./sim/robots.js";
 import { BLASTER, BUZZER, MAP, MISSILE, ROBOTS, TESLA, WAVES } from "./sim/rules.js";
 
@@ -60,9 +60,15 @@ const ROTOR_FADE = 0.3;
 // Each song's last seconds fade into its own start, and moving between menus and play crossfades the two songs
 const CROSSFADE = 2;
 const EFFECTS_FADE = 1;
+// A volume slider's move is heard this quickly, smoothed so the sound never clicks
+const SLIDE_FADE = 0.05;
 // Every game on the hub shares one storage, so the keys carry the game's name
 const MUSIC_KEY = "starhold:music";
 const SOUND_KEY = "starhold:sound";
+const MUSIC_VOLUME_KEY = "starhold:music-volume";
+const SFX_VOLUME_KEY = "starhold:sfx-volume";
+// The volume sliders run 0 to 100. 100 is the full loudness above, and a missing or broken saved volume means 100
+const FULL = 100;
 // Repeats of one sound: at most this many playing at once, and never two starting closer together than MIN_GAP
 // seconds. A Gatling volley or a Swarm salvo otherwise turns to mush and only gets louder
 const MOST_AT_ONCE = { hit: 5, "hit-armor": 4, "shot-gatling": 4, "shot-blaster": 4, "shot-swarm": 2, turn: 2 };
@@ -113,6 +119,35 @@ function saveSetting(key, on) {
   } catch (e) {
     console.warn("Starhold: couldn't save a sound setting", e);
   }
+}
+
+function readVolume(key) {
+  try {
+    const saved = localStorage.getItem(key);
+    const volume = Number(saved);
+    const good = saved !== null && saved.trim() !== "" && volume >= 0 && volume <= FULL;
+    return good ? Math.round(volume) : FULL;
+  } catch (e) {
+    console.warn("Starhold: couldn't read a volume", e);
+    return FULL;
+  }
+}
+
+function saveVolume(key, volume) {
+  try {
+    localStorage.setItem(key, String(volume));
+  } catch (e) {
+    console.warn("Starhold: couldn't save a volume", e);
+  }
+}
+
+function clampVolume(volume) {
+  return Math.min(FULL, Math.max(0, Math.round(volume)));
+}
+
+// A slider's share of the full loudness. Squared, so the slider's middle sounds about half as loud to the ear
+function gainFor(volume) {
+  return (volume / FULL) ** 2;
 }
 
 function spotX(spot) {
@@ -174,6 +209,8 @@ export class Sound {
     this.effectsOut = null;
     this.musicOn = readSetting(MUSIC_KEY);
     this.sfxOn = readSetting(SOUND_KEY);
+    this.musicVolume = readVolume(MUSIC_VOLUME_KEY);
+    this.sfxVolume = readVolume(SFX_VOLUME_KEY);
     this.scene = "menu";
     this.buffers = {};
     this.songs = {};
@@ -203,8 +240,8 @@ export class Sound {
   unlock() {
     if (!this.ctx) {
       this.ctx = new AudioContext();
-      this.musicOut = this.output(this.musicOn ? MUSIC_VOLUME : 0);
-      this.effectsOut = this.output(this.sfxOn ? EFFECTS_VOLUME : 0);
+      this.musicOut = this.output(this.musicLevel);
+      this.effectsOut = this.output(this.effectsLevel);
       this.loadEffects();
     }
     this.update();
@@ -251,36 +288,46 @@ export class Sound {
     this.startSong(this.scene);
   }
 
-  // The Sound button's label names what it does next: music off, then sound off, then music on, then sound on
-  get nextAction() {
-    if (this.musicOn) {
-      return this.sfxOn ? "Turn music off" : "Turn sound on";
-    }
-    return this.sfxOn ? "Turn sound off" : "Turn music on";
+  // How loud each bus plays: nothing while its switch is off, otherwise its full loudness scaled by its slider
+  get musicLevel() {
+    return this.musicOn ? MUSIC_VOLUME * gainFor(this.musicVolume) : 0;
   }
 
-  cycle() {
-    if (this.musicOn && this.sfxOn) {
-      this.setMusic(false);
-    } else if (this.sfxOn) {
-      this.setSfx(false);
-    } else if (!this.musicOn) {
-      this.setMusic(true);
-    } else {
-      this.setSfx(true);
-    }
+  get effectsLevel() {
+    return this.sfxOn ? EFFECTS_VOLUME * gainFor(this.sfxVolume) : 0;
   }
 
   setMusic(on) {
     this.musicOn = on;
     saveSetting(MUSIC_KEY, on);
-    this.fade(this.musicOut, on ? MUSIC_VOLUME : 0, CROSSFADE);
+    this.fade(this.musicOut, this.musicLevel, CROSSFADE);
   }
 
   setSfx(on) {
     this.sfxOn = on;
     saveSetting(SOUND_KEY, on);
-    this.fade(this.effectsOut, on ? EFFECTS_VOLUME : 0, EFFECTS_FADE);
+    this.fade(this.effectsOut, this.effectsLevel, EFFECTS_FADE);
+  }
+
+  // A slider only sets the level: a type that is switched off stays silent, and plays at the new level once back on
+  setMusicVolume(volume) {
+    this.musicVolume = clampVolume(volume);
+    if (this.musicOn) {
+      this.fade(this.musicOut, this.musicLevel, SLIDE_FADE);
+    }
+  }
+
+  setSfxVolume(volume) {
+    this.sfxVolume = clampVolume(volume);
+    if (this.sfxOn) {
+      this.fade(this.effectsOut, this.effectsLevel, SLIDE_FADE);
+    }
+  }
+
+  // Kept once a slider is let go, not on every step of a drag
+  saveVolumes() {
+    saveVolume(MUSIC_VOLUME_KEY, this.musicVolume);
+    saveVolume(SFX_VOLUME_KEY, this.sfxVolume);
   }
 
   fade(out, volume, seconds) {

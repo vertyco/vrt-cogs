@@ -16,7 +16,12 @@ BUILTIN_LOOK = {
     "sounds": True,
     # The frame rate counter in the corner, over the menu and every game
     "fps": True,
+    # How loud the menu sounds are, 0 to 100
+    "volume": 100,
 }
+# Fields only a player's own level holds: how loud the menu is for one player follows them to every device, and no
+# server or bot-wide default sets it for them
+PLAYER_ONLY = ("volume",)
 COLOR = re.compile(r"#[0-9A-Fa-f]{6}")
 
 
@@ -35,16 +40,26 @@ def value_ok(field: str, value: t.Any) -> bool:
         return isinstance(value, str) and COLOR.fullmatch(value) is not None
     if field in ("details", "sounds", "fps"):
         return isinstance(value, bool)
+    if field == "volume":
+        # True and False are ints in Python, but not volumes
+        return isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 100
     return False
 
 
-def apply_look_change(saved: dict, change: t.Any) -> dict:
-    """A level's stored look after a change: set fields replace, null clears a field so it falls back"""
+def apply_look_change(saved: dict, change: t.Any, player: bool = False) -> dict:
+    """
+    A level's stored look after a change: set fields replace, null clears a field so it falls back. Only a player's
+    own level (player) takes the PLAYER_ONLY fields
+    """
     if not isinstance(change, dict):
         raise SettingsError("A look must be an object.")
     unknown = sorted(str(name) for name in change if name not in BUILTIN_LOOK)
     if unknown:
         raise SettingsError(f"Unknown look fields: {', '.join(unknown)}")
+    if not player:
+        for name in PLAYER_ONLY:
+            if name in change:
+                raise SettingsError(f"{name} is saved for each player, in My look.")
     look = {name: value for name, value in saved.items() if name in BUILTIN_LOOK}
     for name, value in change.items():
         if value is None:

@@ -1,13 +1,17 @@
 // The casino's sound: recorded table sounds (chips, cards, dice), a few made from tones on the fly, and the lounge
 // music looped with a crossfade. Scenes call sound.play(name) with a name from EFFECT_NAMES.
 const MUSIC_URL = "music/lounge.mp3";
-const MUSIC_VOLUME = 0.3;
-const EFFECTS_VOLUME = 0.7;
+// How loud the music and the effects are with their volume sliders at the top
+const MUSIC_LEVEL = 0.3;
+const EFFECTS_LEVEL = 0.7;
 // The song's last seconds fade into its start, so the loop has no gap or jump
 const CROSSFADE = 2;
 // Every game on the hub shares one storage, so the keys carry the game's name
 const MUSIC_KEY = "vegas:music";
 const EFFECTS_KEY = "vegas:sfx";
+const MUSIC_VOLUME_KEY = "vegas:music-volume";
+const EFFECTS_VOLUME_KEY = "vegas:sfx-volume";
+const FULL_VOLUME = 100;
 
 // Recorded sounds (Kenney's Casino Audio, CC0, in sounds/). Each play picks one of the takes at random
 const SAMPLES = {
@@ -36,6 +40,35 @@ function saveSetting(key, on) {
   } catch (e) {
     console.warn("Vegas: couldn't save a sound setting", e);
   }
+}
+
+function clampVolume(volume) {
+  return Math.min(FULL_VOLUME, Math.max(0, Math.round(volume)));
+}
+
+// A slider's saved volume, 0 to 100. Missing or not a number means full
+function readVolume(key) {
+  try {
+    const stored = localStorage.getItem(key);
+    const volume = Number(stored);
+    return stored === null || !stored.trim() || !Number.isFinite(volume) ? FULL_VOLUME : clampVolume(volume);
+  } catch (e) {
+    console.warn("Vegas: couldn't read a volume", e);
+    return FULL_VOLUME;
+  }
+}
+
+function saveVolume(key, volume) {
+  try {
+    localStorage.setItem(key, String(volume));
+  } catch (e) {
+    console.warn("Vegas: couldn't save a volume", e);
+  }
+}
+
+// Loudness is heard on a curve, so the low end of a slider isn't all the same quiet
+function gainFor(volume) {
+  return (volume / FULL_VOLUME) ** 2;
 }
 
 function tone(ctx, out, { frequency, to = null, start, length, type = "sine", level = 0.3 }) {
@@ -134,6 +167,8 @@ export class Sound {
     this.effectsOut = null;
     this.musicOn = readSetting(MUSIC_KEY);
     this.sfxOn = readSetting(EFFECTS_KEY);
+    this.musicVolume = readVolume(MUSIC_VOLUME_KEY);
+    this.sfxVolume = readVolume(EFFECTS_VOLUME_KEY);
     this.song = null;
     this.loading = null;
     this.samples = {};
@@ -150,16 +185,16 @@ export class Sound {
   unlock() {
     if (!this.ctx) {
       this.ctx = new AudioContext();
-      this.musicOut = this.output(MUSIC_VOLUME);
-      this.effectsOut = this.output(EFFECTS_VOLUME);
+      this.musicOut = this.output(MUSIC_LEVEL * gainFor(this.musicVolume));
+      this.effectsOut = this.output(EFFECTS_LEVEL * gainFor(this.sfxVolume));
       this.loadSamples();
     }
     this.update();
   }
 
-  output(volume) {
+  output(level) {
     const gain = this.ctx.createGain();
-    gain.gain.value = volume;
+    gain.gain.value = level;
     gain.connect(this.ctx.destination);
     return gain;
   }
@@ -210,6 +245,30 @@ export class Sound {
   setSfx(on) {
     this.sfxOn = on;
     saveSetting(EFFECTS_KEY, on);
+  }
+
+  // The volume sliders, 0 to 100. A new volume is heard at once; keepVolumes() saves the sliders for next time
+  setMusicVolume(volume) {
+    this.musicVolume = clampVolume(volume);
+    this.turn(this.musicOut, MUSIC_LEVEL * gainFor(this.musicVolume));
+  }
+
+  setSfxVolume(volume) {
+    this.sfxVolume = clampVolume(volume);
+    this.turn(this.effectsOut, EFFECTS_LEVEL * gainFor(this.sfxVolume));
+  }
+
+  keepVolumes() {
+    saveVolume(MUSIC_VOLUME_KEY, this.musicVolume);
+    saveVolume(EFFECTS_VOLUME_KEY, this.sfxVolume);
+  }
+
+  // Eases a sound's level to the new one, so dragging a slider never clicks. Before the first touch there is nothing
+  // to turn: unlock() starts it at the slider's level
+  turn(out, level) {
+    if (out) {
+      out.gain.setTargetAtTime(level, this.ctx.currentTime, 0.03);
+    }
   }
 
   play(name) {

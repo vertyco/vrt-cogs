@@ -929,3 +929,183 @@ def test_no_note_after_a_reconnect(driver, live):
     browser.wait_for(driver, "document.getElementById('score').textContent === '80'")
     time.sleep(0.5)
     assert driver.execute_script("return window.notes") == []
+
+
+# ---------- The sound panel ----------
+
+SOUND_CONTROLS = ["sfx-switch", "sfx-volume", "music-switch", "music-volume"]
+# Each bus's loudness at full volume
+EFFECTS_FULL = 0.7
+MUSIC_FULL = 0.32
+# Records the name of every sound the page plays from now on
+RECORD_SOUNDS = """
+const sound = window.boulderbashSound;
+const play = sound.play.bind(sound);
+window.played = [];
+sound.play = (name, options) => {
+  window.played.push(name);
+  play(name, options);
+};
+"""
+
+
+def panel_open(driver):
+    return driver.execute_script("return !document.getElementById('sound-panel').hidden")
+
+
+def stored(driver, key):
+    return driver.execute_script("return localStorage.getItem(arguments[0])", key)
+
+
+def checked(driver, switch_id):
+    return driver.find_element(By.ID, switch_id).get_attribute("aria-checked")
+
+
+def muted(driver):
+    return "muted" in driver.find_element(By.ID, "sound").get_attribute("class")
+
+
+def wait_for_gains(driver, effects, music):
+    """Wait until the effects and music buses have eased to these levels. Switching music fades over 2 seconds"""
+    script = "const s = window.boulderbashSound; return s.ctx ? [s.effectsOut.gain.value, s.musicOut.gain.value] : []"
+    gains = []
+    for _ in range(60):
+        gains = driver.execute_script(script)
+        if gains and gains == pytest.approx([effects, music], abs=1e-3):
+            return
+        pause(driver, 100)
+    raise AssertionError(f"the buses are at {gains}, not {[effects, music]}")
+
+
+def press_middle(driver, element_id):
+    """A click in the middle of a control, which puts a slider's knob half way"""
+    ActionChains(driver).click(driver.find_element(By.ID, element_id)).perform()
+
+
+def test_the_sound_sign_opens_and_closes_the_sound_panel(driver, live):
+    open_game(driver, live)
+    sign = driver.find_element(By.ID, "sound")
+    assert sign.text == "Sound"
+    assert sign.get_attribute("aria-controls") == "sound-panel"
+    assert sign.get_attribute("aria-expanded") == "false" and not panel_open(driver)
+    sign.click()
+    assert panel_open(driver) and sign.get_attribute("aria-expanded") == "true"
+    # Pressing the sign again closes it
+    sign.click()
+    assert not panel_open(driver) and sign.get_attribute("aria-expanded") == "false"
+    # So does Escape, which gives the keyboard back to the sign
+    sign.click()
+    assert driver.execute_script("return document.activeElement.id") == "sfx-switch"
+    ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+    assert not panel_open(driver) and sign.get_attribute("aria-expanded") == "false"
+    assert driver.execute_script("return document.activeElement.id") == "sound"
+    # And a tap anywhere else, here the sky at the top of the screen
+    sign.click()
+    canvas = driver.find_element(By.CSS_SELECTOR, "#scene canvas")
+    ActionChains(driver).move_to_element_with_offset(canvas, 0, 20 - canvas.size["height"] // 2).click().perform()
+    assert not panel_open(driver) and sign.get_attribute("aria-expanded") == "false"
+    assert not problems(driver)
+
+
+def test_each_sound_switch_and_slider_sets_its_own_bus(driver, live):
+    open_game(driver, live)
+    driver.find_element(By.ID, "sound").click()
+    wait_for_gains(driver, EFFECTS_FULL, MUSIC_FULL)
+    driver.execute_script(RECORD_SOUNDS)
+    # Pressing the effects slider is heard at once, and saved only once it is let go
+    slider = driver.find_element(By.ID, "sfx-volume")
+    ActionChains(driver).click_and_hold(slider).perform()
+    try:
+        wait_for_gains(driver, EFFECTS_FULL * 0.5**2, MUSIC_FULL)
+        assert stored(driver, "boulderbash:sfx-volume") is None
+        assert driver.execute_script("return window.played") == []
+    finally:
+        ActionChains(driver).release().perform()
+    assert stored(driver, "boulderbash:sfx-volume") == "50"
+    # Letting go plays an effect at the new loudness
+    assert driver.execute_script("return window.played") == ["click"]
+    # Dragged further down
+    ActionChains(driver).click_and_hold(slider).move_by_offset(-slider.size["width"] // 4, 0).release().perform()
+    volume = int(slider.get_attribute("value"))
+    assert 0 < volume < 50
+    assert stored(driver, "boulderbash:sfx-volume") == str(volume)
+    effects = EFFECTS_FULL * (volume / 100) ** 2
+    wait_for_gains(driver, effects, MUSIC_FULL)
+    assert driver.execute_script("return window.played") == ["click", "click"]
+    press_middle(driver, "music-volume")
+    music = MUSIC_FULL * 0.5**2
+    wait_for_gains(driver, effects, music)
+    assert stored(driver, "boulderbash:music-volume") == "50"
+    # The switches turn each bus off and on, saved under the same keys and values the old Sound sign used
+    driver.find_element(By.ID, "sfx-switch").click()
+    assert checked(driver, "sfx-switch") == "false" and stored(driver, "boulderbash:sound") == "off"
+    wait_for_gains(driver, 0, music)
+    assert not muted(driver)
+    driver.find_element(By.ID, "music-switch").click()
+    assert checked(driver, "music-switch") == "false" and stored(driver, "boulderbash:music") == "off"
+    wait_for_gains(driver, 0, 0)
+    assert muted(driver)
+    # A slider moved while its switch is off stays silent, and is heard at its new level once switched back on
+    press_middle(driver, "sfx-volume")
+    pause(driver, 300)
+    wait_for_gains(driver, 0, 0)
+    driver.find_element(By.ID, "sfx-switch").click()
+    assert checked(driver, "sfx-switch") == "true" and stored(driver, "boulderbash:sound") == "on"
+    wait_for_gains(driver, EFFECTS_FULL * 0.5**2, 0)
+    assert not muted(driver)
+    driver.find_element(By.ID, "music-switch").click()
+    assert checked(driver, "music-switch") == "true" and stored(driver, "boulderbash:music") == "on"
+    wait_for_gains(driver, EFFECTS_FULL * 0.5**2, music)
+    assert panel_open(driver)
+    assert not problems(driver)
+
+
+def test_the_sound_panel_works_by_keyboard_and_its_settings_survive_a_reload(driver, live):
+    open_game(driver, live)
+    driver.execute_script("document.getElementById('sound').focus()")
+    # Enter opens the panel with the first switch ready, and Tab walks through the rest in order
+    ActionChains(driver).send_keys(Keys.ENTER).perform()
+    assert panel_open(driver)
+    ActionChains(driver).send_keys(Keys.TAB, Keys.HOME, *[Keys.ARROW_RIGHT] * 12).perform()
+    ActionChains(driver).send_keys(Keys.TAB, Keys.SPACE, Keys.TAB, Keys.HOME, *[Keys.ARROW_RIGHT] * 6).perform()
+    assert driver.execute_script("return document.activeElement.id") == "music-volume"
+    assert stored(driver, "boulderbash:sfx-volume") == "60"
+    assert stored(driver, "boulderbash:music-volume") == "30"
+    assert stored(driver, "boulderbash:music") == "off"
+    open_game(driver, live)
+    driver.find_element(By.ID, "sound").click()
+    assert checked(driver, "sfx-switch") == "true" and checked(driver, "music-switch") == "false"
+    assert driver.find_element(By.ID, "sfx-volume").get_attribute("value") == "60"
+    assert driver.find_element(By.ID, "music-volume").get_attribute("value") == "30"
+    wait_for_gains(driver, EFFECTS_FULL * 0.6**2, 0)
+    # A saved level that is missing or isn't a number is full
+    driver.execute_script(
+        "localStorage.setItem('boulderbash:sfx-volume', 'loud'); localStorage.removeItem('boulderbash:music-volume')"
+    )
+    open_game(driver, live)
+    driver.find_element(By.ID, "sound").click()
+    assert driver.find_element(By.ID, "sfx-volume").get_attribute("value") == "100"
+    assert driver.find_element(By.ID, "music-volume").get_attribute("value") == "100"
+    assert checked(driver, "music-switch") == "false"
+    wait_for_gains(driver, EFFECTS_FULL, 0)
+
+
+@pytest.mark.parametrize("size", [*SIZES, pytest.param((360, 640, 2, True), id="360x640")])
+def test_every_sound_control_fits_and_can_be_pressed(driver, live, size):
+    with at_size(driver, *size):
+        open_game(driver, live)
+        browser.wait_for(driver, "!!document.querySelector('#people .hub-people')")
+        driver.find_element(By.ID, "sound").click()
+        panel = box(driver, "#sound-panel")
+        assert inside_screen(driver, panel)
+        # Beside the sign, and never over it, the people button or where the hub's arrival notes slide out
+        clear_of(driver, panel, [box(driver, "#sound"), box(driver, "#people .hub-people"), arrival_room(driver)])
+        for control in SOUND_CONTROLS:
+            rect = box(driver, f"#{control}")
+            assert rect["width"] >= 44 and rect["height"] >= 44, (control, rect)
+            hit = driver.execute_script(
+                "const node = arguments[0]; const r = node.getBoundingClientRect();"
+                "return node.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))",
+                driver.find_element(By.ID, control),
+            )
+            assert hit, control

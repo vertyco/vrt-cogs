@@ -1,5 +1,13 @@
 # ActivityHub Changelog
 
+## 0.15.0
+
+- The Orb theme's menu sounds have a volume slider, under the Menu sounds switch in **My look**. The sound changes as you drag it and saves when you let go. It's saved for you, so it follows you to every device, and the **This server** and **Defaults** tabs don't have it.
+
+For game developers:
+
+- The checklist's sound line now asks for a sound button that opens a small panel: an on/off switch with a volume slider under it for each kind of sound the game has (sound effects, music), saved on each device. Marble Munch and Vegas show how.
+
 ## 0.14.1
 
 - On Windows, one player's connection failing as it opened could shut the hub's web server off for good, and nobody new could open any game until the cog was reloaded. The hub now notices within a quarter of a second and opens it again by itself. Players already connected aren't affected, and the bot's log says when it happens.

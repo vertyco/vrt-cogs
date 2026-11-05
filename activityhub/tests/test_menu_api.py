@@ -69,6 +69,7 @@ async def test_member_state(client, hub, demo, second):
         "details": True,
         "sounds": True,
         "fps": True,
+        "volume": 100,
     }
     assert state["looks"]["guild"] == {"layout": "list"} and state["looks"]["user"] == {"layout": "compact"}
     assert state["tabs"] == ["look", "order"] and state["switches"] == []
@@ -163,6 +164,25 @@ async def test_save_my_look(client, hub, demo):
     status, state = await save(client, session_headers(hub), {"tab": "look", "look": LOOK_LIST})
     assert status == 200 and state["look"]["layout"] == "list" and state["launch"] is None
     assert hub.config.users[MEMBER_ID]["look"] == {"layout": "list"}
+
+
+@pytest.mark.asyncio
+async def test_my_volume_saves_on_its_own_and_keeps_the_rest_of_my_look(client, hub, demo):
+    await hub.config.user_from_id(MEMBER_ID).look.set({"layout": "list"})
+    status, state = await save(client, session_headers(hub), {"tab": "look", "look": {"volume": 40}})
+    assert status == 200 and state["look"]["volume"] == 40
+    assert state["looks"]["user"] == {"layout": "list", "volume": 40}
+    assert hub.config.users[MEMBER_ID]["look"] == {"layout": "list", "volume": 40}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("tab, user_id", [("server", MANAGER_ID), ("defaults", OWNER_ID)])
+@pytest.mark.parametrize("volume", [40, None])
+async def test_server_and_defaults_tabs_refuse_a_volume(client, hub, demo, tab, user_id, volume):
+    # The volume is each player's own, so a server or bot-wide default can't set it
+    status, body = await save(client, session_headers(hub, user_id=user_id), {"tab": tab, "look": {"volume": volume}})
+    assert status == 400 and "volume" in body["error"]
+    assert hub.config.guild_from_id(GUILD_ID).data["look"] == {} and hub.config.globals["look"] == {}
 
 
 @pytest.mark.asyncio

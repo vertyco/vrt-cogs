@@ -6,6 +6,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.ui import WebDriverWait
 
 from activityhub.main import ActivityHub
 from activityhub.tests.browser import (
@@ -50,6 +51,37 @@ OscillatorNode.prototype.start = function (...args) {
 };
 """
 MOVE, SELECT, BACK = 1700, 880, 1175
+# Keeps the menu sounds' master volume, the first gain the page makes, as window.masterGain
+GAIN_SPY = """
+const realCreateGain = BaseAudioContext.prototype.createGain;
+BaseAudioContext.prototype.createGain = function (...args) {
+  const node = realCreateGain.apply(this, args);
+  window.masterGain = window.masterGain || node;
+  return node;
+};
+"""
+MASTER = "window.masterGain.gain.value"
+# Each control in the open Settings panel, scrolled into view, and those a finger can't press at its middle: covered
+# by something else, or outside the room Discord's phone app leaves the page
+CONTROLS_NOT_PRESSABLE = """
+const root = getComputedStyle(document.documentElement);
+const safe = (side) => parseFloat(root.getPropertyValue(`--discord-safe-area-inset-${side}`)) || 0;
+const checked = [];
+const missed = [];
+for (const control of document.querySelectorAll("#panel :is(button, select, input)")) {
+  const name = control.id || control.dataset.tab || control.dataset.swatch || control.type;
+  checked.push(name);
+  control.scrollIntoView({ block: "nearest", inline: "nearest" });
+  const box = control.getBoundingClientRect();
+  const [x, y] = [box.left + box.width / 2, box.top + box.height / 2];
+  const hit = document.elementFromPoint(x, y);
+  const inside = x >= safe("left") && x <= innerWidth - safe("right") && y >= safe("top") && y <= innerHeight - safe("bottom");
+  if (!hit || !control.contains(hit) || !inside) {
+    missed.push(name);
+  }
+}
+return { checked, missed };
+"""
 # The game frame's opacity and the menu's display, straight after clicking the demo card
 OPEN_DEMO = """
 document.querySelector('.card[data-key="demo"]').click();
@@ -1403,6 +1435,7 @@ def test_orb_settings_pill_and_theme_fields(driver, live):
         "field-glow",
         "field-details",
         "field-sounds",
+        "field-volume",
         "field-fps",
     ]
     Select(driver.find_element(By.ID, "field-theme")).select_by_value("standard")
@@ -1441,6 +1474,118 @@ def test_orb_glow_color_recolors_the_theme_and_saves(driver, live):
         )
         == "true"
     )
+
+
+@pytest.fixture
+def gain_spy(driver):
+    script = driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": GAIN_SPY})
+    yield
+    driver.execute_cdp_cmd("Page.removeScriptToEvaluateOnNewDocument", {"identifier": script["identifier"]})
+
+
+def master_gain(volume):
+    return pytest.approx(0.3 * (volume / 100) ** 2, abs=1e-6)
+
+
+def open_orb_settings(driver):
+    driver.execute_script("document.querySelector('#games .settings-pill').click()")
+    wait_for(driver, "getComputedStyle(document.getElementById('panel')).transform === 'none'")
+
+
+def saved_look(live):
+    return live.hub.config.users.get(MEMBER_ID, {}).get("look", {})
+
+
+def wait_for_saved(driver, live, look):
+    WebDriverWait(driver, 10).until(lambda d: saved_look(live) == look)
+
+
+def test_the_volume_slider_sits_under_menu_sounds_in_my_look_only(driver, live):
+    live.hub.config.globals["look"] = {"theme": "orb"}
+    live.user_id = OWNER_ID
+    open_menu(driver, live, DISCORD_QUERY)
+    open_orb_settings(driver)
+    slider = driver.find_element(By.ID, "field-volume")
+    assert slider.get_attribute("aria-label") == "Menu sounds volume" and slider.get_attribute("value") == "100"
+    # In the Menu sounds field, under its On and Off
+    assert driver.execute_script(
+        "return document.getElementById('field-volume').parentElement === document.getElementById('field-sounds').parentElement"
+    )
+    switch = driver.find_element(By.ID, "field-sounds").rect
+    assert slider.rect["y"] >= switch["y"] + switch["height"]
+    # Only My look has it: the bot keeps no volume for a server or for every server
+    for tab in ("server", "defaults"):
+        pick_tab(driver, tab)
+        assert driver.find_elements(By.ID, "field-sounds") and not driver.find_elements(By.ID, "field-volume")
+
+
+def test_dragging_the_volume_is_heard_at_once_and_saves_it_alone_once_let_go(driver, live, sound_spy, gain_spy):
+    live.hub.config.globals["look"] = {"theme": "orb"}
+    open_menu(driver, live, DISCORD_QUERY)
+    wait_for(driver, "Boolean(window.masterGain)")
+    assert driver.execute_script(f"return {MASTER}") == master_gain(100)
+    open_orb_settings(driver)
+    # An edit that waits for Save
+    Select(driver.find_element(By.ID, "field-details")).select_by_value("false")
+    slider = driver.find_element(By.ID, "field-volume")
+    ActionChains(driver).click_and_hold(slider).move_by_offset(-slider.rect["width"] // 4, 0).perform()
+    try:
+        held = int(slider.get_attribute("value"))
+        assert 0 < held < 100
+        assert driver.execute_script(f"return {MASTER}") == master_gain(held)
+        assert saved_look(live) == {}
+    finally:
+        ActionChains(driver).release().perform()
+    wait_for_saved(driver, live, {"volume": held})
+    # A tick at the new level as the slider is let go
+    wait_for(driver, f"window.soundLog.includes({MOVE})")
+    # The other edit is still on screen, and Save keeps both
+    assert Select(driver.find_element(By.ID, "field-details")).first_selected_option.get_attribute("value") == "false"
+    save(driver)
+    assert saved_look(live) == {"details": False, "volume": held}
+    assert driver.execute_script(f"return {MASTER}") == master_gain(held)
+
+
+def test_the_keyboard_sets_the_volume_and_it_survives_a_reload(driver, live, gain_spy):
+    live.hub.config.globals["look"] = {"theme": "orb"}
+    open_menu(driver, live, DISCORD_QUERY)
+    open_orb_settings(driver)
+    driver.execute_script("document.getElementById('field-volume').focus()")
+    press(driver, Keys.ARROW_LEFT)
+    press(driver, Keys.ARROW_LEFT)
+    # Two saves at once arrive in order, so the bot keeps the last
+    wait_for_saved(driver, live, {"volume": 90})
+    time.sleep(0.3)
+    assert saved_look(live) == {"volume": 90}
+    open_menu(driver, live, DISCORD_QUERY)
+    wait_for(driver, "Boolean(window.masterGain)")
+    assert driver.execute_script(f"return {MASTER}") == master_gain(90)
+    open_orb_settings(driver)
+    assert driver.find_element(By.ID, "field-volume").get_attribute("value") == "90"
+
+
+@pytest.mark.parametrize(
+    "width, height, insets",
+    [(390, 844, {"top": 40, "bottom": 20}), (360, 740, {"top": 40, "bottom": 20}), (844, 390, {"right": 30})],
+    ids=["upright", "narrow", "sideways"],
+)
+def test_every_settings_control_can_be_pressed_on_a_phone(driver, live, width, height, insets):
+    live.hub.config.globals["look"] = {"theme": "orb"}
+    touch_device(driver, width, height)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        # The room Discord's phone app keeps for its own buttons and the notch
+        for side, size in insets.items():
+            driver.execute_script(
+                f"document.documentElement.style.setProperty('--discord-safe-area-inset-{side}', '{size}px')"
+            )
+        open_orb_settings(driver)
+        result = driver.execute_script(CONTROLS_NOT_PRESSABLE)
+        assert "field-volume" in result["checked"] and len(result["checked"]) >= 15
+        assert result["missed"] == []
+        assert driver.find_element(By.ID, "field-volume").rect["height"] >= 44
+    finally:
+        plain_device(driver)
 
 
 def test_orb_select_prompt_opens_the_selected_game(driver, live):

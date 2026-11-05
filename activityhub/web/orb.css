@@ -1498,6 +1498,54 @@ body[data-theme="orb"] .switch {
   background: rgb(var(--orb-deep) / 0.85);
 }
 
+/* The menu sounds' volume, under their switch: a thin track lit with the glow up to the knob. The box is a finger's
+   height though the track is thin */
+.volume {
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.volume::-webkit-slider-runnable-track {
+  height: 8px;
+  border: 1px solid rgb(var(--orb-light) / 0.3);
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgb(var(--orb-light)) var(--level, 100%), rgb(var(--orb-light) / 0.14) 0);
+}
+
+.volume::-moz-range-track {
+  height: 8px;
+  border: 1px solid rgb(var(--orb-light) / 0.3);
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgb(var(--orb-light)) var(--level, 100%), rgb(var(--orb-light) / 0.14) 0);
+}
+
+/* Centered on the track's 8 px inside its border: (8 - 22) / 2 */
+.volume::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: 2px solid rgb(var(--orb-white));
+  border-radius: 50%;
+  background: rgb(var(--orb-main));
+  box-shadow: 0 0 10px rgb(var(--orb-main) / 0.7);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.volume::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgb(var(--orb-white));
+  border-radius: 50%;
+  background: rgb(var(--orb-main));
+  box-shadow: 0 0 10px rgb(var(--orb-main) / 0.7);
+}
+
 body[data-theme="orb"] .primary {
   background: linear-gradient(180deg, rgb(var(--orb-pale)), rgb(var(--orb-light)) 45%, rgb(var(--orb-main)));
   color: rgb(var(--orb-ink));

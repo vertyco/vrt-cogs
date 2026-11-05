@@ -592,15 +592,7 @@ function bindButtons() {
     $("payouts-status").textContent = "Reset. Save to keep it.";
   });
   click("close-leaderboard", () => $("leaderboard").close());
-  click("music", () => {
-    sound.setMusic(!sound.musicOn);
-    showToggles();
-  });
-  click("sfx", () => {
-    sound.setSfx(!sound.sfxOn);
-    showToggles();
-  });
-  showToggles();
+  bindSound();
 }
 
 function click(id, handler) {
@@ -609,11 +601,6 @@ function click(id, handler) {
     event.currentTarget.blur();
     handler();
   });
-}
-
-function showToggles() {
-  $("music").setAttribute("aria-pressed", String(sound.musicOn));
-  $("sfx").setAttribute("aria-pressed", String(sound.sfxOn));
 }
 
 function send(data) {
@@ -625,6 +612,72 @@ function sit(seat) {
   if (page.mySeat === null && (stage === "waiting" || stage === "results")) {
     send({ sit: seat });
   }
+}
+
+// ---------- Sound panel ----------
+
+// The sound button opens a panel with an on/off switch and a volume slider for each sound type. Unlike the other
+// buttons, these keep their focus, so a keyboard can move through them. Space still stretches the hippo instead of
+// pressing them, because the hippo's key handler cancels it
+function bindSound() {
+  $("sound").addEventListener("click", () => showSoundPanel($("sound-panel").hidden));
+  $("sfx").addEventListener("click", () => {
+    sound.setSfx(!sound.sfxOn);
+    showSound();
+  });
+  $("music").addEventListener("click", () => {
+    sound.setMusic(!sound.musicOn);
+    showSound();
+  });
+  hookVolume($("sfx-volume"), sound.sfxVolume, (volume) => sound.setSfxVolume(volume), () => {
+    sound.saveSfxVolume();
+    // So the player hears the new level
+    sound.play("score");
+  });
+  hookVolume($("music-volume"), sound.musicVolume, (volume) => sound.setMusicVolume(volume), () =>
+    sound.saveMusicVolume(),
+  );
+  // Seen before anything under the press handles it, so pressing the board closes the panel too
+  window.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (!$("sound-spot").contains(event.target)) {
+        showSoundPanel(false);
+      }
+    },
+    true,
+  );
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !$("sound-panel").hidden) {
+      showSoundPanel(false);
+      $("sound").focus();
+    }
+  });
+  showSound();
+}
+
+// A slider changes the loudness as it moves, and saves it once let go
+function hookVolume(slider, volume, onMove, onLetGo) {
+  const fill = () => slider.style.setProperty("--level", `${slider.value}%`);
+  slider.value = String(volume);
+  fill();
+  slider.addEventListener("input", () => {
+    fill();
+    onMove(Number(slider.value));
+  });
+  slider.addEventListener("change", onLetGo);
+}
+
+function showSoundPanel(open) {
+  $("sound-panel").hidden = !open;
+  $("sound").setAttribute("aria-expanded", String(open));
+}
+
+// The switches, and the sound button crossed out once every sound is off
+function showSound() {
+  $("sfx").setAttribute("aria-checked", String(sound.sfxOn));
+  $("music").setAttribute("aria-checked", String(sound.musicOn));
+  $("sound").classList.toggle("muted", !sound.sfxOn && !sound.musicOn);
 }
 
 // ---------- Holding to stretch ----------

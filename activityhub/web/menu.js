@@ -27,6 +27,8 @@ const SWITCHES = {
   defaults: { list: "globalSwitches", legend: "Activities in every server" },
 };
 const FIELDS = ["theme", "layout", "accent", "glow", "background", "details", "sounds", "fps"];
+// Fields only My look saves: the bot refuses them as a server or bot-wide default
+const PLAYER_FIELDS = ["volume"];
 const FIELD_NAMES = {
   theme: "Theme",
   layout: "Layout",
@@ -128,6 +130,8 @@ const page = {
   counts: new Map(),
   // Watches the Orb screen's size, which the people list changes
   screenWatch: null,
+  // The volume saves still on their way. Each waits for the one before, so the bot keeps the last one sent
+  volumeSaves: Promise.resolve(),
 };
 const sounds = new MenuSounds();
 const frameRate = new FrameRate();
@@ -337,6 +341,7 @@ function applyLook(look) {
   }
   listenForRing(look.theme === "orb");
   sounds.setEnabled(look.theme === "orb" && look.sounds);
+  sounds.setVolume(look.volume);
   frameRate.setEnabled(look.fps);
   const games = $("games");
   games.className = `games ${look.theme === "orb" ? "orb-menu" : look.layout}`;
@@ -1893,9 +1898,14 @@ function inherited(tab) {
   return Object.assign({}, looks.builtin, ...below.map((level) => looks[level]));
 }
 
-// The preview leaves out levels after the tab's own, so an admin sees the server look even if they set their own
+// The preview leaves out levels after the tab's own, so an admin sees the server look even if they set their own.
+// The volume stays the player's own on every tab, since only My look holds one
 function previewLook() {
-  return { ...inherited(page.tab), ...page.staged.look };
+  const look = { ...inherited(page.tab), ...page.staged.look };
+  if (page.tab !== "look") {
+    look.volume = page.state.look.volume;
+  }
+  return look;
 }
 
 function preview() {
@@ -1954,15 +1964,19 @@ function status(text) {
 // ---------- Look fields ----------
 
 // The orb theme has its own background and layout, its glow color in place of the accent, and only it has menu
-// sounds
+// sounds. Their volume slider sits under the switch in My look alone
 function lookEditor() {
   const base = inherited(page.tab);
   if (previewLook().theme === "orb") {
+    const menuSounds = choiceField("sounds", base);
+    if (page.tab === "look") {
+      menuSounds.append(volumeSlider());
+    }
     return [
       choiceField("theme", base),
       colorField("glow", base),
       choiceField("details", base),
-      choiceField("sounds", base),
+      menuSounds,
       choiceField("fps", base),
     ];
   }
@@ -1984,6 +1998,32 @@ function field(name, control) {
   }
   box.append(label, control);
   return box;
+}
+
+// The menu sounds' volume. It changes as the slider moves, and saves once let go, on its own: the tab's other edits
+// still wait for Save
+function volumeSlider() {
+  const slider = el("input", "volume");
+  slider.type = "range";
+  slider.id = "field-volume";
+  slider.min = "0";
+  slider.max = "100";
+  slider.step = "5";
+  slider.value = String(previewLook().volume);
+  slider.setAttribute("aria-label", "Menu sounds volume");
+  const fill = () => slider.style.setProperty("--level", `${slider.value}%`);
+  fill();
+  slider.addEventListener("input", () => {
+    page.staged.look.volume = Number(slider.value);
+    fill();
+    sounds.setVolume(page.staged.look.volume);
+  });
+  slider.addEventListener("change", () => {
+    // One short sound at the new level, so the player hears where it landed
+    sounds.play("move");
+    saveVolume(Number(slider.value));
+  });
+  return slider;
 }
 
 function option(value, label) {
@@ -2192,7 +2232,8 @@ function saveBody() {
     // can't mean that: it is what a server with every game off sends
     body.order = page.staged.cleared ? null : page.staged.order;
   } else {
-    body.look = Object.fromEntries(FIELDS.map((name) => [name, name in page.staged.look ? page.staged.look[name] : null]));
+    const names = page.tab === "look" ? [...FIELDS, ...PLAYER_FIELDS] : FIELDS;
+    body.look = Object.fromEntries(names.map((name) => [name, name in page.staged.look ? page.staged.look[name] : null]));
   }
   if (page.tab in SWITCHES) {
     body.disabled = page.staged.disabled;
@@ -2221,16 +2262,24 @@ async function askBot(path, body) {
   }
 }
 
-async function save() {
-  status("Saving…");
+// Takes the menu the bot sends back after a save. False when the save failed, once the panel says why
+async function sendSettings(body) {
   try {
-    page.state = await askBot("/hub/api/settings", saveBody());
+    page.state = await askBot("/hub/api/settings", body);
+    return true;
   } catch (e) {
     if (e.status === 401) {
       await sessionExpired();
-      return;
+    } else {
+      status(e.message);
     }
-    status(e.message);
+    return false;
+  }
+}
+
+async function save() {
+  status("Saving…");
+  if (!(await sendSettings(saveBody()))) {
     return;
   }
   // The panel may have closed while the save was on its way
@@ -2241,6 +2290,17 @@ async function save() {
   page.staged = stagedFrom(page.tab);
   renderPanel();
   status("Saved.");
+}
+
+// Only the volume is sent, so it saves without the tab's other edits, which stay on screen
+function saveVolume(volume) {
+  page.volumeSaves = page.volumeSaves
+    .then(async () => {
+      if ((await sendSettings({ tab: "look", look: { volume } })) && page.tab === null) {
+        render();
+      }
+    })
+    .catch((e) => console.error(e));
 }
 
 // Reset is staged like any other edit: it shows the level above and saves nothing until Save

@@ -128,12 +128,147 @@ h1 {
 }
 
 .icon-button .off,
-.icon-button[aria-pressed="false"] .on {
+.icon-button.muted .on {
   display: none;
 }
 
-.icon-button[aria-pressed="false"] .off {
+.icon-button.muted .off {
   display: block;
+}
+
+.icon-button[aria-expanded="true"] {
+  background: var(--paper);
+  color: var(--purple-deep);
+}
+
+/* ---------- Sound panel ---------- */
+
+/* The buttons end the title column, which always has more room above them than below, so the panel opens upward.
+   Upright phones have the buttons in the top corner and open it downward instead */
+.sound-spot {
+  position: relative;
+  touch-action: manipulation;
+}
+
+.sound-panel {
+  position: absolute;
+  z-index: 5;
+  bottom: calc(100% + 10px);
+  left: 0;
+  box-sizing: border-box;
+  width: 230px;
+  display: grid;
+  gap: 4px;
+  padding: 8px 14px 6px;
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 5px 0 var(--purple-deep);
+}
+
+.sound-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  font-weight: 600;
+}
+
+.sound-row + .sound-row {
+  padding-top: 4px;
+  border-top: 2px solid var(--paper-tint);
+}
+
+/* The button is the full 44 px touch target; the track and knob are drawn inside it */
+.switch {
+  position: relative;
+  width: 56px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.switch::before {
+  content: "";
+  position: absolute;
+  inset: 8px 0;
+  border-radius: 999px;
+  background: #ddd8fb;
+  transition: background 0.15s;
+}
+
+.switch[aria-checked="true"]::before {
+  background: var(--purple);
+}
+
+.switch .knob {
+  position: absolute;
+  top: 11px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 2px 0 rgba(31, 23, 71, 0.3);
+  transition: transform 0.15s;
+}
+
+.switch[aria-checked="true"] .knob {
+  transform: translateX(28px);
+}
+
+/* The slider's whole 44 px height takes presses; the filled part of the track shows the level */
+.volume {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.volume::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--purple) var(--level, 100%), #ddd8fb var(--level, 100%));
+}
+
+.volume::-webkit-slider-thumb {
+  width: 26px;
+  height: 26px;
+  margin-top: -8px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 0 3px 0 var(--yellow-deep);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.volume::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--purple) var(--level, 100%), #ddd8fb var(--level, 100%));
+}
+
+.volume::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 0 3px 0 var(--yellow-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch::before,
+  .switch .knob {
+    transition: none;
+  }
 }
 
 .play {
@@ -601,6 +736,13 @@ h1 {
 
   .corner {
     margin-left: auto;
+  }
+
+  .sound-panel {
+    top: calc(100% + 10px);
+    bottom: auto;
+    left: auto;
+    right: 0;
   }
 
   .side {

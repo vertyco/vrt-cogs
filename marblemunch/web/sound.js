@@ -7,6 +7,8 @@ const CROSSFADE = 2;
 // Every game on the hub shares one storage, so the keys carry the game's name
 const MUSIC_KEY = "marblemunch:music";
 const EFFECTS_KEY = "marblemunch:sfx";
+const MUSIC_VOLUME_KEY = "marblemunch:music-volume";
+const EFFECTS_VOLUME_KEY = "marblemunch:sfx-volume";
 
 function readSetting(key) {
   try {
@@ -17,12 +19,28 @@ function readSetting(key) {
   }
 }
 
-function saveSetting(key, on) {
+function saveSetting(key, value) {
   try {
-    localStorage.setItem(key, on ? "on" : "off");
+    localStorage.setItem(key, value);
   } catch (e) {
     console.warn("Marble Munch: couldn't save a sound setting", e);
   }
+}
+
+// A slider's saved level, 0 to 100. Missing or broken means full volume
+function readVolume(key) {
+  try {
+    const saved = localStorage.getItem(key) ?? "";
+    return /^\d+(\.\d+)?$/.test(saved) && Number(saved) <= 100 ? Number(saved) : 100;
+  } catch (e) {
+    console.warn("Marble Munch: couldn't read a sound setting", e);
+    return 100;
+  }
+}
+
+// Loudness is heard on a curve, so the slider's low end isn't all the same quiet
+function gainFor(volume) {
+  return (volume / 100) ** 2;
 }
 
 function tone(ctx, out, { frequency, to = null, start, length, type = "sine", level = 0.3 }) {
@@ -94,6 +112,8 @@ export class Sound {
     this.effectsOut = null;
     this.musicOn = readSetting(MUSIC_KEY);
     this.sfxOn = readSetting(EFFECTS_KEY);
+    this.musicVolume = readVolume(MUSIC_VOLUME_KEY);
+    this.sfxVolume = readVolume(EFFECTS_VOLUME_KEY);
     this.song = null;
     this.loading = null;
     this.voices = [];
@@ -109,8 +129,8 @@ export class Sound {
   unlock() {
     if (!this.ctx) {
       this.ctx = new AudioContext();
-      this.musicOut = this.output(MUSIC_VOLUME);
-      this.effectsOut = this.output(EFFECTS_VOLUME);
+      this.musicOut = this.output(MUSIC_VOLUME * gainFor(this.musicVolume));
+      this.effectsOut = this.output(EFFECTS_VOLUME * gainFor(this.sfxVolume));
     }
     this.update();
   }
@@ -146,13 +166,36 @@ export class Sound {
 
   setMusic(on) {
     this.musicOn = on;
-    saveSetting(MUSIC_KEY, on);
+    saveSetting(MUSIC_KEY, on ? "on" : "off");
     this.update();
   }
 
   setSfx(on) {
     this.sfxOn = on;
-    saveSetting(EFFECTS_KEY, on);
+    saveSetting(EFFECTS_KEY, on ? "on" : "off");
+  }
+
+  // The sliders, 0 to 100. Moving one changes the loudness at once; it is saved only once let go
+  setMusicVolume(volume) {
+    this.musicVolume = volume;
+    if (this.musicOut) {
+      this.musicOut.gain.value = MUSIC_VOLUME * gainFor(volume);
+    }
+  }
+
+  setSfxVolume(volume) {
+    this.sfxVolume = volume;
+    if (this.effectsOut) {
+      this.effectsOut.gain.value = EFFECTS_VOLUME * gainFor(volume);
+    }
+  }
+
+  saveMusicVolume() {
+    saveSetting(MUSIC_VOLUME_KEY, String(this.musicVolume));
+  }
+
+  saveSfxVolume() {
+    saveSetting(EFFECTS_VOLUME_KEY, String(this.sfxVolume));
   }
 
   play(name, loud = true) {

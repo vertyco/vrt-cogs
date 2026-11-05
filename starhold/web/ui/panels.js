@@ -1,6 +1,6 @@
-// The screens and dialogs around the map: the title, How to play, High Scores, the pause menu, the game over card
-// with its cash-in box, and the Play again warning. main.js runs the game and passes its actions in; this file only
-// shows the page's state.
+// The screens and dialogs around the map: the title with its sound panel, How to play, High Scores, the pause menu,
+// the game over card with its cash-in box, and the Play again warning. main.js runs the game and passes its actions
+// in; this file only shows the page's state.
 const ORPHAN = "This run can't be cashed in or saved, because the connection to the bot was lost.";
 // The bot's own sentences for a cash-in that can't pay, so the card says what a press would have answered
 const NONE_LEFT = "You've used every cash-in for today. They come back at midnight UTC.";
@@ -19,10 +19,15 @@ const BARE_STATUS = /^Request failed \(\d+\)$/;
 const TOAST_MS = 3000;
 // A long sentence stays up long enough to read
 const TOAST_MS_PER_LETTER = 60;
+// The sound panel's gap from the Sound button, and from the screen's safe edges
+const PANEL_GAP = 8;
+const PANEL_MARGIN = 10;
+// An arrival note's height and its gaps, kept free under the people button
+const NOTE_ROOM = 44;
 let toastTimer = null;
 // A cash-in has been sent and the bot hasn't answered yet
 let cashing = false;
-// The page's Sound, for the Sound button
+// The page's Sound, for button taps and the sound panel
 let sound = null;
 // Resolves the Play again warning while it is open
 let confirmAnswer = null;
@@ -69,10 +74,7 @@ export function bindPanels(page, actions) {
   click("over-scores", () => openScores(page));
   click("close-scores", () => $("scores").close());
   click("cashin-button", () => cashIn(actions));
-  click("sound-button", () => {
-    sound.cycle();
-    showToggles();
-  });
+  bindSoundPanel();
   click("message-close", () => {
     $("message").hidden = true;
   });
@@ -80,11 +82,129 @@ export function bindPanels(page, actions) {
   click("confirm-no", () => answer(false));
   // Escape closes the dialog too, which counts as no
   $("confirm").addEventListener("close", () => answer(false));
-  showToggles();
 }
 
-function showToggles() {
-  $("sound-button").textContent = sound.nextAction;
+// ---------- The sound panel ----------
+
+// The Sound button opens a small panel beside it: a switch and a volume slider for sound effects, then for music.
+// It closes on a press anywhere outside it, on Escape, on the Sound button again, and when the title goes away
+function bindSoundPanel() {
+  const button = $("sound-button");
+  // Not through click(): a keyboard player's focus stays on the button, to Tab on into the panel
+  button.addEventListener("click", () => {
+    sound.play("tap", { steady: true });
+    setSoundPanel($("sound-panel").hidden);
+  });
+  bindSwitch("sfx-switch", () => sound.setSfx(!sound.sfxOn));
+  bindSwitch("music-switch", () => sound.setMusic(!sound.musicOn));
+  bindSlider("sfx-volume", (volume) => sound.setSfxVolume(volume));
+  bindSlider("music-volume", (volume) => sound.setMusicVolume(volume));
+  // The effects slider plays one effect at its new level once let go, so the player hears where it landed
+  $("sfx-volume").addEventListener("change", () => sound.play("build", { steady: true }));
+  document.addEventListener("pointerdown", (event) => {
+    if (!$("sound-panel").contains(event.target) && !button.contains(event.target)) {
+      closeSoundPanel();
+    }
+  });
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !$("sound-panel").hidden) {
+      closeSoundPanel();
+      button.focus();
+    }
+  });
+  window.addEventListener("resize", placeSoundPanel);
+  $("title").addEventListener("scroll", placeSoundPanel);
+  showSound();
+}
+
+function bindSwitch(id, flip) {
+  $(id).addEventListener("click", () => {
+    sound.play("tap", { steady: true });
+    flip();
+    showSound();
+  });
+}
+
+// A slider sets its volume live as it moves, and the volumes are saved once it is let go
+function bindSlider(id, set) {
+  const slider = $(id);
+  slider.addEventListener("input", () => {
+    set(Number(slider.value));
+    showSound();
+  });
+  slider.addEventListener("change", () => sound.saveVolumes());
+}
+
+function setSoundPanel(open) {
+  $("sound-panel").hidden = !open;
+  $("sound-button").setAttribute("aria-expanded", String(open));
+  placeSoundPanel();
+}
+
+export function closeSoundPanel() {
+  if (!$("sound-panel").hidden) {
+    setSoundPanel(false);
+  }
+}
+
+// The switches, the sliders and the Sound button's speaker, crossed out while both kinds of sound are off
+function showSound() {
+  $("sfx-switch").setAttribute("aria-checked", String(sound.sfxOn));
+  $("music-switch").setAttribute("aria-checked", String(sound.musicOn));
+  showSlider("sfx-volume", sound.sfxVolume);
+  showSlider("music-volume", sound.musicVolume);
+  $("sound-button").classList.toggle("muted", !sound.sfxOn && !sound.musicOn);
+}
+
+function showSlider(id, volume) {
+  const slider = $(id);
+  slider.value = String(volume);
+  slider.style.setProperty("--level", `${volume}%`);
+}
+
+function clamp(value, low, high) {
+  return Math.max(low, Math.min(value, high));
+}
+
+// Where the panel may go: inside Discord's edges, and below the people button and the arrival notes that slide out
+// under it
+function soundPanelArea() {
+  const style = getComputedStyle($("safe"));
+  const top = $("corner-right").getBoundingClientRect().bottom + NOTE_ROOM;
+  return {
+    top: Math.max(top, parseFloat(style.paddingTop) + PANEL_MARGIN),
+    left: parseFloat(style.paddingLeft) + PANEL_MARGIN,
+    right: window.innerWidth - parseFloat(style.paddingRight) - PANEL_MARGIN,
+    bottom: window.innerHeight - parseFloat(style.paddingBottom) - PANEL_MARGIN,
+  };
+}
+
+// Under the Sound button, or beside it, or above it: the first of those with room. Beside comes before above, which
+// covers the other menu buttons. A screen with room for none gets it above, pushed down as far as it must. Under or
+// above, it takes the button's width, so it lines up with the menu
+function placeSoundPanel() {
+  const panel = $("sound-panel");
+  if (panel.hidden) {
+    return;
+  }
+  panel.style.width = "";
+  const button = $("sound-button").getBoundingClientRect();
+  const area = soundPanelArea();
+  const width = panel.offsetWidth;
+  const height = panel.offsetHeight;
+  const beside = clamp(button.bottom - height, area.top, area.bottom - height);
+  const above = button.top - PANEL_GAP - height;
+  const spots = [
+    [button.left, button.bottom + PANEL_GAP, button.width],
+    [button.right + PANEL_GAP, beside, width],
+    [button.left - PANEL_GAP - width, beside, width],
+    [button.left, above, button.width],
+  ];
+  const fits = ([x, y, w]) => x >= area.left && y >= area.top && x + w <= area.right && y + height <= area.bottom;
+  const [x, y, w] = spots.find(fits) || [button.left, clamp(above, area.top, area.bottom - height), button.width];
+  panel.style.left = `${x}px`;
+  panel.style.top = `${y}px`;
+  panel.style.width = `${w}px`;
 }
 
 // A failed request as a sentence a player can read: the bot's own words, or a plain one when the bot broke or never

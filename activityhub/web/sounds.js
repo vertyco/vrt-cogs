@@ -60,8 +60,14 @@ const FILES = {
   menu: new URL("sounds/menu.mp3", import.meta.url).href,
   ambient: new URL("sounds/ambient.mp3", import.meta.url).href,
 };
+// The loudest the menu gets, at the player's volume of 100
 const VOLUME = 0.3;
 const AMBIENT_VOLUME = 0.45;
+
+// The player's volume, 0 to 100, is squared so the slider's middle sounds about half as loud, not nearly as loud
+function masterGain(level) {
+  return VOLUME * (level / 100) ** 2;
+}
 
 function activated() {
   return !navigator.userActivation || navigator.userActivation.hasBeenActive;
@@ -73,6 +79,8 @@ export class MenuSounds {
     this.inMenu = true;
     this.ctx = null;
     this.volume = null;
+    // The player's volume from My look, 0 to 100
+    this.level = 100;
     this.buffers = {};
     this.ambientOn = false;
     this.ambientElement = null;
@@ -93,6 +101,14 @@ export class MenuSounds {
     this.updateAmbient();
   }
 
+  // Takes effect at once, so a slider being dragged is heard as it moves
+  setVolume(level) {
+    this.level = level;
+    if (this.volume) {
+      this.volume.gain.value = masterGain(level);
+    }
+  }
+
   // The background loop plays only while the menu shows; a game brings its own sound
   setInMenu(on) {
     this.inMenu = on;
@@ -105,7 +121,7 @@ export class MenuSounds {
     }
     this.ctx = new AudioContext();
     this.volume = this.ctx.createGain();
-    this.volume.gain.value = VOLUME;
+    this.volume.gain.value = masterGain(this.level);
     this.volume.connect(this.ctx.destination);
     this.ctx.addEventListener("statechange", () => this.updateAmbient());
   }

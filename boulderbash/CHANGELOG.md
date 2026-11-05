@@ -1,5 +1,9 @@
 # Boulder Bash Changelog
 
+## 0.4.0
+
+- The Sound sign on the title screen now opens a sound panel beside it, instead of turning music and sound off and on in turn. Sound effects and Music each have their own switch and their own volume slider. A slider changes the loudness as it moves, and letting go of the effects slider plays a click at the new loudness. Each device remembers the switches and volumes. The sign's speaker is crossed out while both are off. A tap outside the panel, Escape, or pressing Sound again closes it.
+
 ## 0.3.1
 
 Needs ActivityHub 0.8.0 or later.

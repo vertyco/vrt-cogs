@@ -13,6 +13,7 @@ import {
   NOT_CONNECTED,
   askConfirm,
   bindPanels,
+  closeSoundPanel,
   isCashing,
   notice,
   onCashed,
@@ -546,6 +547,7 @@ function goBack() {
 function showScreen(name) {
   page.screen = name;
   document.body.dataset.screen = name;
+  closeSoundPanel();
   for (const id of ["title", "help", "over"]) {
     $(id).hidden = id !== name;
   }

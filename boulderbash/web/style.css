@@ -155,6 +155,29 @@ body {
   top: 380px;
 }
 
+/* The Sound sign: a speaker before its name, crossed out while music and effects are both off */
+.sound-sign {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.sound-sign .speaker {
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+
+.sound-sign .cross,
+.sound-sign.muted .waves {
+  display: none;
+}
+
+.sound-sign.muted .cross {
+  display: inline;
+}
+
 /* How to Play has no gear button, so its signs keep clear of the slab */
 .help .signs .s1,
 .help .signs .s3 {
@@ -759,6 +782,125 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+/* ---------- The sound panel, opened from the title's Sound sign ---------- */
+
+/* Drawn at the screen's own size, like the people button, so its switches and sliders stay big enough for a finger on
+   a small stage. game.js places it beside the sign */
+.sound-panel {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: min(290px, calc(100vw - 20px));
+  box-sizing: border-box;
+  padding: 12px 16px 14px;
+  display: grid;
+  gap: 10px;
+  border: 4px solid var(--ink);
+  border-radius: 22px;
+  background: var(--sand);
+  color: var(--ink);
+  box-shadow: 0 8px 0 var(--ink);
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 800;
+}
+
+/* The name and its switch on one line, the slider under them */
+.sound-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+}
+
+.sound-row .volume {
+  grid-column: 1 / -1;
+}
+
+/* An ink-edged track, whose stone knob slides over to the glowing side when on */
+.switch {
+  position: relative;
+  box-sizing: border-box;
+  width: 72px;
+  height: 44px;
+  padding: 0;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  background: var(--sand-deep);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.switch[aria-checked="true"] {
+  background: var(--glow);
+}
+
+.switch .knob {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 32px;
+  height: 32px;
+  box-sizing: border-box;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--stone);
+  transition: left 0.12s;
+}
+
+.switch[aria-checked="true"] .knob {
+  left: calc(100% - 35px);
+}
+
+/* A slider under each switch: an ink-edged track, filled amber up to its stone knob by game.js's --level */
+.volume {
+  --level: 100%;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.volume::-webkit-slider-runnable-track {
+  box-sizing: border-box;
+  height: 16px;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  background: linear-gradient(to right, var(--amber) var(--level), #fff8e6 var(--level));
+}
+
+.volume::-moz-range-track {
+  box-sizing: border-box;
+  height: 16px;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  background: linear-gradient(to right, var(--amber) var(--level), #fff8e6 var(--level));
+}
+
+.volume::-webkit-slider-thumb {
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  margin-top: -10px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--stone);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.volume::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--stone);
 }
 
 @media (prefers-reduced-motion: reduce) {

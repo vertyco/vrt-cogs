@@ -16,6 +16,53 @@ browser = pytest.importorskip("activityhub.tests.browser")
 fakes = pytest.importorskip("activityhub.tests.fakes")
 
 CARD = '#games .card[data-key="marblemunch"]'
+# Runs in the game's frame before its scripts. The sound's two volume knobs are the only gains wired straight to
+# the speakers, music's first and the effects' second. Every tone played is counted, and the song (the only long
+# sound) keeps the time it was last told to stop
+SOUND_SPY = """
+window.buses = [];
+window.tones = 0;
+window.songs = [];
+const realConnect = AudioNode.prototype.connect;
+AudioNode.prototype.connect = function (target, ...rest) {
+  if (this instanceof GainNode && target instanceof AudioDestinationNode) {
+    window.buses.push(this);
+  }
+  return realConnect.call(this, target, ...rest);
+};
+const realTone = OscillatorNode.prototype.start;
+OscillatorNode.prototype.start = function (...args) {
+  window.tones += 1;
+  return realTone.apply(this, args);
+};
+const realStop = AudioBufferSourceNode.prototype.stop;
+AudioBufferSourceNode.prototype.stop = function (when = 0) {
+  if (this.buffer && this.buffer.duration > 10) {
+    window.songs.push(this);
+    this.endsAt = when;
+  }
+  return realStop.call(this, when);
+};
+"""
+MUSIC_LEVEL = 0.33
+EFFECTS_LEVEL = 0.6
+# The sound panel's controls a finger can't press: off the screen, under 44 px, or under something else at their middle
+NOT_PRESSABLE = """
+return ['sound', 'sfx', 'sfx-volume', 'music', 'music-volume'].filter((id) => {
+  const node = document.getElementById(id);
+  const box = node.getBoundingClientRect();
+  const inside = box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight;
+  const big = box.width >= 44 && box.height >= 44;
+  const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+  return !(inside && big && node.contains(hit));
+});
+"""
+# Whether the sound panel stays clear of the hub's people button, whose arrival notes slide out under it
+CLEAR_OF_PEOPLE = """
+const a = document.getElementById('sound-panel').getBoundingClientRect();
+const b = document.querySelector('.hub-people').getBoundingClientRect();
+return a.right < b.left || b.right < a.left || a.bottom < b.top || b.bottom < a.top;
+"""
 
 
 @pytest.fixture(scope="module")
@@ -298,3 +345,156 @@ def test_the_watching_count_is_people_not_connections(driver, live):
     match.dirty = True
     time.sleep(0.6)
     assert driver.find_element(By.CSS_SELECTOR, "#watching .label").text == "2 watching"
+
+
+# ---------- Sound panel ----------
+
+
+@pytest.fixture
+def spy(driver):
+    script = driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": SOUND_SPY})
+    yield
+    driver.execute_cdp_cmd("Page.removeScriptToEvaluateOnNewDocument", {"identifier": script["identifier"]})
+
+
+def open_sound(driver):
+    driver.find_element(By.ID, "sound").click()
+    browser.wait_for(driver, "!document.getElementById('sound-panel').hidden")
+
+
+def panel_open(driver):
+    """Whether the sound panel shows, and what its button tells screen readers"""
+    return driver.execute_script(
+        "return [!document.getElementById('sound-panel').hidden,"
+        " document.getElementById('sound').getAttribute('aria-expanded')]"
+    )
+
+
+def saved(driver, key):
+    return driver.execute_script(f"return localStorage.getItem('marblemunch:{key}')")
+
+
+def gain(driver, bus):
+    """A volume knob's level: 0 is the music's, 1 the effects'"""
+    return driver.execute_script(f"return window.buses[{bus}].gain.value")
+
+
+def muted(driver):
+    return "muted" in driver.find_element(By.ID, "sound").get_attribute("class")
+
+
+def test_the_sound_button_opens_the_panel_and_it_closes_again(driver, live):
+    open_game(driver, live)
+    assert panel_open(driver) == [False, "false"]
+    assert driver.find_element(By.ID, "sound").get_attribute("aria-controls") == "sound-panel"
+    open_sound(driver)
+    assert panel_open(driver) == [True, "true"]
+    # Pressing a switch keeps the panel open, and Space stays the hippo's key even with the switch focused
+    driver.find_element(By.ID, "sfx").click()
+    ActionChains(driver).send_keys(Keys.SPACE).perform()
+    assert driver.find_element(By.ID, "sfx").get_attribute("aria-checked") == "false"
+    assert panel_open(driver) == [True, "true"]
+    driver.find_element(By.ID, "sound").click()
+    assert panel_open(driver) == [False, "false"]
+    open_sound(driver)
+    ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+    assert panel_open(driver) == [False, "false"]
+    assert driver.execute_script("return document.activeElement.id") == "sound"
+    open_sound(driver)
+    driver.find_element(By.ID, "scores").click()
+    assert panel_open(driver) == [False, "false"]
+
+
+def test_the_switches_turn_each_sound_off_and_the_button_shows_when_all_are(driver, live, spy):
+    open_game(driver, live)
+    open_sound(driver)
+    browser.wait_for(driver, "window.songs.length > 0", timeout=20)
+    driver.find_element(By.ID, "music").click()
+    assert driver.find_element(By.ID, "music").get_attribute("aria-checked") == "false"
+    assert saved(driver, "music") == "off"
+    # The song fades out now instead of playing to its end
+    assert driver.execute_script("return window.songs.every((song) => song.endsAt < song.context.currentTime + 1)")
+    assert not muted(driver)
+    driver.find_element(By.ID, "sfx").click()
+    assert saved(driver, "sfx") == "off"
+    assert muted(driver)
+    # Effects that are off stay silent, even when their slider is let go
+    driver.execute_script("window.tones = 0")
+    driver.find_element(By.ID, "sfx-volume").send_keys(Keys.ARROW_LEFT)
+    assert driver.execute_script("return window.tones") == 0
+    # The switches leave the levels alone
+    assert gain(driver, 0) == pytest.approx(MUSIC_LEVEL)
+    assert gain(driver, 1) == pytest.approx(EFFECTS_LEVEL * 0.95**2)
+    driver.find_element(By.ID, "sfx").click()
+    assert saved(driver, "sfx") == "on"
+    assert not muted(driver)
+
+
+@pytest.mark.parametrize("kind,bus,level", [("music", 0, MUSIC_LEVEL), ("sfx", 1, EFFECTS_LEVEL)])
+def test_a_slider_sets_its_own_volume_as_it_moves_and_saves_it_once_let_go(driver, live, spy, kind, bus, level):
+    open_game(driver, live)
+    open_sound(driver)
+    slider = driver.find_element(By.ID, f"{kind}-volume")
+    untouched = gain(driver, 1 - bus)
+    driver.execute_script("window.tones = 0")
+    ActionChains(driver).click_and_hold(slider).move_by_offset(-slider.size["width"] // 4, 0).perform()
+    volume = int(slider.get_attribute("value"))
+    assert 0 < volume < 100
+    assert gain(driver, bus) == pytest.approx(level * (volume / 100) ** 2)
+    assert gain(driver, 1 - bus) == untouched
+    assert saved(driver, f"{kind}-volume") is None
+    ActionChains(driver).release().perform()
+    assert saved(driver, f"{kind}-volume") == str(volume)
+    # Letting go of the effects slider plays an effect at the new level, so the player hears it
+    tones = driver.execute_script("return window.tones")
+    assert tones > 0 if kind == "sfx" else tones == 0
+
+
+def test_the_sound_settings_survive_a_reload(driver, live, spy):
+    open_game(driver, live)
+    open_sound(driver)
+    driver.find_element(By.ID, "music").click()
+    driver.find_element(By.ID, "sfx").click()
+    driver.find_element(By.ID, "music-volume").send_keys(Keys.HOME, Keys.ARROW_RIGHT, Keys.ARROW_RIGHT)
+    driver.find_element(By.ID, "sfx-volume").send_keys(Keys.ARROW_LEFT)
+    driver.switch_to.default_content()
+    open_game(driver, live)
+    assert driver.find_element(By.ID, "music-volume").get_attribute("value") == "10"
+    assert driver.find_element(By.ID, "sfx-volume").get_attribute("value") == "95"
+    assert driver.find_element(By.ID, "music").get_attribute("aria-checked") == "false"
+    assert driver.find_element(By.ID, "sfx").get_attribute("aria-checked") == "false"
+    assert muted(driver)
+    # The knobs start at the saved levels as soon as the sound starts
+    open_sound(driver)
+    assert gain(driver, 0) == pytest.approx(MUSIC_LEVEL * 0.1**2)
+    assert gain(driver, 1) == pytest.approx(EFFECTS_LEVEL * 0.95**2)
+
+
+def test_a_missing_or_broken_saved_volume_is_full_volume(driver, live, spy):
+    open_game(driver, live)
+    driver.execute_script(
+        "localStorage.setItem('marblemunch:music-volume', '150');"
+        "localStorage.setItem('marblemunch:sfx-volume', 'loud');"
+    )
+    driver.switch_to.default_content()
+    open_game(driver, live)
+    open_sound(driver)
+    assert driver.find_element(By.ID, "music-volume").get_attribute("value") == "100"
+    assert driver.find_element(By.ID, "sfx-volume").get_attribute("value") == "100"
+    assert gain(driver, 0) == pytest.approx(MUSIC_LEVEL)
+    assert gain(driver, 1) == pytest.approx(EFFECTS_LEVEL)
+
+
+@pytest.mark.parametrize("width,height", [(390, 844), (360, 780), (844, 390)])
+def test_every_sound_control_can_be_pressed_on_a_phone(driver, live, width, height):
+    metrics = {"width": width, "height": height, "deviceScaleFactor": 2, "mobile": True}
+    driver.execute_cdp_cmd("Emulation.setDeviceMetricsOverride", metrics)
+    driver.execute_cdp_cmd("Emulation.setTouchEmulationEnabled", {"enabled": True, "maxTouchPoints": 5})
+    try:
+        open_game(driver, live)
+        open_sound(driver)
+        assert driver.execute_script(NOT_PRESSABLE) == []
+        assert driver.execute_script(CLEAR_OF_PEOPLE)
+    finally:
+        driver.execute_cdp_cmd("Emulation.setTouchEmulationEnabled", {"enabled": False})
+        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})

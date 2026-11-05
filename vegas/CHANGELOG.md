@@ -1,5 +1,12 @@
 # Vegas Changelog
 
+## 0.5.0
+
+Needs ActivityHub 0.13.0 or later.
+
+- The music and sound effects buttons in the top bar are now one sound button. It opens a small panel with an on/off switch and a volume slider for the sound effects and for the music, in the lobby and at every table. The button shows crossed out when both are off.
+- Each device keeps its own volumes, and the old on/off choices carry over. Letting go of the sound effects slider lays a chip, so the new volume can be heard.
+
 ## 0.4.1
 
 Needs ActivityHub 0.13.0 or later.
