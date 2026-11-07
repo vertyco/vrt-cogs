@@ -6,8 +6,9 @@ import typing as t
 
 from redbot.core.i18n import Translator
 
-from .games import blackjack, simple
+from .games import blackjack, simple, slots
 from .games.cards import Deck, hand_total, war_value
+from .holdem_table import HoldemTable
 from .table import PACE, Bet, Closed, Table, player_view
 
 _ = Translator("Vegas", __file__)
@@ -481,32 +482,31 @@ class BlackjackTable(Table):
 
 
 class AllInTable(Table):
-    """Solo: each player pulls their own slot machine. Only the player sees their pull"""
+    """Solo: each player spins their own prize wheel. Only the player sees their spin"""
 
     def __init__(self, floor, game):
         super().__init__(floor, game)
         self.pulls: set[asyncio.Task] = set()
 
     async def bet(self, conn, data: dict) -> None:
-        multiplier = data.get("multiplier")
-        if not isinstance(multiplier, int) or isinstance(multiplier, bool) or multiplier < 2:
-            await self.notice(conn, _("Your multiplier must be 2 or higher."))
-            return
         member = conn.ctx.author
         async with self.lock:
+            wager = await self.wager(conn, data)
+            if wager is None:
+                return
             if self.closing.is_set():
                 await self.notice(conn, _("This table is closing."))
                 return
             if member.id in self.bets:
                 await self.notice(conn, _("You already bet this round."))
                 return
+            stake, choice = wager
             scope = await self.floor.scope()
-            stake = await self.cog.money.bank.balance(member)
             terms = await self.cog.money.terms(scope, member.id, self.game)
             if problem := await self.cog.money.stake(scope, member, self.game, stake):
                 await self.notice(conn, problem)
                 return
-            bet = Bet(member, stake, terms, multiplier)
+            bet = Bet(member, stake, terms, choice)
             self.bets[member.id] = bet
             # Played out in its own task, so the player's other messages aren't held up while the reels spin
             task = asyncio.create_task(self.pull(conn, bet))
@@ -514,34 +514,47 @@ class AllInTable(Table):
             task.add_done_callback(self.pull_done)
         await self.cog.send_me(self.floor, member)
 
+    async def wager(self, conn, data: dict) -> tuple[int, t.Any] | None:
+        """The stake and the choice a pull carries, or None once the player was told what's wrong. All In bets the
+        whole balance at the player's multiplier"""
+        multiplier = data.get("multiplier")
+        if not isinstance(multiplier, int) or isinstance(multiplier, bool) or multiplier < 2:
+            await self.notice(conn, _("Your multiplier must be 2 or higher."))
+            return None
+        return await self.cog.money.bank.balance(conn.ctx.author), multiplier
+
     def pull_done(self, task: asyncio.Task) -> None:
         self.pulls.discard(task)
         if self.floor.idle():
             self.cog.floor_done(self.floor)
 
     async def pull(self, conn, bet: Bet) -> None:
-        user_id, multiplier = bet.member.id, bet.choice
+        user_id = bet.member.id
         try:
-            won = simple.allin_wins(self.cog.rng, multiplier)
-            await conn.send({"t": "event", "game": self.game, "kind": "pull", "win": won, "multiplier": multiplier})
-            await self.pause(PACE["pull"])
-            if won:
-                await self.settle(user_id, "win", win_amount=bet.amount * multiplier)
-            else:
-                await self.settle(user_id, "lose")
+            await self.play_pull(conn, bet)
         except Closed as e:
-            log.debug("The all-in pull of %s was stopped by the table closing: %r", user_id, e)
+            log.debug("The %s pull of %s was stopped by the table closing: %r", self.game, user_id, e)
             await self.refund_pull(bet)
         except asyncio.CancelledError as e:
-            log.debug("The all-in pull of %s was cancelled: %r", user_id, e)
+            log.debug("The %s pull of %s was cancelled: %r", self.game, user_id, e)
             await self.refund_pull(bet)
             raise
         except Exception as e:
-            log.exception("The all-in pull of %s failed; refunding it", user_id, exc_info=e)
+            log.exception("The %s pull of %s failed; refunding it", self.game, user_id, exc_info=e)
             await self.refund_pull(bet)
         finally:
             if self.bets.get(user_id) is bet:
                 del self.bets[user_id]
+
+    async def play_pull(self, conn, bet: Bet) -> None:
+        multiplier = bet.choice
+        won = simple.allin_wins(self.cog.rng, multiplier)
+        await conn.send({"t": "event", "game": self.game, "kind": "pull", "win": won, "multiplier": multiplier})
+        await self.pause(PACE["pull"])
+        if won:
+            await self.settle(bet.member.id, "win", win_amount=bet.amount * multiplier)
+        else:
+            await self.settle(bet.member.id, "lose")
 
     async def refund_pull(self, bet: Bet) -> None:
         if bet.settled:
@@ -572,10 +585,59 @@ class AllInTable(Table):
             return
         finished, pending = await asyncio.wait(list(self.pulls), timeout=10)
         if pending:
-            log.debug("%s all-in pulls didn't stop in time, cancelling them", len(pending))
+            log.debug("%s %s pulls didn't stop in time, cancelling them", len(pending), self.game)
             for task in pending:
                 task.cancel()
             await asyncio.wait(pending, timeout=10)
+
+
+class SlotsTable(AllInTable):
+    """Solo: each player spins their own machine. Only the player sees their reels"""
+
+    async def wager(self, conn, data: dict) -> tuple[int, float] | None:
+        amount = data.get("amount")
+        if not isinstance(amount, int) or isinstance(amount, bool) or amount < 1:
+            await self.notice(conn, _("Pick an amount to bet."))
+            return None
+        return amount, slots.read_strength(data.get("strength"))
+
+    async def play_pull(self, conn, bet: Bet) -> None:
+        # How hard the lever went down only sets how long the reels spin; where they stop is drawn here
+        stops = slots.spin(self.cog.rng)
+        seconds = slots.spin_seconds(bet.choice)
+        reels = [slots.window(stop) for stop in stops]
+        await conn.send(
+            {
+                "t": "event",
+                "game": self.game,
+                "kind": "spin",
+                "stops": stops,
+                "reels": reels,
+                "seconds": seconds,
+                "strength": bet.choice,
+            }
+        )
+        await self.pause(seconds)
+        await self.pay(bet, slots.line_of(stops))
+
+    async def pay(self, bet: Bet, line: tuple[str, str, str]) -> None:
+        """Pays the middle row from the pay table, or 7-7-7's share of the jackpot. One cherry gives the bet back as
+        it was, so it isn't a win. Every spin paid here feeds the pot, and every window in its scope hears the pot"""
+        member, scope = bet.member, bet.terms.scope
+        # The max bet now, so the seed and the share match what the page shows
+        max_bet = (await self.cog.store.game(scope, self.game)).max_bet
+        pot, paid = await self.cog.store.spin_jackpot(scope, bet.amount, max_bet, slots.is_jackpot(line))
+        factor = slots.factor(line)
+        if paid:
+            await self.settle(member.id, "jackpot", win_amount=paid)
+        elif factor > 1:
+            await self.settle(member.id, "win", win_amount=bet.amount * factor)
+        elif factor == 1:
+            await self.settle(member.id, "push", give_back=bet.amount)
+        else:
+            await self.settle(member.id, "lose")
+        hit = {"id": str(member.id), "name": member.display_name, "amount": paid} if paid else None
+        await self.cog.send_jackpot(scope, pot // slots.CENTS, hit, self.floor)
 
 
 TABLE_TYPES: dict[str, type[Table]] = {
@@ -588,4 +650,6 @@ TABLE_TYPES: dict[str, type[Table]] = {
     "hilo": HiLoTable,
     "war": WarTable,
     "double": DoubleTable,
+    "holdem": HoldemTable,
+    "slots": SlotsTable,
 }

@@ -12,6 +12,7 @@ from .commands.vegas import VegasCommands
 from .commands.vegasset import VegasSetCommands
 from .common.actions import Actions
 from .common.catalog import CREDIT
+from .common.holdem_seats import return_stacks
 from .common.info import casino_info, me
 from .common.memberships import Updater
 from .common.money import Money, RedBank
@@ -31,7 +32,7 @@ DELETE_WAIT = 60
 
 class Vegas(VegasCommands, VegasSetCommands, Actions, Sockets, commands.Cog, metaclass=CompositeMetaClass):
     """
-    Blackjack, craps, war and six more casino games for ActivityHub, on a Classic Vegas casino floor.
+    Texas Hold'em, slots, blackjack, craps and seven more casino games for ActivityHub, in a Classic Vegas casino.
 
     Rebuilt for ActivityHub from Redjumpman's Casino: https://github.com/Redjumpman/Jumper-Plugins
     """
@@ -82,6 +83,12 @@ class Vegas(VegasCommands, VegasSetCommands, Actions, Sockets, commands.Cog, met
         except Exception as e:
             log.exception("The casino's database couldn't start, so the casino stays closed", exc_info=e)
             return
+        try:
+            # Credits a crash or restart left at Hold'em tables go home before anyone can sit down again
+            await return_stacks(self.bot, self.store, self.money)
+        except Exception as e:
+            # The rows stay saved for the next load, and nobody can buy in over a saved stack meanwhile
+            log.exception("Saved Hold'em stacks couldn't be returned; they stay saved for the next load", exc_info=e)
         self.ready.set()
         self.updating = asyncio.create_task(self.updater.run_forever())
         log.info("Vegas is open")
@@ -120,7 +127,7 @@ class Vegas(VegasCommands, VegasSetCommands, Actions, Sockets, commands.Cog, met
         return {
             "key": "vegas",
             "name": "Vegas",
-            "description": "Blackjack, craps, war and six more, on a Vegas floor",
+            "description": "Texas Hold'em, slots, blackjack, craps and seven more, in a Vegas casino",
             "web_dir": Path(__file__).parent / "web",
             "icon": "icon.png",
             "thumbnail": "thumb.jpg",
@@ -143,6 +150,14 @@ class Vegas(VegasCommands, VegasSetCommands, Actions, Sockets, commands.Cog, met
         update = await me(self.store, self.money, scope, member)
         for conn in floor.conns_of(member.id):
             await conn.send(update)
+
+    async def send_jackpot(self, scope: int, amount: int, hit: dict | None, floor: Floor) -> None:
+        """After a Slots spin pays, every window in the pot's scope hears the pot in whole credits. Only the winner's
+        own window (floor) hears who won it and how much"""
+        for other in list(self.floors.values()):
+            if await other.scope() != scope:
+                continue
+            await other.room.broadcast({"t": "jackpot", "amount": amount, "hit": hit if other is floor else None})
 
     async def refresh(self, scope: int | None = None) -> None:
         """After a settings change, every open page in that scope (or every page) gets the new settings and its

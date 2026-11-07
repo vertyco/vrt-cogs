@@ -156,3 +156,17 @@ def test_numbers_the_database_cant_hold_are_refused():
     assert clean_membership({"name": "Gold", "req_role_id": -(2**64)}, [])[1] == "That number is too large."
     assert clean_membership({"name": "Gold", "req_days": float("inf")}, [])[1].startswith("Access, reduction")
     assert clean_membership({"name": "Gold", "req_credits": 2**63 - 1}, [])[1] is None
+
+
+@pytest.mark.asyncio
+async def test_chips_at_a_holdem_table_count_toward_a_credit_requirement(store, world):
+    bot, guild, bank, updater = world
+    guild.add(7)
+    await store.player(GUILD, 7)
+    bank.balances[7] = 200
+    silver = await tier(store, "Silver", 1, req_credits=1000)
+    await updater.run_once()
+    assert (await perks_for(store, GUILD, 7)).name == "Basic"
+    await store.save_stack(GUILD, GUILD, 7, 900)
+    await updater.run_once()
+    assert (await store.player(GUILD, 7)).membership == silver.id

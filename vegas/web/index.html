@@ -52,14 +52,9 @@
         </nav>
       </header>
 
-      <main class="lobby" id="lobby">
-        <div class="floor" id="floor">
-          <img class="floor-art" src="art/lobby.jpg" alt="" draggable="false" />
-        </div>
-      </main>
+      <main class="lobby" id="lobby"><div class="menu" id="menu"></div></main>
       <div class="lobby-foot">
         <div class="lobby-crowd" hidden></div>
-        <p class="swipe-hint" hidden>&larr; swipe to look around &rarr;</p>
       </div>
 
       <main class="table" id="table" hidden>
@@ -72,6 +67,47 @@
         </div>
         <aside class="dock" aria-label="Your table">
           <p class="status" id="status"><span id="status-text"></span> <b class="clock" id="clock"></b></p>
+          <!-- Texas Hold'em's own controls; holdem.js runs them. The bar and the waiting row share one space (on an
+               upright screen the bar slides in over the bottom of the dock), so the table above the dock keeps its
+               size when the bar slides in -->
+          <section class="holdem" id="holdem" aria-label="Your seat" hidden>
+            <!-- An offer to buy in while the player is dealt into a hand: the buy-in's body moves in here from the
+                 dialog, so the table and the action bar stay free -->
+            <div class="hd-offer" id="hd-offer" role="group" aria-labelledby="hd-buyin-title" hidden></div>
+            <div class="hd-deck" id="hd-deck" hidden>
+              <div class="hd-bar" id="hd-bar" role="group" aria-label="Your move">
+                <div class="hd-sizer" id="hd-sizer">
+                  <div class="hd-sizes" id="hd-sizes">
+                    <button type="button" class="button" data-size="min" aria-pressed="false">Min</button>
+                    <button type="button" class="button" data-size="half" aria-pressed="false">&frac12; pot</button>
+                    <button type="button" class="button" data-size="three" aria-pressed="false">&frac34; pot</button>
+                    <button type="button" class="button" data-size="pot" aria-pressed="false">Pot</button>
+                    <button type="button" class="button" data-size="all" aria-pressed="false">All in</button>
+                  </div>
+                  <input type="range" class="volume" id="hd-slider" min="0" max="0" step="1" value="0" aria-label="Raise to" />
+                </div>
+                <div class="hd-moves">
+                  <button type="button" class="button danger" id="hd-fold"><span class="verb">Fold</span></button>
+                  <button type="button" class="button hd-call" id="hd-call" data-move="check"><span class="verb">Check</span><b class="sum"></b></button>
+                  <button type="button" class="button primary" id="hd-raise"><span class="verb">Raise to</span><b class="sum"></b></button>
+                </div>
+              </div>
+              <div class="hd-wait" id="hd-wait">
+                <div class="hd-ticks" id="hd-ticks" role="group" aria-label="Act when your turn comes" hidden>
+                  <button type="button" class="button hd-tick" data-advance="check_fold" aria-pressed="false">Check/Fold</button>
+                  <button type="button" class="button hd-tick" data-advance="check" aria-pressed="false">Check</button>
+                  <button type="button" class="button hd-tick" data-advance="call_any" aria-pressed="false">Call any</button>
+                </div>
+                <div class="hd-seat">
+                  <button type="button" class="button" id="hd-top-up" hidden>Top up</button>
+                  <button type="button" class="button" id="hd-stand" hidden>Stand up</button>
+                </div>
+                <p class="hd-pending" id="hd-pending" role="status" hidden></p>
+              </div>
+            </div>
+            <!-- Under the seat's buttons, so on an upright phone the action bar covers it rather than the status line -->
+            <p class="hd-note" id="hd-note" hidden>Practice &middot; play chips</p>
+          </section>
           <div class="moves" id="moves" hidden></div>
           <div class="seat-buttons" id="seat-buttons" hidden>
             <button type="button" class="button" id="sit">Take a seat</button>
@@ -108,6 +144,7 @@
       </main>
 
       <p class="toast" id="toast" role="status" hidden></p>
+      <p class="news" id="news" role="status" hidden></p>
       <p class="banner" id="banner" role="status" hidden>Reconnecting...</p>
     </div>
 
@@ -127,6 +164,27 @@
       <div class="actions">
         <button type="button" class="button danger" id="confirm-yes">Yes</button>
         <button type="button" class="button" id="confirm-no">No</button>
+      </div>
+    </dialog>
+
+    <!-- Hold'em's buy-in: sitting down, the bot's offers to buy in or top up, and the Top up button -->
+    <dialog class="hd-buyin" id="hd-buyin" aria-labelledby="hd-buyin-title">
+      <div class="hd-buyin-body" id="hd-buyin-body">
+        <header class="hd-buyin-head">
+          <h2 id="hd-buyin-title">Buy in</h2>
+          <b class="clock" id="hd-buyin-left" hidden></b>
+        </header>
+        <p class="dim" id="hd-buyin-note"></p>
+        <output class="amount" id="hd-buyin-amount" for="hd-buyin-slider">0</output>
+        <input type="range" class="volume" id="hd-buyin-slider" min="0" max="0" step="1" value="0" aria-label="Amount" />
+        <div class="hd-ends"><span id="hd-buyin-min"></span><span id="hd-buyin-max"></span></div>
+        <p class="why" id="hd-buyin-why" hidden></p>
+        <div class="actions">
+          <button type="button" class="button primary" id="hd-buyin-post"></button>
+          <button type="button" class="button" id="hd-buyin-wait">Wait for the big blind</button>
+          <button type="button" class="button primary" id="hd-buyin-yes"><span class="verb">Buy in</span><b class="sum"></b></button>
+          <button type="button" class="button" id="hd-buyin-no">Cancel</button>
+        </div>
       </div>
     </dialog>
 

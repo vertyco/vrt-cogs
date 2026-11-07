@@ -418,15 +418,20 @@ export async function flipCoin(coin, side, ms) {
 
 // ---- Sparkle ----
 
-function sparkPieces(burst) {
+// toward: the direction the sparks fly in, within a third of a turn, or null for all round. coins: whether four coins
+// fly up and fall back too
+function sparkPieces(burst, toward, coins) {
   const pieces = [];
   for (let index = 0; index < 16; index += 1) {
     const spark = sprite("spark", 20 + Math.random() * 22);
     spark.tint = Math.random() < 0.5 ? 0xffffff : GOLD;
-    const angle = (index / 16) * Math.PI * 2 + Math.random() * 0.3;
+    const angle =
+      toward === null
+        ? (index / 16) * Math.PI * 2 + Math.random() * 0.3
+        : toward + ((index + Math.random() * 0.8) / 16 - 0.5) * ((Math.PI * 2) / 3);
     pieces.push({ piece: spark, angle, reach: 70 + Math.random() * 60, fall: 0, turn: Math.random() * 4 - 2 });
   }
-  for (let index = 0; index < 4; index += 1) {
+  for (let index = 0; index < (coins ? 4 : 0); index += 1) {
     const coin = sprite(index % 2 ? "tails" : "heads", 18);
     const angle = -Math.PI / 2 + (index - 1.5) * 0.6;
     pieces.push({ piece: coin, angle, reach: 60 + Math.random() * 30, fall: 90, turn: Math.random() * 6 - 3 });
@@ -435,11 +440,11 @@ function sparkPieces(burst) {
   return pieces;
 }
 
-export async function sparkle(parent, x, y, ms) {
+export async function sparkle(parent, x, y, ms, { toward = null, coins = true } = {}) {
   const burst = new Container();
   burst.position.set(x, y);
   parent.addChild(burst);
-  const pieces = sparkPieces(burst);
+  const pieces = sparkPieces(burst, toward, coins);
   await progress(burst, ms, (k) => {
     const spread = ease.out(k);
     for (const { piece, angle, reach, fall, turn } of pieces) {

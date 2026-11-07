@@ -187,7 +187,7 @@ class Updater:
             if facts is None:
                 continue
             person, days, role_ids = facts
-            balance = await self.bank.balance(person)
+            balance = await self.bank.balance(person) + await self.store.stacked(scope, player.user_id)
             chosen = best([tier for tier in tiers if qualifies(tier, balance, role_ids, days, global_mode)])
             if await self.move(scope, player.id, chosen.id if chosen else None):
                 changed.add(player.user_id)

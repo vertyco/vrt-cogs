@@ -1,6 +1,8 @@
 """What the page and the commands show: the casino's settings, a player's stats, the membership list"""
 
-from .catalog import GAME_NAMES, GAMES
+from .catalog import GAME_NAMES, GAMES, HOLDEM, SLOTS
+from .games.holdem import blinds
+from .games.slots import CENTS
 from .memberships import perks_for
 from .money import Money, raised_max
 from .store import Store
@@ -25,6 +27,10 @@ async def casino_info(store: Store, scope: int) -> dict:
                 "min": row.min_bet,
                 "max": row.max_bet,
                 "multiplier": row.multiplier,
+                "cut": row.cut,
+                "blinds": list(blinds(row.max_bet)) if key == HOLDEM else None,
+                # The pot in whole credits
+                "jackpot": await store.jackpot(scope, row.max_bet) // CENTS if key == SLOTS else None,
             }
             for key, row in games.items()
         },
@@ -76,7 +82,11 @@ async def me(store: Store, money: Money, scope: int, who) -> dict:
         "access": perks.access,
         "pending": player.pending,
         "ready": {key: await money.ready_in(scope, who.id, key) for key in GAMES},
-        "max_bets": {key: raised_max(row.min_bet, row.max_bet, perks.bet_boost) for key, row in games.items()},
+        "max_bets": {
+            key: row.max_bet if key == HOLDEM else raised_max(row.min_bet, row.max_bet, perks.bet_boost)
+            for key, row in games.items()
+        },
+        "holdem_floor": money.left_with(scope, who.id),
     }
 
 

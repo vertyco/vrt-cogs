@@ -2,8 +2,11 @@
 
 import asyncio
 
-from ..db.tables import BotState, CasinoSettings, GameSettings, Membership, Player, PlayerGame
-from .catalog import CASINO_DEFAULTS, GAME_DEFAULTS, GAMES
+from piccolo.engine.sqlite import TransactionType
+
+from ..db.tables import BotState, CasinoSettings, GameSettings, HoldemStack, Membership, Player, PlayerGame
+from .catalog import CASINO_DEFAULTS, GAME_DEFAULTS, GAMES, SLOTS
+from .games.slots import after_win, fed, seed, share
 
 PLAYER_RESETS = ("cooldowns", "stats", "all")
 CASINO_RESETS = ("settings", "games", "cooldowns", "memberships", "all")
@@ -13,6 +16,9 @@ class Store:
     def __init__(self):
         # Making a row is a read then a write; this stops two requests making the same row twice
         self.lock = asyncio.Lock()
+        # Every change to a Slots pot is a read then a write; this makes each one a single step, so two spins paying
+        # at once (two windows, or the global casino) can't both start from the same pot
+        self.jackpot_lock = asyncio.Lock()
 
     # ---------- Global mode ----------
 
@@ -72,8 +78,41 @@ class Store:
         row = await self.game(scope, key)
         for name, value in fields.items():
             setattr(row, name, value)
-        await row.save()
+        # Only the changed columns: writing the whole row back would undo a Slots spin paid since it was read
+        await row.save(columns=list(fields))
         return row
+
+    # ---------- The Slots jackpot ----------
+
+    async def jackpot(self, scope: int, max_bet: int) -> int:
+        """The pot in hundredths of a credit, never below the seed. A read saves nothing: only a paying spin raises
+        the saved pot, so a max bet typed wrong and put back leaves no huge pot behind"""
+        # Made before the jackpot lock is taken, because making the rows takes the other lock
+        await self.game(scope, SLOTS)
+        async with self.jackpot_lock:
+            return max(await self.saved_jackpot(scope) or 0, seed(max_bet))
+
+    async def spin_jackpot(self, scope: int, bet: int, max_bet: int, hit: bool) -> tuple[int, int]:
+        """Feeds one spin's bet into the pot and, on a 7-7-7, takes the bet's share out, in one locked step.
+        Returns the pot after, in hundredths, and the share paid, in whole credits (0 without a hit)"""
+        await self.game(scope, SLOTS)
+        async with self.jackpot_lock:
+            pot = max(await self.saved_jackpot(scope) or 0, seed(max_bet)) + fed(bet)
+            paid = share(pot, bet, max_bet) if hit else 0
+            if hit:
+                pot = after_win(pot, paid, max_bet)
+            await self.write_jackpot(scope, pot)
+        return pot, paid
+
+    async def saved_jackpot(self, scope: int) -> int | None:
+        """The pot as the database has it right now, None when it was never set"""
+        where = (GameSettings.scope == scope) & (GameSettings.game == SLOTS)
+        row = await GameSettings.select(GameSettings.jackpot).where(where).first()
+        return row["jackpot"] if row else None
+
+    async def write_jackpot(self, scope: int, pot: int) -> None:
+        where = (GameSettings.scope == scope) & (GameSettings.game == SLOTS)
+        await GameSettings.update({GameSettings.jackpot: pot}).where(where)
 
     # ---------- Players ----------
 
@@ -119,6 +158,42 @@ class Store:
         row.membership = membership_id
         row.by_hand = by_hand
         await row.save([Player.membership, Player.by_hand])
+
+    # ---------- Hold'em stacks ----------
+
+    async def save_stack(self, scope: int, guild_id: int, user_id: int, amount: int) -> None:
+        """What a player has at a Hold'em table, kept so a crash can't lose it. 0 clears it"""
+        await self.save_stacks([(scope, guild_id, user_id, amount)])
+
+    async def save_stacks(self, rows: list[tuple[int, int, int, int]]) -> None:
+        """Several players' stacks (scope, guild id, user id, amount), written together or not at all, so a crash
+        can't leave some at a hand's start and some at its end. An amount of 0 clears that player's row"""
+        async with self.lock:
+            # Immediate takes the write lock up front, so another writer can't make this transaction fail midway
+            async with HoldemStack._meta.db.transaction(transaction_type=TransactionType.immediate):
+                for scope, guild_id, user_id, amount in rows:
+                    await self.write_stack(scope, guild_id, user_id, amount)
+
+    async def write_stack(self, scope: int, guild_id: int, user_id: int, amount: int) -> None:
+        where = (HoldemStack.scope == scope) & (HoldemStack.user_id == user_id)
+        row = await HoldemStack.objects().where(where).first()
+        if amount <= 0:
+            if row is not None:
+                await HoldemStack.delete().where(HoldemStack.id == row.id)
+        elif row is None:
+            await HoldemStack(scope=scope, guild_id=guild_id, user_id=user_id, amount=amount).save()
+        else:
+            await HoldemStack.update({HoldemStack.amount: amount, HoldemStack.guild_id: guild_id}).where(
+                HoldemStack.id == row.id
+            )
+
+    async def stacks(self) -> list[HoldemStack]:
+        return await HoldemStack.objects()
+
+    async def stacked(self, scope: int, user_id: int) -> int:
+        where = (HoldemStack.scope == scope) & (HoldemStack.user_id == user_id)
+        row = await HoldemStack.objects().where(where).first()
+        return row.amount if row else 0
 
     # ---------- Memberships ----------
 
@@ -202,7 +277,9 @@ class Store:
             raise ValueError(f"Unknown casino reset: {what}")
         if what in ("settings", "all"):
             await CasinoSettings.delete().where(CasinoSettings.id == scope)
-        if what in ("games", "all"):
+        if what == "games":
+            await self.reset_games(scope)
+        elif what == "all":
             await GameSettings.delete().where(GameSettings.scope == scope)
         if what in ("cooldowns", "all"):
             await PlayerGame.update({PlayerGame.played_at: 0.0}).where(PlayerGame.scope == scope)
@@ -210,6 +287,16 @@ class Store:
             async with self.lock:
                 await Player.update({Player.membership: None, Player.by_hand: False}).where(Player.scope == scope)
                 await Membership.delete().where(Membership.scope == scope)
+
+    async def reset_games(self, scope: int) -> None:
+        """Every game's settings back to the defaults. The Slots pot was built from players' bets, so it stays"""
+        # Held throughout, so a spin paying meanwhile waits and then adds to the kept pot instead of being lost
+        async with self.jackpot_lock:
+            kept = await self.saved_jackpot(scope)
+            await GameSettings.delete().where(GameSettings.scope == scope)
+            if kept is not None:
+                await self.games(scope)
+                await self.write_jackpot(scope, kept)
 
     async def wipe(self) -> None:
         """Everything, in every scope, including global mode"""
@@ -219,3 +306,4 @@ class Store:
     async def delete_user(self, user_id: int) -> None:
         await PlayerGame.delete().where(PlayerGame.user_id == user_id)
         await Player.delete().where(Player.user_id == user_id)
+        await HoldemStack.delete().where(HoldemStack.user_id == user_id)

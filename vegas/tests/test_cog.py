@@ -4,7 +4,8 @@ from types import SimpleNamespace
 import pytest
 import pytest_asyncio
 
-from vegas.commands.embeds import stats_embed, tier_embed
+from vegas.commands.embeds import info_embed, stats_embed, tier_embed
+from vegas.common.info import casino_info, me
 from vegas.common.memberships import Updater
 from vegas.common.money import Money
 from vegas.db.tables import PlayerGame
@@ -142,7 +143,13 @@ async def test_a_round_played_over_the_connection(cog):
 async def test_odd_messages_are_ignored(cog):
     sam = await joined(cog, PLAYER, FakeRoom())
     before = len(sam.sent)
-    for data in ("hi", ["bet"], {"t": "bet", "amount": 10}, {"t": "enter", "game": "poker"}, {"t": "sit", "seat": 0}):
+    for data in (
+        "hi",
+        ["bet"],
+        {"t": "bet", "amount": 10},
+        {"t": "enter", "game": "roulette"},
+        {"t": "sit", "seat": 0},
+    ):
         await cog.message(sam.ctx, sam, data)
     assert len(sam.sent) == before
 
@@ -200,7 +207,7 @@ async def test_memberships_made_given_and_deleted_from_the_page(cog):
     boss = ctx(cog, MANAGER)
     made = await cog.act_save_membership(boss, {"name": "Gold", "color": "yellow", "access": 2, "req_role_id": "900"})
     gold = made["tiers"][0]
-    assert gold["req_role"] == "VIP" and len(gold["games"]) == 9
+    assert gold["req_role"] == "VIP" and len(gold["games"]) == 11
     tiers = (await cog.act_memberships(ctx(cog, PLAYER), {}))["tiers"]
     assert tiers[0]["name"] == "Gold"
     card = await cog.act_player_update(boss, {"user_id": str(PLAYER), "op": "assign", "membership_id": gold["id"]})
@@ -332,6 +339,9 @@ async def test_bet_and_pull_belong_to_their_own_tables(cog):
     await cog.message(sam.ctx, sam, {"t": "enter", "game": "allin"})
     await cog.message(sam.ctx, sam, {"t": "bet", "amount": 10, "multiplier": 2})
     assert cog.bank.balances[PLAYER] == 1000 and not cog.floors["window"].tables["allin"].pulls
+    await cog.message(sam.ctx, sam, {"t": "enter", "game": "slots"})
+    await cog.message(sam.ctx, sam, {"t": "bet", "amount": 10})
+    assert cog.bank.balances[PLAYER] == 1000 and not cog.floors["window"].tables["slots"].pulls
 
 
 @pytest.mark.asyncio
@@ -376,6 +386,33 @@ async def test_a_membership_max_bet_multiplier_reaches_the_players_open_page(cog
     assert (me["max_bets"]["dice"], me["max_bets"]["coin"], me["max_bets"]["allin"]) == (200, 10, None)
     stats = await cog.act_profile(ctx(cog, PLAYER), {})
     assert stats["bet_boost"] == 2.0 and "Max bet multiplier: 2.0x" in stats_embed(stats, "Vegas").description
+
+
+@pytest.mark.asyncio
+async def test_holdem_stakes_reach_the_page_and_the_info_command(cog):
+    boss = ctx(cog, MANAGER)
+    await cog.store.save_game(GUILD_ID, "holdem", min_bet=10_000, max_bet=1_000_000, cut=2.5)
+    gold = (await cog.act_save_membership(boss, {"name": "Gold", "color": "yellow", "bet_boost": 2}))["tiers"][0]
+    await cog.act_player_update(boss, {"user_id": str(PLAYER), "op": "assign", "membership_id": gold["id"]})
+    cog.money.note_left(GUILD_ID, PLAYER, 1_500_000)
+    # A membership never raises Hold'em's Max, and the page hears the least a re-sit must buy in for
+    facts = await me(cog.store, cog.money, GUILD_ID, guild_of(cog).get_member(PLAYER))
+    assert facts["max_bets"]["holdem"] == 1_000_000 and facts["holdem_floor"] == 1_500_000
+    info = await casino_info(cog.store, GUILD_ID)
+    holdem = info["games"]["holdem"]
+    assert (holdem["blinds"], holdem["cut"], info["games"]["dice"]["blinds"]) == ([5000, 10_000], 2.5, None)
+    poker = next(field for field in info_embed(info).fields if field.name == "Poker")
+    assert poker.value == "Texas Hold'em: Buy-in 10,000 to 1,000,000 · Blinds 5,000/10,000 · Cut 2.5%"
+
+
+@pytest.mark.asyncio
+async def test_the_info_command_shows_slots_pay_table_in_line_with_the_payouts(cog):
+    embed = info_embed(await casino_info(cog.store, GUILD_ID))
+    lines = next(field for field in embed.fields if field.name == "Games").value.strip("`").splitlines()
+    row = {line.split("  ")[0].split(" ")[0]: line for line in lines if line}
+    end = row["Game"].index("Payout") + len("Payout")
+    assert row["Slots"].index("Pay table") + len("Pay table") == end and row["Slots"][end - 10] == " "
+    assert row["Dice"].index("1.8x") + len("1.8x") == end
 
 
 @pytest.mark.asyncio
@@ -449,3 +486,28 @@ async def test_the_menu_line_says_it_bets_the_servers_currency(cog, monkeypatch)
     assert game.economy == cog.economy_line
     assert await cog.economy_line(ctx(cog, PLAYER)) == "Bet chips at the tables"
     assert asked == [guild_of(cog)]
+
+
+@pytest.mark.asyncio
+async def test_a_jackpot_reaches_every_window_in_the_scope_and_names_the_winner_only_in_its_own(cog):
+    sam = await joined(cog, PLAYER, FakeRoom())
+    ann = await joined(cog, ADMIN, FakeRoom("other"))
+    await cog.message(sam.ctx, sam, {"t": "enter", "game": "slots"})
+    table = cog.floors["window"].tables["slots"]
+    table.speed = 0
+    cog.rng = Rigged(ints=[0, 0, 0])
+    await cog.message(sam.ctx, sam, {"t": "pull", "amount": 500, "strength": 0.5})
+    await until(lambda: not table.pulls)
+    assert sam.last("result")["payout"] == 30_010 and cog.bank.balances[PLAYER] == 30_510
+    hit = {"id": str(PLAYER), "name": "Player7", "amount": 30_010}
+    assert sam.last("jackpot") == {"t": "jackpot", "amount": 30_000, "hit": hit}
+    assert ann.last("jackpot") == {"t": "jackpot", "amount": 30_000, "hit": None}
+
+
+@pytest.mark.asyncio
+async def test_hello_carries_the_jackpot_and_a_raised_max_bet_lifts_it(cog):
+    sam = await joined(cog, PLAYER, FakeRoom())
+    games = sam.last("hello")["casino"]["games"]
+    assert games["slots"]["jackpot"] == 30_000 and games["coin"]["jackpot"] is None
+    await cog.act_save_game(ctx(cog, MANAGER), {"game": "slots", "max_bet": 1000})
+    assert sam.last("casino")["casino"]["games"]["slots"]["jackpot"] == 60_000

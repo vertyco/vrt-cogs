@@ -14,13 +14,14 @@ from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.wait import WebDriverWait
 
 from vegas.common.catalog import GAMES
 from vegas.common.money import Money
 from vegas.db.tables import TABLES
 from vegas.main import Vegas
 from vegas.tests.fakes import FakeBank, FakeConn, FakeRoom
+from vegas.tests.tables_kit import Rigged
 
 browser = pytest.importorskip("activityhub.tests.browser")
 fakes = pytest.importorskip("activityhub.tests.fakes")
@@ -91,7 +92,7 @@ def open_casino(driver, live, balance="1,000"):
 
 
 def walk_up(driver, game):
-    driver.find_element(By.CSS_SELECTOR, f'.station[data-key="{game}"]').click()
+    driver.find_element(By.CSS_SELECTOR, f'.game-card[data-key="{game}"]').click()
     browser.wait_for(driver, "!document.getElementById('table').hidden")
     browser.wait_for(driver, "document.getElementById('status-text').textContent !== 'Walking up to the table...'")
 
@@ -100,9 +101,17 @@ def problems(driver):
     return [line for line in browser.console_lines(driver) if "Uncaught" in line or "Vegas:" in line]
 
 
+def result_big(driver) -> str:
+    """The result card's headline. Read from the page, not with Selenium's .text: the card pops in from opacity 0,
+    and until the page draws its next frame Selenium counts it as not shown and reads it as blank"""
+    return driver.execute_script("return document.getElementById('result-big').textContent")
+
+
 def test_the_lobby_shows_every_table_and_the_casino(driver, live):
     open_casino(driver, live)
-    assert len(driver.find_elements(By.CSS_SELECTOR, "#floor .station")) == 9
+    assert len(driver.find_elements(By.CSS_SELECTOR, "#menu .game-card")) == len(GAMES)
+    banners = driver.find_elements(By.CSS_SELECTOR, "#menu .game-card.banner")
+    assert [banner.get_attribute("data-key") for banner in banners] == ["holdem"]
     assert driver.find_element(By.ID, "casino-name").text == "Redjumpman's Casino"
     assert driver.find_element(By.ID, "tier").text == "Basic"
     assert driver.find_element(By.ID, "open-settings").get_attribute("hidden") is not None
@@ -133,7 +142,7 @@ def test_every_game_plays_a_round(driver, live, game):
         if buttons and buttons[0].is_displayed():
             buttons[0].click()
         driver.execute_script("return new Promise((resolve) => setTimeout(resolve, 250))")
-    big = driver.find_element(By.ID, "result-big").text
+    big = result_big(driver)
     assert big.startswith(("You win", "House wins", "No luck", "Bust", "Push", "Surrendered")), big
     assert not problems(driver)
 
@@ -147,7 +156,7 @@ def test_a_called_coin_flip_pays_the_multiplied_bet(driver, live):
     driver.find_element(By.CSS_SELECTOR, f'#choices [data-choice="{side}"]').click()
     driver.find_element(By.ID, "place").click()
     browser.wait_for(driver, "!document.getElementById('result').hidden", timeout=10)
-    assert driver.find_element(By.ID, "result-big").text == "You win 15"
+    assert result_big(driver) == "You win 15"
     browser.wait_for(driver, "document.getElementById('balance').textContent === '1,005'")
     # Once the round ends, the cooldown greys the tray out and says why
     browser.wait_for(driver, "document.getElementById('why').textContent.includes('Coin is ready again in')")
@@ -174,6 +183,7 @@ def test_house_rules_stats_and_memberships_open_for_everyone(driver, live):
     open_casino(driver, live)
     driver.find_element(By.ID, "open-rules").click()
     browser.wait_for(driver, "document.getElementById('panel-body').textContent.includes('How to play')")
+    browser.wait_for(driver, "document.getElementById('panel-body').textContent.includes('3 bells')")
     assert "Redjumpman's Casino" in driver.find_element(By.ID, "panel-body").text
     driver.find_element(By.ID, "panel-close").click()
     driver.find_element(By.ID, "open-stats").click()
@@ -184,11 +194,15 @@ def test_house_rules_stats_and_memberships_open_for_everyone(driver, live):
     assert not problems(driver)
 
 
-def test_on_an_upright_phone_the_floor_pans_and_the_dock_sits_under_the_scene(driver, live):
+def test_on_an_upright_phone_the_menu_scrolls_down_and_the_dock_sits_under_the_scene(driver, live):
     driver.execute_cdp_cmd("Emulation.setDeviceMetricsOverride", UPRIGHT_PHONE)
     try:
         open_casino(driver, live)
-        browser.wait_for(driver, "document.getElementById('lobby').scrollLeft > 0")
+        scrolls = driver.execute_script(
+            "const lobby = document.getElementById('lobby');"
+            "return [lobby.scrollHeight > lobby.clientHeight, lobby.scrollWidth > lobby.clientWidth];"
+        )
+        assert scrolls == [True, False]
         walk_up(driver, "dice")
         scene = driver.execute_script("return document.getElementById('scene').getBoundingClientRect().bottom")
         dock = driver.execute_script("return document.querySelector('.dock').getBoundingClientRect().top")
@@ -209,9 +223,19 @@ def test_a_player_short_of_the_minimum_bet_is_told_why(driver, live):
 
 def test_all_in_says_it_bets_everything_and_asks_first(driver, live):
     open_casino(driver, live)
+    # Every text the button shows at All In, from the moment the table opens. Each is read from the text it was given,
+    # since several can be written before the observer hears of any
+    driver.execute_script(
+        "window.placeTexts = [];"
+        "new MutationObserver((list) => list.forEach((change) => window.placeTexts.push("
+        "  ...[...change.addedNodes].map((node) => node.textContent),"
+        "  ...(change.type === 'characterData' ? [change.target.data] : []))))"
+        "  .observe(document.getElementById('place'), { childList: true, characterData: true, subtree: true });"
+    )
     walk_up(driver, "allin")
     browser.wait_for(driver, "document.getElementById('place').textContent === 'Bet all 1,000'")
-    assert driver.find_element(By.ID, "all-in-stake").text == "Bets your whole balance: 1,000"
+    # A narrow dock puts the amount on a line of its own
+    assert " ".join(driver.find_element(By.ID, "all-in-stake").text.split()) == "Bets your whole balance: 1,000"
     assert driver.find_element(By.ID, "all-in-odds").text == "1 in 4 chance to win 2,000. Lose and your balance is 0."
     driver.find_element(By.ID, "mult-up").click()
     assert driver.find_element(By.ID, "all-in-odds").text.startswith("1 in 5 chance to win 3,000.")
@@ -228,7 +252,145 @@ def test_all_in_says_it_bets_everything_and_asks_first(driver, live):
     browser.wait_for(driver, "document.getElementById('confirm').open")
     driver.find_element(By.ID, "confirm-yes").click()
     browser.wait_for(driver, "!document.getElementById('result').hidden", timeout=15)
+    shown = driver.execute_script("return window.placeTexts")
+    assert shown and all(text.startswith("Bet all") for text in shown), shown
     assert not problems(driver)
+
+
+# The dock's words at All In, the scene's height and where the tray's top and bottom are, read together
+ALL_IN_DOCK = """
+const shown = (id) => !document.getElementById(id).hidden && document.getElementById(id).offsetParent !== null;
+const tray = document.getElementById('tray').getBoundingClientRect();
+return {
+  stake: document.getElementById('all-in-stake').textContent,
+  odds: document.getElementById('all-in-odds').textContent,
+  why: shown('why') ? document.getElementById('why').textContent : null,
+  place: shown('place') ? document.getElementById('place').disabled : null,
+  scene: document.getElementById('scene').getBoundingClientRect().height,
+  top: tray.top,
+  bottom: tray.bottom,
+};
+"""
+
+
+def spin_all_in(driver) -> None:
+    """Spins once the last result card has gone, so the next card can't arrive while it still shows"""
+    browser.wait_for(driver, "document.getElementById('result').hidden", timeout=15)
+    driver.find_element(By.ID, "place").click()
+    browser.wait_for(driver, "document.getElementById('confirm').open")
+    driver.find_element(By.ID, "confirm-yes").click()
+    browser.wait_for(driver, "document.getElementById('balance').textContent === '0'")
+
+
+def after_the_spin(driver, balance: str) -> None:
+    browser.wait_for(driver, "!document.getElementById('result').hidden", timeout=15)
+    browser.wait_for(driver, f"document.getElementById('balance').textContent === '{balance}'")
+    browser.wait_for(driver, "document.getElementById('status-text').textContent.startsWith('Each spin')")
+
+
+@pytest.mark.parametrize("size", [(1280, 800, 1, False), (390, 844, 2, True), (844, 390, 2, True)], ids=str)
+def test_all_in_keeps_its_stake_in_view_while_it_spins_and_its_dock_holds_still(driver, live, size):
+    """At x200, a win and then a loss. During a spin the dock still says what was staked, with the Bet all button
+    greyed in its place, and after the balance is lost it says only that credits are needed. The tray never moves or
+    changes height, whatever the balance, so on an upright phone the wheel holds still too"""
+    live.cog.rng = Rigged(ints=[0, 1])
+    on_loop(live, live.cog.store.save_game(fakes.GUILD_ID, "allin", cooldown=0))
+    with at_size(driver, *size):
+        open_casino(driver, live)
+        walk_up(driver, "allin")
+        driver.execute_script(
+            "const box = document.getElementById('mult-value');box.value = '200';box.dispatchEvent(new Event('input'));"
+        )
+        browser.wait_for(driver, "document.getElementById('place').textContent === 'Bet all 1,000'")
+        driver.execute_script("return new Promise((resolve) => setTimeout(resolve, 300))")
+        waiting = driver.execute_script(ALL_IN_DOCK)
+        spin_all_in(driver)
+        spinning = driver.execute_script(ALL_IN_DOCK)
+        after_the_spin(driver, "200,000")
+        won = driver.execute_script(ALL_IN_DOCK)
+        spin_all_in(driver)
+        after_the_spin(driver, "0")
+        broke = driver.execute_script(ALL_IN_DOCK)
+    assert spinning["stake"] == "Bets your whole balance: 1,000"
+    assert spinning["odds"].startswith("1 in 202 chance to win 200,000.")
+    assert spinning["place"] is True, "the Bet all button keeps its place, greyed, while the wheel spins"
+    assert won["stake"] == "Bets your whole balance: 200,000"
+    assert (broke["stake"], broke["odds"], broke["why"]) == ("You need some credits to go all in.", "", None)
+    for part in ("scene", "top", "bottom"):
+        found = [round(moment[part]) for moment in (waiting, spinning, won, broke)]
+        assert max(found) - min(found) <= 1, (part, found)
+    assert not problems(driver)
+
+
+# The top bar's parts: whether the casino's name shows whole, and the boxes of the membership name, the balance and the
+# bar's buttons
+TOP_BAR = """
+const box = (id) => {
+  const rect = document.getElementById(id).getBoundingClientRect();
+  return [rect.left, rect.top, rect.right, rect.bottom];
+};
+const name = document.getElementById("casino-name");
+return {
+  whole: name.scrollWidth <= name.clientWidth,
+  name: box("casino-name"),
+  tier: box("tier"),
+  purse: box("purse"),
+  buttons: [...document.querySelectorAll(".top .icon-button, .top .hub-people")]
+    .filter((node) => node.offsetParent !== null)
+    .map((node) => {
+      const rect = node.getBoundingClientRect();
+      return [rect.left, rect.top, rect.right, rect.bottom];
+    }),
+};
+"""
+
+
+@pytest.mark.parametrize("balance", [200_000, 40_000_000])
+def test_an_upright_phone_shows_the_whole_casino_name_and_the_membership_beside_the_buttons(driver, live, balance):
+    """With a big balance too, the balance keeps clear of the casino's name"""
+    live.cog.bank.balances[fakes.MEMBER_ID] = balance
+    driver.execute_cdp_cmd("Emulation.setDeviceMetricsOverride", UPRIGHT_PHONE)
+    try:
+        open_casino(driver, live, balance=f"{balance:,}")
+        bars = {"menu": driver.execute_script(TOP_BAR)}
+        walk_up(driver, "slots")
+        bars["slots"] = driver.execute_script(TOP_BAR)
+    finally:
+        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+    for view, bar in bars.items():
+        assert bar["whole"], f"{view}: {bar}"
+        # The membership sits on the second row, under the name, clear of every button
+        assert bar["tier"][1] >= bar["name"][3], f"{view}: {bar}"
+        for button in bar["buttons"]:
+            apart = bar["tier"][2] <= button[0] or bar["tier"][3] <= button[1] or bar["tier"][1] >= button[3]
+            assert apart, f"{view}: the membership touches a button: {bar}"
+        name, purse = bar["name"], bar["purse"]
+        assert name[2] + 6 <= purse[0] or name[3] <= purse[1] or name[1] >= purse[3], f"{view}: {bar}"
+    assert not problems(driver)
+
+
+# How many rows the tray's chips and its Clear, Min, Max and Repeat buttons each take, and whether the dock scrolls
+# sideways
+TRAY_ROWS = """
+const rows = (selector) =>
+  new Set([...document.querySelectorAll(selector)].map((node) => Math.round(node.offsetTop))).size;
+const dock = document.querySelector(".dock");
+return {
+  chips: rows("#chips .chip"),
+  buttons: rows("#bet-line .button"),
+  sideways: dock.scrollWidth > dock.clientWidth,
+};
+"""
+
+
+@pytest.mark.parametrize("size", [(1280, 800, 1, False), (390, 844, 2, True), (844, 390, 2, True)], ids=str)
+def test_the_slots_tray_fits_its_six_chips_and_its_buttons_on_a_row_each(driver, live, size):
+    with at_size(driver, *size):
+        open_casino(driver, live)
+        walk_up(driver, "slots")
+        browser.wait_for(driver, "document.querySelectorAll('#chips .chip').length === 6")
+        assert driver.execute_script(TRAY_ROWS) == {"chips": 1, "buttons": 1, "sideways": False}
+        assert not problems(driver)
 
 
 def test_the_membership_form_keeps_a_deleted_role_and_warns_about_open_memberships(driver, live):
@@ -311,11 +473,11 @@ def test_a_table_sign_shows_three_faces_then_the_rest_and_the_lobby_shows_its_cr
         stand_at(live, user_id, "blackjack")
     stand_at(live, 106, "craps")
     stand_at(live, 107, None)
-    sign = ".station[data-key='blackjack']"
+    sign = ".game-card[data-key='blackjack']"
     browser.wait_for(driver, f'document.querySelectorAll("{sign} .faces .face").length === 3')
     assert driver.find_element(By.CSS_SELECTOR, f"{sign} .faces .more").text == "+2"
-    browser.wait_for(driver, "document.querySelectorAll(\".station[data-key='craps'] .faces .face\").length === 1")
-    assert driver.find_elements(By.CSS_SELECTOR, ".station[data-key='craps'] .faces .more") == []
+    browser.wait_for(driver, "document.querySelectorAll(\".game-card[data-key='craps'] .faces .face\").length === 1")
+    assert driver.find_elements(By.CSS_SELECTOR, ".game-card[data-key='craps'] .faces .more") == []
     browser.wait_for(driver, "document.querySelectorAll('.lobby-crowd .face').length === 2")
     assert [name for name, title in faces_in(driver, ".lobby-crowd")][-1] == "Guest107"
     assert not problems(driver)
@@ -379,51 +541,38 @@ def test_the_row_of_faces_takes_its_room_from_the_floor(driver, live, size):
         assert not problems(driver)
 
 
-def test_the_phone_lobby_opens_in_the_middle_once_the_faces_row_is_there(driver, live):
-    with at_size(driver, 390, 844, 2, True):
-        open_casino(driver, live)
-        browser.wait_for(driver, "document.querySelectorAll('.lobby-crowd .face').length === 1")
-        # The slot machine's medallion is at the exact middle of the picture. The row of faces took room from the
-        # floor after it was centred, which must not leave the view off to one side
-        middle = driver.execute_script(
-            "const box = document.querySelector(\".station[data-key='allin'] .medallion\").getBoundingClientRect();"
-            "return [(box.left + box.right) / 2, innerWidth / 2];"
-        )
-        assert abs(middle[0] - middle[1]) <= 4
-        assert not problems(driver)
-
-
-ROWS_AND_NEIGHBOURS = """
-// The medallions bob, which moves a row of faces a few pixels. It stands still here so the check is the same each time
-const still = document.createElement('style');
-still.textContent = '.medallion { animation: none !important; }';
-document.head.append(still);
+FACES_IN_CARDS = """
 const box = (node) => node.getBoundingClientRect();
-const touches = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-const stations = [...document.querySelectorAll('.station')];
+const inside = (a, b) =>
+  a.left >= b.left - 0.5 && a.right <= b.right + 0.5 && a.top >= b.top - 0.5 && a.bottom <= b.bottom + 0.5;
+const screen = { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
 const found = [];
-for (const station of stations) {
-  const row = box(station.querySelector('.faces'));
-  const more = station.querySelector('.faces .more');
-  for (const other of stations.filter((node) => node !== station)) {
-    if (touches(row, box(other)) || touches(row, box(other.querySelector('.medallion')))) {
-      found.push(station.dataset.key + ' touches ' + other.dataset.key);
-    }
+for (const card of document.querySelectorAll('#menu .game-card')) {
+  card.scrollIntoView({ block: 'center' });
+  const row = box(card.querySelector('.faces'));
+  // The banner's faces sit at its bottom right, over the dark side of its picture; a small card's in its picture
+  const room = box(card.classList.contains('banner') ? card : card.querySelector('.card-art'));
+  const more = card.querySelector('.faces .more');
+  if (!inside(row, room)) {
+    found.push(card.dataset.key + ' leaves its picture');
   }
-  found.push(station.dataset.key + ' says ' + (more ? more.textContent : 'nothing'));
+  if (!inside(row, screen)) {
+    found.push(card.dataset.key + ' leaves the window');
+  }
+  found.push(card.dataset.key + ' says ' + (more ? more.textContent : 'nothing'));
 }
 return found;
 """
 
 
 @pytest.mark.parametrize("size", SIZES)
-def test_a_tables_faces_stay_clear_of_the_next_table_even_with_a_crowd(driver, live, size):
+def test_a_cards_faces_stay_inside_it_even_with_a_crowd(driver, live, size):
     with at_size(driver, *size):
         open_casino(driver, live)
         on_loop(live, fill_tables(live, 13, list(GAMES)))
-        browser.wait_for(driver, "document.querySelectorAll('.station .faces .face').length === 27")
-        found = driver.execute_script(ROWS_AND_NEIGHBOURS)
-        assert [line for line in found if "touches" in line] == []
+        browser.wait_for(driver, f"document.querySelectorAll('.game-card .faces .face').length === {3 * len(GAMES)}")
+        found = driver.execute_script(FACES_IN_CARDS)
+        assert [line for line in found if "says" not in line] == []
         assert sorted(line for line in found if "says" in line) == sorted(f"{game} says +10" for game in GAMES)
         assert not problems(driver)
 
@@ -456,7 +605,7 @@ def test_a_face_names_who_it_is_and_what_they_are_doing(driver, live):
     open_casino(driver, live)
     other = live.add_person(fakes.MANAGER_ID, where="vegas", status="Blackjack \u00b7 bet 200")
     stand_at(live, fakes.MANAGER_ID, "blackjack")
-    sign = ".station[data-key='blackjack']"
+    sign = ".game-card[data-key='blackjack']"
     browser.wait_for(driver, f'document.querySelectorAll("{sign} .faces .face").length === 1')
     browser.wait_for(driver, f'document.querySelector("{sign} .face").title.endsWith("Blackjack \\u00b7 bet 200")')
     assert faces_in(driver, sign)[0][1].startswith("\u2068Manager\u2069")
@@ -488,17 +637,20 @@ async def keep_scoring(live, conn, stop):
         await asyncio.sleep(0.1)
 
 
-def test_a_click_on_a_tables_name_opens_it_while_people_lists_keep_coming(driver, live):
+def test_a_click_on_a_cards_name_opens_it_while_people_lists_keep_coming(driver, live):
     open_casino(driver, live)
     other = live.add_person(fakes.MANAGER_ID, where="vegas", status="Craps")
     stand_at(live, fakes.MANAGER_ID, "craps")
-    face = ".station[data-key='craps'] .face"
+    face = ".game-card[data-key='craps'] .face"
     browser.wait_for(driver, f'document.querySelector("{face}")?.title.endsWith("Craps")')
     driver.execute_script(
         "window.relabelled = 0;"
-        "document.querySelectorAll('.station .label').forEach((label) =>"
+        "document.querySelectorAll('.game-card .label').forEach((label) =>"
         "  new MutationObserver((list) => { window.relabelled += list.length; })"
         "    .observe(label, { childList: true, subtree: true, characterData: true }));"
+        "window.replaced = 0;"
+        "new MutationObserver((list) => { window.replaced += list.length; })"
+        "  .observe(document.getElementById('menu'), { childList: true });"
     )
     stop = []
     scoring = asyncio.run_coroutine_threadsafe(keep_scoring(live, other, stop), live.loop)
@@ -508,13 +660,29 @@ def test_a_click_on_a_tables_name_opens_it_while_people_lists_keep_coming(driver
         # Lists that change no table's name or note leave every name label as it is
         assert driver.execute_script("return window.relabelled") == 0
         # A press held long enough for more lists to arrive before the release still opens the table
-        label = driver.find_element(By.CSS_SELECTOR, ".station[data-key='hilo'] .label")
+        label = driver.find_element(By.CSS_SELECTOR, ".game-card[data-key='hilo'] .label")
         ActionChains(driver).move_to_element(label).click_and_hold().pause(0.8).release().perform()
         browser.wait_for(driver, "!document.getElementById('table').hidden")
+        # No card was rebuilt while it was held, and no name was written again
+        assert driver.execute_script("return [window.relabelled, window.replaced]") == [0, 0]
         assert driver.execute_script("return document.getElementById('app').dataset.view") == "table"
     finally:
         stop.append(True)
         scoring.result(15)
+    assert not problems(driver)
+
+
+def test_the_lobby_crowd_strip_hides_at_a_table_and_comes_back_in_the_lobby(driver, live):
+    open_casino(driver, live)
+    stand_at(live, 101, None)
+    browser.wait_for(driver, "document.querySelectorAll('.lobby-crowd .face').length === 2")
+    walk_up(driver, "dice")
+    # The player has left the lobby, and the one still standing there keeps the strip's faces, under a hidden lobby
+    browser.wait_for(driver, "document.querySelectorAll('.lobby-crowd .face').length === 1")
+    assert not driver.find_element(By.CSS_SELECTOR, ".lobby-foot").is_displayed()
+    driver.find_element(By.ID, "back").click()
+    browser.wait_for(driver, "document.querySelectorAll('.lobby-crowd .face').length === 2")
+    assert driver.find_element(By.CSS_SELECTOR, ".lobby-foot").is_displayed()
     assert not problems(driver)
 
 

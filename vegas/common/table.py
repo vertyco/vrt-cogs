@@ -26,7 +26,27 @@ RESULTS_HOLD = 2.5
 LEAVE_GRACE = 8.0
 
 # How long the page animates each event. The bot waits this long after sending one, so results never spoil it
-PACE = {"flip": 2.0, "shuffle": 3.0, "roll": 2.0, "deal": 0.45, "reveal": 0.6, "burn": 1.2, "pull": 3.0}
+PACE = {
+    "flip": 2.0,
+    "shuffle": 3.0,
+    "roll": 2.0,
+    "deal": 0.45,
+    "reveal": 0.6,
+    "burn": 1.2,
+    "pull": 3.0,
+    # Hold'em
+    "seat": 0.4,
+    "unseat": 0.4,
+    "button": 0.4,
+    "act": 0.5,
+    "pitch": 0.15,
+    "sweep": 0.5,
+    "flop": 1.1,
+    "street": 0.7,
+    "runout": 1.6,
+    "show": 1.0,
+    "win": 1.8,
+}
 
 
 class Closed(Exception):
@@ -153,7 +173,7 @@ class Table:
         self.decisions: dict[int, asyncio.Future] = {}
         self.allowed: dict[int, tuple[str, ...]] = {}
         # The move each waiting player gets if they don't answer
-        self.fallbacks: dict[int, str] = {}
+        self.fallbacks: dict[int, t.Any] = {}
         # One leave-grace timer per player who left mid-decision
         self.graces: dict[int, asyncio.TimerHandle] = {}
         # Tests set speed to 0 to skip the animation waits; time limits stay real
@@ -176,6 +196,10 @@ class Table:
 
     def is_here(self, user_id: int) -> bool:
         return user_id in self.users()
+
+    def can_answer(self, user_id: int) -> bool:
+        """Whether a decision waits on this player's move, or gives them the default at once"""
+        return self.is_here(user_id)
 
     async def enter(self, conn) -> None:
         self.present[conn] = conn.ctx.author
@@ -436,22 +460,22 @@ class Table:
     def ask_message(self, user_id: int) -> dict:
         return {"t": "ask", "game": self.game, "moves": list(self.allowed[user_id])}
 
-    async def decide(self, user_ids: list[int], allowed: tuple | dict, default: str, limit: float) -> dict:
-        """Waits up to limit seconds for each player's move. Players who left, or ran out of time, get the default.
-        allowed is the moves everyone may send, or a dict of each player's own moves"""
+    async def decide(self, user_ids: list[int], allowed: tuple | dict, default: t.Any, limit: float) -> dict:
+        """Waits up to limit seconds for each player's move. Players who can't answer (they left), or ran out of time,
+        get the default. allowed is the moves everyone may send, or a dict of each player's own moves"""
         loop = asyncio.get_running_loop()
-        here = [uid for uid in user_ids if self.is_here(uid)]
-        for user_id in here:
+        asked = [uid for uid in user_ids if self.can_answer(uid)]
+        for user_id in asked:
             self.decisions[user_id] = loop.create_future()
             self.allowed[user_id] = tuple(allowed[user_id] if isinstance(allowed, dict) else allowed)
             self.fallbacks[user_id] = default
         self.deadline = loop.time() + limit
         await self.push()
         # Only the player hears which buttons they have; everyone sees who the table waits on
-        for user_id in here:
+        for user_id in asked:
             await self.tell(user_id, self.ask_message(user_id))
-        if here:
-            await self.wait_on(asyncio.wait([self.decisions[uid] for uid in here]), timeout=limit)
+        if asked:
+            await self.wait_on(asyncio.wait([self.decisions[uid] for uid in asked]), timeout=limit)
         moves = {}
         for user_id in user_ids:
             future = self.decisions.pop(user_id, None)

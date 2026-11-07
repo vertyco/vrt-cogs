@@ -27,7 +27,8 @@ export function tween(target, to, ms, curve = ease.out) {
         resolve();
         return;
       }
-      const t = Math.min(1, (now - start) / ms);
+      // A frame's time can come a hair before the tween started, so the share is kept between 0 and 1
+      const t = Math.min(1, Math.max(0, (now - start) / ms));
       const k = curve(t);
       for (const [key, end] of Object.entries(to)) {
         const value = from[key] + (end - from[key]) * k;

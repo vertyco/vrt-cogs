@@ -2,7 +2,7 @@
 // The bot runs every game; this page sends the player's bets and moves and shows what the bot sends back.
 import { backToMenu, connect } from "activityhub";
 import { money, tierColor } from "./format.js";
-import { Lobby } from "./lobby.js";
+import { Lobby, shortName } from "./lobby.js";
 import * as panels from "./panels.js";
 import { Sound } from "./sound.js";
 import { TableView } from "./table.js";
@@ -16,7 +16,10 @@ const CLOSED_BECAUSE = {
   4101: "The casino is still opening. Go back and try again in a moment.",
 };
 const CLOSED_OTHERWISE = "The casino closed. Go back to the menu and open it again.";
+// What the bot sends the table the player is at. Hold'em adds the player's own cards and its offers to buy in
+const TABLE_MESSAGES = ["table", "event", "result", "ask", "hole", "offer"];
 const TOAST_MS = 4000;
+const NEWS_MS = 5000;
 
 const sound = new Sound();
 const page = {
@@ -40,6 +43,9 @@ const page = {
   table: null,
   lobby: null,
   toastTimer: null,
+  // The Slots jackpot in whole credits, as the bot last said
+  jackpot: null,
+  newsTimer: null,
 };
 
 function $(id) {
@@ -49,7 +55,7 @@ function $(id) {
 // ---------- Starting ----------
 
 async function start() {
-  page.lobby = new Lobby($("lobby"), $("floor"), enter);
+  page.lobby = new Lobby($("lobby"), $("menu"), enter);
   page.lobby.render(null, null);
   bindTopBar();
   panels.setup({
@@ -113,7 +119,7 @@ function bindTopBar() {
 // the music. A press anywhere else, Escape, or the button again closes it
 function bindSound() {
   $("sound").addEventListener("click", () => showSound($("sound-panel").hidden));
-  // Caught on the way down, so a press that the floor or a table handles itself still closes the panel
+  // Caught on the way down, so a press that the menu or a table handles itself still closes the panel
   document.addEventListener(
     "pointerdown",
     (event) => {
@@ -196,7 +202,11 @@ function receive(data) {
       break;
     case "casino":
       page.casino = data.casino;
+      setJackpot(data.casino.games.slots?.jackpot);
       refresh();
+      break;
+    case "jackpot":
+      jackpotNews(data);
       break;
     case "me":
       setMe(data);
@@ -206,7 +216,7 @@ function receive(data) {
       page.table?.notice();
       break;
     default:
-      if (["table", "event", "result", "ask"].includes(data.t) && page.table && data.game === page.game) {
+      if (TABLE_MESSAGES.includes(data.t) && page.table && data.game === page.game) {
         page.table.receive(data);
       }
   }
@@ -214,12 +224,15 @@ function receive(data) {
 
 function hello(data) {
   page.casino = data.casino;
+  setJackpot(data.casino.games.slots?.jackpot);
   page.currency = data.currency || "credits";
   page.canManage = Boolean(data.can_manage);
   page.owner = Boolean(data.owner);
   setMe(data.me);
-  // After a reconnect the bot has the player in the lobby, so a page showing a table walks back up to it
+  // After a reconnect the bot has the player in the lobby, so a page showing a table walks back up to it. A pull sent
+  // on the old connection never gets its spin, so the table stops waiting for it
   if (page.game) {
+    page.table?.notice();
     send({ t: "enter", game: page.game });
   }
 }
@@ -245,15 +258,39 @@ function refresh() {
   page.table?.update();
 }
 
+// The pot on the menu card, and on the machine at Slots, where it waits behind the spin being shown (with the
+// winner's note, when it is theirs)
+function setJackpot(amount, note = null) {
+  page.jackpot = amount ?? null;
+  page.lobby.showJackpot(page.jackpot);
+  if (page.game === "slots") {
+    page.table?.receive({ t: "jackpot", amount: page.jackpot, note });
+  }
+}
+
+// After every Slots spin the bot sends the pot. When someone in this window hit it, everyone here sees a note. The
+// winner's own note waits at the machine until their reels have landed and their result shows, so it spoils nothing
+function jackpotNews(data) {
+  const note = data.hit ? `${shortName(data.hit.name)} hit the jackpot: ${money(data.hit.amount)}!` : null;
+  const mine = note !== null && data.hit.id === page.me?.id && page.game === "slots";
+  setJackpot(data.amount, mine ? note : null);
+  if (note && !mine) {
+    news(note);
+  }
+}
+
 function readyIn(game) {
   const at = page.readyAt[game];
   return at ? Math.max(0, (at - performance.now()) / 1000) : 0;
 }
 
+// False when the message couldn't go, as while the connection comes back
 function send(message) {
-  if (!page.conn || !page.conn.send(message)) {
-    toast("Not connected right now.");
+  if (page.conn?.send(message)) {
+    return true;
   }
+  toast("Not connected right now.");
+  return false;
 }
 
 // ---------- Moving around ----------
@@ -268,7 +305,8 @@ function enter(game) {
   $("app").dataset.view = "table";
   $("lobby").hidden = true;
   $("table").hidden = false;
-  $("back").setAttribute("aria-label", "Back to the casino floor");
+  $("table").dataset.game = game;
+  $("back").setAttribute("aria-label", "Back to the casino");
   page.table = new TableView(game, {
     send,
     sound,
@@ -278,6 +316,8 @@ function enter(game) {
     showPlayer: (id) => panels.showStats(id),
     toast,
     changed: report,
+    jackpot: () => page.jackpot,
+    news,
   });
   send({ t: "enter", game });
   report();
@@ -314,7 +354,7 @@ function drawLobby() {
   );
 }
 
-// Join from the hub's people list: on the first floor update, walk to the friend's table as if it were picked.
+// Join from the hub's people list: on the first lobby update, walk to the friend's table as if it were picked.
 // A friend in the lobby, or already gone, leaves this player in the lobby
 function followFriend() {
   const follow = page.hub?.follow;
@@ -337,6 +377,9 @@ function activity() {
   }
   const name = page.casino?.games?.[page.game]?.name || page.game;
   const table = page.table;
+  if (page.game === "holdem") {
+    return holdemActivity(name, table);
+  }
   const row = table?.myRow();
   const phase = table?.state?.phase || "idle";
   const inRound = Boolean(row && row.bet != null && row.outcome == null && phase !== "idle");
@@ -347,6 +390,20 @@ function activity() {
     text = `${name} · bet ${money(row.bet)}`;
   }
   return [text, { table: page.game }, inRound];
+}
+
+// Hold'em has no bets riding on rounds: a seated player has a stack, and is busy while dealt into a hand
+function holdemActivity(name, table) {
+  const data = { table: "holdem" };
+  const seat = table?.dock?.mySeat();
+  if (!seat) {
+    return ["Watching Hold'em", data, false];
+  }
+  const busy = seat.in_hand && !seat.folded;
+  if (table.state.mode === "real") {
+    return [`${name} · ${money(seat.stack)} chips`, data, busy];
+  }
+  return ["Practicing Hold'em", data, busy];
 }
 
 // The hub passes on whatever it is told, even when nothing changed, so only changes go to it
@@ -370,6 +427,17 @@ function report() {
 function leaveCasino() {
   page.closed = true;
   tell("Not connected", null, false);
+}
+
+// A short gold note under the top bar, over the menu or a table, that nothing can be pressed through
+function news(text) {
+  const node = $("news");
+  node.textContent = text;
+  node.hidden = false;
+  clearTimeout(page.newsTimer);
+  page.newsTimer = setTimeout(() => {
+    node.hidden = true;
+  }, NEWS_MS);
 }
 
 function toast(text, stay = false) {

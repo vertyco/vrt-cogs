@@ -30,6 +30,9 @@ class FakeBank:
         self.balances[who.id] = min(self.maximum, await self.balance(who) + amount)
         return self.balances[who.id]
 
+    async def room(self, who) -> int:
+        return max(0, self.maximum - await self.balance(who))
+
     async def can_receive(self, who, amount: int) -> bool:
         return await self.balance(who) + amount <= self.maximum
 

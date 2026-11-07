@@ -29,6 +29,8 @@ class GameSettings(Table):
     min_bet = BigInt(null=True, default=None)
     max_bet = BigInt(null=True, default=None)
     multiplier = Real(null=True, default=None)
+    cut = Real(null=True, default=None, help_text="Hold'em: the casino's cut of each pot, in percent")
+    jackpot = BigInt(null=True, default=None, help_text="Slots: the progressive jackpot, in hundredths of a credit")
 
 
 class Membership(Table):
@@ -64,4 +66,14 @@ class PlayerGame(Table):
     played_at = Real(default=0.0, help_text="Unix time of the last bet; the game's current cooldown counts from here")
 
 
-TABLES: list[type[Table]] = sort_table_classes([BotState, CasinoSettings, GameSettings, Membership, Player, PlayerGame])
+class HoldemStack(Table):
+    id: Serial
+    scope = BigInt(index=True)
+    guild_id = BigInt()
+    user_id = BigInt(index=True)
+    amount = BigInt(default=0, help_text="Credits at a Hold'em table: the stack when the last hand started or ended")
+
+
+TABLES: list[type[Table]] = sort_table_classes(
+    [BotState, CasinoSettings, GameSettings, Membership, Player, PlayerGame, HoldemStack]
+)

@@ -1,6 +1,19 @@
 // Numbers, times and names the way the bot's chat commands write them, so the page and chat read the same.
 
-export const GAMES = ["allin", "blackjack", "coin", "craps", "cups", "dice", "hilo", "war", "double"];
+// Every game's key and its name, in the bot's order (GAMES and GAME_NAMES in vegas/common/catalog.py)
+export const GAMES = {
+  allin: "All In",
+  blackjack: "Blackjack",
+  coin: "Coin",
+  craps: "Craps",
+  cups: "Cups",
+  dice: "Dice",
+  hilo: "Hi-Lo",
+  war: "War",
+  double: "Double or Nothing",
+  holdem: "Texas Hold'em",
+  slots: "Slots",
+};
 
 // The membership colors from vegas/common/catalog.py, plus Basic's grey
 export const TIER_COLORS = {

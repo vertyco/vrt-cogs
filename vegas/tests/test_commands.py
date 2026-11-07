@@ -16,6 +16,12 @@ def test_every_original_command_is_here():
     assert [command.name for command in cog.get_app_commands()] == ["vegas"]
 
 
+def test_holdem_has_a_command_for_the_casinos_cut():
+    cog = Vegas(bot=None)
+    found = {command.qualified_name: command for command in cog.walk_commands()}
+    assert "vegasset cut" in found
+
+
 def checked_by(command, word: str) -> bool:
     return any(word in check.__qualname__ for check in command.checks)
 

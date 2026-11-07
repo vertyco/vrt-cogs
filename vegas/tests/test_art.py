@@ -4,6 +4,7 @@ within its size budget"""
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from vegas.common.catalog import GAMES
 from vegas.tests import test_browser
@@ -90,6 +91,31 @@ def test_the_art_stays_within_its_budget():
         if (art / game).is_dir():
             assert folder_size(art / game) <= 1 * MB, f"{game}'s art is over 1 MB"
     assert folder_size(WEB) <= 20 * MB
+
+
+def test_card_pictures_have_their_sizes_and_budget():
+    cards = WEB / "art" / "cards"
+    found = {path.stem: Image.open(path).size for path in cards.glob("*.jpg")}
+    assert found.pop("holdem") == (1200, 500)
+    assert set(found) == {"blackjack", "craps", "slots", "allin", "war", "hilo", "double", "coin", "cups", "dice"}
+    assert set(found.values()) == {(480, 320)}
+    assert (cards / "holdem.jpg").stat().st_size <= 160 * 1024
+    assert all((cards / f"{key}.jpg").stat().st_size <= 70 * 1024 for key in found)
+    assert folder_size(cards) <= 1 * MB
+    assert Image.open(WEB / "thumb.jpg").size == (640, 360) and (WEB / "thumb.jpg").stat().st_size <= 100 * 1024
+
+
+def test_slots_and_wheel_pictures_have_their_sizes_and_budget():
+    slots, allin = WEB / "art" / "slots", WEB / "art" / "allin"
+    pictures = {"seven": slots / "seven.png", "blank": slots / "blank.png"}
+    pictures |= {"hall": allin / "hall.jpg", "stand": allin / "stand.png"}
+    found = {name: Image.open(path).size for name, path in pictures.items()}
+    # The blank stop is drawn smaller than the other symbols, so its picture is half their size
+    assert found == {"seven": (205, 220), "blank": (103, 110), "hall": (1200, 800), "stand": (640, 456)}
+    budgets = {"seven": 60, "blank": 16, "hall": 240, "stand": 50}
+    for name, path in pictures.items():
+        assert path.stat().st_size <= budgets[name] * 1024, f"{name} is over {budgets[name]} KB"
+    assert folder_size(slots) <= 600 * 1024
 
 
 @pytest.mark.parametrize("game", GAMES)

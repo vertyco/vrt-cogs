@@ -98,18 +98,26 @@ class VegasSetCommands(MixinMeta):
 
     @vegasset.command(name="min")
     async def vegasset_min(self, ctx: commands.Context, game: str, minimum: int):
-        """Set a game's minimum bet"""
+        """Set a game's minimum bet (for Texas Hold'em, the smallest buy-in)"""
         if key := await self.save_game_field(ctx, game, {"min_bet": minimum}):
-            text = _("{admin} set {game}'s minimum bet to {amount}.")
+            text = (
+                _("{admin} set {game}'s minimum buy-in to {amount}.")
+                if key == "holdem"
+                else _("{admin} set {game}'s minimum bet to {amount}.")
+            )
             await ctx.send(
                 text.format(admin=ctx.author.display_name, game=GAME_NAMES[key], amount=humanize_number(minimum))
             )
 
     @vegasset.command(name="max")
     async def vegasset_max(self, ctx: commands.Context, game: str, maximum: int):
-        """Set a game's maximum bet"""
+        """Set a game's maximum bet (for Texas Hold'em, the biggest buy-in; its blinds are 1% of it)"""
         if key := await self.save_game_field(ctx, game, {"max_bet": maximum}):
-            text = _("{admin} set {game}'s maximum bet to {amount}.")
+            text = (
+                _("{admin} set {game}'s maximum buy-in to {amount}.")
+                if key == "holdem"
+                else _("{admin} set {game}'s maximum bet to {amount}.")
+            )
             await ctx.send(
                 text.format(admin=ctx.author.display_name, game=GAME_NAMES[key], amount=humanize_number(maximum))
             )
@@ -130,6 +138,13 @@ class VegasSetCommands(MixinMeta):
             seconds = (await self.store.game(await self.set_scope(ctx), key)).cooldown
             text = _("{admin} set {game}'s cooldown to {time}.")
             await ctx.send(text.format(admin=ctx.author.display_name, game=GAME_NAMES[key], time=fmt_seconds(seconds)))
+
+    @vegasset.command(name="cut")
+    async def vegasset_cut(self, ctx: commands.Context, percent: float):
+        """Set the casino's cut of each Texas Hold'em pot that reaches the flop, in percent (at most 3 big blinds)"""
+        if key := await self.save_game_field(ctx, "holdem", {"cut": percent}):
+            text = _("{admin} set {game}'s cut to {percent}%.")
+            await ctx.send(text.format(admin=ctx.author.display_name, game=GAME_NAMES[key], percent=f"{percent:g}"))
 
     @vegasset.command(name="access")
     async def vegasset_access(self, ctx: commands.Context, game: str, access: int):

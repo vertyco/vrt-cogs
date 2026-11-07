@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from vegas.common.money import Money, fmt_seconds, raised_max
+from vegas.common.money import RATHOLE_SECONDS, CashOut, Money, fmt_seconds, raised_max
 from vegas.tests.fakes import Clock, FakeBank, member
 
 GUILD = 500
@@ -196,3 +196,69 @@ async def test_a_release_and_a_hand_assigned_membership_both_survive(money, stor
 @pytest.mark.asyncio
 async def test_a_player_has_one_lock_across_servers(money):
     assert money.lock(1, 7) is money.lock(2, 7)
+
+
+@pytest.mark.asyncio
+async def test_a_buy_in_takes_the_credits_within_the_range(money):
+    sam = member(7)
+    assert await money.buy_in(GUILD, sam, "holdem", 400, 400, 2000) is None
+    assert await money.bank.balance(sam) == 600
+
+
+@pytest.mark.asyncio
+async def test_a_buy_in_outside_the_range_or_too_big_is_refused(money):
+    sam = member(7)
+    assert await money.buy_in(GUILD, sam, "holdem", 399, 400, 2000) == "Buy-ins here are 400 to 2000."
+    assert await money.buy_in(GUILD, sam, "holdem", 2001, 400, 2000) == "Buy-ins here are 400 to 2000."
+    assert await money.buy_in(GUILD, sam, "holdem", 1001, 400, 2000) == "You don't have enough credits for that buy-in."
+    assert await money.bank.balance(sam) == 1000
+
+
+@pytest.mark.asyncio
+async def test_a_closed_game_or_low_access_refuses_a_buy_in(money, store):
+    sam = member(7)
+    await store.save_game(GUILD, "holdem", is_open=False)
+    assert await money.buy_in(GUILD, sam, "holdem", 400, 400, 2000) == "Texas Hold'em is closed."
+    await store.save_game(GUILD, "holdem", is_open=True, access=2)
+    assert "needs access level 2. Yours is 0" in await money.buy_in(GUILD, sam, "holdem", 400, 400, 2000)
+    await store.save_game(GUILD, "holdem", access=0)
+    await store.save_casino(GUILD, is_open=False)
+    assert await money.buy_in(GUILD, sam, "holdem", 400, 400, 2000) == "The casino is closed."
+    assert await money.bank.balance(sam) == 1000
+
+
+@pytest.mark.asyncio
+async def test_cash_out_into_a_full_bank_pays_what_fits_and_holds_the_rest(store):
+    money = Money(store, FakeBank(start=1000, maximum=1500), Clock())
+    sam = member(7)
+    assert await money.bank.room(sam) == 500
+    result = await money.cash_out(GUILD, sam, 800)
+    assert result == CashOut(paid=500, held=300, balance=1500)
+    assert (await store.player(GUILD, 7)).pending == 300
+    assert await money.bank.room(sam) == 0
+
+
+@pytest.mark.asyncio
+async def test_cash_out_that_fits_is_paid_whole(money, store):
+    sam = member(7)
+    assert await money.cash_out(GUILD, sam, 800) == CashOut(paid=800, held=0, balance=1800)
+    assert (await store.player(GUILD, 7)).pending == 0
+
+
+@pytest.mark.asyncio
+async def test_count_hand_counts_played_and_won(money, store):
+    await money.count_hand(GUILD, 7, "holdem", won=True)
+    await money.count_hand(GUILD, 7, "holdem", won=False)
+    row = await store.player_game(GUILD, 7, "holdem")
+    assert (row.played, row.won) == (2, 1)
+
+
+@pytest.mark.asyncio
+async def test_left_with_lasts_30_minutes(money):
+    clock = money.clock
+    assert RATHOLE_SECONDS == 1800 and money.left_with(GUILD, 7) == 0
+    money.note_left(GUILD, 7, 900)
+    clock.now += 1799
+    assert money.left_with(GUILD, 7) == 900
+    clock.now += 2
+    assert money.left_with(GUILD, 7) == 0

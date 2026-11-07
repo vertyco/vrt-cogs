@@ -3,15 +3,46 @@
 // the same pacing the bot keeps (PACE), so a result never shows before the cards or dice that decide it.
 import { Application, Container } from "./vendor/pixi.min.mjs";
 import { avatar, button, duration, make, money } from "./format.js";
+import { HoldemDock } from "./holdem.js";
 import { Tray } from "./tray.js";
 
 // How long each kind of event animates, in seconds. The same numbers as PACE in vegas/common/table.py
-export const PACE = { flip: 2.0, shuffle: 3.0, roll: 2.0, deal: 0.45, reveal: 0.6, burn: 1.2, pull: 3.0 };
-// A scene gets this much longer than its pace to finish, then the table moves on without waiting
+export const PACE = {
+  flip: 2.0,
+  shuffle: 3.0,
+  roll: 2.0,
+  deal: 0.45,
+  reveal: 0.6,
+  burn: 1.2,
+  pull: 3.0,
+  // Hold'em
+  seat: 0.4,
+  unseat: 0.4,
+  button: 0.4,
+  act: 0.5,
+  pitch: 0.15,
+  sweep: 0.5,
+  flop: 1.1,
+  street: 0.7,
+  runout: 1.6,
+  show: 1.0,
+  win: 1.8,
+};
+// A scene gets this much longer than its pace to finish, then the table moves on without waiting. An event that says
+// how many seconds it takes (a Slots spin) is paced by that instead
 const GRACE_MS = 350;
+// A Slots win of this many times the bet or more gets the big win sound
+const SLOTS_BIG_WIN = 14;
 // More waiting messages than this means the page fell behind (it was hidden), so it skips the animations
 const MAX_BEHIND = 12;
 const RESULT_MS = 3500;
+// A result card placed in the scene's spot for it keeps this far inside the spot's sides, and its top and bottom
+const SPOT_INSET_X = 8;
+const SPOT_INSET_Y = 3;
+// The looks a placed result card tries, in order
+const SHRINK_FIRST = [[], ["compact"], ["wrap"], ["wrap", "compact"]];
+const BREAK_FIRST = [[], ["wrap"], ["compact"], ["wrap", "compact"]];
+const SPINNING_WHEEL = "The wheel is spinning...";
 const MOVE_LABELS = {
   hit: "Hit",
   stay: "Stay",
@@ -31,6 +62,19 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// How far down `node` the jackpot note reaches, in CSS pixels: from the note's own box while it shows, otherwise from
+// where its style puts it under the top bar
+export function noteReach(node) {
+  const note = $("news");
+  const top = node.getBoundingClientRect().top;
+  if (!note.hidden) {
+    return Math.max(0, note.getBoundingClientRect().bottom - top);
+  }
+  const style = getComputedStyle(note);
+  const bar = document.querySelector(".top").getBoundingClientRect().bottom;
+  return Math.max(0, bar + (parseFloat(style.marginTop) || 0) + (parseFloat(style.height) || 0) - top);
+}
+
 // The words and color for the player's own result
 export function resultView(result, game) {
   const lines = [];
@@ -48,8 +92,15 @@ export function resultView(result, game) {
   switch (result.outcome) {
     case "win":
       return { tone: "win", big: `You win ${money(result.payout)}`, small };
+    case "jackpot":
+      // Joined so that a headline too long for one line breaks after "Jackpot!"
+      return { tone: "win", big: `Jackpot! You win ${money(result.payout)}`, small, breaks: true };
     case "push":
-      return { tone: "even", big: "Push", small: `Your ${money(result.stake)} came back. Balance: ${money(result.balance)}` };
+      return {
+        tone: "even",
+        big: game === "slots" ? "Bet back" : "Push",
+        small: `Your ${money(result.stake)} came back. Balance: ${money(result.balance)}`,
+      };
     case "surrender":
       return {
         tone: "even",
@@ -59,13 +110,14 @@ export function resultView(result, game) {
     case "bust":
       return { tone: "lose", big: "Bust", small };
     default:
-      return { tone: "lose", big: game === "allin" ? "No luck" : "House wins", small };
+      return { tone: "lose", big: ["allin", "slots"].includes(game) ? "No luck" : "House wins", small };
   }
 }
 
 export class TableView {
-  // page: send(message), sound, casino(), me(), readyIn(game), showPlayer(id), toast(text), changed()
-  // changed() is called whenever the bot sends the table's state, for the page to report what the player is doing
+  // page: send(message), sound, casino(), me(), readyIn(game), showPlayer(id), toast(text), changed(), jackpot()
+  // changed() is called whenever the bot sends the table's state, for the page to report what the player is doing.
+  // jackpot() is the Slots pot in whole credits as the bot last said
   constructor(game, page) {
     this.game = game;
     this.page = page;
@@ -79,11 +131,16 @@ export class TableView {
     this.running = false;
     this.closed = false;
     this.resultTimer = null;
+    // The winner's own jackpot note, held while their result card is up
+    this.heldNote = null;
     this.tray = new Tray(game, {
       onBet: (message) => this.bet(message),
       onGo: () => this.page.send({ t: "go" }),
+      onPreview: (value) => this.scene?.preview?.(value),
       sound: page.sound,
     });
+    // Hold'em's own part of the dock: its action bar, buy-ins and seat buttons take the tray's place
+    this.dock = game === "holdem" ? new HoldemDock(this) : null;
     this.sitHandler = () => this.sit();
     this.standHandler = () => this.page.send({ t: "stand" });
     $("sit").addEventListener("click", this.sitHandler);
@@ -127,6 +184,8 @@ export class TableView {
       if (this.state) {
         this.scene.show(this.state);
       }
+      this.scene.preview?.(this.tray.preview());
+      this.scene.jackpot?.(this.page.jackpot?.() ?? null);
     } catch (e) {
       console.error("Vegas: couldn't start the table's graphics", e);
       this.page.toast("This device couldn't draw the table, but you can still play.");
@@ -144,12 +203,13 @@ export class TableView {
       sound: this.page.sound,
       me: () => this.page.me()?.id || null,
       nameOf: (id) => this.nameOf(id),
+      settings: () => this.page.casino()?.games[this.game],
       actions: {
         choose: (value) => this.tray.choose(value),
-        sit: (seat) => this.page.send({ t: "sit", seat }),
+        sit: (seat) => (this.dock ? this.dock.chooseSeat(seat) : this.page.send({ t: "sit", seat })),
         stand: () => this.page.send({ t: "stand" }),
         move: (name) => this.sendMove(name),
-        place: () => this.tray.place(),
+        place: (strength) => this.tray.place(strength),
       },
     };
   }
@@ -160,12 +220,23 @@ export class TableView {
       return;
     }
     this.app.resize();
-    this.scene.layout(host.clientWidth, host.clientHeight);
+    this.scene.layout(host.clientWidth, host.clientHeight, noteReach(host));
+    this.placeResult();
+    // Hold'em fits its people row and the words of its status line to the dock's new size
+    if (this.dock) {
+      this.renderPlayers();
+      this.renderStatus();
+    }
   }
 
   // ---------- Messages ----------
 
   receive(message) {
+    // An offer counts down from when it was sent, so it shows at once instead of waiting behind the animations
+    if (message.t === "offer") {
+      this.dock?.offer(message);
+      return;
+    }
     this.queue.push(message);
     this.drain();
   }
@@ -204,28 +275,45 @@ export class TableView {
       await this.animate(message);
     } else if (message.t === "result") {
       this.showResult(message);
+    } else if (message.t === "ask" && this.dock) {
+      this.dock.ask(message);
     } else if (message.t === "ask") {
       this.moves = message.moves;
       this.renderMoves();
+    } else if (message.t === "hole") {
+      this.dock?.hole(message);
+      this.scene?.hole?.(message);
+    } else if (message.t === "jackpot") {
+      // Queued behind the spin it belongs to, so the marquee moves once the reels have stopped. The winner's own note
+      // then waits for their result card to hide, so the two never stack
+      this.scene?.jackpot?.(message.amount);
+      if (message.note && $("result").hidden) {
+        this.page.news?.(message.note);
+      } else if (message.note) {
+        this.heldNote = message.note;
+      }
     }
   }
 
   async animate(event) {
+    this.dock?.played(event);
     if (!this.scene) {
       return;
     }
-    const limit = (PACE[event.kind] ?? 0) * 1000 + GRACE_MS;
+    const limit = (event.seconds ?? PACE[event.kind] ?? 0) * 1000 + GRACE_MS;
     let late = false;
     await Promise.race([this.scene.play(event), wait(limit).then(() => (late = true))]);
     // The bot has moved on by now, so an animation this slow falls behind the table
     if (late) {
       console.warn(`Vegas: the ${this.game} ${event.kind} animation ran past ${limit} ms`);
     }
+    this.dock?.landed(event);
   }
 
-  // A refused bet or move: the bot says why in a notice
+  // A refused bet or move (the bot says why in a notice), or a reconnect that lost a pull: nothing is coming for it
   notice() {
     this.pulling = false;
+    this.scene?.notice?.();
     this.update();
   }
 
@@ -233,30 +321,79 @@ export class TableView {
     this.pulling = false;
     const view = resultView(result, this.game);
     $("result").className = `result ${view.tone}`;
+    $("result").classList.toggle("breaks", Boolean(view.breaks));
     $("result-big").textContent = view.big;
     $("result-small").textContent = view.small;
     $("result").hidden = false;
+    this.placeResult();
     clearTimeout(this.resultTimer);
-    this.resultTimer = setTimeout(() => {
-      $("result").hidden = true;
-    }, RESULT_MS);
-    const big = result.outcome === "win" && (this.game === "allin" || result.payout >= result.stake * 5);
-    this.page.sound.play(result.outcome === "win" ? (big ? "bigwin" : "win") : result.payout > 0 ? "push" : "lose");
-    if (result.outcome === "win") {
-      this.page.sound.play("collect");
-    }
+    this.resultTimer = setTimeout(() => this.hideResult(), RESULT_MS);
+    this.playResult(result);
     this.scene?.result?.(result);
     this.update();
   }
 
+  hideResult() {
+    $("result").hidden = true;
+    if (this.heldNote) {
+      this.page.news?.(this.heldNote);
+    }
+    this.heldNote = null;
+  }
+
+  // A scene can say where the result card covers nothing that matters (All In, Slots): the card sits in the middle of
+  // that spot, below a jackpot note that shows, in the first look that fits: its headline on one line, then the same
+  // smaller, then wrapped, then wrapped and smaller. A headline with a place to break (a jackpot's, after "Jackpot!")
+  // breaks there before it gets smaller. Without a spot, or when no look fits it, the card sits along the bottom of the
+  // scene as at every other game
+  placeResult() {
+    const card = $("result");
+    card.classList.remove("placed", "wrap", "compact");
+    const spot = card.hidden ? null : this.scene?.resultSpot?.();
+    if (!spot) {
+      return;
+    }
+    const host = $("scene");
+    const left = host.offsetLeft + spot.left + SPOT_INSET_X;
+    const right = host.offsetLeft + spot.right - SPOT_INSET_X;
+    const below = $("news").hidden ? 0 : noteReach(host.parentElement);
+    const top = Math.max(host.offsetTop + spot.top, below) + SPOT_INSET_Y;
+    const bottom = host.offsetTop + spot.bottom - SPOT_INSET_Y;
+    card.style.setProperty("--spot-x", `${(left + right) / 2}px`);
+    card.style.setProperty("--spot-y", `${(top + bottom) / 2}px`);
+    card.style.setProperty("--spot-width", `${Math.max(0, right - left)}px`);
+    const looks = card.classList.contains("breaks") ? BREAK_FIRST : SHRINK_FIRST;
+    for (const look of looks) {
+      card.classList.remove("wrap", "compact");
+      card.classList.add("placed", ...look);
+      if (card.offsetHeight <= bottom - top && card.scrollWidth <= card.clientWidth) {
+        return;
+      }
+    }
+    card.classList.remove("placed", "wrap", "compact");
+  }
+
+  playResult(result) {
+    const won = result.outcome === "win" || result.outcome === "jackpot";
+    const bigAt = this.game === "slots" ? SLOTS_BIG_WIN : 5;
+    const bigWin = won && (this.game === "allin" || result.payout >= result.stake * bigAt);
+    const big = result.outcome === "jackpot" || bigWin;
+    this.page.sound.play(won ? (big ? "bigwin" : "win") : result.payout > 0 ? "push" : "lose");
+    if (won) {
+      this.page.sound.play("collect");
+    }
+  }
+
   // ---------- The player's part ----------
 
+  // False when the bet couldn't reach the bot. A pull that went waits for its spin
   bet(message) {
-    if (message.t === "pull") {
+    const sent = this.page.send(message);
+    if (sent && message.t === "pull") {
       this.pulling = true;
     }
-    this.page.send(message);
     this.update();
+    return sent;
   }
 
   sit() {
@@ -328,7 +465,7 @@ export class TableView {
   roundReason(game, me) {
     const phase = this.state ? this.state.phase : "idle";
     if (this.pulling) {
-      return "The reels are spinning...";
+      return this.game === "allin" ? SPINNING_WHEEL : "The reels are spinning...";
     }
     if (this.myRow() && this.myRow().bet !== null) {
       return { betting: "Your bet is in.", results: "Next round in a moment." }[phase] || "You're in this round.";
@@ -361,6 +498,8 @@ export class TableView {
       this.tray.configure({ ...game, max: this.page.me()?.max_bets?.[this.game] ?? game.max });
     }
     const state = this.state;
+    $("tray").hidden = Boolean(this.dock);
+    this.dock?.render(state);
     this.renderTray();
     this.renderStatus();
     this.renderPlayers();
@@ -376,8 +515,17 @@ export class TableView {
     if (!state) {
       return "Walking up to the table...";
     }
+    if (this.dock) {
+      return this.dock.statusText();
+    }
+    if (this.game === "slots") {
+      return this.pulling ? "The reels are spinning..." : "Pick your bet, then pull the lever.";
+    }
+    if (this.game === "allin" && state.phase === "idle") {
+      return this.pulling ? SPINNING_WHEEL : "Each spin bets your whole balance. Pick a multiplier and spin.";
+    }
     if (state.phase === "idle") {
-      return this.game === "allin" ? "Each pull bets your whole balance. Pick a multiplier and pull." : "Place your bets.";
+      return "Place your bets.";
     }
     if (state.phase === "betting") {
       return this.myRow()?.bet != null ? "Waiting for bets. Press Go to start now." : "Betting is open.";
@@ -409,12 +557,16 @@ export class TableView {
   renderTray() {
     const state = this.state;
     const canGo = state?.phase === "betting" && this.myRow()?.bet != null && state.players.length > 1;
-    this.tray.render({ blocked: this.blockedReason(), canGo, balance: this.page.me()?.balance ?? 0 });
+    const balance = this.page.me()?.balance ?? 0;
+    this.tray.render({ blocked: this.blockedReason(), canGo, balance, spinning: this.pulling });
   }
 
   tick() {
     const left = this.deadline === null ? null : Math.max(0, Math.ceil((this.deadline - performance.now()) / 1000));
-    $("clock").textContent = left === null ? "" : `${left}s`;
+    // Hold'em's dock counts only the player's own turn: everyone else's time drains on their seat's ring
+    const counted = !this.dock || this.waitingOnMe();
+    $("clock").textContent = left === null || !counted ? "" : `${left}s`;
+    this.dock?.tick();
     // A cooldown counts down on its own, so its reason is redrawn as it changes
     if (this.page.readyIn(this.game) > 0 || $("tray").classList.contains("blocked")) {
       this.renderTray();
@@ -441,7 +593,12 @@ export class TableView {
       item.append(row);
       return item;
     });
-    $("players").replaceChildren(...rows);
+    // Hold'em puts the player's own row first and fits the list's room with "+N" for the rest, and leaves a list that
+    // already shows the same alone
+    const shown = this.dock ? this.dock.peopleRow(rows, $("players")) : rows;
+    if (shown) {
+      $("players").replaceChildren(...shown);
+    }
   }
 
   renderMoves() {
@@ -461,6 +618,7 @@ export class TableView {
     clearInterval(this.ticker);
     clearTimeout(this.resultTimer);
     this.tray.close();
+    this.dock?.close();
     $("sit").removeEventListener("click", this.sitHandler);
     $("stand").removeEventListener("click", this.standHandler);
     this.observer?.disconnect();
@@ -471,7 +629,8 @@ export class TableView {
       console.warn("Vegas: couldn't tidy up the table's graphics", e);
     }
     $("scene").replaceChildren();
-    $("result").hidden = true;
+    // A winner who walks away before their result card hides still gets their note
+    this.hideResult();
     $("moves").replaceChildren();
     $("players").replaceChildren();
   }

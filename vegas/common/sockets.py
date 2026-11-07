@@ -6,6 +6,7 @@ from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
 from .catalog import GAMES
+from .holdem_table import MESSAGES as HOLDEM_MESSAGES, HoldemTable
 from .info import casino_info, me
 from .perms import can_manage
 from .rounds import AllInTable, BlackjackTable
@@ -83,6 +84,9 @@ class Sockets(MixinMeta):
         if game is None:
             return
         table = floor.table(game)
+        if isinstance(table, HoldemTable) and kind in HOLDEM_MESSAGES:
+            await table.handle(conn, kind, data)
+            return
         solo = isinstance(table, AllInTable)
         if kind == ("pull" if solo else "bet"):
             await table.bet(conn, data)

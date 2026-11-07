@@ -41,16 +41,31 @@ class RedBank:
             log.debug("Deposit hit the bank's maximum balance of %s", e.max_balance)
             return await bank.set_balance(who, e.max_balance)
 
-    async def can_receive(self, who, amount: int) -> bool:
+    async def room(self, who) -> int:
+        """How much more the bank can hold for this account"""
         guild = getattr(who, "guild", None)
         limit = await bank.get_max_balance(guild) if guild is not None else await bank.get_max_balance()
-        return await bank.get_balance(who) + amount <= limit
+        return max(0, limit - await bank.get_balance(who))
+
+    async def can_receive(self, who, amount: int) -> bool:
+        return amount <= await self.room(who)
 
     async def is_global(self) -> bool:
         return await bank.is_global()
 
     async def currency(self, guild) -> str:
         return await bank.get_currency_name(guild)
+
+
+# How long a player who left a Hold'em table must come back with at least what they left with
+RATHOLE_SECONDS = 1800
+
+
+@dataclass
+class CashOut:
+    paid: int  # what went into the bank
+    held: int  # what the bank had no room for, now pending credits
+    balance: int
 
 
 @dataclass
@@ -116,6 +131,8 @@ class Money:
         # One lock per player: Red's bank may be global while the casino runs per server, so the same account can
         # play in two servers at once
         self.locks: dict[int, asyncio.Lock] = {}
+        # What players last left a Hold'em table with, and when
+        self.left: dict[tuple[int, int], tuple[int, float]] = {}
 
     def lock(self, scope: int, user_id: int) -> asyncio.Lock:
         return self.locks.setdefault(user_id, asyncio.Lock())
@@ -128,8 +145,8 @@ class Money:
         perks = await perks_for(self.store, scope, user_id)
         return max(0, math.ceil(row.played_at + game.cooldown - perks.reduction - self.clock()))
 
-    async def problem(self, scope: int, member, key: str, amount: int, choice_problem: str | None = None) -> str | None:
-        """Why the bet can't be placed, checked in the original's order, or None when it can"""
+    async def access_problem(self, scope: int, member, key: str) -> str | None:
+        """Why the player can't use the game at all: the casino or game is closed, or their access is too low"""
         name = GAME_NAMES[key]
         casino = await self.store.casino(scope)
         game = await self.store.game(scope, key)
@@ -142,6 +159,15 @@ class Money:
             return _("{game} needs access level {needed}. Yours is {level}. A higher membership unlocks it.").format(
                 game=name, needed=game.access, level=perks.access
             )
+        return None
+
+    async def problem(self, scope: int, member, key: str, amount: int, choice_problem: str | None = None) -> str | None:
+        """Why the bet can't be placed, checked in the original's order, or None when it can"""
+        name = GAME_NAMES[key]
+        if closed := await self.access_problem(scope, member, key):
+            return closed
+        game = await self.store.game(scope, key)
+        perks = await perks_for(self.store, scope, member.id)
         if choice_problem:
             return choice_problem
         top = raised_max(game.min_bet, game.max_bet, perks.bet_boost)
@@ -174,6 +200,45 @@ class Money:
             row.played_at = self.clock()
             await row.save()
         return None
+
+    async def buy_in(self, scope: int, member, key: str, amount: int, low: int, high: int) -> str | None:
+        """Takes a poker buy-in out of the bank. No cooldown and no max bet boost. Returns the problem instead
+        when one fails"""
+        async with self.lock(scope, member.id):
+            if problem := await self.access_problem(scope, member, key):
+                return problem
+            if not low <= amount <= high:
+                return _("Buy-ins here are {low} to {high}.").format(low=low, high=high)
+            if not await self.bank.can_spend(member, amount):
+                return _("You don't have enough credits for that buy-in.")
+            await self.bank.withdraw(member, amount)
+        return None
+
+    async def cash_out(self, scope: int, member, amount: int) -> CashOut:
+        """Returns a poker stack to the bank. What a full bank can't hold becomes pending credits"""
+        async with self.lock(scope, member.id):
+            paid = min(amount, await self.bank.room(member))
+            held = amount - paid
+            balance = await self.bank.deposit(member, paid) if paid else await self.bank.balance(member)
+            if held:
+                await self.store.add_pending(scope, member.id, held)
+        return CashOut(paid=paid, held=held, balance=balance)
+
+    async def count_hand(self, scope: int, user_id: int, key: str, won: bool) -> None:
+        """A hand dealt to the player counts as played, and as won when they took a pot"""
+        row = await self.store.player_game(scope, user_id, key)
+        row.played += 1
+        if won:
+            row.won += 1
+        await row.save()
+
+    def note_left(self, scope: int, user_id: int, amount: int) -> None:
+        """Remembers what a player left a Hold'em table with, so sitting back down can't be for less (for a while)"""
+        self.left[(scope, user_id)] = (amount, self.clock())
+
+    def left_with(self, scope: int, user_id: int) -> int:
+        amount, when = self.left.get((scope, user_id), (0, 0.0))
+        return amount if self.clock() - when < RATHOLE_SECONDS else 0
 
     async def extra(self, scope: int, member, amount: int) -> bool:
         """A second stake mid-round (Blackjack's double, War's war bet). False when the player can't cover it"""

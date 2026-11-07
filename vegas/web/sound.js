@@ -112,6 +112,26 @@ const TONES = {
   tick(ctx, out, t) {
     tone(ctx, out, { frequency: 1250, start: t, length: 0.05, type: "triangle", level: 0.12 });
   },
+  // Two raps of a knuckle on the felt: a Hold'em check
+  knock(ctx, out, t) {
+    for (const at of [0, 0.12]) {
+      noise(ctx, out, { start: t + at, length: 0.05, level: 0.45, cutoff: 520 });
+      tone(ctx, out, { frequency: 170, to: 85, start: t + at, length: 0.08, level: 0.3 });
+    }
+  },
+  // A soft two-note chime: the player's own Hold'em turn
+  turn(ctx, out, t) {
+    tone(ctx, out, { frequency: 1046.5, start: t, length: 0.45, level: 0.14 });
+    tone(ctx, out, { frequency: 1568, start: t + 0.13, length: 0.6, level: 0.12 });
+  },
+  // A rising swell that lands on a bright hit: someone goes all in
+  allin(ctx, out, t) {
+    tone(ctx, out, { frequency: 110, to: 220, start: t, length: 0.45, type: "triangle", level: 0.22 });
+    tone(ctx, out, { frequency: 330, to: 660, start: t, length: 0.45, type: "sawtooth", level: 0.04 });
+    noise(ctx, out, { start: t + 0.42, length: 0.3, level: 0.25, cutoff: 2400 });
+    tone(ctx, out, { frequency: 880, start: t + 0.43, length: 0.5, type: "triangle", level: 0.14 });
+    tone(ctx, out, { frequency: 1318.5, start: t + 0.45, length: 0.45, type: "triangle", level: 0.08 });
+  },
   coin(ctx, out, t) {
     tone(ctx, out, { frequency: 2637, start: t, length: 0.5, type: "sine", level: 0.18 });
     tone(ctx, out, { frequency: 3951, start: t + 0.01, length: 0.35, type: "sine", level: 0.08 });

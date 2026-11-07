@@ -4,7 +4,7 @@ import discord
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_number
 
-from ..common.catalog import BASIC_COLOR, COLORS
+from ..common.catalog import BASIC_COLOR, COLORS, SLOTS
 from ..common.money import fmt_seconds
 
 _ = Translator("Vegas", __file__)
@@ -59,12 +59,26 @@ def stats_embed(stats: dict, casino_name: str) -> discord.Embed:
 
 def info_embed(info: dict) -> discord.Embed:
     header = (_("Game"), _("On"), _("Access"), _("Min"), _("Max"), _("Payout"), _("Cooldown"))
-    rows = ["{:<18}{:<4}{:>6}{:>8}{:>8}{:>8}  {}".format(*header)]
-    for game in info["games"].values():
-        payout = f"{game['multiplier']}x" if game["multiplier"] is not None else "-"
+    rows = ["{:<18}{:<4}{:>6}{:>8}{:>8}{:>10}  {}".format(*header)]
+    holdem = ""
+    for key, game in info["games"].items():
+        if game["blinds"]:
+            holdem = _("{name}: Buy-in {low} to {high} · Blinds {small}/{big} · Cut {cut}%").format(
+                name=game["name"],
+                low=money(game["min"]),
+                high=money(game["max"]),
+                small=money(game["blinds"][0]),
+                big=money(game["blinds"][1]),
+                cut=f"{game['cut']:g}",
+            )
+            continue
+        if key == SLOTS:
+            payout = _("Pay table")
+        else:
+            payout = f"{game['multiplier']}x" if game["multiplier"] is not None else "-"
         rows.append(
             f"{game['name']:<18}{yes_no(game['open']):<4}{game['access']:>6}"
-            f"{money(game['min']):>8}{money(game['max']):>8}{payout:>8}  {fmt_seconds(game['cooldown'])}"
+            f"{money(game['min']):>8}{money(game['max']):>8}{payout:>10}  {fmt_seconds(game['cooldown'])}"
         )
     casino = _("Open: {open}\nMode: {mode}\nPayout limit: {limit}").format(
         open=yes_no(info["open"]),
@@ -73,6 +87,8 @@ def info_embed(info: dict) -> discord.Embed:
     )
     embed = discord.Embed(title=_("{name} Casino").format(name=info["name"]), description=casino, color=0x0B4424)
     embed.add_field(name=_("Games"), value=box("\n".join(rows)), inline=False)
+    if holdem:
+        embed.add_field(name=_("Poker"), value=holdem, inline=False)
     return embed
 
 

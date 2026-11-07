@@ -126,22 +126,42 @@ function casinoTab(body, view) {
 
 // ---------- Games ----------
 
+function cutBox(value) {
+  const box = input("number", value, { min: 0, max: 20, step: 0.5, className: "cut", title: "Percent of each pot" });
+  const cell = make("span", "cut-cell");
+  cell.append(box, make("span", "dim", "% cut"));
+  return { input: box, cell };
+}
+
 function gameRow(view, key, game) {
   const noRange = key === "allin";
-  const noMultiplier = key === "allin" || key === "double";
+  const holdem = key === "holdem";
+  const slots = key === "slots";
+  const noMultiplier = key === "allin" || key === "double" || holdem || slots;
   const open = input("checkbox", game.open);
   const access = input("number", game.access, { min: 0, step: 1 });
-  const cooldown = input("text", game.cooldown, { title: duration(game.cooldown), placeholder: "seconds or HH:MM:SS" });
+  const cooldown = holdem
+    ? "-"
+    : input("text", game.cooldown, { title: duration(game.cooldown), placeholder: "seconds or HH:MM:SS" });
   const min = noRange ? "-" : input("number", game.min, { min: 0, step: 1 });
   const max = noRange ? "-" : input("number", game.max, { min: 0, step: 1 });
-  const multiplier = noMultiplier ? "-" : input("number", game.multiplier, { min: 0, step: 0.1 });
+  // Slots pays from its fixed pay table, so its Payout cell says so instead of holding a box
+  const multiplier = slots ? "Pay table" : noMultiplier ? "-" : input("number", game.multiplier, { min: 0, step: 0.1 });
+  // Hold'em's players win each other's chips, so its Payout box is the casino's cut of each pot
+  const cut = holdem ? cutBox(game.cut) : null;
   const store = button("Save", "button small", async () => {
-    const data = { game: key, is_open: open.checked, access: access.value, cooldown: cooldown.value };
+    const data = { game: key, is_open: open.checked, access: access.value };
+    if (!holdem) {
+      data.cooldown = cooldown.value;
+    }
     if (!noRange) {
       Object.assign(data, { min_bet: min.value, max_bet: max.value });
     }
     if (!noMultiplier) {
       data.multiplier = multiplier.value;
+    }
+    if (holdem) {
+      data.cut = cut.input.value;
     }
     const result = await save(view, "save_game", data);
     if (result) {
@@ -151,7 +171,7 @@ function gameRow(view, key, game) {
       }
     }
   });
-  return [game.name, open, access, cooldown, min, max, multiplier, store];
+  return [game.name, open, access, cooldown, min, max, holdem ? cut.cell : multiplier, store];
 }
 
 function gamesTab(body, view) {
@@ -159,6 +179,17 @@ function gamesTab(body, view) {
   body.append(
     view.tools.grid(["Game", "Open", "Access", "Cooldown", "Min", "Max", "Payout", ""], rows),
     make("p", "dim", "Cooldowns take seconds or HH:MM:SS. The payout multiplier is what a win pays back, bet included."),
+    make(
+      "p",
+      "dim",
+      "Hold'em's Min and Max are its buy-in range, its blinds are 1% of the Max, and its Payout box is the " +
+        "casino's cut of each pot.",
+    ),
+    make(
+      "p",
+      "dim",
+      "Slots pays from a fixed pay table. 2% of every bet grows its jackpot, which never drops below 60 times its Max.",
+    ),
   );
 }
 

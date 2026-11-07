@@ -159,7 +159,9 @@ h3,
 /* ---------- Top bar ---------- */
 
 .top {
-  /* Over the page under it, so the hub's arrival notes, which slide down out of the people button, can be seen */
+  /* Over the page under it, so the hub's arrival notes, which slide down out of the people button, can be seen. First
+     in the page's column, with the jackpot note right after it */
+  order: -2;
   position: relative;
   z-index: 2;
   display: flex;
@@ -199,6 +201,23 @@ h3,
   color: var(--tier-color, var(--cream-dim));
 }
 
+/* The bar's membership: a small dark pill rimmed in the membership's color, its words lightened toward cream so a dark
+   color (grey, blue, purple) still reads on the burgundy */
+#tier {
+  min-width: 0;
+  padding: 1px 8px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--tier-color, var(--cream-dim)) 75%, transparent);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  color: color-mix(in srgb, var(--tier-color, var(--cream-dim)) 45%, var(--cream));
+  text-overflow: ellipsis;
+}
+
+#tier:empty {
+  display: none;
+}
+
 .purse {
   margin: 0;
   padding: 5px 12px;
@@ -220,21 +239,55 @@ h3,
   gap: 6px;
 }
 
-/* Narrow screens: the tools take a second row under the name and balance */
+/* Narrow screens: the tools take a second row under the name and balance, with the membership at its left, so the
+   casino's name has the first row's room. The empty item after the balance ends the first row. A name too long for one
+   line takes two, as tall as the back button, before it is cut */
 @media (max-width: 560px) {
   .top {
     flex-wrap: wrap;
-    row-gap: 6px;
+    row-gap: 0;
+  }
+
+  .top::after {
+    content: "";
+    order: 2;
+    flex-basis: 100%;
+  }
+
+  .brand {
+    display: contents;
+  }
+
+  .brand h1 {
+    flex: 1;
+    min-width: 0;
+    font-size: 17px;
+    line-height: 1.1;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .purse {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .purse b {
+    font-size: 16px;
+  }
+
+  #tier {
+    order: 3;
+    flex: 0 1 auto;
+    margin: 6px auto 0 0;
   }
 
   .tools {
     order: 3;
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .brand h1 {
-    font-size: 19px;
+    flex: none;
+    margin: 6px 0 0 auto;
   }
 }
 
@@ -255,7 +308,7 @@ h3,
   inset: -4px;
 }
 
-/* Drops from the sound button over the floor or the table. It stacks over the hub's arrival notes, which slide out of
+/* Drops from the sound button over the menu or the table. It stacks over the hub's arrival notes, which slide out of
    the people button further along the bar */
 .sound-panel {
   position: absolute;
@@ -396,136 +449,35 @@ h3,
 
 /* ---------- Lobby ---------- */
 
+/* The menu of game cards scrolls down, never sideways */
 .lobby {
-  position: relative;
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
   scrollbar-width: none;
-  background: #0d0805;
+  padding: 14px calc(12px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(12px + var(--safe-left));
 }
 
 .lobby::-webkit-scrollbar {
   display: none;
 }
 
-.floor {
-  position: relative;
-  margin: 0 auto;
-}
-
-.floor-art {
-  display: block;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.station {
-  position: absolute;
-  appearance: none;
-  padding: 0;
-  border: 0;
-  border-radius: 18px;
-  background: transparent;
-  cursor: pointer;
-  color: var(--cream);
-}
-
-/* The table lights up under the cursor or a finger */
-.station::before {
+/* Behind the cards, the casino floor, darkened and softly blurred. It stays put while the cards scroll, and reaches
+   past the window's edges so the blur never shows an edge */
+.lobby::before {
   content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(closest-side, rgba(243, 215, 122, 0.35), transparent);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.station:hover::before,
-.station:focus-visible::before,
-.station.lit::before {
-  opacity: 1;
-}
-
-.medallion {
-  position: absolute;
-  transform: translate(-50%, -100%);
-  animation: bob 2.6s ease-in-out infinite;
-  animation-delay: var(--bob-delay, 0s);
-  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.6));
-}
-
-.medallion img {
-  display: block;
-  width: 100%;
-  height: auto;
-  transition: transform 0.2s;
-}
-
-.station:hover .medallion img,
-.station:focus-visible .medallion img,
-.station.lit .medallion img {
-  transform: scale(1.18);
-}
-
-@keyframes bob {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  50% {
-    translate: 0 -8px;
-  }
-}
-
-/* A soft dark spot on the floor under each medallion, smaller and fainter while the medallion is up */
-.medallion-shadow {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  filter: blur(2px);
+  position: fixed;
+  inset: -24px;
+  z-index: -1;
+  background: url("art/lobby.jpg") center / cover;
+  filter: blur(6px) brightness(0.45);
   pointer-events: none;
-  animation: medallion-shadow 2.6s ease-in-out infinite;
-  animation-delay: var(--bob-delay, 0s);
 }
 
-@keyframes medallion-shadow {
-  0%,
-  100% {
-    opacity: 0.9;
-    scale: 1 1;
-  }
-  50% {
-    opacity: 0.5;
-    scale: 0.77 0.9;
-  }
-}
-
-/* Warm light pulsing over the All In slot machine. It only lights the picture, so taps pass through */
-.jackpot {
-  position: absolute;
-  border-radius: 30% 30% 4% 4%;
-  background: radial-gradient(closest-side, rgba(255, 220, 120, 0.35), transparent);
-  mix-blend-mode: screen;
-  pointer-events: none;
-  animation: jackpot 1.6s ease-in-out infinite;
-}
-
-@keyframes jackpot {
-  0%,
-  100% {
-    opacity: 0.2;
-  }
-  50% {
-    opacity: 0.9;
-  }
-}
-
-/* Under the lobby: the people standing in it, then the swipe hint under a floor bigger than the screen. It stays put
-   while the floor pans above it, and goes with the lobby when a table opens */
+/* Under the menu: the people standing in the lobby. It stays put while the cards scroll, and goes with the lobby when a
+   table opens */
 .lobby-foot {
   flex: none;
   box-sizing: border-box;
@@ -538,54 +490,205 @@ h3,
   display: none;
 }
 
-.swipe-hint {
-  margin: 0;
-  padding: 8px;
-  font: 600 12px/1.2 "Segoe UI", system-ui, sans-serif;
-  color: var(--cream-dim);
-  text-align: center;
-  pointer-events: none;
+/* lobby.js makes the grid 2 across on a narrow menu */
+.menu {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.station .label {
-  position: absolute;
-  left: 50%;
-  bottom: 6%;
-  transform: translateX(-50%);
-  padding: 4px 10px;
-  border: 1px solid var(--gold);
-  border-radius: 8px;
-  background: rgba(18, 10, 6, 0.85);
-  font: 700 14px/1.2 "Playfair Display", Georgia, serif;
+.menu.narrow {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* A game: its painting on top, a dark band under it with its name, and the faces of who is playing in the picture's
+   top right corner. Its type sizes with the card */
+.game-card {
+  --face: 22px;
+  /* 1 while the card is lit (under the mouse, a finger or the keyboard), which lifts it a little, brightens its gold
+     and adds a glow */
+  --lit: 0;
+  container-type: inline-size;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  appearance: none;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--gold-light) calc(var(--lit) * 100%), var(--gold-deep));
+  border-radius: 10px;
+  background: linear-gradient(#3d0b16, #210409);
+  box-shadow:
+    0 calc(6px + var(--lit) * 4px) calc(16px + var(--lit) * 6px) rgba(0, 0, 0, 0.55),
+    0 0 14px rgba(243, 215, 122, calc(var(--lit) * 0.35));
+  transform: translateY(calc(var(--lit) * -3px));
   color: var(--gold-light);
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
-.station:hover .label,
-.station:focus-visible .label,
-.station.lit .label,
-.station.blocked .label {
-  opacity: 1;
-}
-
-/* A touch screen has no hover to bring the names up, so they stay up */
-@media (hover: none) {
-  .station .label {
-    opacity: 1;
+/* Only a real mouse lights a card on hover: on a touch screen the hover stays after the finger lifts */
+@media (hover: hover) {
+  .game-card:hover {
+    --lit: 1;
   }
 }
 
-.station .note {
+.game-card:active,
+.game-card:focus-visible {
+  --lit: 1;
+}
+
+.game-card .card-art {
   display: block;
-  font: 600 11px/1.2 "Segoe UI", system-ui, sans-serif;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Every band is the same height: room for a name and, on a game the player can't play, the reason under it */
+.game-card .label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 2.7em;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border-top: 1px solid rgba(212, 175, 55, 0.55);
+  font: 600 clamp(11px, 8cqw, 18px) / 1.3 "Playfair Display", Georgia, serif;
+  white-space: nowrap;
+}
+
+.game-card .label > :first-child {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-card .note {
+  font: 600 max(10px, 0.68em) / 1.2 "Segoe UI", system-ui, sans-serif;
   color: var(--cream-dim);
 }
 
-.station.blocked .medallion {
-  filter: grayscale(0.85) brightness(0.7) drop-shadow(0 6px 6px rgba(0, 0, 0, 0.6));
+.game-card.blocked .card-art {
+  filter: grayscale(0.85) brightness(0.6);
+}
+
+.game-card.blocked .label {
+  color: var(--cream-dim);
+}
+
+/* Texas Hold'em's banner across the menu: the table on the left of its painting and the title over the painting's dark
+   right side */
+.game-card.banner {
+  --face: clamp(22px, 13cqh, 34px);
+  container-type: size;
+  grid-column: 1 / -1;
+  display: block;
+  /* A grid item with a shape of its own doesn't stretch across by itself */
+  width: 100%;
+  aspect-ratio: 12 / 5;
+  max-height: min(240px, 42vh);
+}
+
+/* A short screen (a phone on its side) gets a slimmer banner, so the first row of cards shows its names */
+@media (max-height: 500px) {
+  .game-card.banner {
+    max-height: 108px;
+  }
+}
+
+/* A wide menu's banner is far wider than the painting. The Hold'em room's carpet runs on across it, darkened behind
+   the title, and the painting's own dark right side fades into the carpet. The painting is 2.4 times as wide as it is
+   high, so its width is 240cqh */
+.menu:not(.narrow) .game-card.banner {
+  background:
+    radial-gradient(ellipse 42% 85% at 68% 42%, rgba(14, 1, 3, 0.86), rgba(14, 1, 3, 0.55) 70%, rgba(14, 1, 3, 0.35)),
+    url("art/holdem/wallpaper.jpg") left top / auto 75% #3a0508;
+}
+
+.menu:not(.narrow) .game-card.banner .card-art {
+  background: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(240cqh * 0.58), transparent calc(240cqh * 0.8));
+  mask-image: linear-gradient(90deg, #000 calc(240cqh * 0.58), transparent calc(240cqh * 0.8));
+}
+
+/* On a banner wider than the painting, the painting's darkest red carries on to the right edge. It is the picture's
+   own background, so a closed game dims both alike */
+.game-card.banner .card-art {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  object-fit: contain;
+  object-position: left center;
+  background: #1e0201;
+}
+
+/* The painting is 2.4 times as wide as it is high, and its table ends at 61% of its width. The title stands to the
+   right of that, above the faces */
+.game-card.banner .label {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: calc(var(--face) + 12px);
+  left: calc(2.4 * 61cqh);
+  height: auto;
+  padding: 0 10px;
+  border: 0;
+  font-size: clamp(20px, min(7cqw, 24cqh), 56px);
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+  white-space: normal;
+}
+
+.game-card.banner .label > :first-child {
+  overflow: visible;
+  background: linear-gradient(#fbe7a6, #e2b551 60%, #b8862b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.7));
+}
+
+.game-card.banner.blocked .label > :first-child {
+  opacity: 0.7;
+}
+
+.game-card.banner .note {
+  margin-top: 4px;
+  font-size: max(11px, 0.3em);
+}
+
+/* The Slots pot, a small gold pill under the name in the card's dark band, so it covers nothing of the machine. A card
+   the player can't play says why there instead */
+.game-card .jackpot {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 7px;
+  overflow: hidden;
+  border: 1px solid #fff3c4;
+  border-radius: 999px;
+  background: linear-gradient(var(--gold-light), var(--gold) 70%, var(--gold-deep));
+  color: var(--ink);
+  font: 800 max(10px, 0.68em) / 1.2 "Segoe UI", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.game-card.blocked .jackpot {
+  display: none;
 }
 
 /* ---------- A table ---------- */
@@ -611,6 +714,7 @@ h3,
   inset: 0 0 var(--safe-bottom) var(--safe-left);
 }
 
+/* The scene's canvas is a block, so it leaves no gap under it (PixiJS sets touch-action: none on it itself) */
 .scene canvas {
   display: block;
 }
@@ -621,6 +725,8 @@ h3,
   gap: 10px;
   padding: 12px calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) 12px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-deep) transparent;
   background: linear-gradient(90deg, var(--wood), #2a1409);
   border-left: 2px solid var(--gold-deep);
 }
@@ -734,27 +840,68 @@ h3,
 .all-in-warning strong {
   font-size: 17px;
   font-weight: 800;
+  line-height: 23px;
+  text-wrap: balance;
 }
 
-.all-in-warning span {
+/* The odds keep room for two even lines, so the dock holds its height whatever the numbers come to */
+.all-in-warning > span {
+  min-height: calc(2 * 1lh);
   font-size: 13px;
+  text-wrap: balance;
 }
 
+/* With nothing left to bet, the warning says only why, in the dock's plain words */
+.all-in-warning.plain strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.tray.blocked .all-in-warning.plain {
+  opacity: 1;
+}
+
+/* At All In the status line keeps room for two lines, where waiting takes two and spinning one, so the dock holds
+   still (and on an upright screen, the wheel above it) */
+.table[data-game="allin"] .status {
+  min-height: calc(2 * 1lh);
+}
+
+/* The narrow dock beside a wide scene puts the amount staked on a line of its own, and keeps two lines for the plain
+   words that take its place, so the warning is always two lines high */
+@media (min-aspect-ratio: 1/1) {
+  .all-in-warning strong {
+    min-height: calc(2 * 23px);
+  }
+
+  .all-in-warning .sum {
+    display: block;
+  }
+}
+
+/* Six chips to a row, each as big as the dock allows up to 46 px, its value sized to it */
 .chips {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 46px));
   gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+.chips li {
+  container-type: inline-size;
+}
+
 /* A casino chip: a colored disc, white edge spots and an inner ring with the value */
 .chip {
   --chip: var(--chip-1);
   position: relative;
-  width: 46px;
-  height: 46px;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -765,7 +912,7 @@ h3,
     0 3px 0 rgba(0, 0, 0, 0.45),
     0 0 0 2px rgba(0, 0, 0, 0.35) inset;
   color: #fff;
-  font: 800 12px/46px "Segoe UI", system-ui, sans-serif;
+  font: 800 clamp(9px, 26cqw, 12px) / 1 "Segoe UI", system-ui, sans-serif;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
   cursor: pointer;
   touch-action: manipulation;
@@ -774,7 +921,7 @@ h3,
 .chip::after {
   content: "";
   position: absolute;
-  inset: 9px;
+  inset: 20%;
   border: 2px dashed rgba(255, 255, 255, 0.75);
   border-radius: 50%;
 }
@@ -841,6 +988,13 @@ h3,
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+
+/* Clear, Min, Max and Repeat share one row, however narrow the dock */
+.bet-line .button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 4px;
 }
 
 .amount {
@@ -980,6 +1134,44 @@ h3,
   color: var(--gold-light);
 }
 
+/* At All In and Slots the card sits in the spot the scene keeps clear for it (table.js places it there): centered on
+   the spot and no wider than it, its headline on one line. A small spot takes the compact look, with smaller words,
+   and a narrow one lets the headline wrap */
+.result.placed {
+  left: var(--spot-x);
+  top: var(--spot-y);
+  right: auto;
+  bottom: auto;
+  width: max-content;
+  min-width: 0;
+  max-width: var(--spot-width);
+  margin: 0;
+  translate: -50% -50%;
+}
+
+.result.placed .big {
+  white-space: nowrap;
+}
+
+.result.wrap .big {
+  white-space: normal;
+}
+
+.result.compact {
+  padding: 2px 12px 4px;
+}
+
+.result.compact .big {
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.result.compact .small {
+  margin-top: 1px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
 /* Upright screens: the scene spans the width, and the dock under it already keeps clear of the bottom inset */
 @media (max-aspect-ratio: 1/1) {
   .result {
@@ -999,7 +1191,7 @@ h3,
 /* ---------- Messages ---------- */
 
 .toast,
-.banner {
+#banner {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
@@ -1020,13 +1212,74 @@ h3,
   pointer-events: none;
 }
 
-/* In the lobby it stands on the strip under the floor, so it never covers the faces in it */
+/* In the lobby it stands on the strip under the menu, so it never covers the faces in it */
 .app[data-view="lobby"] .toast {
   bottom: calc(10px + var(--lobby-foot, var(--safe-bottom)));
 }
 
-.banner {
+#banner {
   top: calc(var(--bar-height) + var(--safe-top) + 12px);
+}
+
+/* Someone hit the jackpot: a gold note just under the top bar, over the menu or the table. It sits in the page's
+   column right after the bar (order) and gives back the room it takes (the negative margin), so nothing moves when it
+   shows. The bar stacks over it, so the hub's arrival notes are never covered, and presses go through it */
+.news {
+  --news-height: 36px;
+  order: -1;
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  box-sizing: border-box;
+  height: var(--news-height);
+  max-width: calc(100% - 32px - var(--safe-left) - var(--safe-right));
+  margin: 8px 0 calc(-8px - var(--news-height));
+  padding: 0 18px;
+  overflow: hidden;
+  border: 1px solid var(--gold-light);
+  border-radius: 999px;
+  background: linear-gradient(rgba(61, 7, 16, 0.96), rgba(18, 10, 6, 0.96));
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.6),
+    0 0 14px rgba(243, 215, 122, 0.35);
+  color: var(--gold-light);
+  font: 700 15px/34px "Segoe UI", system-ui, sans-serif;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  animation: news-in 0.35s ease-out;
+}
+
+/* At a table on a wide screen the note centers over the scene, clear of the dock on the right */
+@media (min-aspect-ratio: 1/1) {
+  .app[data-view="table"] .news {
+    margin-right: calc(320px + var(--safe-right));
+    max-width: calc(100% - 352px - var(--safe-left) - var(--safe-right));
+  }
+}
+
+/* A short sideways phone: a slimmer note, so it stays clear of the seats along the top of a table */
+@media (min-aspect-ratio: 1/1) and (max-height: 500px) {
+  .news {
+    --news-height: 28px;
+    margin-top: 5px;
+    margin-bottom: calc(-5px - var(--news-height));
+    font-size: 13px;
+    line-height: 26px;
+  }
+
+  .app[data-view="table"] .news {
+    margin-right: calc(280px + var(--safe-right));
+    max-width: calc(100% - 312px - var(--safe-left) - var(--safe-right));
+  }
+}
+
+@keyframes news-in {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
 }
 
 /* ---------- Panels ---------- */
@@ -1222,6 +1475,102 @@ input[type="checkbox"] {
   width: 80px;
 }
 
+.cut-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.grid .cut {
+  width: 64px;
+}
+
+.panel-body h4 {
+  margin: 14px 0 4px;
+  color: var(--cream);
+}
+
+.panel-body .house-line {
+  color: var(--gold-light);
+  font-weight: 700;
+}
+
+.rank-chart {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rank;
+}
+
+.rank-chart li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  counter-increment: rank;
+}
+
+.rank-info {
+  display: flex;
+  flex: 1 1 200px;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rank-name::before {
+  content: counter(rank) ". ";
+  color: var(--gold);
+}
+
+.rank-name {
+  color: var(--gold-light);
+  font-size: 16px;
+}
+
+.rank-about {
+  color: var(--cream-dim);
+  font-size: 13px;
+}
+
+.rank-cards {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+
+.mini-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 46px;
+  border: 1px solid #b9a97c;
+  border-radius: 5px;
+  background: #fbf6e6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  color: #1a0f08;
+  font: 800 15px "Segoe UI", system-ui, sans-serif;
+  white-space: nowrap;
+}
+
+.mini-card.red {
+  color: #c01828;
+}
+
+/* Slots' pay table: the rank chart's rows without its numbers, each line's pay on the right */
+.pay-chart .rank-name::before {
+  content: none;
+}
+
+.pay-amount {
+  flex: none;
+  color: var(--gold-light);
+  font-size: 16px;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -1293,7 +1642,7 @@ input[type="checkbox"] {
 
 /* ---------- Who's here ---------- */
 
-/* The people standing in the lobby, in a row of their own so no table is under them. They stand at the right, since
+/* The people standing in the lobby, in a row of their own so no card is under them. They stand at the right, since
    the hub's frame rate counter sits in the bottom left corner */
 .lobby-crowd {
   display: flex;
@@ -1304,7 +1653,7 @@ input[type="checkbox"] {
 }
 
 .lobby-crowd .face,
-.medallion .faces .face {
+.game-card .faces .face {
   display: grid;
   place-items: center;
   box-sizing: border-box;
@@ -1324,7 +1673,7 @@ input[type="checkbox"] {
 }
 
 .lobby-crowd .face img,
-.medallion .faces .face img {
+.game-card .faces .face img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1335,37 +1684,36 @@ input[type="checkbox"] {
   filter: grayscale(0.6);
 }
 
-/* At the medallion's top right corner, the faces overlapping, with the rest counted after them */
-.medallion .faces {
+/* In the picture's top right corner (the banner's bottom right), the faces overlapping, with the rest counted after
+   them */
+.game-card .faces {
   position: absolute;
-  top: -10%;
-  right: -55%;
+  top: 6px;
+  right: 6px;
   display: flex;
   align-items: center;
 }
 
-.medallion .faces .face {
-  width: 22px;
-  height: 22px;
-  font-size: 11px;
+.game-card.banner .faces {
+  top: auto;
+  right: 10px;
+  bottom: 10px;
 }
 
-/* Where a neighbouring table is close on one side, the faces hang the other way so they stay over their own table */
-.station[data-faces="left"] .medallion .faces {
-  right: -6px;
+.game-card .faces .face {
+  width: var(--face);
+  height: var(--face);
+  border-color: var(--gold-light);
+  font-size: calc(var(--face) / 2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
-.station[data-faces="right"] .medallion .faces {
-  right: auto;
-  left: -6px;
-}
-
-.medallion .faces .face + .face {
+.game-card .faces .face + .face {
   margin-left: -7px;
 }
 
 .lobby-crowd .more,
-.medallion .faces .more {
+.game-card .faces .more {
   color: var(--cream);
   font: 700 12px/1 "Segoe UI", system-ui, sans-serif;
 }
@@ -1374,7 +1722,7 @@ input[type="checkbox"] {
   margin-left: 4px;
 }
 
-.medallion .faces .more {
+.game-card .faces .more {
   margin-left: 3px;
   padding: 3px 5px;
   border-radius: 999px;
@@ -1383,24 +1731,6 @@ input[type="checkbox"] {
 
 .tools .hub-people {
   --hub-people-size: 32px;
-}
-
-/* Where there is room across, the crowd and the hint share one row, which leaves more of the floor in view */
-@media (min-width: 600px), (max-height: 500px) {
-  .lobby-foot {
-    display: flex;
-    align-items: center;
-  }
-
-  .lobby-crowd {
-    order: 2;
-    margin-left: auto;
-  }
-
-  .swipe-hint {
-    flex: 1;
-    min-width: 0;
-  }
 }
 
 /* A sideways phone has no height to spare, so its faces are smaller */
@@ -1414,5 +1744,628 @@ input[type="checkbox"] {
     width: 24px;
     height: 24px;
     font-size: 12px;
+  }
+}
+
+/* ---------- Hold'em ---------- */
+
+.holdem,
+.hd-bar,
+.hd-wait,
+.hd-sizer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* The action bar and the waiting row share one space as tall as the bar, so the dock keeps its height when the bar
+   comes and goes, and the table above it on an upright screen never jumps */
+.hd-deck {
+  display: grid;
+}
+
+.hd-deck > * {
+  grid-area: 1 / 1;
+}
+
+/* The bar slides up into place on the player's turn, and is gone the moment a move is pressed */
+.hd-bar:not(.up) {
+  visibility: hidden;
+  opacity: 0;
+  translate: 0 18px;
+}
+
+.hd-bar.up {
+  transition:
+    opacity 0.16s ease-out,
+    translate 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hd-bar.up {
+    transition: none;
+  }
+}
+
+.hd-wait.down,
+.hd-sizer.off {
+  visibility: hidden;
+}
+
+.hd-sizer .volume {
+  flex: none;
+}
+
+.hd-sizes,
+.hd-ticks {
+  display: grid;
+  gap: 6px;
+}
+
+.hd-sizes {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+/* Each tick keeps its words on one line, its column as wide as they need */
+.hd-ticks {
+  grid-template-columns: repeat(3, auto);
+}
+
+/* Every button here is at least 44 px tall, the least a thumb can hit */
+.hd-sizes .button,
+.hd-ticks .button,
+.hd-seat .button {
+  min-height: 44px;
+  padding: 4px 6px;
+}
+
+.hd-sizes .button {
+  padding: 4px 2px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.hd-moves,
+.hd-seat {
+  display: flex;
+  gap: 8px;
+}
+
+/* Top up and Stand up are a quiet row at the right, away from the thumb's path to the moves */
+.hd-seat {
+  justify-content: flex-end;
+}
+
+.hd-seat .button {
+  padding: 4px 18px;
+  font-size: 14px;
+}
+
+/* Fold in red, Check or Call in felt green, Raise in gold, each with its amount under the word */
+.hd-moves .button {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 6px 4px;
+  font-size: 15px;
+}
+
+.hd-moves .sum {
+  font: 800 19px/1.1 "Playfair Display", Georgia, serif;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.hd-moves .sum:empty {
+  display: none;
+}
+
+.hd-call {
+  border-color: #3fa66b;
+  background: linear-gradient(var(--felt-light), var(--felt));
+}
+
+.holdem .button:active:not(:disabled) {
+  translate: 0 1px;
+  filter: brightness(1.15);
+}
+
+/* A tick box before each advance move */
+.hd-tick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+/* Fold keeps its place when a check is free, greyed */
+#hd-fold:disabled {
+  filter: grayscale(0.85);
+}
+
+/* While the table practices, a small label says its chips are play chips, never credits */
+.hd-note {
+  align-self: flex-start;
+  width: fit-content;
+  margin: 0;
+  padding: 2px 10px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 999px;
+  color: var(--gold-light);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* An offer's strip is the one choice in the dock while it shows: the ticks, Stand up and the move just sent step
+   aside for it, as its Watch instead already stands the player up */
+.holdem-offering .hd-wait {
+  visibility: hidden;
+}
+
+/* The strip stands in their place, over the seat's own rows, so what is under them (the practice note, the people
+   here) stays where it was and the table stays put. It hides while the bar is up (holdem.js) */
+.holdem-table .holdem {
+  display: grid;
+}
+
+.holdem-table .hd-offer,
+.holdem-table .hd-deck {
+  grid-area: 1 / 1;
+}
+
+/* Above the waiting rows it covers, so it takes their taps, and only as tall as what it holds where the rows' room
+   (the bar's, on a computer) is taller */
+.holdem-table .hd-offer {
+  position: relative;
+  z-index: 1;
+  align-self: start;
+}
+
+/* Upright screens and short sideways ones: the bar slides in over the bottom of the dock instead of keeping its room
+   between turns. Upright, the dock never grows, so the table never jumps; sideways, the people here sit right under
+   the seat's buttons, so the list shows every row the dock has room for. On the player's turn the bar covers the
+   bottom of the dock, with the moves under the thumb and the status line still showing above it */
+@media (max-aspect-ratio: 1/1), (max-height: 500px) {
+  .holdem-table .dock {
+    position: relative;
+  }
+
+  .holdem-table .hd-deck {
+    display: block;
+  }
+
+  .holdem-table .hd-bar {
+    position: absolute;
+    z-index: 1;
+    inset: auto 0 0;
+    padding: 6px calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) 12px;
+    border-top: 1px solid var(--gold-deep);
+    background: linear-gradient(90deg, var(--wood), #2a1409);
+    box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  /* The bar fades in where it stands rather than sliding up from below the dock, so nothing hangs past the dock's
+     bottom and the dock never scrolls */
+  .holdem-table .hd-bar:not(.up) {
+    translate: none;
+  }
+}
+
+/* Upright screens: the dock is only as tall as what it shows between turns, so the table above it takes the room,
+   and the bar covers the dock's bottom on the player's turn (above). An offer's strip stands in the ticks' place, so
+   the dock keeps its height then too */
+@media (max-aspect-ratio: 1/1) {
+  /* The bar's height, from its rows below: its top edge and padding, the sizes, the slider and the moves */
+  .holdem-table .dock {
+    --hd-status: 22px;
+    --hd-moves: 56px;
+    --hd-bar: calc(1px + 6px + 44px + 6px + 44px + 6px + var(--hd-moves) + 12px + var(--safe-bottom));
+  }
+
+  /* While the player has a seat, the dock is never shorter than the status line and the bar under it, so the bar
+     never covers the status */
+  .holdem-table .dock:has(#hd-deck:not([hidden])) {
+    min-height: calc(var(--hd-status) + 10px + var(--hd-bar) - 12px - var(--safe-bottom));
+  }
+
+  .holdem-table .hd-bar {
+    gap: 6px;
+    padding-left: calc(12px + var(--safe-left));
+  }
+
+  .holdem-table .hd-sizer {
+    gap: 6px;
+  }
+
+  .holdem-table .hd-moves .button {
+    height: var(--hd-moves);
+  }
+
+  /* A reason the buy-in can't be taken stands in place of the slider and the disabled Buy in, so the strip never
+     grows past the waiting rows */
+  .holdem-table .hd-offer .blocked .volume,
+  .holdem-table .hd-offer .blocked #hd-buyin-yes {
+    display: none;
+  }
+
+  .holdem-table .hd-offer .blocked .why {
+    grid-area: 2 / 1 / 3 / 3;
+    line-height: 1.25;
+  }
+
+  /* An amount past the balance keeps the slider, so the player can slide back: only Buy in gives way to the reason,
+     in its own place and no taller than it */
+  .holdem-table .hd-offer .over #hd-buyin-yes {
+    display: none;
+  }
+
+  .holdem-table .hd-offer .over .why {
+    grid-area: 2 / 2;
+    width: 8.5em;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  /* The waiting row keeps one height through a hand: the ticks' row stays when they hide, and the move just pressed
+     shows in that row */
+  .holdem-table .hd-wait {
+    display: grid;
+  }
+
+  .holdem-table #hd-ticks[hidden] {
+    display: grid !important;
+    visibility: hidden;
+  }
+
+  .holdem-table .hd-ticks,
+  .holdem-table .hd-pending {
+    grid-area: 1 / 1;
+  }
+
+  .holdem-table .hd-seat {
+    grid-area: 2 / 1;
+  }
+
+  .holdem-table .hd-pending {
+    min-height: 44px;
+  }
+
+  .holdem-table .status {
+    line-height: var(--hd-status);
+  }
+
+  /* The people here are one row, so the table keeps its room: as many whole entries as fit (each at least --person
+     wide), then a --more wide "+N" for everyone else (holdem.js counts them) */
+  .holdem-table .players {
+    --person: 150px;
+    --more: 52px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  /* A long name ends in "..." inside its entry rather than making the entry wider */
+  .holdem-table .players li {
+    flex: 1 0 var(--person);
+    min-width: 0;
+  }
+
+  .holdem-table .players .more {
+    flex: none;
+    width: var(--more);
+  }
+
+  .holdem-table .players .more button {
+    justify-content: center;
+    height: 100%;
+    padding: 6px 4px;
+    color: var(--gold-light);
+  }
+}
+
+/* Hold'em's status line stays one line at every size, so a long hand name never pushes the dock's rows down. The
+   words end in "..." when they must, and the turn's countdown after them always shows */
+.holdem-table .status {
+  display: flex;
+  gap: 0.3em;
+  align-items: baseline;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.holdem-table #status-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.holdem-table .clock {
+  flex: none;
+}
+
+.hd-tick::before {
+  content: "";
+  flex: none;
+  box-sizing: border-box;
+  width: 15px;
+  height: 15px;
+  border: 2px solid var(--gold);
+  border-radius: 4px;
+}
+
+.hd-tick[aria-pressed="true"]::before {
+  border-color: var(--gold-light);
+  background: var(--gold-light)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.2 6.4 L5 9 L9.8 3.2' fill='none' stroke='%231a0f08' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 11px no-repeat;
+}
+
+/* The move just pressed, where its button was, until the table moves on */
+.hd-pending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 56px;
+  margin: auto 0 0;
+  border: 1px dashed var(--gold-deep);
+  border-radius: 10px;
+  color: var(--gold-light);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.hd-pending::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  animation: hd-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes hd-pulse {
+  from {
+    opacity: 0.2;
+  }
+}
+
+/* The buy-in: the amount large over its slider, the slider's ends under it, then the ways in. Its body shows in the
+   dialog, or as a strip in the dock (below) */
+.hd-buyin {
+  box-sizing: border-box;
+  width: min(420px, calc(100% - 32px));
+  padding: 16px 18px 18px;
+}
+
+.hd-buyin-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hd-buyin-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.hd-buyin-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 21px;
+  color: var(--gold-light);
+}
+
+.hd-buyin-head .clock {
+  font-size: 18px;
+}
+
+.hd-buyin-body p {
+  margin: 0;
+}
+
+.hd-buyin-body .amount {
+  flex: none;
+  font-size: 36px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.hd-buyin-body .volume {
+  flex: none;
+}
+
+.hd-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -8px;
+  font-size: 13px;
+  color: var(--cream-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.hd-buyin-body .actions {
+  flex-direction: column;
+  margin-top: 6px;
+}
+
+.hd-buyin-body .actions .button {
+  min-height: 44px;
+}
+
+/* The dialog shows the amount over the slider, so its Buy in button is just the words */
+#hd-buyin-yes .sum {
+  display: none;
+}
+
+/* An offer while the player is dealt in: two rows over the action bar, the question with its countdown, then the
+   slider beside Buy in (with the amount under it) and Not now */
+.hd-offer {
+  padding: 8px 10px;
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  background: linear-gradient(#24120a, var(--night));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  animation: pop 0.25s ease-out;
+}
+
+.hd-offer .hd-buyin-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.hd-offer .hd-buyin-head {
+  grid-column: 1 / -1;
+}
+
+.hd-offer .hd-buyin-head h2,
+.hd-offer .hd-buyin-head .clock {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.hd-offer #hd-buyin-note,
+.hd-offer .amount,
+.hd-offer .hd-ends {
+  display: none;
+}
+
+.hd-offer .actions {
+  display: contents;
+}
+
+.hd-offer .volume {
+  grid-area: 2 / 1;
+  min-width: 0;
+}
+
+.hd-offer #hd-buyin-yes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  grid-area: 2 / 2;
+  line-height: 1.1;
+}
+
+.hd-offer #hd-buyin-yes .sum {
+  display: block;
+  font: 800 16px/1.1 "Playfair Display", Georgia, serif;
+}
+
+.hd-offer #hd-buyin-no {
+  grid-area: 2 / 3;
+}
+
+.hd-offer .actions .button {
+  padding: 4px 12px;
+  font-size: 14px;
+}
+
+.hd-offer .why {
+  grid-area: 3 / 1 / 4 / -1;
+}
+
+/* Sideways phones have no height to spare, so the dialog is wider and its buttons share a row, the No button taking
+   only the room its word needs */
+@media (max-height: 500px) {
+  .hd-buyin {
+    width: min(600px, calc(100% - 32px));
+  }
+
+  .hd-buyin .actions {
+    flex-direction: row;
+  }
+
+  .hd-buyin .actions .button {
+    flex: 1 1 0;
+  }
+
+  .hd-buyin .actions #hd-buyin-no {
+    flex: none;
+    padding: 9px 22px;
+  }
+}
+
+/* The sideways dock is narrow, so the quick sizes and ticks use smaller words */
+@media (min-aspect-ratio: 1/1) and (max-height: 500px) {
+  .hd-sizes,
+  .hd-ticks {
+    gap: 4px;
+  }
+
+  .hd-sizes .button,
+  .hd-tick {
+    font-size: 12px;
+  }
+
+  .hd-tick {
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .hd-tick::before {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* An offer's slider gets a row of its own, Buy in and Watch instead share the next, and the status line, the
+     practice line, the ticks and the move just sent give way to it: the offer has its own words and clock */
+  .hd-offer .volume {
+    grid-area: 2 / 1 / 3 / -1;
+  }
+
+  .hd-offer #hd-buyin-yes {
+    grid-area: 3 / 1 / 4 / 3;
+  }
+
+  .hd-offer #hd-buyin-no {
+    grid-area: 3 / 3;
+  }
+
+  .hd-offer .why {
+    grid-area: 4 / 1 / 5 / -1;
+  }
+
+  .holdem-offering .status,
+  .holdem-offering .hd-note,
+  .holdem-offering .hd-ticks,
+  .holdem-offering .hd-pending {
+    display: none;
+  }
+
+  /* Its Watch instead stands the player up, so Stand up steps aside and takes no room: the people here stay in view
+     under the offer */
+  .holdem-offering .hd-seat {
+    display: none;
+  }
+
+  /* The people here end at the dock's bottom: as many whole rows as fit, each --person tall, then a --more tall
+     "+N" row for everyone else (holdem.js counts them) */
+  .holdem-table .players {
+    --person: 42px;
+    --more: 42px;
+  }
+
+  .holdem-table .players .more button {
+    justify-content: center;
+    height: var(--more);
+    color: var(--gold-light);
+  }
+
+  /* On the player's turn the waiting row takes no room either, so the people here move up under the status line and
+     the room above the bar shows as many of them as fit (holdem.js) */
+  .holdem-table .hd-wait.down {
+    display: none;
   }
 }

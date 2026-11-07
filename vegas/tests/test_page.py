@@ -4,7 +4,8 @@ import re
 from pathlib import Path
 
 from vegas.common import catalog, table
-from vegas.common.games import simple
+from vegas.common.games import simple, slots
+from vegas.tests import test_slots
 
 WEB = Path(__file__).resolve().parents[1] / "web"
 MOVES = {"hit", "stay", "double", "war", "surrender", "cashout", "keep", "roll"}
@@ -37,12 +38,19 @@ def test_animation_times_match_the_bots_pacing():
     assert {kind: float(seconds) for kind, seconds in pairs} == table.PACE
 
 
-def test_games_and_their_stations_match_the_bots():
-    assert re.findall(r'"(\w+)"', block(source("format.js"), "GAMES")) == list(catalog.GAMES)
-    assert keys(block(source("lobby.js"), "STATIONS")) == set(catalog.GAMES)
+ORDER = ["holdem", "blackjack", "craps", "slots", "allin", "war", "hilo", "double", "coin", "cups", "dice"]
+
+
+def test_games_and_their_cards_match_the_bots():
+    games = block(source("format.js"), "GAMES")
+    assert re.findall(r"^\s*(\w+):", games, re.M) == list(catalog.GAMES)
+    assert dict(re.findall(r'(\w+): "([^"]+)"', games)) == catalog.GAME_NAMES
+    cards = re.findall(r'"(\w+)"', block(source("lobby.js"), "CARDS"))
+    assert cards == [key for key in ORDER if key in catalog.GAMES] and sorted(cards) == sorted(catalog.GAMES)
     for key in catalog.GAMES:
         assert (WEB / "scenes" / f"{key}.js").exists(), key
-        assert (WEB / "art" / "icons" / f"{key}.png").exists(), key
+        assert (WEB / "art" / "cards" / f"{key}.jpg").exists(), key
+    assert not (WEB / "art" / "icons").exists()
 
 
 def test_calls_and_moves_match_the_bots():
@@ -52,6 +60,21 @@ def test_calls_and_moves_match_the_bots():
         values = re.findall(r'\[\s*"?(\w+)"?,', found)
         assert sorted(values) == sorted(str(value) for value in expected), game
     assert keys(block(source("table.js"), "MOVE_LABELS")) == MOVES
+
+
+def test_the_pay_table_matches_the_bots_odds():
+    found = [int(n) for n in re.findall(r"(\d+)\]", block(source("panels.js"), "PAY_TABLE"))]
+    assert found == list(test_slots.EVERY.values())
+
+
+def test_the_reel_strip_matches_the_bots():
+    assert re.findall(r'"(\w+)"', block(source("scenes/slots.js"), "STRIP")) == list(slots.STRIP)
+
+
+def test_all_in_draws_no_slot_machine():
+    scene = source("scenes/allin.js").lower()
+    assert [word for word in ("machine", "lever", "reel", "cherry") if word in scene] == []
+    assert {path.name for path in (WEB / "art" / "allin").iterdir()} == {"hall.jpg", "stand.png"}
 
 
 def test_membership_colors_match_the_bots():

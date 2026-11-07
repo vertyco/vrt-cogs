@@ -12,9 +12,9 @@ const TIERS_EXPLAINED =
 // Each game's rules in a few sentences, with the table's own multiplier filled in
 const RULES = {
   allin: () =>
-    "Pick a whole-number multiplier, 2 or higher, and bet your whole balance. You win with a chance of 1 in " +
-    "(multiplier + 2), and a win pays your balance times your multiplier. Memberships don't add a bonus here. " +
-    "Only you see your machine.",
+    "Pick a whole-number multiplier, 2 or higher, and bet your whole balance on one spin of the wheel. The gold " +
+    "slice is your chance: 1 in (multiplier + 2), so it gets thinner as the multiplier grows. Land on it and you " +
+    "win your balance times your multiplier. Memberships don't add a bonus here. Only you see your wheel.",
   blackjack: (m) =>
     "Get closer to 21 than the dealer without going over. Aces count 1 or 11, and face cards 10. Hit, Stay, or " +
     "Double: a second bet of the same size for exactly one more card. The dealer takes one card on a hand with an " +
@@ -37,7 +37,88 @@ const RULES = {
   double: () =>
     "Everyone at the table rides the same coin. Heads doubles everyone's amount, and tails takes it all. After " +
     "each heads, cash out or double again. Cashing out pays what you have, and memberships don't add a bonus here.",
+  // One paragraph per line. Players bet against each other, so there is no multiplier
+  holdem: (m, game) =>
+    "Texas Hold'em is poker. You play against the other people at the table, not the casino, and the best hand " +
+    "wins the pot: all the chips bet in that hand.\n" +
+    "Everyone gets 2 private cards that only they can see. Five shared cards then come out face up in the middle, " +
+    "and anyone can use them. Your hand is the best 5 cards you can make from those 7 (your 2 plus the 5 shared).\n" +
+    "There are four rounds of betting: before any shared card, after the first 3 (the flop), after the 4th (the " +
+    "turn), and after the 5th (the river). On your turn you can fold (give up your hand), check (pass, when nobody " +
+    "has bet), call (match the bet to stay in), or raise (bet more, so the others must match it or fold). You " +
+    "can bet any amount up to all your chips. Betting all of them is going all in: you stay in the hand to the " +
+    "end, and can only win as much from each player as you put in.\n" +
+    "Two players put in forced bets called blinds before the cards are dealt: the small blind, and the big blind, " +
+    "twice as much. The dealer button moves around the table each hand, and the blinds move with it. That way " +
+    "there is always something to win. If everyone else folds, you win the pot " +
+    "without showing your cards. If more than one player is left after the last round, everyone shows their " +
+    "cards (the showdown) and the best hand wins. The chart below shows what beats what.\n" +
+    `The casino keeps ${+game.cut}% of each pot that reaches the flop, at most 3 big blinds. A hand that ends ` +
+    "before the flop costs nothing. The first player to sit practices free against CPUs with play chips. Once " +
+    "someone buys in, hands are for real: your buy-in comes out of your credits and goes back when you stand up.",
+  // One paragraph per line. The pay table chart follows
+  slots: () =>
+    "Pick a bet and pull the lever down. How hard you pull only changes how the reels spin, not where they stop. " +
+    "Only the middle row counts.\n" +
+    "2% of every bet grows the jackpot. 7-7-7 wins the share of it that matches your bet: a max bet wins it all, " +
+    "and half the max wins half. The jackpot never drops below 60 times the max bet.\n" +
+    "Memberships don't add a bonus here. Only you see your machine.",
 };
+
+// What each line on the middle row pays, bet included, and how often it comes up: 1 in this many spins
+const PAY_TABLE = [
+  ["7 7 7", "Jackpot share", 10648],
+  ["3 diamonds", "50x", 1331],
+  ["3 coins", "25x", 394],
+  ["3 bells", "14x", 85],
+  ["3 cherries", "8x", 166],
+  ["2 cherries", "3x", 12],
+  ["1 cherry", "Bet back", 3],
+];
+
+// The kinds of hand, best first, named as the table names them. A card is its rank then its suit symbol
+const RANKINGS = [
+  ["Royal flush", "A♠ K♠ Q♠ J♠ 10♠", "The best straight flush: A K Q J 10, all one suit"],
+  ["Straight flush", "9♥ 8♥ 7♥ 6♥ 5♥", "Five in a row, all one suit"],
+  ["Four of a kind", "8♣ 8♦ 8♥ 8♠ K♠", "Four cards of the same rank"],
+  ["Full house", "Q♠ Q♥ Q♦ 4♣ 4♠", "Three of one rank and two of another"],
+  ["Flush", "K♦ J♦ 9♦ 6♦ 3♦", "Any five cards of one suit"],
+  ["Straight", "10♣ 9♥ 8♠ 7♦ 6♣", "Five in a row, mixed suits"],
+  ["Three of a kind", "7♠ 7♥ 7♦ K♣ 2♠", "Three cards of the same rank"],
+  ["Two pair", "J♠ J♦ 4♥ 4♣ A♠", "Two different pairs"],
+  ["Pair", "10♥ 10♠ A♦ 8♣ 3♠", "Two cards of the same rank"],
+  ["High card", "A♠ J♦ 8♣ 6♥ 3♦", "None of the above: your highest card counts"],
+];
+
+// What beats what: the hands best first, each with a small example drawn as cards
+function rankChart() {
+  const list = make("ol", "rank-chart");
+  for (const [name, example, about] of RANKINGS) {
+    const info = make("div", "rank-info");
+    info.append(make("b", "rank-name", name), make("span", "rank-about", about));
+    const hand = make("div", "rank-cards");
+    for (const text of example.split(" ")) {
+      hand.append(make("span", /[♥♦]/.test(text) ? "mini-card red" : "mini-card", text));
+    }
+    const row = make("li");
+    row.append(info, hand);
+    list.append(row);
+  }
+  return list;
+}
+
+// Slots' pay table, best first, in the rank chart's look
+function payChart() {
+  const list = make("ol", "rank-chart pay-chart");
+  for (const [line, pays, every] of PAY_TABLE) {
+    const info = make("div", "rank-info");
+    info.append(make("b", "rank-name", line), make("span", "rank-about", `1 in ${money(every)}`));
+    const row = make("li");
+    row.append(info, make("b", "pay-amount", pays));
+    list.append(row);
+  }
+  return list;
+}
 
 let context = null;
 // Counts panel openings and closings, so an answer that arrives after its panel was closed or replaced is dropped
@@ -142,8 +223,25 @@ export function grid(headers, rows, numeric = []) {
 
 // ---------- House rules ----------
 
-function payoutOf(game) {
+function payoutOf(key, game) {
+  if (game.blinds) {
+    return `Cut ${+game.cut}%`;
+  }
+  if (key === "slots") {
+    return "Pay table";
+  }
   return game.multiplier === null ? "-" : `${game.multiplier}x`;
+}
+
+// Hold'em's own numbers in one line: the buy-in range, the blinds and the casino's cut
+function holdemLine(game) {
+  const [small, big] = game.blinds;
+  return `Buy-in ${money(game.min)} to ${money(game.max)} · Blinds ${money(small)}/${money(big)} · Cut ${+game.cut}%`;
+}
+
+// Slots' own numbers in one line: the bet range and the jackpot now
+function slotsLine(game) {
+  return `Bets ${money(game.min)} to ${money(game.max)} · Jackpot ${money(game.jackpot)}`;
 }
 
 export async function showRules() {
@@ -152,14 +250,14 @@ export async function showRules() {
   if (!info) {
     return;
   }
-  const rows = Object.values(info.games).map((game) => [
+  const rows = Object.entries(info.games).map(([key, game]) => [
     game.name,
     game.open ? "Open" : "Closed",
     game.access,
     money(game.min),
     money(game.max),
-    payoutOf(game),
-    duration(game.cooldown),
+    payoutOf(key, game),
+    game.blinds ? "-" : duration(game.cooldown),
   ]);
   body.replaceChildren(
     make("h3", "", "Games"),
@@ -174,7 +272,31 @@ export async function showRules() {
     make("h3", "", "How to play"),
   );
   for (const [key, game] of Object.entries(info.games)) {
-    body.append(make("h4", "", game.name), make("p", "", RULES[key](game.multiplier)));
+    body.append(make("h4", "", game.name));
+    if (game.blinds) {
+      body.append(make("p", "house-line", holdemLine(game)));
+    }
+    if (key === "slots") {
+      body.append(make("p", "house-line", slotsLine(game)));
+    }
+    for (const line of RULES[key](game.multiplier, game).split("\n")) {
+      body.append(make("p", "", line));
+    }
+    if (game.blinds) {
+      body.append(
+        make("h4", "", "What beats what"),
+        make("p", "dim", "Best at the top. Hands of the same kind are settled by their higher cards."),
+        rankChart(),
+        make("p", "dim", "An Ace can also be low, so A 2 3 4 5 is the lowest straight."),
+      );
+    }
+    if (key === "slots") {
+      body.append(
+        make("h4", "", "Pay table"),
+        make("p", "dim", "What each line on the middle row pays, bet included, and how often it comes up."),
+        payChart(),
+      );
+    }
   }
   body.append(make("h3", "", "About"), make("p", "", `${CREDIT}: ${CREDIT_URL}`));
   const hub = context.hub();

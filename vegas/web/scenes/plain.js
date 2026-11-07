@@ -5,9 +5,22 @@
 //   show(state)        Draw the table as the bot's latest "table" message describes it, without animating. Called on
 //                      every update and to catch up after a drop, so it must be safe to call any number of times.
 //   play(event)        Animate one "event" message and resolve when done. Must finish within table.js's PACE for
-//                      its kind (the bot waits that long before its next step); the page moves on after that anyway.
+//                      its kind, or the event's own `seconds` when it has them (the bot waits that long before its
+//                      next step); the page moves on after that anyway.
 //   result(result)     Optional: a flourish for the player's own "result" message. The dock shows the words.
-//   layout(w, h)       The scene's space changed size, in CSS pixels. Fit the scene to it (kit.js's fit helps).
+//   hole(message)      Optional: Hold'em's private "hole" message, the player's own two cards and their hand's name.
+//   preview(value)     Optional: the tray's bet changed (All In's multiplier), so the scene can show what it would win.
+//                      Called once the scene starts and on every change.
+//   jackpot(amount)    Optional: the Slots pot in whole credits. Called once the scene starts, then for each "jackpot"
+//                      message, which waits in the table's queue behind the spin it follows.
+//   notice()           Optional: the bot refused something (a pull among them), or the connection came back and lost
+//                      what was sent on the old one. Nothing is coming for a pull still waiting on its spin.
+//   layout(w, h, note) The scene's space changed size, in CSS pixels. Fit the scene to it (kit.js's fit helps). `note`
+//                      is how far down the scene a jackpot note reaches when one shows, for a scene that keeps clear
+//                      of it (Slots).
+//   resultSpot()       Optional: the part of the scene where the result card covers nothing that matters, as
+//                      { left, top, right, bottom } in CSS pixels of the scene's space. Asked after each layout and
+//                      result. Without it the card sits along the bottom of the scene.
 //   destroy()          Optional: stop timers. The page destroys the Pixi app and everything in it afterwards.
 // The stage it gets:
 //   app, root          The Pixi Application and a Container on its stage to draw into.
@@ -15,8 +28,11 @@
 //   sound              sound.play(name), with a name from sound.js's EFFECT_NAMES.
 //   me()               The viewer's Discord id as a string, or null.
 //   nameOf(id)         A player's display name at this table.
+//   settings()         This game's settings from the casino facts (min, max, multiplier...), or undefined.
 //   actions            For taps inside the scene: choose(value) picks the game's call, sit(seat) and stand() for
-//                      Blackjack's seats, move(name) sends an allowed move, place() places the tray's bet.
+//                      Blackjack's seats, move(name) sends an allowed move, place(strength) places the tray's bet
+//                      and returns false when it can't (at Slots it sends a pull, strength 0 to 1, and returns
+//                      false when the pull couldn't reach the bot).
 import { Graphics, Text } from "../vendor/pixi.min.mjs";
 import { fit, fitted, wait } from "./kit.js";
 
@@ -84,7 +100,7 @@ function eventText(event, nameOf) {
     case "burn":
       return `The dealer burns ${event.count} cards`;
     case "pull":
-      return `The reels spin at ${event.multiplier}x...`;
+      return `The wheel spins for x${event.multiplier}...`;
     default:
       return event.kind;
   }

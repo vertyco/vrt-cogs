@@ -7,7 +7,9 @@ _ = Translator("Vegas", __file__)
 CREDIT = "Rebuilt for ActivityHub from Redjumpman's Casino: https://github.com/Redjumpman/Jumper-Plugins"
 
 # In the original's order. The keys are stored in the database and sent to the page, so they never change
-GAMES = ("allin", "blackjack", "coin", "craps", "cups", "dice", "hilo", "war", "double")
+HOLDEM = "holdem"
+SLOTS = "slots"
+GAMES = ("allin", "blackjack", "coin", "craps", "cups", "dice", "hilo", "war", "double", "holdem", "slots")
 
 GAME_NAMES = {
     "allin": "All In",
@@ -19,6 +21,8 @@ GAME_NAMES = {
     "hilo": "Hi-Lo",
     "war": "War",
     "double": "Double or Nothing",
+    "holdem": "Texas Hold'em",
+    "slots": "Slots",
 }
 
 # The original's defaults. None means the game has no such setting
@@ -32,11 +36,18 @@ GAME_DEFAULTS = {
     "hilo": {"access": 0, "cooldown": 5, "min_bet": 25, "max_bet": 75, "multiplier": 1.7},
     "war": {"access": 0, "cooldown": 5, "min_bet": 25, "max_bet": 75, "multiplier": 1.5},
     "double": {"access": 0, "cooldown": 5, "min_bet": 10, "max_bet": 250, "multiplier": None},
+    "holdem": {"access": 0, "cooldown": 0, "min_bet": 400, "max_bet": 2000, "multiplier": None, "cut": 5.0},
+    "slots": {"access": 0, "cooldown": 0, "min_bet": 10, "max_bet": 500, "multiplier": None},
 }
 
 # Games whose bets have no min and max, and games whose wins skip the multiplier and membership bonus
 NO_BET_RANGE = ("allin",)
-NO_MULTIPLIER = ("allin", "double")
+NO_MULTIPLIER = ("allin", "double", "holdem", "slots")
+NO_COOLDOWN = ("holdem",)
+# Hold'em's smallest allowed max buy-in: the big blind is a hundredth of it, and must be at least 2
+HOLDEM_LOWEST_MAX = 200
+# The most the casino may cut from a Hold'em pot, in percent
+CUT_LIMIT = 20.0
 
 CASINO_DEFAULTS = {"name": "Redjumpman's", "is_open": True, "limit_on": False, "limit_amount": 10000}
 NAME_LIMIT = 30
@@ -75,6 +86,13 @@ ALIASES = {
     "double": "double",
     "don": "double",
     "x2": "double",
+    "holdem": "holdem",
+    "hold'em": "holdem",
+    "poker": "holdem",
+    "texas": "holdem",
+    "slots": "slots",
+    "slot": "slots",
+    "slot machine": "slots",
 }
 
 
