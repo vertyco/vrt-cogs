@@ -1,5 +1,9 @@
 # Vegas Changelog
 
+## 0.5.6
+
+- The Slots House rules drop a line about how hard you pull the lever.
+
 ## 0.5.5
 
 - The win card beside the slot machine no longer lets "You win" run onto its border in a small window. When the words are too wide, the card switches to smaller text, so the words stay centred inside it.

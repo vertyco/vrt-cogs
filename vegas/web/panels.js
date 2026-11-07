@@ -58,8 +58,7 @@ const RULES = {
     "someone buys in, hands are for real: your buy-in comes out of your credits and goes back when you stand up.",
   // One paragraph per line. The pay table chart follows
   slots: () =>
-    "Pick a bet and pull the lever down. How hard you pull only changes how the reels spin, not where they stop. " +
-    "Only the middle row counts.\n" +
+    "Pick a bet and pull the lever down. Only the middle row counts.\n" +
     "2% of every bet grows the jackpot. 7-7-7 wins the share of it that matches your bet: a max bet wins it all, " +
     "and half the max wins half. The jackpot never drops below 60 times the max bet.\n" +
     "Memberships don't add a bonus here. Only you see your machine.",
