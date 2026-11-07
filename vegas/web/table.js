@@ -363,10 +363,13 @@ export class TableView {
     card.style.setProperty("--spot-y", `${(top + bottom) / 2}px`);
     card.style.setProperty("--spot-width", `${Math.max(0, right - left)}px`);
     const looks = card.classList.contains("breaks") ? BREAK_FIRST : SHRINK_FIRST;
+    // The headline is measured, not the card: a headline too wide spills into the card's padding first, which the
+    // card's own width doesn't count
+    const big = $("result-big");
     for (const look of looks) {
       card.classList.remove("wrap", "compact");
       card.classList.add("placed", ...look);
-      if (card.offsetHeight <= bottom - top && card.scrollWidth <= card.clientWidth) {
+      if (card.offsetHeight <= bottom - top && big.scrollWidth <= big.clientWidth) {
         return;
       }
     }

@@ -1234,7 +1234,12 @@ for (let at = 0; at < words.length; at += 1) {
   const top = Math.round(range.getBoundingClientRect().top);
   lines.set(top, (lines.get(top) || "") + words.data[at]);
 }
+// Whether the headline's letters stay inside the card's padding, so none sits on the border
+range.selectNodeContents(words);
+const letters = range.getBoundingClientRect();
+const inner = document.getElementById("result-big").getBoundingClientRect();
 return {
+  inside: inner.left - 0.5 <= letters.left && letters.right <= inner.right + 0.5,
   size: parseFloat(getComputedStyle(document.getElementById("result-big")).fontSize),
   lines: [...lines.values()].map((line) => line.replace(/\\s+/g, " ").trim()),
   card: rect(document.getElementById("result")),
@@ -1244,7 +1249,13 @@ return {
 };
 """
 
-PAGE_SIZES = {"desktop": (1280, 800, 1, False), "phone": (390, 844, 2, True), "sideways": (844, 390, 2, True)}
+PAGE_SIZES = {
+    "desktop": (1280, 800, 1, False),
+    "phone": (390, 844, 2, True),
+    "sideways": (844, 390, 2, True),
+    # A small desktop window, where the side spot beside the machine is just wide enough to take the card
+    "small-window": (960, 480, 1, False),
+}
 
 
 def play_for_the_card(driver, live, game):
@@ -1282,6 +1293,7 @@ def test_the_result_card_covers_nothing_that_matters(driver, live, game, size):
         for name, box in found["keep"].items():
             assert apart(card, box), f"{size}: the card covers the {name}"
         assert found["news"] is None or apart(card, found["news"]), f"{size}: the card covers the jackpot note"
+        assert found["inside"], f"{size}: the headline runs past the card's padding: {found}"
         # A jackpot's headline that has to break does so after "Jackpot!", never inside "You win", and on a desktop
         # it keeps the card's full size, as big as any other win's
         if game == "slots":

@@ -1,5 +1,9 @@
 # Vegas Changelog
 
+## 0.5.5
+
+- The win card beside the slot machine no longer lets "You win" run onto its border in a small window. When the words are too wide, the card switches to smaller text, so the words stay centred inside it.
+
 ## 0.5.4
 
 - The Slots lever's arm sits a pixel or two further right on the machine's side knob.
