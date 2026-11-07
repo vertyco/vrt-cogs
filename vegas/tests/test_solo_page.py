@@ -3,8 +3,11 @@ drew, and the jackpot on the machine, on the menu card and as news for the whole
 and where it stops"""
 
 import asyncio
+from collections import Counter
+from pathlib import Path
 
 import pytest
+from PIL import Image
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -27,6 +30,7 @@ from vegas.tests.test_browser import (
 
 driver = test_browser.driver
 live = test_browser.live
+SLOTS_ART = Path(__file__).resolve().parents[1] / "web" / "art" / "slots"
 ANN = {"id": "9", "name": "Ann", "amount": 48_000}
 
 # Where the lever's knob is drawn at rest, in the page's pixels, and how far down it travels, under the room the
@@ -264,7 +268,7 @@ def test_every_spin_lands_within_its_seconds_on_the_bots_stops(driver, live):
     # Bell, coin, seven: the first two differ. Bell, bell, diamond: they match, so the third reel lingers
     apart, matched = [3, 5, 0], [3, 6, 9]
     assert slots.STRIP[3] != slots.STRIP[5] and slots.STRIP[3] == slots.STRIP[6]
-    events = [spin_event(seconds, stops) for seconds in (1.5, 4.0) for stops in (apart, matched)]
+    events = [spin_event(seconds, stops) for seconds in (slots.MIN_SPIN, slots.MAX_SPIN) for stops in (apart, matched)]
     found = driver.execute_async_script(TIMED_SPINS, events)
     assert isinstance(found, list), found
     for event, (took, lands, shown) in zip(events, found):
@@ -275,6 +279,76 @@ def test_every_spin_lands_within_its_seconds_on_the_bots_stops(driver, live):
     for at in (0, 2):
         apart_lands, matched_lands = found[at][1], found[at + 1][1]
         assert matched_lands[2] - matched_lands[1] >= 1.5 * (apart_lands[2] - apart_lands[1])
+    assert not problems(driver)
+
+
+# The reels' speeds at the gentlest and the hardest pull, then a reel spinning at the hardest pull's speed brought to
+# land on stop 9 with its symbol on the line 3 seconds on: its place and speed every 10 ms until well after it settles
+SLOW_DOWN = """
+const done = arguments[arguments.length - 1];
+import(new URL("scenes/slots.js", document.baseURI).href).then((scene) => {
+  const speeds = [scene.reelSpeed(0), scene.reelSpeed(1)];
+  const plan = scene.landing({ pos: 0, speed: speeds[1] }, 0, 9, 3000, speeds[1]);
+  const path = [];
+  for (let at = 0; at <= 4000; at += 10) {
+    const { pos, speed } = plan.motion(at);
+    path.push([at, pos, speed]);
+  }
+  done({ speeds, target: plan.target, path });
+}).catch((e) => done(String(e)));
+"""
+
+
+def test_a_reel_slows_down_for_a_long_time_and_crawls_onto_the_line(driver, live):
+    open_casino(driver, live)
+    found = driver.execute_async_script(SLOW_DOWN)
+    assert isinstance(found, dict), found
+    # In symbols a millisecond: a hard pull spins faster than a gentle one, but never as a blur
+    gentle, hard = found["speeds"]
+    assert 0 < gentle < hard <= 0.022, found["speeds"]
+    target, path = found["target"], found["path"]
+
+    def first(test):
+        return next(at for at, pos, speed in path if test(pos, speed))
+
+    # The reel ends on the bot's stop: place p shows stop -p
+    assert -target % len(slots.STRIP) == 9 and path[-1][1] == target
+    arrives = first(lambda pos, speed: pos >= target)
+    assert 2990 <= arrives <= 3010, arrives
+    # It slows down for over a second, never speeding up again, and the last symbol takes 300 ms or more to crawl
+    # onto the line
+    slowing = first(lambda pos, speed: speed < 0.9 * hard)
+    assert arrives - slowing >= 1000, (slowing, arrives)
+    speeds = [speed for at, pos, speed in path if slowing <= at <= arrives]
+    assert all(later <= sooner + 1e-9 for sooner, later in zip(speeds, speeds[1:]))
+    assert arrives - first(lambda pos, speed: pos >= target - 1) >= 300
+    # Then it runs a little past the line and settles back onto it
+    past = max(pos for at, pos, speed in path) - target
+    assert 0.05 <= past <= 0.3, past
+    assert first(lambda pos, speed: pos == target and speed == 0) <= arrives + 600
+
+
+def test_a_crawling_reel_is_drawn_sharp(driver, live):
+    open_casino(driver, live)
+    # The last reel of a gentle spin, 150 ms before its symbol reaches the line: still moving, but without blur, so the
+    # symbols crawling past the line can be read
+    found = on_stand_in(
+        driver,
+        """
+    const event = given[0];
+    const lands = scene.landTimes(event.seconds, event.reels.map((reel) => reel[1]));
+    const start = performance.now();
+    const spin = machine.play(event);
+    await pause(start + lands[2] - 150 - performance.now());
+    const filter = root.getChildByLabel("reel-2", true).getChildByLabel("strip").filters[0];
+    const blur = filter.enabled ? filter.strengthY : 0;
+    const moving = !(await still());
+    await spin;
+    return { blur, moving };
+""",
+        spin_event(slots.MIN_SPIN, [3, 5, 0]),
+    )
+    assert found == {"blur": 0, "moving": True}, found
     assert not problems(driver)
 
 
@@ -791,6 +865,47 @@ def test_the_jackpot_line_reads_at_every_size_and_covers_no_reel_or_lever(driver
     if found["sign"] is not None:
         assert abs((left + right) / 2 - found["sign"] / 2) <= 2, (size, line["box"], found["sign"])
         assert left >= 12, (size, line["box"])
+    assert not problems(driver)
+
+
+def cabinet_edges() -> tuple[int, int]:
+    """In machine.png's pixels: the right edge of the cabinet's column of side lights (where most of its rows end) and
+    the outer end of the side hub that sticks out past it (where the widest row ends)"""
+    alpha = Image.open(SLOTS_ART / "machine.png").convert("RGBA").getchannel("A").point(lambda a: 255 if a > 128 else 0)
+    ends = [alpha.crop((0, y, alpha.width, y + 1)).getbbox() for y in range(alpha.height)]
+    rights = Counter(box[2] for box in ends if box)
+    return rights.most_common(1)[0][0], max(rights)
+
+
+# The lever's arm and knob at rest in machine.png's pixels, and the knob's box in the page's pixels, in a scene of the
+# size given
+LEVER_PLACE = """
+    const [width, height] = given;
+    machine.layout(width, height);
+    const cabinet = root.getChildByLabel("machine", true);
+    const box = (label) => root.getChildByLabel(label, true).getBounds();
+    const inArt = (label) => {
+      const { minX, minY, maxX, maxY } = box(label);
+      const [a, b] = [cabinet.toLocal({ x: minX, y: minY }), cabinet.toLocal({ x: maxX, y: maxY })];
+      return [a.x, a.y, b.x, b.y];
+    };
+    const knob = box("knob");
+    return { arm: inArt("arm"), knob: inArt("knob"), shown: [knob.minX, knob.minY, knob.maxX, knob.maxY] };
+"""
+
+
+@pytest.mark.parametrize("size", list(SCENE_SIZES))
+def test_the_lever_stands_beside_the_cabinet_on_its_side_hub(driver, live, size):
+    width, height = SCENE_SIZES[size]
+    open_casino(driver, live)
+    found = on_stand_in(driver, LEVER_PLACE, width, height)
+    assert isinstance(found, dict), found
+    lights, hub = cabinet_edges()
+    # The arm and the knob are clear of the column of lights, and the arm rises from the end of the hub
+    assert found["arm"][0] >= lights and found["knob"][0] >= lights, (lights, found)
+    assert found["arm"][0] <= hub, (hub, found)
+    left, top, right, bottom = found["shown"]
+    assert left >= 0 and top >= 0 and right <= width and bottom <= height, (size, found["shown"])
     assert not problems(driver)
 
 

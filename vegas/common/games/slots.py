@@ -14,8 +14,8 @@ TWO_CHERRIES = 3
 JACKPOT_PERCENT = 2
 SEED_BETS = 60
 CENTS = 100  # the pot is kept in hundredths of a credit
-MIN_SPIN = 1.5
-MAX_SPIN = 4.0
+MIN_SPIN = 3.0
+MAX_SPIN = 5.5
 
 
 def spin(rng: random.Random) -> list[int]:

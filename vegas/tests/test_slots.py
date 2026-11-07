@@ -82,7 +82,7 @@ def test_a_spin_draws_three_stops_from_the_random_source():
 
 
 def test_the_pull_sets_the_spin_length_and_bad_strengths_are_the_gentlest():
-    assert (spin_seconds(0.0), spin_seconds(0.5), spin_seconds(1.0)) == (1.5, 2.75, 4.0)
+    assert (spin_seconds(0.0), spin_seconds(0.5), spin_seconds(1.0)) == (3.0, 4.25, 5.5)
     for bad in (None, "fast", True, False, float("nan"), float("inf"), float("-inf"), [1], {"x": 1}):
         assert read_strength(bad) == 0.0
     assert (read_strength(-3), read_strength(7), read_strength(0.25), read_strength(1)) == (0.0, 1.0, 0.25, 1.0)
@@ -114,7 +114,7 @@ async def test_a_spin_shows_its_reels_only_to_the_player_then_pays_the_table(sea
         [3, 3, 3],
         [window(3)] * 3,
     )
-    assert (event["seconds"], event["strength"]) == (4.0, 1.0) and ana.of("event") == []
+    assert (event["seconds"], event["strength"]) == (5.5, 1.0) and ana.of("event") == []
     result = sam.last("result")
     assert (result["outcome"], result["payout"], result["balance"]) == ("win", 1400, 2300)
 
@@ -142,13 +142,13 @@ async def test_the_bot_waits_the_whole_spin_before_paying(seat, monkeypatch):
         await pause(seconds)
 
     monkeypatch.setattr(table, "pause", recorded)
-    # The gentlest pull spins 1.5 seconds, 0.3 at this speed
+    # The gentlest pull spins 3 seconds, 0.6 at this speed
     await table.bet(sam, {"amount": 100, "strength": 0})
     await asyncio.sleep(0.15)
     assert sam.of("event") and sam.of("result") == []
     await until(lambda: sam.of("result"), 2)
     # The spin's own length, not All In's pull pace
-    assert waits == [1.5]
+    assert waits == [3.0]
 
 
 @pytest.mark.asyncio
@@ -164,10 +164,10 @@ async def test_bad_pulls_are_refused_or_clamped(seat):
     assert await host.money.bank.balance(sam.ctx.author) == 1000
     await table.bet(sam, {"amount": 10, "strength": "fast"})
     await until(lambda: not table.pulls)
-    assert sam.last("event")["seconds"] == 1.5
+    assert sam.last("event")["seconds"] == 3.0
     await table.bet(sam, {"amount": 10, "strength": 9})
     await until(lambda: not table.pulls)
-    assert sam.last("event")["seconds"] == 4.0
+    assert sam.last("event")["seconds"] == 5.5
 
 
 @pytest.mark.asyncio

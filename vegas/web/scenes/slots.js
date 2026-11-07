@@ -26,9 +26,11 @@ const INK = 0x1a0f08;
 const RED = 0xc8202f;
 // machine.png is saved at twice its drawn size; everything on the machine is placed in its pixels
 const ART_SCALE = 0.5;
-const MACHINE_AT = { x: 20, y: 5 };
-// Measured from machine.png: the three reel windows (x0, y0, x1, y1), the marquee's display, the lever's hub, the
-// payout tray's mouth, the belly panel's middle and the marquee bulbs
+// The machine sits a little left of the middle, so the machine and the lever beside it are centered together
+const MACHINE_AT = { x: 11, y: 5 };
+// Measured from machine.png: the three reel windows (x0, y0, x1, y1), the marquee's display, where the lever's arm
+// rises (just past the outer end of the side hub, so the arm and knob stand beside the cabinet, clear of its column of
+// lights), the payout tray's mouth, the belly panel's middle and the marquee bulbs
 const WINDOWS = [
   [108, 389, 267, 663],
   [301, 389, 458, 663],
@@ -37,7 +39,7 @@ const WINDOWS = [
 const DISPLAY = { x: 91, y: 227, width: 572, height: 108 };
 // The marquee's middle in the scene's pixels
 const MARQUEE_Y = MACHINE_AT.y + (DISPLAY.y + DISPLAY.height / 2) * ART_SCALE;
-const HUB = { x: 744, y: 535 };
+const HUB = { x: 782, y: 535 };
 const TRAY = { x: 380, y: 950 };
 const BELLY = { x: 383, y: 830, width: 540 };
 const ARCH = [[108, 157], [150, 111], [201, 75], [260, 48], [319, 32], [380, 27], [442, 32], [500, 48], [559, 75]];
@@ -77,20 +79,22 @@ const NOTCHES = 6;
 // never answers coast to a stop after WAIT_FOR_SPIN_MS
 const ARMED_MS = 2000;
 const WAIT_FOR_SPIN_MS = 1200;
-// Reels that coast to a stop land left to right this far apart
-const COAST_GAP_MS = 120;
+// Reels that coast to a stop slow down over COAST_MS, landing left to right this far apart
+const COAST_MS = 240;
+const COAST_GAP_MS = 60;
 
 // Reel speeds in symbols a millisecond: the gentlest and the hardest pull
-const SLOWEST = 0.018;
-const FASTEST = 0.042;
+const SLOWEST = 0.01;
+const FASTEST = 0.02;
 // Reels reach their speed this long after the lever hits the bottom, left to right this far apart
 const RAMP_MS = 220;
 const KICK_GAP_MS = 45;
-// A reel's slow-down and bounce takes SETTLE_MS, and its symbol reaches the line ARRIVE of the way through it.
-// ease.back starts at this slope, so a reel cruising at speed v slows down over v x SETTLE_MS / BACK_SLOPE symbols
-const SETTLE_MS = 420;
-const ARRIVE = 0.37;
-const BACK_SLOPE = 4.70158;
+// A landing reel slows down over SLOW_DOWN_MS, its speed falling off with the square of the time left, until it moves
+// CRAWL symbols a millisecond as its symbol reaches the line, so the last few symbols crawl past. Then it runs a
+// little past the line and settles back onto it over BOUNCE_MS
+const SLOW_DOWN_MS = 1300;
+const CRAWL = 0.0025;
+const BOUNCE_MS = 340;
 // A reel steps along the strip to line up with its stop once it spins at least this share of its speed
 const BLUR_SHARE = 0.6;
 // Every spin's last reel is settled this long before the bot pays
@@ -98,8 +102,8 @@ const END_MARGIN_MS = 60;
 // The gap between reels landing: a share of the spin, within these bounds. The last reel lingers LINGER times longer
 // when the first two match
 const GAP_SHARE = 0.17;
-const MIN_GAP_MS = 180;
-const MAX_GAP_MS = 520;
+const MIN_GAP_MS = 420;
+const MAX_GAP_MS = 700;
 const LINGER = 1.6;
 const CHASE_MS = 90;
 const CLICK_MS = 90;
@@ -146,9 +150,10 @@ const RAIN_SIZE = 26;
 const RAIN_COINS = 90;
 const RAIN_MS = 3000;
 // The marquee's JACKPOT! grows this much in the jackpot's show, and a reel at full speed blurs up and down by this
-// share of a symbol's height
+// share of a symbol's height. A reel under SHARP symbols a millisecond isn't blurred, so a crawl can be read
 const SHOW_TITLE = 1.3;
 const BLUR_SHARE_OF_CELL = 0.22;
+const SHARP = 0.005;
 
 function text(value, style) {
   const piece = new Text({ text: value, style, resolution: 2 });
@@ -209,7 +214,7 @@ export function strengthOf(ms) {
 // When each reel's symbol reaches the line, in ms after the spin starts. The last reel is settled before `seconds`,
 // and lingers when the first two match
 export function landTimes(seconds, line) {
-  const last = seconds * 1000 - SETTLE_MS * (1 - ARRIVE) - END_MARGIN_MS;
+  const last = seconds * 1000 - BOUNCE_MS - END_MARGIN_MS;
   const gap = Math.min(MAX_GAP_MS, Math.max(MIN_GAP_MS, last * GAP_SHARE));
   const before = line[0] === line[1] ? gap * LINGER : gap;
   return [last - before - gap, last - before, last];
@@ -249,7 +254,8 @@ export function leverAt(width, height, note = 0) {
   return { x: left + x * scale, y: top + y * scale, travel: TRAVEL * scale };
 }
 
-function cruiseSpeed(strength) {
+// How fast the reels spin for a pull this hard, 0 to 1, in symbols a millisecond
+export function reelSpeed(strength) {
   return SLOWEST + (FASTEST - SLOWEST) * strength;
 }
 
@@ -272,19 +278,34 @@ function cruise(pos, v0, start, v1, ramp) {
   };
 }
 
+// A reel whose stop reached the line `t` ms ago, moving CRAWL symbols a millisecond: it runs on a little past the line,
+// then settles back onto `target`, standing still BOUNCE_MS after it arrived
+function bounce(target, t) {
+  const k = Math.min(1, t / BOUNCE_MS);
+  if (k >= 1) {
+    return { pos: target, speed: 0 };
+  }
+  const turn = Math.PI * k;
+  const pos = target + ((CRAWL * BOUNCE_MS) / Math.PI) * Math.sin(turn) * (1 - k);
+  return { pos, speed: Math.abs(CRAWL * (Math.cos(turn) * (1 - k) - Math.sin(turn) / Math.PI)) };
+}
+
 // A reel moving at `now` as `from` says, brought to land on `stop` (or wherever it comes to, when null) with its symbol
-// on the line at landAt ms after `now`: it eases to the spin's speed, then slows and bounces onto the stop.
-// Every reel keeps the spin's speed, so a harder pull always looks faster. A short spin may not pass enough of the
-// strip to reach its stop at that speed, so once the reel is a blur it steps a whole number of symbols along the
-// strip: each symbol stays where it is on screen and only which one shows there changes, which a spinning reel hides.
-// Returns the reel's place over time and the place it ends on
-function landing(from, now, stop, landAt, speed) {
+// on the line at landAt ms after `now`: it eases to the spin's speed, spends its last `slow` ms slowing down to a crawl
+// as its symbol reaches the line, then runs a little past and settles back. Every reel keeps the spin's speed, so a
+// harder pull always looks faster. A short spin may not pass enough of the strip to reach its stop at that speed, so
+// once the reel is a blur it steps a whole number of symbols along the strip: each symbol stays where it is on screen
+// and only which one shows there changes, which a spinning reel hides. Returns the reel's place over time and the
+// place it ends on
+export function landing(from, now, stop, landAt, speed, slow = SLOW_DOWN_MS) {
   const { pos, speed: v0 } = from;
-  const settleAt = landAt - SETTLE_MS * ARRIVE;
-  const glide = SETTLE_MS / BACK_SLOPE;
-  const ramp = Math.min(RAMP_MS, settleAt);
-  const span = ramp / 2 + (settleAt - ramp) + glide;
-  const start = pos + (v0 * ramp) / 2;
+  const slowAt = Math.max(0, landAt - slow);
+  const slowing = landAt - slowAt;
+  const ramp = Math.min(RAMP_MS, slowAt);
+  // Slowing down from speed v covers (2 x CRAWL + v) / 3 symbols for each of its ms, so the reel ends at
+  // start + v x span
+  const start = pos + (v0 * ramp) / 2 + (CRAWL * slowing * 2) / 3;
+  const span = ramp / 2 + (slowAt - ramp) + slowing / 3;
   // The speed nudged by under half a symbol over the spin, so it ends on a whole place
   const end = Math.round(start + speed * span);
   const even = (end - start) / span;
@@ -292,17 +313,21 @@ function landing(from, now, stop, landAt, speed) {
   const target = end + step;
   const blurAt = v0 >= BLUR_SHARE * even ? 0 : (ramp * (BLUR_SHARE * even - v0)) / (even - v0);
   const before = cruise(pos, v0, now, even, ramp);
+  const slowFrom = before(now + slowAt).pos + step;
   return {
     target,
     motion: (at) => {
       const t = at - now;
-      if (t < settleAt) {
+      if (t < slowAt) {
         const { pos: place, speed: moving } = before(at);
         return { pos: place + (t >= blurAt ? step : 0), speed: moving };
       }
-      const k = Math.min(1, (t - settleAt) / SETTLE_MS);
-      const back = target - even * glide;
-      return { pos: back + (target - back) * ease.back(k), speed: even * Math.max(0, 1 - k / ARRIVE) };
+      if (t >= landAt) {
+        return bounce(target, t - landAt);
+      }
+      const left = 1 - (t - slowAt) / slowing;
+      const lost = ((even - CRAWL) * slowing * (1 - left ** 3)) / 3;
+      return { pos: slowFrom + CRAWL * (t - slowAt) + lost, speed: CRAWL + (even - CRAWL) * left * left };
     },
   };
 }
@@ -451,7 +476,7 @@ function makeBelly() {
 function makeLever(art) {
   const piece = new Container({ label: "lever" });
   piece.position.set(HUB.x, HUB.y);
-  piece.arm = new Sprite(art["lever-arm"]);
+  piece.arm = new Sprite({ texture: art["lever-arm"], label: "arm" });
   piece.arm.anchor.set(0.5, 0.97);
   piece.arm.scale.x = 1.6;
   piece.knob = new Sprite({ texture: art["lever-knob"], label: "knob" });
@@ -927,7 +952,7 @@ class SlotMachine {
       return;
     }
     const now = performance.now();
-    const speed = cruiseSpeed(strength);
+    const speed = reelSpeed(strength);
     this.reels.forEach((reel, index) => reel.spinUp(cruise(reel.pos, 0, now + index * KICK_GAP_MS, speed, RAMP_MS)));
     this.setLights("spin");
     clearTimeout(this.waiting);
@@ -946,12 +971,13 @@ class SlotMachine {
       const from = reel.state(now);
       if (from.speed > 0) {
         moving = true;
-        const landAt = SETTLE_MS * ARRIVE + index * COAST_GAP_MS;
-        reel.landOn(landing(from, now, null, landAt, from.speed), now + landAt + SETTLE_MS);
+        const landAt = COAST_MS + index * COAST_GAP_MS;
+        reel.landOn(landing(from, now, null, landAt, from.speed, landAt), now + landAt + BOUNCE_MS);
       }
     });
     if (moving) {
-      setTimeout(() => !this.spinning && !this.celebrating && this.setLights("rest"), SETTLE_MS * 2);
+      const stopped = COAST_MS + (this.reels.length - 1) * COAST_GAP_MS + BOUNCE_MS;
+      setTimeout(() => !this.spinning && !this.celebrating && this.setLights("rest"), stopped);
     }
   }
 
@@ -974,10 +1000,10 @@ class SlotMachine {
     const now = performance.now();
     const line = event.reels.map((reel) => reel[1]);
     const lands = landTimes(event.seconds, line);
-    const speed = cruiseSpeed(event.strength ?? 0);
+    const speed = reelSpeed(event.strength ?? 0);
     this.reels.forEach((reel, index) => {
       const plan = landing(reel.state(now), now, event.stops[index], lands[index], speed);
-      reel.landOn(plan, now + lands[index] + SETTLE_MS * (1 - ARRIVE));
+      reel.landOn(plan, now + lands[index] + BOUNCE_MS);
     });
     if (this.lights.mode === "rest") {
       this.setLights("spin");
@@ -1004,7 +1030,7 @@ class SlotMachine {
         this.setLights("tease");
       }
     }
-    await wait(Math.max(0, start + lands[2] + SETTLE_MS * (1 - ARRIVE) - performance.now()));
+    await wait(Math.max(0, start + lands[2] + BOUNCE_MS - performance.now()));
     this.reels.forEach((reel) => reel.settle());
   }
 
@@ -1219,7 +1245,7 @@ class Reel {
     this.pos = pos;
     this.speed = speed;
     const top = Math.floor(pos) - 1;
-    const blur = Math.min(1, speed / 0.04);
+    const blur = Math.min(1, Math.max(0, speed - SHARP) / (0.04 - SHARP));
     const smear = blur * this.cell * BLUR_SHARE_OF_CELL * Math.abs(this.box.worldTransform.d);
     this.smear.enabled = smear >= 0.5;
     this.smear.strengthY = this.smear.enabled ? smear : 0;
