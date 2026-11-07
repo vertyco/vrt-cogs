@@ -1,5 +1,9 @@
 # Vegas Changelog
 
+## 0.5.2
+
+- The Slots lever rises straight out of the machine's side knob, instead of standing off to its right.
+
 ## 0.5.1
 
 - Slots spins with more suspense. The reels spin slower, and each one takes over a second to slow down, so the last few symbols crawl past the line. Then the reel runs a touch past its stop and settles back. A spin now lasts 3 to 5.5 seconds, and a hard pull still spins longer than a gentle one. The odds are the same.

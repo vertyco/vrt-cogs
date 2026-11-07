@@ -901,9 +901,13 @@ def test_the_lever_stands_beside_the_cabinet_on_its_side_hub(driver, live, size)
     found = on_stand_in(driver, LEVER_PLACE, width, height)
     assert isinstance(found, dict), found
     lights, hub = cabinet_edges()
-    # The arm and the knob are clear of the column of lights, and the arm rises from the end of the hub
-    assert found["arm"][0] >= lights and found["knob"][0] >= lights, (lights, found)
-    assert found["arm"][0] <= hub, (hub, found)
+    # The arm stands beside the cabinet and rises out of the side hub, not floating past its end. The knob is wider than
+    # the arm, so it may lean over the cabinet's edge by a fifth of its width, short of the lights
+    arm_left, _, arm_right, _ = found["arm"]
+    knob_left, _, knob_right, _ = found["knob"]
+    assert arm_left >= lights, (lights, found)
+    assert lights < (arm_left + arm_right) / 2 <= hub - 2, (lights, hub, found)
+    assert knob_left >= lights - (knob_right - knob_left) / 5, (lights, found)
     left, top, right, bottom = found["shown"]
     assert left >= 0 and top >= 0 and right <= width and bottom <= height, (size, found["shown"])
     assert not problems(driver)

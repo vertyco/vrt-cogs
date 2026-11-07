@@ -29,8 +29,8 @@ const ART_SCALE = 0.5;
 // The machine sits a little left of the middle, so the machine and the lever beside it are centered together
 const MACHINE_AT = { x: 11, y: 5 };
 // Measured from machine.png: the three reel windows (x0, y0, x1, y1), the marquee's display, where the lever's arm
-// rises (just past the outer end of the side hub, so the arm and knob stand beside the cabinet, clear of its column of
-// lights), the payout tray's mouth, the belly panel's middle and the marquee bulbs
+// rises (from the outer part of the side hub, so the arm stands beside the cabinet and the knob leans only over its
+// edge, short of the column of lights), the payout tray's mouth, the belly panel's middle and the marquee bulbs
 const WINDOWS = [
   [108, 389, 267, 663],
   [301, 389, 458, 663],
@@ -39,7 +39,7 @@ const WINDOWS = [
 const DISPLAY = { x: 91, y: 227, width: 572, height: 108 };
 // The marquee's middle in the scene's pixels
 const MARQUEE_Y = MACHINE_AT.y + (DISPLAY.y + DISPLAY.height / 2) * ART_SCALE;
-const HUB = { x: 782, y: 535 };
+const HUB = { x: 763, y: 535 };
 const TRAY = { x: 380, y: 950 };
 const BELLY = { x: 383, y: 830, width: 540 };
 const ARCH = [[108, 157], [150, 111], [201, 75], [260, 48], [319, 32], [380, 27], [442, 32], [500, 48], [559, 75]];
