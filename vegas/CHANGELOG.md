@@ -1,5 +1,9 @@
 # Vegas Changelog
 
+## 0.5.4
+
+- The Slots lever's arm sits a pixel or two further right on the machine's side knob.
+
 ## 0.5.3
 
 - The Slots lever's arm comes straight out of the middle of the machine's side knob.
