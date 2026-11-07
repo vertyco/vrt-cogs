@@ -1124,6 +1124,8 @@ body[data-theme="orb"] .notice {
   grid-area: 1 / 1;
   flex-direction: column;
   gap: 12px;
+  /* Keeps a long player name from stretching the panel past its set width; the name is cut short with "..." */
+  min-width: 0;
   padding: 22px 16px 18px;
   background: rgb(var(--orb-light) / 0.45);
   clip-path: var(--shape);

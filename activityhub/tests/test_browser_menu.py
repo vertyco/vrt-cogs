@@ -1762,6 +1762,19 @@ def test_the_orb_screen_lists_who_is_playing(driver, live):
     assert "playing now" in text.lower() and "Manager" in text
 
 
+def test_a_long_player_name_does_not_widen_the_orb_screen(driver, live):
+    member = live.hub.bot.get_guild(GUILD_ID).get_member(MANAGER_ID)
+    member.display_name = "Tiago (xbox dm is Tiago7200) and a few more words on the end"
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo", status="Watching")
+    driver.execute_script("document.querySelector('.pill[data-key=\"demo\"]').focus()")
+    face = "document.querySelector('#orb-screen .screen-face:not(.leaving)')"
+    wait_for(driver, f"{face}.querySelector('.screen-people .hub-person')")
+    # Layout widths: the face turns in 3D on its way in, which squeezes its box on the screen
+    widths = driver.execute_script(f"return [{face}.offsetWidth, document.getElementById('orb-screen').offsetWidth]")
+    assert widths[0] == pytest.approx(widths[1], abs=1)
+
+
 def test_no_bubbles_and_no_row_once_the_menu_link_is_gone(driver, live):
     live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
     open_menu(driver, live, DISCORD_QUERY)

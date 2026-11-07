@@ -1,5 +1,9 @@
 # ActivityHub Changelog
 
+## 0.15.1
+
+- In the Orb theme, a player with a long name in a game's "Playing now" list no longer stretches that game's panel off the right edge of the screen. The name is cut short with "..." instead.
+
 ## 0.15.0
 
 - The Orb theme's menu sounds have a volume slider, under the Menu sounds switch in **My look**. The sound changes as you drag it and saves when you let go. It's saved for you, so it follows you to every device, and the **This server** and **Defaults** tabs don't have it.
