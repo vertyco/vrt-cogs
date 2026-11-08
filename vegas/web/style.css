@@ -39,6 +39,9 @@
   --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
   --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  /* The dock's room along the bottom: Discord's inset where it has one (it already keeps clear of the phone's
+     buttons), 12 px where it hasn't */
+  --dock-foot: max(12px, var(--safe-bottom));
   color-scheme: dark;
 }
 
@@ -236,6 +239,7 @@ h3,
 
 .tools {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
@@ -288,6 +292,30 @@ h3,
     order: 3;
     flex: none;
     margin: 6px 0 0 auto;
+  }
+}
+
+/* Wide but short screens (a sideways phone): the membership sits under the casino's name instead of beside it, so
+   neither is cut short to fit the one row */
+@media (min-width: 561px) and (max-height: 500px) {
+  .brand {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .brand h1 {
+    max-width: 100%;
+    font-size: 19px;
+    line-height: 1.1;
+  }
+
+  #tier {
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0 7px;
+    font-size: 11px;
+    line-height: 15px;
   }
 }
 
@@ -702,10 +730,12 @@ h3,
   background: radial-gradient(ellipse at 50% 40%, var(--felt-light), var(--felt) 60%, #062814);
 }
 
+/* Dark where the scene keeps clear of a notch or Discord's buttons, like the phone's own edge */
 .scene-box {
   position: relative;
   min-width: 0;
   min-height: 0;
+  background: var(--night);
 }
 
 /* Sideways, the scene keeps clear of a notch on the left and the home bar along the bottom, like the result card */
@@ -723,7 +753,7 @@ h3,
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) 12px;
+  padding: 12px calc(12px + var(--safe-right)) var(--dock-foot) 12px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--gold-deep) transparent;
@@ -760,6 +790,81 @@ h3,
   .dock {
     gap: 6px;
     padding-top: 8px;
+  }
+}
+
+/* Short sideways phones at Hold'em: six seats with readable names need about 330 px of height, more than is left under
+   the top bar, so the bar moves to the top of the column on the right, over the dock, and the table takes the whole
+   height. There the bar takes two rows: the back button, the casino's name and the balance, then the tools (the
+   membership shows on the menu) */
+@media (min-aspect-ratio: 1/1) and (max-height: 500px) {
+  .app:has(> .holdem-table) {
+    --side: calc(300px + var(--safe-right));
+    --side-bar: calc(var(--safe-top) + 4px + 38px + 4px + 38px + 4px + 2px);
+    position: relative;
+  }
+
+  .app:has(> .holdem-table) .top {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: var(--side);
+    height: var(--side-bar);
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 4px 8px;
+    padding: calc(4px + var(--safe-top)) calc(12px + var(--safe-right)) 4px 12px;
+    border-left: 2px solid var(--gold-deep);
+  }
+
+  .app:has(> .holdem-table) .top::after {
+    content: "";
+    order: 2;
+    flex-basis: 100%;
+  }
+
+  .app:has(> .holdem-table) .brand {
+    display: contents;
+  }
+
+  .app:has(> .holdem-table) .brand h1 {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .app:has(> .holdem-table) #tier {
+    display: none;
+  }
+
+  .app:has(> .holdem-table) .purse {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .app:has(> .holdem-table) .purse b {
+    font-size: 16px;
+  }
+
+  .app:has(> .holdem-table) .tools {
+    order: 3;
+    margin-left: auto;
+  }
+
+  .holdem-table {
+    grid-template-columns: minmax(0, 1fr) var(--side);
+  }
+
+  .holdem-table .dock {
+    padding-top: calc(var(--side-bar) + 8px);
+  }
+
+  .holdem-table .scene {
+    top: var(--safe-top);
   }
 }
 
@@ -1272,6 +1377,13 @@ h3,
   .app[data-view="table"] .news {
     margin-right: calc(280px + var(--safe-right));
     max-width: calc(100% - 312px - var(--safe-left) - var(--safe-right));
+  }
+
+  /* At Hold'em the top bar sits over the dock, so the note comes down from the top of the screen, below Discord's
+     buttons, and gives that room back too */
+  .app:has(> .holdem-table) .news {
+    margin: calc(5px + var(--safe-top)) var(--side) calc(-5px - var(--safe-top) - var(--news-height)) 0;
+    max-width: calc(100% - var(--side) - 32px - var(--safe-left));
   }
 }
 
@@ -1890,11 +2002,12 @@ input[type="checkbox"] {
   filter: grayscale(0.85);
 }
 
-/* While the table practices, a small label says its chips are play chips, never credits */
+/* While the table practices, a small label says its chips are play chips, never credits. It starts the seat's row,
+   across from Stand up */
 .hd-note {
-  align-self: flex-start;
+  align-self: center;
   width: fit-content;
-  margin: 0;
+  margin: 0 auto 0 0;
   padding: 2px 10px;
   border: 1px solid var(--gold-deep);
   border-radius: 999px;
@@ -1941,14 +2054,24 @@ input[type="checkbox"] {
     display: block;
   }
 
+  /* Its rows sit close and its moves are as low as a thumb allows, so it leaves the table the room its seats need */
   .holdem-table .hd-bar {
     position: absolute;
     z-index: 1;
     inset: auto 0 0;
-    padding: 6px calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) 12px;
+    gap: 4px;
+    padding: 4px calc(12px + var(--safe-right)) var(--dock-foot) 12px;
     border-top: 1px solid var(--gold-deep);
     background: linear-gradient(90deg, var(--wood), #2a1409);
     box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  .holdem-table .hd-sizer {
+    gap: 4px;
+  }
+
+  .holdem-table .hd-moves .button {
+    min-height: 52px;
   }
 
   /* The bar fades in where it stands rather than sliding up from below the dock, so nothing hangs past the dock's
@@ -1962,26 +2085,21 @@ input[type="checkbox"] {
    and the bar covers the dock's bottom on the player's turn (above). An offer's strip stands in the ticks' place, so
    the dock keeps its height then too */
 @media (max-aspect-ratio: 1/1) {
-  /* The bar's height, from its rows below: its top edge and padding, the sizes, the slider and the moves */
+  /* The bar's height, from its rows above: its top edge and padding, the sizes, the slider and the moves */
   .holdem-table .dock {
     --hd-status: 22px;
-    --hd-moves: 56px;
-    --hd-bar: calc(1px + 6px + 44px + 6px + 44px + 6px + var(--hd-moves) + 12px + var(--safe-bottom));
+    --hd-moves: 52px;
+    --hd-bar: calc(1px + 4px + 44px + 4px + 44px + 4px + var(--hd-moves) + var(--dock-foot));
   }
 
   /* While the player has a seat, the dock is never shorter than the status line and the bar under it, so the bar
      never covers the status */
   .holdem-table .dock:has(#hd-deck:not([hidden])) {
-    min-height: calc(var(--hd-status) + 10px + var(--hd-bar) - 12px - var(--safe-bottom));
+    min-height: calc(var(--hd-status) + 10px + var(--hd-bar) - var(--dock-foot));
   }
 
   .holdem-table .hd-bar {
-    gap: 6px;
     padding-left: calc(12px + var(--safe-left));
-  }
-
-  .holdem-table .hd-sizer {
-    gap: 6px;
   }
 
   .holdem-table .hd-moves .button {

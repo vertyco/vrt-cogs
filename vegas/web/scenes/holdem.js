@@ -133,8 +133,12 @@ const TABLES = {
 // The narrowest an amount's label may be beside its chips, in seat units: "1,240" or "12.3K" fits. A bet with less
 // room has its amount under its chips instead (holdem_seats.js's UNDER)
 const LABEL = 50;
-// How far every seat keeps from the scene's edges, in CSS pixels
+// How far every seat keeps from the scene's edges, in CSS pixels, and the closer it may come on a scene too small for
+// that (a sideways phone, where the seats need every pixel of its height)
 const EDGE = 7;
+const TIGHT_EDGE = 2;
+// The smallest the viewer's own cards draw on a scene too small for them, as a share of their usual size
+const HERO_LEAST = 0.8;
 // The smallest a name and a shared card are drawn on screen, in CSS pixels
 const NAME_MIN = 10.3;
 const CARD_MIN = 32;
@@ -404,12 +408,17 @@ function heroSpot({ k, px, nameWidth, board, table }, lowest, under, most, big) 
 }
 
 // The viewer's own seat with their cards as big as the table draws them, or smaller where a narrow screen brings
-// the bottom corner seats too close to them
+// the bottom corner seats too close to them. On a scene too small for everything (plan.tight) they also shrink, down
+// to HERO_LEAST, until the plate is no lower than lowest
 function placeHero(plan, lowest, under, most) {
   const corners = [plan.spots[1], plan.spots[5]].map(seatBox);
   const crowded = (hero) => corners.some((box) => heroParts(hero).some((part) => overlaps(box, part)));
+  const low = (hero) => plan.tight && heroBox(hero).bottom > lowest;
   let hero = heroSpot(plan, lowest, under, most, plan.table.big);
-  for (let big = plan.table.big - 0.05; big >= 1 && crowded(hero); big -= 0.05) {
+  for (let big = plan.table.big - 0.05; big >= HERO_LEAST - 0.01; big -= 0.05) {
+    if (!(big >= 1 && crowded(hero)) && !low(hero)) {
+      break;
+    }
     hero = heroSpot(plan, lowest, under, most, big);
   }
   return hero;
@@ -509,8 +518,9 @@ function boardAt(scale, table) {
 
 // Everything's place at one scale. lowest: how far down the viewer's plate may go. under: whether the viewer's words
 // and the bottom seat's go under their chips, which moves those seats down. most: how high chips pile. watching: the
-// viewer has no seat, so the table is planned with six seats on the rail and no seat of their own
-function planAt(table, scale, lowest, under, most, watching) {
+// viewer has no seat, so the table is planned with six seats on the rail and no seat of their own. tight: the scene is
+// too small for everything at the usual size
+function planAt(table, scale, lowest, under, most, watching, tight) {
   const k = Math.max(1, NAME_MIN / (NAME_FONT * scale));
   // CSS pixels per seat unit, for the smallest words a seat may draw
   const px = k * scale;
@@ -531,7 +541,7 @@ function planAt(table, scale, lowest, under, most, watching) {
   if (under.bottom) {
     lowerBottomSeat(spots[0], board);
   }
-  const plan = { table, scale, k, px, nameWidth, spots, board, pot };
+  const plan = { table, scale, k, px, nameWidth, spots, board, pot, tight };
   plan.hero = placeHero(plan, lowest, under.hero, most);
   [1, 5].forEach((slot) => liftOverMiddle(spots[slot], [plan.hero.bet, spots[0].bet], board));
   plan.note = notePlace(plan);
@@ -547,7 +557,7 @@ function planAt(table, scale, lowest, under, most, watching) {
 
 // The viewer's words and the bottom seat's go beside their chips when they get half the way to the nearer bottom
 // corner's bet (whose words face theirs), else under them
-function planFor(table, scale, lowest, most, watching) {
+function planFor(table, scale, lowest, most, watching, tight) {
   const k = Math.max(1, NAME_MIN / (NAME_FONT * scale));
   const board = boardAt(scale, table);
   const corners = [1, 5].map((slot) => {
@@ -557,36 +567,41 @@ function planFor(table, scale, lowest, most, watching) {
   });
   const room = (Math.min(...corners) / 2 - 4 * k) / k - (CHIP / 2 + GAP);
   const crowded = room < LABEL;
-  return planAt(table, scale, lowest, { hero: crowded, bottom: crowded }, most, watching);
+  return planAt(table, scale, lowest, { hero: crowded, bottom: crowded }, most, watching, tight);
 }
 
 // Everything at one scale, the viewer's seat as low as a space height tall allows
-function fittedAt(table, scale, height, most, watching) {
-  const loose = planFor(table, scale, Infinity, most, watching);
-  return planFor(table, scale, loose.top + height / scale, most, watching);
+function fittedAt(table, scale, height, most, watching, tight) {
+  const loose = planFor(table, scale, Infinity, most, watching, tight);
+  return planFor(table, scale, loose.top + height / scale, most, watching, tight);
 }
 
-// The biggest scale that fits one table and its seats inside the scene's edges, EDGE in from them, and the offsets
+// The biggest scale that fits one table and its seats inside the scene's edges, `edge` in from them, and the offsets
 // that center them. Seats grow as the table shrinks, so a smaller table can need more room: the scale steps down
-// until everything fits. Chips pile tall when that fits at the same scale
-function arrangeOn(table, width, height, watching) {
-  const room = height - EDGE * 2;
+// until everything fits. A scene too small for that tries again tight: TIGHT_EDGE in from its edges, and the viewer's
+// cards smaller (placeHero). Chips pile tall when that fits at the same scale
+function arrangeOn(table, width, height, watching, tight = false) {
+  const edge = tight ? TIGHT_EDGE : EDGE;
+  const room = height - edge * 2;
   const biggest = Math.min(width / table.fit, room / table.height);
   // How far a plan spills past the scene's edges, in CSS pixels. A screen too small for every scale keeps the plan
   // that spills least
   const spill = (one) => {
-    return Math.max(0, (one.bottom - one.top) * one.scale - room, one.reach * one.scale - (width / 2 - EDGE));
+    return Math.max(0, (one.bottom - one.top) * one.scale - room, one.reach * one.scale - (width / 2 - edge));
   };
   const fits = (one) => spill(one) === 0;
-  let plan = fittedAt(table, biggest, room, PILE.low, watching);
+  let plan = fittedAt(table, biggest, room, PILE.low, watching, tight);
   let least = plan;
   for (let scale = biggest * 0.985; scale > biggest / 2 && !fits(plan); scale *= 0.985) {
-    plan = fittedAt(table, scale, room, PILE.low, watching);
+    plan = fittedAt(table, scale, room, PILE.low, watching, tight);
     least = spill(plan) < spill(least) ? plan : least;
+  }
+  if (!fits(plan) && !tight) {
+    return arrangeOn(table, width, height, watching, true);
   }
   plan = fits(plan) ? plan : least;
   plan.watching = watching;
-  const tall = fittedAt(table, plan.scale, room, PILE.tall, watching);
+  const tall = fittedAt(table, plan.scale, room, PILE.tall, watching, tight);
   tall.watching = watching;
   // Tall piles stand further apart, so they only come where they cost no seat or bet its room: a narrow phone keeps
   // the upright table with low piles rather than turning to the smaller table across
@@ -971,7 +986,10 @@ class HoldemTable {
     const room = note.width / k - SUM.height * PAD * 2;
     const fit = fitSized(PRACTICE, this.note.words.style, room, SMALLEST / px, SUM.font);
     setPill(this.note, fit.text, { fill: CREAM, stroke: GOLD_DEEP }, fit.size);
-    this.note.position.set(note.x, note.y);
+    // Across, a label wider than its place keeps its right end clear of the shared cards and reaches onto the rail
+    const across = this.plan.table === TABLES.across;
+    const x = across ? Math.min(note.x, note.x + note.width / 2 - (this.note.span * k) / 2) : note.x;
+    this.note.position.set(x, note.y);
     this.note.scale.set(k);
   }
 

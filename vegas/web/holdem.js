@@ -526,8 +526,9 @@ export class HoldemDock {
 
   // The people here for the dock's list: the player's own row first. Where the list keeps to its room (one row on an
   // upright screen, the rows down to the dock's bottom on a sideways phone) it shows as many whole entries as fit and
-  // then "+N", which opens the hub's people panel with everyone. Null when the list already shows just this, so its
-  // buttons stay put and a tap that spans a table still lands
+  // then "+N", which opens the hub's people panel with everyone. With no room even for the "+N" the list is empty
+  // rather than cut off: the top bar's people button still opens everyone. Null when the list already shows just
+  // this, so its buttons stay put and a tap that spans a table still lands
   peopleRow(rows, list) {
     const mine = rows.filter((row) => row.classList.contains("me"));
     const ordered = [...mine, ...rows.filter((row) => !mine.includes(row))];
@@ -537,6 +538,9 @@ export class HoldemDock {
       return null;
     }
     this.peopleKey = key;
+    if (fit < 0) {
+      return [];
+    }
     if (fit === ordered.length) {
       return ordered;
     }
@@ -551,7 +555,7 @@ export class HoldemDock {
 
   // How many whole entries the people list has room for: all of them unless it keeps to its room, then as many as fit
   // with the "+N" after them, each --person long and the "+N" --more (style.css). With no room for one beside the
-  // "+N", the "+N" alone stands for everyone
+  // "+N", the "+N" alone stands for everyone; with no room for the "+N" either, -1
   peopleRoom(list, count) {
     const style = getComputedStyle(list);
     const more = parseFloat(style.getPropertyValue("--more"));
@@ -575,6 +579,9 @@ export class HoldemDock {
     }
     if (count * (entry + gap) - gap <= room) {
       return count;
+    }
+    if (room < more) {
+      return -1;
     }
     return Math.max(0, Math.floor((room - more) / (entry + gap)));
   }

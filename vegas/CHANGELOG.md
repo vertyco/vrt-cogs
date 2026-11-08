@@ -1,5 +1,18 @@
 # Vegas Changelog
 
+## 0.5.7
+
+Phone polish, checked at the size of the game's window inside Discord's phone app.
+
+- Hold'em on an upright phone: every seat now fits on the table, so the top player's name and your own name and chips are no longer cut off. The panel under the table is shorter to make the room: the practice label sits beside Stand up instead of on its own row, and the bet buttons sit closer together.
+- Hold'em on a sideways phone: the top bar moves to the top of the right-hand column, so the table gets the whole height of the screen and every seat fits. Your own two cards draw a little smaller when the screen is very short.
+- The "Practice" label on a small Hold'em table no longer runs onto the first shared card.
+- Hold'em's list of people in the side panel no longer shows a half-hidden "+1" box when there's no room for it. The top bar's people button still lists everyone.
+- On a sideways phone the membership (like "Basic") sits under the casino's name, so neither gets cut to "B...".
+- The panel under each table no longer adds extra space on top of the room Discord keeps clear at the bottom of the screen.
+- Beside the phone's camera notch, the table area is dark instead of a bright green strip.
+- The people button in the top bar lines up with the other buttons.
+
 ## 0.5.6
 
 - The Slots House rules drop a line about how hard you pull the lever.

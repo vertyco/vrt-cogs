@@ -3,7 +3,9 @@
     pytest vegas/tests/screens.py -k war
 
 It saves the lobby and each game's table (waiting, mid-round, and with its result) at desktop, upright phone
-and sideways phone sizes, to the folder in the VEGAS_SHOTS environment variable (default: ./vegas-shots).
+and sideways phone sizes, to the folder in the VEGAS_SHOTS environment variable (default: ./vegas-shots). The
+discord-phone and discord-sideways sizes are the game's frame inside Discord's phone app on a small phone, with the
+edges Discord asks to keep clear: `-k discord` takes only those.
 
 Slots picks a bet of 100 and pulls the lever hard and fast, on reels rigged to land 7-7-7, so the result is the
 jackpot's celebration.
@@ -44,7 +46,18 @@ from vegas.tests.test_solo_page import lever_ready, pick_bet, pull_lever
 
 driver = test_browser.driver
 live = test_browser.live
-SIZES = {"desktop": (1280, 800, 1, False), "phone": (390, 844, 2, True), "sideways": (844, 390, 2, True)}
+SIZES = {
+    "desktop": (1280, 800, 1, False),
+    "phone": (390, 844, 2, True),
+    "sideways": (844, 390, 2, True),
+    # The game's frame inside Discord's Android app on a 360-wide phone: the frame under Discord's top bar, and the
+    # edges Discord says to keep clear (the navigation bar upright; the top and the camera's notch sideways)
+    "discord-phone": (360, 701, 3, True),
+    "discord-sideways": (670, 361, 3, True),
+}
+INSETS = {"discord-phone": {"bottom": 48}, "discord-sideways": {"top": 30, "left": 33}}
+# The page scripts that set a size's insets, removed when the size is cleared
+INSET_SCRIPTS = []
 # The second real player's seat in the real hand
 GUEST_SEAT = 4
 # Two decks stacked for one session: A-K against A-K splits the pot, then Kings catch a third King on the river
@@ -775,6 +788,20 @@ def set_size(chrome, size: str) -> None:
     width, height, scale, mobile = SIZES[size]
     metrics = {"width": width, "height": height, "deviceScaleFactor": scale, "mobile": mobile}
     chrome.execute_cdp_cmd("Emulation.setDeviceMetricsOverride", metrics)
+    # Discord sets its safe area sizes on the menu's page, and the hub copies them into the game's frame
+    sides = "".join(
+        f"document.documentElement.style.setProperty('--discord-safe-area-inset-{side}', '{px}px');"
+        for side, px in INSETS.get(size, {}).items()
+    )
+    # A new page has no <html> yet when this runs, so the sizes go on it once it is parsed
+    script = f"if (window === window.top) {{ addEventListener('DOMContentLoaded', () => {{ {sides} }}); }}"
+    INSET_SCRIPTS.append(chrome.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": script}))
+
+
+def clear_size(chrome) -> None:
+    chrome.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+    while INSET_SCRIPTS:
+        chrome.execute_cdp_cmd("Page.removeScriptToEvaluateOnNewDocument", INSET_SCRIPTS.pop())
 
 
 @pytest.mark.parametrize("size", list(SIZES))
@@ -799,7 +826,7 @@ def test_screens(driver, live, game, size):  # noqa: F811
         walk_up(driver, game)
         play_to_result(driver, game, f"{game}-{size}")
     finally:
-        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+        clear_size(driver)
 
 
 @pytest.mark.parametrize("size", list(SIZES))
@@ -809,7 +836,7 @@ def test_holdem_real_hand(driver, live, size):  # noqa: F811
         open_casino(driver, live)
         real_hand(driver, live, f"holdem-real-{size}")
     finally:
-        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+        clear_size(driver)
 
 
 @pytest.mark.parametrize("size", list(SIZES))
@@ -820,7 +847,7 @@ def test_holdem_scenario(driver, live, scenario, size):  # noqa: F811
         open_casino(driver, live)
         SCENARIOS[scenario](driver, live, f"holdem-{scenario}-{size}")
     finally:
-        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+        clear_size(driver)
 
 
 @pytest.mark.parametrize("size", list(SIZES))
@@ -831,4 +858,4 @@ def test_menu_scenario(driver, live, scenario, size):  # noqa: F811
         MENU_SCENARIOS[scenario](driver, live, f"{scenario}-{size}")
         assert not problems(driver)
     finally:
-        driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+        clear_size(driver)
