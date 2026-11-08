@@ -1,5 +1,10 @@
 # ActivityHub Changelog
 
+## 0.15.2
+
+- The frame rate counter in the corner is now small, dim text with no dark box behind it, sitting right in the corner. It is easy to find when you look for it and stays out of the way the rest of the time.
+- On a phone where Discord keeps a strip clear at the bottom of the screen, the counter sits in that empty strip, so it no longer covers a game's bottom buttons (like Fold in Vegas Hold'em).
+
 ## 0.15.1
 
 - In the Orb theme, a player with a long name in a game's "Playing now" list no longer stretches that game's panel off the right edge of the screen. The name is cut short with "..." instead.

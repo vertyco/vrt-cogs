@@ -1445,7 +1445,7 @@ body[data-theme="orb"] .notice {
 
   /* The frame rate counter moves to the empty corner under the tabs, clear of the pods and the arrow below them */
   body[data-theme="orb"]:not(.playing) .fps {
-    right: calc(8px + var(--safe-right));
+    right: calc(4px + var(--safe-right) + var(--safe-bottom) / 2);
     left: auto;
   }
 }

@@ -734,18 +734,21 @@ input[type="color"]::-webkit-color-swatch {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* The frame rate counter (fps.js): over the menu and over a game, which is why it needs a z-index */
+/* The frame rate counter (fps.js): over the menu and over a game, which is why it needs a z-index. Small, dim text
+   with no box, tucked into the corner, so it is there when looked for and out of the way otherwise. The soft shadow
+   keeps it readable over a bright game. On a phone with a strip kept clear at the bottom, it sits in the middle of
+   that strip, where games put nothing, moved in from the side by half the strip so the screen's round corner can't
+   cut it */
 .fps {
   position: fixed;
-  left: calc(8px + var(--safe-left));
-  bottom: calc(8px + var(--safe-bottom));
+  left: calc(4px + var(--safe-left) + var(--safe-bottom) / 2);
+  bottom: max(2px, calc(var(--safe-bottom) / 2 - 6px));
   z-index: 1;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #ffffff;
-  font: 600 0.7rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: rgba(255, 255, 255, 0.55);
+  font: 500 10px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 1px 1px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
   pointer-events: none;
 }
 
