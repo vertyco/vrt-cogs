@@ -46,7 +46,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.11.10"
+    __version__ = "3.11.11"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -158,9 +158,40 @@ class XTools(commands.Cog):
                 return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
             data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             gt, xuid, bio, location, gs, pfp, tenure, tier, rep = profile(data)
-            return {"ok": True, "gamertag": gt, "xuid": xuid, "gamerscore": gs,
-                    "tier": tier, "rep": rep, "location": location, "bio": bio,
-                    "tenure": tenure}
+            return {
+                "ok": True,
+                "gamertag": gt,
+                "xuid": xuid,
+                "gamerscore": gs,
+                "tier": tier,
+                "rep": rep,
+                "location": location,
+                "bio": bio,
+                "tenure": tenure,
+            }
+
+    # --- read-only RPC avatar fetch: Xbox profile picture URL (GameDisplayPicRaw) ---
+    #   VRTUTILS__RPC_MASTER ["XTools","rpc_get_avatar",["<gamertag-or-xuid>"]]
+    async def rpc_get_avatar(self, gamertag_or_xuid: str):
+        s = str(gamertag_or_xuid).strip()
+        if not s:
+            return {"ok": False, "error": "empty gamertag/xuid"}
+        async with SignedSession() as session:
+            xbl_client = await self.auth_manager(session)
+            if not xbl_client:
+                return {"ok": False, "error": "xtools not authorized or XSAPI unreachable"}
+            try:
+                if s.isdigit():
+                    pdata = await xbl_client.profile.get_profile_by_xuid(s)
+                else:
+                    pdata = await xbl_client.profile.get_profile_by_gamertag(s)
+            except Exception as e:
+                return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+            data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
+            gt, xuid, _, _, _, pfp, _, _, _ = profile(data)
+            if not pfp:
+                return {"ok": False, "error": "no GameDisplayPicRaw on profile", "gamertag": gt, "xuid": xuid}
+            return {"ok": True, "gamertag": gt, "xuid": xuid, "avatar_url": pfp}
 
     # Extract the OAuth code from a pasted address bar / redirect URL
     @staticmethod
