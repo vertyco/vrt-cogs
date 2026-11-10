@@ -15,7 +15,7 @@ from redbot.core.utils.views import SetApiView
 
 from .abc import CompositeMetaClass
 from .common import api, constants, models
-from .views import TranslateMenu
+from .views import MenuButton, TranslateMenu, is_translate_row, reuse_uploads
 
 log = logging.getLogger("red.vrt.fluent")
 _ = Translator("Fluent", __file__)
@@ -146,7 +146,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.7.1"
+    __version__ = "2.8.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -229,8 +229,39 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 except discord.NotFound:
                     continue
                 log.info(f"Adding {len(button_objs)} buttons to message {message_id}")
+                if message.flags.components_v2:
+                    await self.sync_layout_buttons(message, button_objs)
+                    continue
                 with suppress(discord.HTTPException):
                     await message.edit(view=view)
+
+    async def sync_layout_buttons(self, message: discord.Message, buttons: list[models.TranslateButton]):
+        """Make a Components V2 message carry exactly these translate buttons.
+
+        The buttons are part of the message's layout, so changing them means sending the whole layout
+        back. The message is only edited when its buttons differ, and the rest of it is kept as-is.
+        """
+        menu = TranslateMenu(self, buttons)
+        layout = discord.ui.LayoutView.from_message(message, timeout=None)
+        labels = {b.button_text for b in buttons}
+        rows = [item for item in layout.walk_children() if is_translate_row(item, labels)]
+        current = [(child.custom_id, child.label) for row in rows for child in row.children]
+        if current == [(child.custom_id, child.label) for child in menu.children]:
+            if buttons:
+                self.bot.add_view(menu, message_id=message.id)
+            return
+        try:
+            for row in rows:
+                (row.parent or layout).remove_item(row)
+            for idx in range(0, len(buttons), 5):
+                row = discord.ui.ActionRow()
+                for button in buttons[idx : idx + 5]:
+                    row.add_item(MenuButton(menu.translate, button.button_text, button))
+                layout.add_item(row)
+            reuse_uploads(layout, message.channel.id)
+            await message.edit(view=layout)
+        except (discord.HTTPException, ValueError) as e:
+            log.error(f"Failed to update the translate buttons on message {message.id}", exc_info=e)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
@@ -419,7 +450,10 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             if channel and isinstance(channel, discord.abc.Messageable):
                 try:
                     message = await channel.fetch_message(message_id)
-                    await message.edit(view=None)
+                    if message.flags.components_v2:
+                        await self.sync_layout_buttons(message, [])
+                    else:
+                        await message.edit(view=None)
                 except (discord.NotFound, discord.HTTPException):
                     pass
 
@@ -467,6 +501,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         for button in buttons:
             button.translated_content = None
             button.translated_embeds = None
+            button.translated_texts = None
         await self.config.guild(ctx.guild).buttons.set([b.model_dump() for b in buttons])
         await ctx.send(_("Translations reset for all buttons."))
 

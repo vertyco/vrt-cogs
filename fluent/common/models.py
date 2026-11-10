@@ -34,6 +34,10 @@ class TranslateButton(_Base):
     original_embeds: t.Optional[t.List[dict]] = None  # original embeds
     translated_embeds: t.Optional[t.List[dict]] = None  # translated embeds
 
+    # Components V2 messages: the text of each text block, in layout order
+    original_texts: t.Optional[t.List[str]] = None
+    translated_texts: t.Optional[t.List[str]] = None
+
     def up_to_date(self, message: discord.Message) -> bool:
         # Ensure the source message is still the same
         if message.content != self.original_content:
