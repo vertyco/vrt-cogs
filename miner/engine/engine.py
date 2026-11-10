@@ -280,8 +280,9 @@ def get_root(cog_instance: commands.Cog | Path) -> Path:
 
 
 def is_unc_path(path: Path) -> bool:
-    """Check if path is a UNC path"""
-    return path.is_absolute() and str(path).startswith(r"\\\\")
+    """Check if path is a UNC path (a Windows network share), not a local device path"""
+    text = str(path)
+    return path.is_absolute() and text.startswith("\\\\") and text[2:3] not in ("?", ".")
 
 
 def find_piccolo_executable() -> Path:

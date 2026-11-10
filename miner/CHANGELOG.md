@@ -1,5 +1,9 @@
 # Miner Changelog
 
+## 1.11.5
+
+- **Fix**: A cog installed on a Windows network share (a path like `\\server\share`) now fails to load with a clear message saying so. The check for it never matched, so the cog loaded and its database setup failed later with a confusing error.
+
 ## 1.11.4
 
 - **Change**: Hits boosted by the Closer perk now say so in the swing feed (`🎯Closer +40%!`), so you can see the boost kick in at 25% HP.
