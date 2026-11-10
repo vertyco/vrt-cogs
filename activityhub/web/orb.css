@@ -130,6 +130,15 @@ body[data-theme="orb"]:not(.panel-open) .menu {
   will-change: transform;
 }
 
+/* On a phone or tablet the fog holds still. Drifting, it is a moving picture bigger than the screen that the graphics
+   chip lays over the whole menu every frame; still, it is drawn once with the shading and the ring over it */
+@media (pointer: coarse) {
+  .fog {
+    animation: none;
+    will-change: auto;
+  }
+}
+
 .vignette {
   position: absolute;
   inset: 0;
@@ -435,6 +444,11 @@ body[data-theme="orb"] .notice {
 .games.orb-menu {
   display: block;
   padding: 0;
+}
+
+/* While the menu loads the Orb shows its scene alone, without the Standard theme's placeholders */
+.orb-menu .skeleton {
+  display: none;
 }
 
 /* menu.js moves each pill to its place on the ring */
@@ -1493,11 +1507,60 @@ body[data-theme="orb"] .tab[aria-selected="true"] {
   color: rgb(var(--orb-pale));
 }
 
+/* Only the color: a select's arrow is a background picture too (menu.css) */
 body[data-theme="orb"] select,
 body[data-theme="orb"] .order-row,
 body[data-theme="orb"] .switch {
   border: 1px solid rgb(var(--orb-light) / 0.2);
-  background: rgb(var(--orb-deep) / 0.85);
+  background-color: rgb(var(--orb-deep) / 0.85);
+}
+
+body[data-theme="orb"] .order-row.dragging {
+  border-color: rgb(var(--orb-light) / 0.6);
+  background-color: rgb(var(--orb-dark));
+}
+
+body[data-theme="orb"] .switch input {
+  background: rgb(var(--orb-light) / 0.18);
+}
+
+body[data-theme="orb"] .switch input:checked {
+  background: rgb(var(--orb-main));
+  box-shadow: 0 0 10px rgb(var(--orb-main) / 0.5);
+}
+
+/* With their letters a little closer together, the five tabs fit on two rows of an upright phone and on one row of
+   a sideways one */
+@media (max-width: 480px), (max-height: 480px) {
+  body[data-theme="orb"] .tab {
+    padding: 8px 7px;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+  }
+}
+
+/* The opening splash (menu.css) in the Orb's lettering and glow */
+body[data-theme="orb"] .launch-picture {
+  border-radius: 50%;
+  background: rgb(var(--orb-deep));
+  box-shadow:
+    0 0 0 2px rgb(var(--orb-light) / 0.5),
+    0 0 28px rgb(var(--orb-main) / 0.45);
+  color: rgb(var(--orb-light));
+  font-family: var(--display);
+}
+
+body[data-theme="orb"] .launch-picture::after {
+  border-radius: 50%;
+}
+
+body[data-theme="orb"] .launch-name {
+  color: rgb(var(--orb-light));
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgb(var(--orb-main) / 0.45);
 }
 
 /* The menu sounds' volume, under their switch: a thin track lit with the glow up to the knob. The box is a finger's
@@ -1560,8 +1623,10 @@ body[data-theme="orb"] .secondary {
 }
 
 body[data-theme="orb"] .swatch[aria-pressed="true"] {
-  border-color: rgb(var(--orb-white));
-  box-shadow: 0 0 10px rgb(var(--orb-main) / 0.7);
+  box-shadow:
+    0 0 0 2px rgb(var(--orb-ink)),
+    0 0 0 4px rgb(var(--orb-white)),
+    0 0 12px 4px rgb(var(--orb-main) / 0.7);
 }
 
 @media (prefers-reduced-motion: reduce) {

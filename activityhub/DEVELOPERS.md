@@ -1535,7 +1535,7 @@ The hub serves every file in your `web_dir`. A few rules keep that working.
 - **Storage is shared.** Every game and the menu share one web address, so `localStorage` and `sessionStorage` (the browser's saved data for a site) are shared too. Prefix your keys with your game key (`"clickcounter:best"`), and keep anything that matters in Config. (Game cogs are fully trusted code, like any Red cog.)
 - **Links (symlinks, `npm link`) to files outside `web_dir` aren't served.** Copy the files in.
 
-**Caching is handled for you.** A cache is a saved copy of a file, kept so it loads faster next time. The hub serves your files under a versioned folder, like `/games/<key>/<code>/game.js`. The code changes whenever any of your files change. So a caching service (like Cloudflare, which keeps copies of files to serve them faster) never serves an old copy.
+**Caching is handled for you.** A cache is a saved copy of a file, kept so it loads faster next time. The hub serves your files under a versioned folder, like `/games/<key>/<code>/game.js`. The code changes whenever any of your files change. So a caching service (like Cloudflare, which keeps copies of files to serve them faster) never serves an old copy. A file at its newest versioned address is also marked as safe to keep for a year, so a returning player's browser, and any caching service on the way, doesn't ask the bot for it again. Your `index.html` is never kept, which is how a player's next visit finds the new code.
 
 **Details for bigger projects:**
 

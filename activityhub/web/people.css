@@ -316,6 +316,24 @@
   color: var(--muted, #949ba4);
 }
 
+/* A finger needs more than a mouse does: Join, Invite, the question's buttons and the panel's close button */
+@media (pointer: coarse) {
+  .hub-join,
+  .hub-confirm button {
+    min-width: 64px;
+    min-height: 40px;
+  }
+
+  .hub-invite-button {
+    min-height: 44px;
+  }
+
+  .hub-panel-close {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 /* ---------- Join's question ---------- */
 
 .hub-confirm {

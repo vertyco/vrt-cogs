@@ -1,5 +1,7 @@
 // The Stats tab: how much each game gets played, on phones or computers, by day and by hour, from the bot's play
 // log. Read-only: nothing here changes a setting
+import { el, option } from "./dom.js";
+
 const PERIODS = [
   [7, "7 days"],
   [30, "30 days"],
@@ -20,23 +22,6 @@ const HOUR_MARKS = new Set([0, 6, 12, 18, 23]);
 const DAY_NAME = new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 const SHORT_DAY = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", timeZone: "UTC" });
 const MONTH_NAME = new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric", timeZone: "UTC" });
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) {
-    node.className = className;
-  }
-  if (text !== undefined) {
-    node.textContent = text;
-  }
-  return node;
-}
-
-function option(value, label) {
-  const node = el("option", "", label);
-  node.value = value;
-  return node;
-}
 
 function count(n, word) {
   return `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;

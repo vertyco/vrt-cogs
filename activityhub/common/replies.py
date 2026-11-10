@@ -29,6 +29,20 @@ SOMETHING_WRONG = "Something went wrong."
 NOT_INSTALLED = "This activity isn't installed on this bot anymore."
 PAGE_MISSING = "This page isn't part of the game."
 
+# Discord ids are at most 20 digits
+ID_DIGITS = 20
+
+
+def discord_id(text: t.Any) -> int | None:
+    """
+    A Discord id a page sent as text, as a number, or None when it isn't one. isdigit() alone also accepts
+    characters int() refuses, like "²", and int() refuses text thousands of digits long
+    """
+    if not isinstance(text, str) or not text.isascii() or not text.isdigit() or len(text) > ID_DIGITS:
+        return None
+    return int(text)
+
+
 # Shown inside the game frame, so the menu link is a button that calls the SDK's backToMenu instead of a link
 NOTICE_PAGE = Template("""<!doctype html>
 <html lang="en">

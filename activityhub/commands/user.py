@@ -181,7 +181,8 @@ class UserCommands(MixinMeta):
             label = _("Play {}").format(game.name)[:80]
         try:
             add_button(view, LaunchButton(game.key if game else None, label, emoji, style))
-        except ValueError:
+        except ValueError as e:
+            log.debug("No room for another button on message %s: %s", message.id, e)
             await ctx.send(_("That message has no room for another button."))
             return
         if await self.edit_buttons(ctx, message, view):
@@ -236,8 +237,9 @@ class UserCommands(MixinMeta):
             try:
                 found = self.find_game(game)
                 key, name = found.key, found.name
-            except ValueError:
+            except ValueError as e:
                 # The game's cog may be gone, and its button can still come off by the game's key
+                log.debug("No installed game matches %r, so its button is looked up by key: %s", game, e)
                 key, name = game.strip().casefold(), game.strip()
         custom_id = custom_id_for(key)
         view = editable_view(message)

@@ -79,7 +79,8 @@ class PingFailed(Exception):
 def retry_after(resp: aiohttp.ClientResponse) -> float:
     try:
         return max(float(resp.headers.get("Retry-After", DEFAULT_RETRY_AFTER)), 0.0)
-    except ValueError:
+    except ValueError as e:
+        log.debug("Discord's Retry-After isn't a number, so logins wait the usual time: %s", e)
         return DEFAULT_RETRY_AFTER
 
 
@@ -235,7 +236,8 @@ def proxy_url(application_id: int) -> str:
 async def resolves(host: str) -> bool:
     try:
         await asyncio.wait_for(asyncio.get_running_loop().getaddrinfo(host, None), timeout=5)
-    except (socket.gaierror, asyncio.TimeoutError):
+    except (socket.gaierror, asyncio.TimeoutError) as e:
+        log.debug("%s doesn't resolve: %r", host, e)
         return False
     return True
 

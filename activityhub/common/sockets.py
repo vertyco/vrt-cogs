@@ -96,12 +96,11 @@ class Connection:
     The menu's link has no game or room
     """
 
-    def __init__(self, ws: web.WebSocketResponse, ctx: ActivityContext, game: Game | None, rooms: "Rooms | None"):
+    def __init__(self, ws: web.WebSocketResponse, ctx: ActivityContext, game: Game | None):
         self.ws = ws
         self.ctx = ctx
         # None for the hub's own menu link, which belongs to no game and no room
         self.game = game
-        self.rooms = rooms
         # The user id of the person this player joined from a people list, checked to be in the same window. Only
         # the first live connection after a Join has one
         self.follow: int | None = None

@@ -26,6 +26,9 @@ CONTENT_TYPES = {
 # Engine builds ship files compressed ahead of time (game.wasm.br). They go out with Content-Encoding,
 # so the browser unpacks them before the page's code sees them
 COMPRESSED = {".gz": "gzip", ".br": "br"}
+# For a file at an address that carries its folder's newest fingerprint. The file never changes at that address, so
+# browsers and the caching services in between may keep it for a year and never ask the bot for it again
+LASTING = "public, max-age=31536000, immutable"
 HEAD_TAG = re.compile(r"<head\b[^>]*>", re.IGNORECASE)
 # What can come before the spot a page's <head> would start: a byte order mark, comments, the doctype and <html>
 PAGE_START = re.compile(
@@ -38,28 +41,52 @@ def hidden(relative: Path) -> bool:
     return any(part.startswith(".") for part in relative.parts)
 
 
+def served_entries(folder: str | Path) -> t.Iterator[os.DirEntry]:
+    """
+    Every file under a folder the hub can serve, as its folder's listing describes it. A listing already holds what
+    each file is and when it changed (on Windows, without asking about each file again), which keeps a look over a
+    game of a thousand files quick. Hidden folders aren't even opened, since a .git folder can be huge, and neither
+    are links to folders
+    """
+    with os.scandir(folder) as entries:
+        for entry in entries:
+            if entry.name.startswith("."):
+                continue
+            if entry.is_dir(follow_symlinks=False):
+                yield from served_entries(entry.path)
+            elif entry.is_file():
+                yield entry
+
+
 def served_files(root: Path) -> t.Iterator[Path]:
-    """Every file under `root` the hub can serve. Hidden folders aren't even walked, since a .git folder can be huge"""
-    for folder, folders, files in os.walk(root):
-        folders[:] = [name for name in folders if not hidden(Path(name))]
-        for name in files:
-            path = Path(folder, name)
-            if not hidden(Path(name)) and path.is_file():
-                yield path
+    """Every file under `root` the hub can serve"""
+    return (Path(entry.path) for entry in served_entries(root))
+
+
+# Each web folder's newest fingerprint, for knowing an address that carries it (is_current)
+newest: dict[Path, str] = {}
 
 
 def build_id(root: Path) -> str:
     """Short fingerprint of a folder's files, so their addresses change whenever any of them change"""
     parts = []
-    for path in sorted(served_files(root)):
+    start = len(str(root)) + 1
+    for entry in served_entries(root):
         try:
-            changed = path.stat().st_mtime_ns
+            changed = entry.stat().st_mtime_ns
         except OSError as e:
-            # A bundler rebuilding the folder can delete a file between the walk and this look at it
-            log.debug("Left %s out of the fingerprint: %s", path, e)
+            # A bundler rebuilding the folder can delete a file between the listing and this look at it
+            log.debug("Left %s out of the fingerprint: %s", entry.path, e)
             continue
-        parts.append(f"{path.relative_to(root).as_posix()}{changed}")
-    return hashlib.sha1("".join(parts).encode()).hexdigest()[:10]
+        parts.append(f"{entry.path[start:].replace(os.sep, '/')}{changed}")
+    build = hashlib.sha1("".join(sorted(parts)).encode()).hexdigest()[:10]
+    newest[root] = build
+    return build
+
+
+def is_current(root: Path, build: str) -> bool:
+    """Whether a file address's code is the folder's newest fingerprint. An old page's addresses carry an older one"""
+    return newest.get(root) == build
 
 
 def resolve_inside(root: Path, relative: str) -> Path | None:
@@ -84,7 +111,8 @@ def inject_head(html: str, tags: str) -> str:
     return html[: match.end()] + tags + html[match.end() :]
 
 
-def file_response(path: Path) -> web.FileResponse:
+def file_response(path: Path, lasting: bool = False) -> web.FileResponse:
+    """The file as a reply. `lasting` marks it as safe to keep for good (LASTING)"""
     encoding = COMPRESSED.get(path.suffix.lower())
     # A compressed file has the type of the file inside it: game.wasm.gz is WebAssembly
     name = path.stem if encoding else path.name
@@ -94,4 +122,6 @@ def file_response(path: Path) -> web.FileResponse:
     headers = {"Content-Type": content_type}
     if encoding is not None:
         headers["Content-Encoding"] = encoding
+    if lasting:
+        headers["Cache-Control"] = LASTING
     return web.FileResponse(path, headers=headers)

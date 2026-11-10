@@ -279,20 +279,59 @@ def test_reset_order_saves_alphabetical(driver, live):
     assert driver.execute_script(f"return {CARDS}") == ["second", "demo"]
 
 
-def test_dropping_something_from_outside_leaves_the_order_alone(driver, live):
+ORDER_ROWS = "[...document.querySelectorAll('.order-row')].map((row) => row.dataset.key)"
+# How far apart the order list's rows are
+ORDER_STEP = "const rows = document.querySelectorAll('.order-row'); return rows[1].offsetTop - rows[0].offsetTop;"
+# Where a row has slid to while another is dragged past it
+ROW_SLID = "return document.querySelector('.order-row[data-key=\"{}\"]').style.transform"
+
+
+def grip_middle(driver, key):
+    box = driver.find_element(By.CSS_SELECTOR, f'.order-row[data-key="{key}"] .handle').rect
+    return box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+
+
+def test_dragging_a_row_by_its_grip_moves_it_and_the_row_it_passes_steps_aside(driver, live):
     live.hub.config.globals["look"] = {"theme": "standard"}
     open_menu(driver, live, DISCORD_QUERY)
     open_settings(driver)
     pick_tab(driver, "order")
-    # A drop of text that isn't a row from the list, like a file or a dragged link
-    driver.execute_script("""
-        const row = document.querySelector('.order-row[data-key="demo"]');
-        const data = new DataTransfer();
-        data.setData('text/plain', '9');
-        row.dispatchEvent(new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true }));
-        """)
-    rows = "[...document.querySelectorAll('.order-row')].map((row) => row.dataset.key)"
-    assert driver.execute_script(f"return {rows}") == ["second", "demo"]
+    step = driver.execute_script(ORDER_STEP)
+    grip = driver.find_element(By.CSS_SELECTOR, '.order-row[data-key="second"] .handle')
+    ActionChains(driver).move_to_element(grip).click_and_hold().move_by_offset(0, step).perform()
+    # Still held: the row below has stepped up into the dragged row's place
+    assert driver.execute_script(ROW_SLID.format("demo")) == f"translateY(-{step}px)"
+    assert driver.execute_script(f"return {ORDER_ROWS}") == ["second", "demo"]
+    ActionChains(driver).release().perform()
+    assert driver.execute_script(f"return {ORDER_ROWS}") == ["demo", "second"]
+    assert driver.execute_script(f"return {CARDS}") == ["demo", "second"]
+    save(driver)
+    assert live.hub.config.users[MEMBER_ID]["order"] == ["demo", "second"]
+
+
+def test_a_finger_drags_a_row_by_its_grip_and_a_cancelled_drag_moves_nothing(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    touch_device(driver, 375, 740)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        driver.execute_script("document.getElementById('gear').click()")
+        wait_for(driver, "getComputedStyle(document.getElementById('panel')).transform === 'none'")
+        driver.execute_script("document.querySelector('#tabs .tab[data-tab=\"order\"]').click()")
+        step = driver.execute_script(ORDER_STEP)
+        x, y = grip_middle(driver, "second")
+        # Discord taking the screen mid-drag cancels the touch, and every row goes back
+        hold_drag(driver, (x, y), (x, y + step))
+        assert driver.execute_script(ROW_SLID.format("demo")) == f"translateY(-{step}px)"
+        touch(driver, "touchCancel")
+        assert driver.execute_script(ROW_SLID.format("demo")) == ""
+        assert driver.execute_script(f"return {ORDER_ROWS}") == ["second", "demo"]
+        # The grip takes the drag itself, so the list never scrolls under the finger and the drag lands
+        x, y = grip_middle(driver, "second")
+        hold_drag(driver, (x, y), (x, y + step))
+        touch(driver, "touchEnd")
+        assert driver.execute_script(f"return {ORDER_ROWS}") == ["demo", "second"]
+    finally:
+        plain_device(driver)
 
 
 def test_server_tab_turns_a_game_off(driver, live):
@@ -864,6 +903,52 @@ def test_orb_picker_spins_on_after_a_flick_and_a_finger_stops_it(driver, live, t
         plain_device(driver)
 
 
+# The picker's place in games, from how each of the two pills nearest the middle is lit
+PLACE = """
+let [place, light] = [0, 0];
+document.querySelectorAll('#games .pill').forEach((pill, i) => {
+  const lit = Number(pill.style.getPropertyValue('--lit') || 0);
+  place += i * lit;
+  light += lit;
+});
+return place / light;
+"""
+
+
+def test_a_fast_slides_first_move_is_not_lost_and_one_more_move_is_a_flick(driver, live, tmp_path):
+    for i in range(14):
+        folder = write_demo_web(tmp_path / f"x{i:02}")
+        register(live.hub, DemoCog(folder, key=f"x{i:02}", name=f"X {i:02}", cog_name=f"X{i}"))
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        row = picker_row(driver)
+        # A fast finger's first move is already a row and a half from where it landed. The picker turns by all of it
+        # but the few pixels that told the slide from a tap
+        stamp = time.time()
+        touch(driver, "touchStart", 300, 760, stamp)
+        touch(driver, "touchMove", 300, 760 - 1.5 * row, stamp + FRAME)
+        assert driver.execute_script(PLACE) == pytest.approx(1.5 - 10 / row, abs=0.02)
+        # One more move and a lift: two moves are a flick, and the picker spins well past where the finger left it
+        touch(driver, "touchMove", 300, 760 - 3 * row, stamp + 2 * FRAME)
+        touch(driver, "touchEnd", stamp=stamp + 3 * FRAME)
+        # The lift itself moves the picker on, by what it would have turned since the finger's last move
+        assert driver.execute_script(PLACE) > 3.5
+        wait_for(driver, RESTING, timeout=5)
+        pills = driver.execute_script(f"return {PILLS}")
+        assert pills.index(driver.execute_script(f"return {SELECTED}")) > 8
+        assert abs(driver.execute_script(OFF_MIDDLE)) < 1
+        # A first move that is the whole flick spins it too, back the other way
+        stamp = time.time()
+        touch(driver, "touchStart", 300, 500, stamp)
+        touch(driver, "touchMove", 300, 500 + 2 * row, stamp + FRAME)
+        touch(driver, "touchEnd", stamp=stamp + 2 * FRAME)
+        wait_for(driver, RESTING, timeout=5)
+        assert driver.execute_script(f"return {SELECTED}") == pills[0]
+    finally:
+        plain_device(driver)
+
+
 PRESSED = "document.querySelector(arguments[0]).classList.contains('pressed')"
 # When the next finger lands and when the given element first shows its press, on the page's own clock, and whether
 # it showed by half the wait. That half-wait timer is set first and falls due first, so it runs first even when the
@@ -920,7 +1005,9 @@ def test_a_finger_shows_its_press_and_a_slide_takes_it_away(driver, live):
 
 
 HOT_SIGN = "getComputedStyle(document.getElementById('hot')).display"
-FOG = "document.querySelector('.fog').getAnimations()[0].playState"
+# The swirl inside the orb, one of the scene's endless motions
+SWIRL = "document.querySelector('.orb-core').getAnimations()[0].playState"
+FOG_DRIFTS = "document.querySelector('.fog').getAnimations().length > 0"
 
 
 def heat(driver, state):
@@ -932,12 +1019,14 @@ def test_a_hot_phone_holds_the_orbs_background_still_and_says_why(driver, live):
     try:
         open_menu(driver, live, PHONE_QUERY)
         wait_for(driver, "window.fakeDiscordBus.count('THERMAL_STATE_UPDATE') > 0")
-        assert driver.execute_script(f"return [{HOT_SIGN}, {FOG}]") == ["none", "running"]
+        # A phone's fog never drifts: still, it costs the phone one less moving layer the size of the screen
+        assert not driver.execute_script(f"return {FOG_DRIFTS}")
+        assert driver.execute_script(f"return [{HOT_SIGN}, {SWIRL}]") == ["none", "running"]
         # Warm is fine; hot (Discord's "serious") holds the background still and shows the sign
         heat(driver, 1)
-        assert driver.execute_script(f"return [{HOT_SIGN}, {FOG}]") == ["none", "running"]
+        assert driver.execute_script(f"return [{HOT_SIGN}, {SWIRL}]") == ["none", "running"]
         heat(driver, 2)
-        assert driver.execute_script(f"return [{HOT_SIGN}, {FOG}]") == ["grid", "paused"]
+        assert driver.execute_script(f"return [{HOT_SIGN}, {SWIRL}]") == ["grid", "paused"]
         assert driver.execute_script(WAITS_FOR_DOUBLE_TAP) == []
         # A tap on the sign says why
         driver.find_element(By.ID, "hot").click()
@@ -949,13 +1038,15 @@ def test_a_hot_phone_holds_the_orbs_background_still_and_says_why(driver, live):
         driver.find_element(By.CSS_SELECTOR, ".hub-confirm-stay").click()
         # Cooled down, it all moves again
         heat(driver, 0)
-        assert driver.execute_script(f"return [{HOT_SIGN}, {FOG}]") == ["none", "running"]
+        assert driver.execute_script(f"return [{HOT_SIGN}, {SWIRL}]") == ["none", "running"]
     finally:
         plain_device(driver)
     # Only Discord's phone apps say how hot they run, so a computer doesn't ask
     open_menu(driver, live, DISCORD_QUERY)
     wait_for(driver, "document.body.dataset.theme === 'orb'")
     assert driver.execute_script("return window.fakeDiscordBus.count('THERMAL_STATE_UPDATE')") == 0
+    # And a computer's fog drifts
+    assert driver.execute_script(f"return {FOG_DRIFTS}")
 
 
 def test_a_computers_touch_screen_keeps_the_computers_ring(driver, live, tmp_path):
@@ -2958,3 +3049,109 @@ def test_a_game_page_reads_the_platform(driver, live, query, platform):
         assert driver.execute_async_script(PAGE_PLATFORM) == platform
     finally:
         driver.switch_to.default_content()
+
+
+# The theme the page shows, whether it is still loading, and whether its placeholder cards and the header's name show
+LOADING_LOOK = """
+const shown = (node) => getComputedStyle(node).visibility === "visible" && node.getClientRects().length > 0;
+return [
+  document.body.dataset.theme || null,
+  document.body.classList.contains("loading"),
+  [...document.querySelectorAll(".skeleton")].some(shown),
+  shown(document.getElementById("who-name")),
+];
+"""
+
+
+def test_the_next_visit_opens_in_the_last_look_while_it_logs_in(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "list"}
+    silent = f"{live.url}/{DISCORD_QUERY}&silent=1"
+    # A first visit knows no look yet, so it shows no theme and no placeholders while Discord answers
+    driver.get(silent)
+    wait_for(driver, "typeof window.answerDiscord === 'function'")
+    assert driver.execute_script(LOADING_LOOK) == [None, True, False, False]
+    driver.execute_script("window.answerDiscord()")
+    wait_for(driver, "document.querySelectorAll('#games .card').length > 0")
+    assert driver.execute_script(LOADING_LOOK) == ["standard", False, False, True]
+    # The next visit opens in that look at once, with placeholders where the games will be
+    driver.get(silent)
+    wait_for(driver, "typeof window.answerDiscord === 'function'")
+    assert driver.execute_script(LOADING_LOOK) == ["standard", True, True, False]
+    assert driver.execute_script("return document.getElementById('games').classList.contains('list')")
+    driver.execute_script("window.answerDiscord()")
+    wait_for(driver, "document.querySelectorAll('#games .card').length > 0")
+    assert driver.execute_script(LOADING_LOOK) == ["standard", False, False, True]
+
+
+def test_a_remembered_orb_look_shows_its_scene_and_no_placeholders_while_it_logs_in(driver, live):
+    silent = f"{live.url}/{DISCORD_QUERY}&silent=1"
+    open_menu(driver, live, DISCORD_QUERY)
+    driver.get(silent)
+    wait_for(driver, "typeof window.answerDiscord === 'function'")
+    assert driver.execute_script(LOADING_LOOK) == ["orb", True, False, False]
+    assert driver.find_element(By.CSS_SELECTOR, ".orb-scene").is_displayed()
+
+
+def test_a_look_this_device_cannot_use_counts_as_none(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    for broken in ('{"theme": "orb", "glow": "green", "accent": "#5865F2"}', "not json", '{"theme": "neon"}'):
+        driver.execute_script("localStorage.setItem('activityhub:look', arguments[0])", broken)
+        driver.get(f"{live.url}/{DISCORD_QUERY}&silent=1")
+        wait_for(driver, "typeof window.answerDiscord === 'function'")
+        assert driver.execute_script(LOADING_LOOK) == [None, True, False, False]
+
+
+# Run right after the click that opens the demo game: the splash's name, and whether it is in front of the menu
+SPLASH = """
+document.querySelector('.card[data-key="demo"]').click();
+const splash = document.querySelector('.launch');
+return [splash.querySelector('.launch-name').textContent, splash.getAttribute('aria-label')];
+"""
+
+
+def test_opening_a_game_shows_its_name_until_the_game_has_loaded(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    open_menu(driver, live, DISCORD_QUERY)
+    assert driver.execute_script(SPLASH) == ["Demo", "Opening Demo"]
+    wait_for(driver, "document.body.classList.contains('playing')")
+    assert driver.execute_script("return document.querySelector('.launch')") is None
+    # A game closed while it was still loading takes its splash with it
+    driver.execute_script("window.activityhubHost.closeGame()")
+    driver.execute_script("window.activityhubHost.openGame('second'); window.activityhubHost.closeGame();")
+    assert driver.execute_script("return document.querySelector('.launch')") is None
+
+
+def test_the_grid_has_two_columns_on_an_upright_phone(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    touch_device(driver, 360, 701)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        tops = driver.execute_script(
+            "return [...document.querySelectorAll('#games .card')].map((card) => card.getBoundingClientRect().top)"
+        )
+        assert len(tops) == 2 and tops[0] == tops[1]
+        assert no_sideways_scroll(driver)
+    finally:
+        plain_device(driver)
+
+
+# Whether the settings panel is what a finger hits where the demo card's bubble is
+PANEL_OVER_BUBBLE = f"""
+const box = {BUBBLE}.getBoundingClientRect();
+const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+return Boolean(hit.closest('#panel'));
+"""
+
+
+def test_the_settings_panel_covers_the_cards_bubbles(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    touch_device(driver, 375, 740)
+    try:
+        open_menu(driver, live, PHONE_QUERY)
+        live.add_person(MANAGER_ID, where="demo")
+        wait_for(driver, f"{BUBBLE}?.textContent === '1'")
+        driver.execute_script("document.getElementById('gear').click()")
+        wait_for(driver, "getComputedStyle(document.getElementById('panel')).transform === 'none'")
+        assert driver.execute_script(PANEL_OVER_BUBBLE)
+    finally:
+        plain_device(driver)

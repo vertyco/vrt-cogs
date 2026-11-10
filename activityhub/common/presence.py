@@ -7,7 +7,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 from .playlog import PlayLog
-from .replies import dumps
+from .replies import discord_id, dumps
 from .sessions import ActivityContext
 from .sockets import Connection
 
@@ -186,12 +186,9 @@ class Presence:
 
     def follow_target(self, ctx: ActivityContext, value: t.Any) -> int | None:
         """The user id a game connection's follow names, when that person is someone else in the same window"""
-        # Discord ids are at most 20 digits. isdigit() alone also accepts characters int() refuses, like "²"
-        if not isinstance(value, str) or not value.isascii() or not value.isdigit() or len(value) > 20:
-            return None
-        user_id = int(value)
+        user_id = discord_id(value)
         window = self.windows.get(ctx.instance_id)
-        if window is None or user_id not in window.people or user_id == ctx.author.id:
+        if user_id is None or window is None or user_id not in window.people or user_id == ctx.author.id:
             return None
         return user_id
 

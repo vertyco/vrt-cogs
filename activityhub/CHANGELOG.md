@@ -1,5 +1,46 @@
 # ActivityHub Changelog
 
+## 0.16.0
+
+A pass over how the menu looks, feels and loads, mostly for phones.
+
+Opening and loading:
+
+- The menu opens in the look it had last time on that device, while the player is still logging in. Before, it opened in a plain gray page and switched to the Orb a moment later. The Standard theme shows gray placeholder cards where the games will be, and the Orb shows its scene.
+- Opening a game shows that game's icon and name in the middle of the screen at once, until the game's page has loaded. Before, the screen was empty for as long as the game took to arrive.
+- The menu loads faster for everyone after their first visit. The hub's and the games' files are now marked as safe to keep, so a phone doesn't ask the bot for them again until they change.
+- The bot answers a menu load, a settings save and a return from a game faster. Checking a game's files for changes took about 190 ms for a game with a thousand files, on every one of those, and now takes about 35 ms. A game with a hundred files went from about 16 ms to about 1 ms.
+
+The Standard theme on phones:
+
+- The grid shows two columns on a phone held upright and four on one held sideways. It used to show one very large card at a time.
+- The numbered bubbles on the cards no longer show through the settings panel and over its buttons.
+
+Settings:
+
+- **My order** rows can be dragged by the grip at their left end, with a mouse or a finger. The rows you pass step aside to show where the game will land, and a long list scrolls while you drag near its top or bottom. Dragging didn't work on touch screens before. The arrows still work.
+- The on/off rows are sliding switches, and the whole row takes the tap.
+- The color choices, the tabs, the buttons and the arrows are finger sized on a touch screen. The picker for your own color sits in a rainbow ring, so it no longer looks like one more preset.
+- The drop-down lists look the same on every phone and computer.
+- On a phone held sideways the panel is wider, so its tabs fit on one row and more settings fit on the screen. In the Orb theme the five tabs take two rows on an upright phone instead of three.
+- The gear, the close button and the arrows are drawn icons. They were text characters, which some phones drew as emoji.
+
+Also:
+
+- In the header's row of faces, the small badge showing each person's game is no longer hidden behind the next face.
+- The header's people button and the invite button take taps a little way around them on a touch screen.
+- On phones and tablets the Orb's background fog holds still, which gives the phone one less full-screen layer to draw on every frame. Computers keep the drifting fog.
+- A game page address with a malformed server id (`?guild_id=²`) made the bot answer with an error and a traceback in its log. It now opens like any other address without a server.
+- A long Snake or 2048 round no longer holds up the rest of the bot while the hub plays its moves back to check the score.
+- When the play log's database opens but its table couldn't be made, the Stats tab now says the play log isn't available instead of failing.
+- When the bot's data folder is on a Windows network share (a path like `\\server\share`), the play log now stays off and the bot's log says why. The check for this never matched, so the play log's database could fail later with a confusing error. The menu and the games work as before.
+- A fast flick of the Orb's ring on a phone feels tighter. The ring now keeps all of a fast finger's first move (it used to drop it, so the ring started late and stayed behind the finger). It spins on at the speed the finger had as it lifted, not its slower average. And it no longer stands still for a moment between the finger lifting and the spin starting. A very short flick, over in one or two moves, now spins the ring too.
+
+For game developers:
+
+- Your `icon` is also what players see while your page loads, with your game's name under it. Nothing to change.
+- Files under their newest versioned address are served with `Cache-Control: public, max-age=31536000, immutable`. `index.html` is never kept, so players still get new code on their next visit. Keep using relative paths, as before.
+
 ## 0.15.2
 
 - The frame rate counter in the corner is now small, dim text with no dark box behind it, sitting right in the corner. It is easy to find when you look for it and stays out of the way the rest of the time.

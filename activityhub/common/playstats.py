@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from ..db.tables import Play
+from .replies import discord_id
 
 DAY = 86400
 # Day numbers count days since 1970-01-01, a Thursday. EPOCH turns a day number into a date's ordinal
@@ -66,11 +67,6 @@ def whole_number(text: str) -> int | None:
     return -int(digits) if text.startswith("-") else int(digits)
 
 
-def is_server_id(text: str) -> bool:
-    # Discord ids are at most 20 digits
-    return text.isascii() and text.isdigit() and len(text) <= 20
-
-
 def read_query(query: t.Mapping[str, str]) -> StatsQuery | None:
     """The stats request's settings, or None when one is missing or malformed"""
     days = PERIODS.get(query.get("days", ""))
@@ -78,7 +74,7 @@ def read_query(query: t.Mapping[str, str]) -> StatsQuery | None:
     server = query.get("server")
     if days is None or offset is None or not OFFSET_MIN <= offset <= OFFSET_MAX:
         return None
-    if server is not None and server not in (ALL, OUTSIDE) and not is_server_id(server):
+    if server is not None and server not in (ALL, OUTSIDE) and discord_id(server) is None:
         return None
     return StatsQuery(server, days, offset)
 

@@ -34,7 +34,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.15.2"
+    __version__ = "0.16.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -129,6 +129,8 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         logging.getLogger("aiosqlite").setLevel(logging.INFO)
         try:
             await engine.register_cog(self, TABLES, trace=True)
+            # A migration that fails is only logged, so the table is asked for before anything counts on it
+            await Play.count()
         except Exception as e:
             log.error("The play log's database couldn't open, so plays aren't logged", exc_info=e)
             self.playlog.failed()

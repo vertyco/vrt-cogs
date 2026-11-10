@@ -107,6 +107,25 @@ async def test_game_files_are_served_under_any_build(client, demo):
 
 
 @pytest.mark.asyncio
+async def test_a_file_under_the_newest_build_may_be_kept_for_good_and_an_older_one_may_not(client, demo):
+    # The page's addresses carry the newest build, and a file never changes at one of those
+    build = build_id(demo.web_dir)
+    fresh = await client.get(f"/games/demo/{build}/game.js")
+    assert fresh.status == 200 and fresh.headers["Cache-Control"] == "public, max-age=31536000, immutable"
+    # A page opened before an update still asks under its old build, for a file that may have changed since
+    stale = await client.get("/games/demo/anything/game.js")
+    assert stale.status == 200 and "immutable" not in stale.headers.get("Cache-Control", "")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("guild_id", ["²", "9" * 5000, "-5", "5.0", ""])
+async def test_a_page_address_with_an_odd_server_id_still_opens(client, demo, guild_id):
+    # isdigit() takes "²" and int() doesn't, and int() refuses thousands of digits
+    resp = await client.get("/games/demo/", params={"guild_id": guild_id})
+    assert resp.status == 200
+
+
+@pytest.mark.asyncio
 async def test_a_link_to_index_html_gets_the_page_with_the_helper(client, demo):
     # A "Play again" link to index.html, or a reload of it, would otherwise load the page without "activityhub"
     resp = await client.get("/games/demo/anything/index.html")

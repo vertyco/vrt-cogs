@@ -23,6 +23,9 @@ console.log(JSON.stringify({
     oneMove: speed([[40, 1]], 50),
     sameTime: speed([[40, 1], [40, 2]], 50),
     oldMovesOnly: speed([[0, 0], [10, 3], [200, 3.1], [210, 3.2]], 220),
+    speedingUp: speed([[0, 0], [16, 0.2], [32, 0.6], [48, 1.4]], 64),
+    slowingDown: speed([[0, 0], [16, 0.8], [32, 1.2], [48, 1.4]], 64),
+    unevenMoves: speed([[0, 1], [4, 1.05], [16, 1.2], [40, 1.5], [48, 1.6]], 50),
   },
   resting: [
     restingPlace(2.4, 0, 9, 0.005),
@@ -70,6 +73,17 @@ def test_the_fingers_speed_comes_from_its_last_moments(answers):
     assert speeds["sameTime"] == 0
     # A quick start long before the finger lifts doesn't count, only the slow end does
     assert speeds["oldMovesOnly"] == pytest.approx(0.1 / 10)
+    # A steady finger's speed is the same however its moves are spaced
+    assert speeds["unevenMoves"] == pytest.approx(0.6 / 48)
+
+
+def test_the_newest_moves_count_most_toward_the_fingers_speed(answers):
+    speeds = answers["speeds"]
+    # Both fingers covered 1.4 games in 48 ms. The one speeding up lifts faster than that average, though never faster
+    # than its last move, and the one slowing down lifts slower
+    average, last_up, last_down = 1.4 / 48, 0.8 / 16, 0.2 / 16
+    assert average * 1.2 < speeds["speedingUp"] < last_up
+    assert last_down < speeds["slowingDown"] < average / 1.2
 
 
 def test_a_let_go_picker_rests_on_a_whole_game(answers):

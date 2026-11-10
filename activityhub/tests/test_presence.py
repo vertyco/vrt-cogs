@@ -48,7 +48,7 @@ async def presence(clock):
 
 def link(hub, user_id=MEMBER_ID, instance="i-1", guild=True):
     ctx = context_for(hub, user_id=user_id, instance_id=instance, guild_id=500 if guild else None)
-    return Connection(FakeWebSocket(), ctx, None, None)
+    return Connection(FakeWebSocket(), ctx, None)
 
 
 async def settle(*conns):

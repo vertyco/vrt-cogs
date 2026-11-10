@@ -7,7 +7,11 @@ const STRETCH = 0.55;
 // The finger's speed counts over its last moments only, and a finger that rested this long before letting go
 // flicked nothing
 const SPEED_WINDOW_MS = 100;
-const RESTED_MS = 80;
+export const RESTED_MS = 80;
+// Within those moments the newest moves count most: each move counts for about a third as much for every this
+// long before the last one. A thumb is still speeding up as it lifts, and a plain average would start the glide
+// slower than the finger was going
+const SPEED_FADE_MS = 20;
 // How far a flick carries for each unit of speed: an iPhone list's ordinary slowdown, which loses 0.2% of its speed
 // every millisecond
 const COAST_MS = 500;
@@ -24,14 +28,22 @@ export function stretch(place, last) {
   return end + Math.sign(over) * (1 - 1 / (1 + Math.abs(over) * STRETCH));
 }
 
-// The finger's speed in games per millisecond from its moves, each [time, place], or 0 when it had stopped
+// The finger's speed as it lifts, in games per millisecond, from its moves, each [time, place], or 0 when it had
+// stopped. It is the average speed between moves, weighted by how long each stretch took and how near the lift it was
 export function speed(moves, now) {
   const recent = moves.filter(([time]) => now - time <= SPEED_WINDOW_MS);
   if (recent.length < 2 || now - recent[recent.length - 1][0] > RESTED_MS) {
     return 0;
   }
-  const [[start, from], [end, to]] = [recent[0], recent[recent.length - 1]];
-  return end > start ? (to - from) / (end - start) : 0;
+  const last = recent[recent.length - 1][0];
+  let [travel, weight] = [0, 0];
+  for (let i = 1; i < recent.length; i += 1) {
+    const [[start, from], [end, to]] = [recent[i - 1], recent[i]];
+    const counts = Math.exp((end - last) / SPEED_FADE_MS);
+    travel += (to - from) * counts;
+    weight += (end - start) * counts;
+  }
+  return weight > 0 ? travel / weight : 0;
 }
 
 // The whole game a let-go ring comes to rest on: where the flick would carry it, or the nearest when it was too slow

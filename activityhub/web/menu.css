@@ -151,14 +151,21 @@ input:focus-visible {
 
 .icon-button {
   /* A long server name beside the gear shrinks, and the gear stays a whole button */
+  display: grid;
+  place-items: center;
   flex: none;
   width: 40px;
   height: 40px;
+  padding: 0;
   border: 0;
   border-radius: 10px;
   background: transparent;
-  font-size: 1.25rem;
   cursor: pointer;
+}
+
+.icon-button .hub-icon {
+  width: 22px;
+  height: 22px;
 }
 
 /* Hover looks are for a mouse: a phone keeps a tapped thing looking hovered until the next tap somewhere else */
@@ -202,9 +209,44 @@ body.hot[data-theme="orb"] .hot-sign {
   padding: 4px 16px 24px;
 }
 
-/* Two columns still fit on a phone; a wide Discord window gets more */
+/* A wide Discord window gets many columns. A phone held upright gets two, and held sideways four, from narrower cards:
+   one column there would show a single game at a time */
 .games.grid {
   grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+}
+
+@media (max-width: 700px) {
+  .games.grid {
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  }
+}
+
+/* Until the first menu shows (menu.js doneLoading): the header keeps its room and shows nothing, and the Standard
+   theme shows gray cards where the games will be. The Orb shows its scene alone (orb.css), and a first visit, whose
+   theme isn't known yet, shows neither */
+body.loading .who {
+  visibility: hidden;
+}
+
+.skeleton {
+  min-height: 150px;
+  border-radius: var(--radius);
+  background: var(--card);
+  animation: skeleton-pulse 0.9s ease-in-out infinite alternate;
+}
+
+body:not([data-theme]) .skeleton {
+  visibility: hidden;
+}
+
+.games:is(.list, .compact) .skeleton {
+  min-height: 72px;
+}
+
+@keyframes skeleton-pulse {
+  from {
+    opacity: 0.4;
+  }
 }
 
 .games.list,
@@ -320,6 +362,12 @@ body.hot[data-theme="orb"] .hot-sign {
 .desc {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+/* As wide as its card and no wider, so a long currency line is cut inside the card instead of widening the text
+   past both its edges */
+.grid .text {
+  width: 100%;
 }
 
 .grid .desc {
@@ -458,6 +506,8 @@ body.playing .currency-tip {
 .scrim {
   position: fixed;
   inset: 0;
+  /* Over the cards' bubbles and their players' lists */
+  z-index: 7;
   background: rgba(0, 0, 0, 0.5);
   opacity: 0;
   pointer-events: none;
@@ -470,6 +520,7 @@ body.playing .currency-tip {
   top: 0;
   right: 0;
   bottom: 0;
+  z-index: 8;
   display: flex;
   flex-direction: column;
   width: min(420px, 100vw);
@@ -494,14 +545,24 @@ body.panel-open .panel {
   .panel,
   .scrim,
   .card,
-  .thumb {
+  .thumb,
+  .order-row,
+  .switch input,
+  .switch input::after {
     transition: none;
+  }
+
+  .skeleton,
+  .launch,
+  .launch-picture::after {
+    animation: none;
   }
 }
 
+/* The close button stays level with the first row of tabs when they wrap onto a second */
 .panel-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--line);
@@ -518,6 +579,7 @@ body.panel-open .panel {
 }
 
 .tab {
+  min-height: 40px;
   padding: 8px 9px;
   border: 0;
   border-radius: 8px;
@@ -561,11 +623,25 @@ body.panel-open .panel {
   text-transform: uppercase;
 }
 
+/* Drawn the same on every phone and computer: the menu's own box with a small arrow at its end, in the text's color.
+   The list that opens is still the device's own */
 select {
-  padding: 8px 10px;
+  min-height: 40px;
+  padding: 8px 34px 8px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--card);
+  background-color: var(--card);
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .swatches {
@@ -575,12 +651,16 @@ select {
   gap: 8px;
 }
 
+.swatch,
+.custom-color {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
 .swatch {
-  width: 28px;
-  height: 28px;
   padding: 0;
   border: 2px solid transparent;
-  border-radius: 50%;
   cursor: pointer;
 }
 
@@ -588,15 +668,25 @@ select {
   border: 2px dashed var(--muted);
 }
 
+/* The chosen color wears a white ring a little way out from it */
 .swatch[aria-pressed="true"] {
-  border: 2px solid #ffffff;
+  box-shadow:
+    0 0 0 2px var(--panel),
+    0 0 0 4px #ffffff;
+}
+
+/* The picker for any other color sits in a rainbow ring, so it doesn't pass for one more preset */
+.custom-color {
+  display: grid;
+  place-items: center;
+  background: conic-gradient(#ed4245, #fee75c, #57f287, #00a8fc, #5865f2, #eb459e, #ed4245);
 }
 
 input[type="color"] {
-  width: 28px;
-  height: 28px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
   padding: 0;
-  border: 2px solid var(--line);
+  border: 2px solid var(--panel);
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
@@ -620,23 +710,46 @@ input[type="color"]::-webkit-color-swatch {
   list-style: none;
 }
 
+/* Rows a dragged one passes step aside with a short slide (settings.js startDrag) */
 .order-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  gap: 4px;
+  min-height: 48px;
+  padding: 4px 6px 4px 0;
   border-radius: 8px;
   background: var(--card);
+  transition: transform 0.15s ease;
 }
 
+/* The row in hand follows the pointer itself, lifted over the others */
 .order-row.dragging {
-  opacity: 0.5;
+  position: relative;
+  z-index: 1;
+  background: var(--card-hover);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transition: none;
 }
 
+/* The grip is the row's whole left end. A finger on it drags the row instead of scrolling the list */
 .handle {
-  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  flex: none;
+  width: 40px;
   color: var(--muted);
   cursor: grab;
+  touch-action: none;
+}
+
+.order-row.dragging .handle {
+  cursor: grabbing;
+}
+
+.handle .hub-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .order-name {
@@ -648,9 +761,13 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 .order-row .icon-button {
-  width: 32px;
-  height: 32px;
-  font-size: 1rem;
+  width: 40px;
+  height: 40px;
+}
+
+.order-row .icon-button .hub-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .order-row .icon-button:disabled {
@@ -672,20 +789,58 @@ input[type="color"]::-webkit-color-swatch {
   padding: 0;
 }
 
+/* One row with a switch at its end. The whole row takes the tap */
 .switch {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 10px 6px 12px;
   border-radius: 8px;
   background: var(--card);
   cursor: pointer;
 }
 
+.switch-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The checkbox drawn as a sliding switch: a track that fills with the accent color, and a knob that crosses it */
 .switch input {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 24px;
+  margin: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+  transition: background-color 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.switch input::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
   width: 18px;
   height: 18px;
-  accent-color: var(--accent);
+  border-radius: 50%;
+  background: #ffffff;
+  content: "";
+  transition: transform 0.15s;
+}
+
+.switch input:checked {
+  background: var(--accent);
+}
+
+.switch input:checked::after {
+  background: var(--on-accent);
+  transform: translateX(16px);
 }
 
 .panel-foot {
@@ -718,6 +873,7 @@ input[type="color"]::-webkit-color-swatch {
 
 .primary,
 .secondary {
+  min-height: 40px;
   padding: 8px 16px;
   border: 0;
   border-radius: 8px;
@@ -732,6 +888,83 @@ input[type="color"]::-webkit-color-swatch {
 
 .secondary {
   background: rgba(255, 255, 255, 0.08);
+}
+
+/* A finger needs about 44px. The header's small pills keep their look and take taps a little way around them
+   instead */
+@media (pointer: coarse) {
+  select,
+  .tab,
+  .primary,
+  .secondary {
+    min-height: 44px;
+  }
+
+  .icon-button,
+  .order-row .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .handle {
+    width: 44px;
+  }
+
+  .order-row {
+    min-height: 52px;
+  }
+
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(5, 40px);
+    justify-content: start;
+    gap: 10px 16px;
+  }
+
+  .swatch,
+  .custom-color {
+    width: 40px;
+    height: 40px;
+  }
+
+  .people-stack,
+  .invite-pill {
+    position: relative;
+  }
+
+  /* Up and down only: reaching sideways would count as the row's own width (menu.js faceCount) */
+  .people-stack::after,
+  .invite-pill::after {
+    position: absolute;
+    inset: -6px 0;
+    content: "";
+  }
+}
+
+/* A phone held sideways is short and wide: the panel is wide enough for its tabs on one row and its colors on
+   another, and its head and foot give their room to the settings between them */
+@media (max-height: 480px) {
+  .panel {
+    width: min(540px, 100vw);
+  }
+
+  .swatches {
+    grid-template-columns: repeat(10, 40px);
+    gap: 10px 8px;
+  }
+
+  .panel-head {
+    padding: 4px 12px;
+  }
+
+  .tab-body {
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .panel-foot {
+    padding: 6px 12px;
+  }
 }
 
 /* The frame rate counter (fps.js): over the menu and over a game, which is why it needs a z-index. Small, dim text
@@ -776,6 +1009,79 @@ input[type="color"]::-webkit-color-swatch {
 
 .menu {
   transition: opacity 0.15s ease-out;
+}
+
+/* Opening a game (host.js launchSplash): its icon and name in the middle of the screen, from the tap until its page
+   has loaded and fades in over them. It waits a moment first, so a game that loads at once never flashes it */
+.launch {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 24px;
+  text-align: center;
+  pointer-events: none;
+  animation: launch-in 0.25s ease-out 0.15s both;
+}
+
+.launch-picture {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent) 35%, #1e1f22);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.launch-picture img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+/* A ring that keeps spreading out from the icon says the game is on its way */
+.launch-picture::after {
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--accent);
+  border-radius: 24px;
+  content: "";
+  animation: launch-ring 1.4s ease-out infinite;
+}
+
+.launch-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes launch-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@keyframes launch-ring {
+  from {
+    opacity: 0.8;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.3);
+  }
 }
 
 body.opening .menu {
@@ -957,6 +1263,28 @@ body.playing .hover-people {
 
 .people-stack .face + .face {
   margin-left: -6px;
+}
+
+/* Each face sits over the one after it, so the badge for its game, at its lower right, shows whole. The order
+   stays inside the row, so no face ends up over a list or a panel */
+.people-stack {
+  isolation: isolate;
+}
+
+.people-stack .face:nth-child(1) {
+  z-index: 4;
+}
+
+.people-stack .face:nth-child(2) {
+  z-index: 3;
+}
+
+.people-stack .face:nth-child(3) {
+  z-index: 2;
+}
+
+.people-stack .face:nth-child(4) {
+  z-index: 1;
 }
 
 .people-stack .hub-avatar {

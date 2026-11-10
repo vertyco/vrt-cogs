@@ -50,6 +50,14 @@ async def test_hub_files_are_served_under_any_build(client):
     resp = await client.get("/hub/anything/sdk.js")
     assert resp.status == 200
     assert resp.headers["Content-Type"].startswith("text/javascript")
+    # Only the newest build's address may be kept for good
+    assert "immutable" not in resp.headers.get("Cache-Control", "")
+
+
+@pytest.mark.asyncio
+async def test_a_hub_file_under_the_newest_build_may_be_kept_for_good(client, hub_web):
+    resp = await client.get(f"/hub/{build_id(hub_web)}/sdk.js")
+    assert resp.status == 200 and resp.headers["Cache-Control"] == "public, max-age=31536000, immutable"
 
 
 @pytest.mark.asyncio

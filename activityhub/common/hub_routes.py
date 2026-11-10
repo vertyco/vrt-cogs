@@ -8,7 +8,7 @@ import discord
 from aiohttp import web
 
 from . import economy
-from .files import file_response, inject_head, resolve_inside
+from .files import file_response, inject_head, is_current, resolve_inside
 from .game_routes import first_message, pump, session_pass
 from .games import Game
 from .looks import BUILTIN_LOOK, SettingsError, apply_look_change, effective_look
@@ -83,11 +83,13 @@ class HubRoutes:
         return web.Response(text=inject_head(html, tags), content_type="text/html", headers=NO_CACHE)
 
     async def hub_file(self, request: web.Request) -> web.StreamResponse:
-        # Any build code is accepted: it only exists so caches see a new address when files change
-        target = resolve_inside(self.server.web_dir, request.match_info["path"])
+        # Any build code is accepted: it only exists so caches see a new address when files change. Only the
+        # newest one marks the file as safe to keep, since an older page may ask for a file that has changed since
+        web_dir = self.server.web_dir
+        target = resolve_inside(web_dir, request.match_info["path"])
         if target is None:
             raise web.HTTPNotFound()
-        return file_response(target)
+        return file_response(target, lasting=is_current(web_dir, request.match_info["build"]))
 
     def client_config(self) -> dict:
         scopes = ["identify"] + [scope for scope in self.hub.registry.scopes() if scope != "identify"]
@@ -108,7 +110,7 @@ class HubRoutes:
         if ctx is None:
             await ws.close(code=CLOSE_SESSION, message=b"Session missing or expired")
             return ws
-        conn = Connection(ws, ctx, None, None)
+        conn = Connection(ws, ctx, None)
         await conn.send(READY)
         presence = self.server.presence
         await presence.connect(conn)

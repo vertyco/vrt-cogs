@@ -17,7 +17,7 @@ from activityhub.common.sockets import Connection
 
 def add_live_player(server):
     ctx = SimpleNamespace(author=SimpleNamespace(id=1), instance_id="i-1", room_id="i-1")
-    server.rooms.add(Connection(SimpleNamespace(closed=False), ctx, SimpleNamespace(key="demo"), server.rooms))
+    server.rooms.add(Connection(SimpleNamespace(closed=False), ctx, SimpleNamespace(key="demo")))
 
 
 @pytest.fixture

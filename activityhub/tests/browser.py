@@ -266,7 +266,7 @@ class LiveHub:
         """Someone else in a window, as the bot's people list sees them, for testing what a page shows"""
 
         async def add():
-            conn = Connection(SilentSocket(), context_for(self.hub, user_id=user_id, instance_id=instance), None, None)
+            conn = Connection(SilentSocket(), context_for(self.hub, user_id=user_id, instance_id=instance), None)
             await self.server.presence.connect(conn)
             state = {"where": where, "status": status, "data": data, "busy": busy, "away": away}
             await self.server.presence.update(conn, state)

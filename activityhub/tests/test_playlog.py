@@ -1,11 +1,14 @@
 import asyncio
+from pathlib import PureWindowsPath
 
 import pytest
+from piccolo.engine.sqlite import SQLiteEngine
 
 from activityhub import main
 from activityhub.common import playlog as playlog_module
 from activityhub.common.playlog import PlayLog
 from activityhub.db.tables import TABLES, Play
+from activityhub.engine.common import is_unc_path
 from activityhub.main import ActivityHub
 from activityhub.tests.fakes import make_hub
 
@@ -182,7 +185,7 @@ async def test_a_failed_write_is_logged_and_does_not_raise(monkeypatch, plays, c
 
 
 @pytest.mark.asyncio
-async def test_the_play_log_opens_once_red_is_ready(monkeypatch):
+async def test_the_play_log_opens_once_red_is_ready(monkeypatch, playdb):
     hub = make_hub()
     opened = []
 
@@ -205,6 +208,37 @@ async def test_a_database_that_cannot_open_leaves_the_hub_working(monkeypatch, c
     await ActivityHub.open_playlog(hub)
     assert hub.playlog.broken and not hub.playlog.ready.is_set()
     assert "couldn't open" in caplog.text and "disk gone" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_a_migration_that_failed_quietly_counts_as_a_database_that_cannot_open(monkeypatch, tmp_path, caplog):
+    hub = make_hub()
+    # The database file opens, but the migration that makes the table only logged its failure
+    monkeypatch.setattr(Play._meta, "_db", SQLiteEngine(path=str(tmp_path / "empty.sqlite")))
+
+    async def register(cog, tables, trace=False):
+        return None
+
+    monkeypatch.setattr(main.engine, "register_cog", register)
+    await ActivityHub.open_playlog(hub)
+    assert hub.playlog.broken and not hub.playlog.ready.is_set()
+    assert "couldn't open" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "path, shared",
+    [
+        (r"\\nas\share\data", True),
+        (r"\\192.168.1.91\home\red", True),
+        (r"C:\Users\red\data", False),
+        # A local path written the long way, and a device, also start with two backslashes
+        (r"\\?\C:\Users\red\data", False),
+        (r"\\.\pipe\red", False),
+        (r"data\red", False),
+    ],
+)
+def test_only_a_network_share_counts_as_one(path, shared):
+    assert is_unc_path(PureWindowsPath(path)) is shared
 
 
 @pytest.mark.asyncio

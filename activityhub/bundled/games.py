@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import secrets
 from pathlib import Path
@@ -83,7 +84,8 @@ class BundledGame:
         # The page's Retry save after an answer that never arrived: the score was already saved
         if run.result is not None:
             return run.result
-        score = self.score(run, data, elapsed)
+        # Off the bot's worker: playing a long round's moves back takes up to half a second
+        score = await asyncio.to_thread(self.score, run, data, elapsed)
         if score is None:
             self.scores.close_run(data["run"])
             log.warning("Refused a %s round from %s after %.0f seconds", self.key, ctx.author.id, elapsed)

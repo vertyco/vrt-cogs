@@ -3,6 +3,8 @@ import re
 import discord
 from redbot.core.i18n import Translator
 
+from ..common.games import KEY_PATTERN
+
 _ = Translator("ActivityHub", __file__)
 
 CUSTOM_ID = "activityhub:open"
@@ -21,7 +23,9 @@ def custom_id_for(key: str | None) -> str:
 
 
 class LaunchButton(
-    discord.ui.DynamicItem[discord.ui.Button], template=r"activityhub:open(?::(?P<key>[a-z0-9-]{2,32}))?"
+    discord.ui.DynamicItem[discord.ui.Button],
+    # Built from the id and the game key's own rule, so a button never stops matching when either changes
+    template=rf"{re.escape(CUSTOM_ID)}(?::(?P<key>{KEY_PATTERN.pattern}))?",
 ):
     """
     The Open Activity Hub button, or with a game key, a button that opens that game. discord.py finds it by its

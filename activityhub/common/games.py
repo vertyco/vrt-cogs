@@ -234,8 +234,9 @@ def check_signature(label: str, name: str, handler: t.Callable, args: tuple[str,
     """Refuse a handler the hub can't call with its arguments now, rather than when a player first uses it"""
     try:
         signature = inspect.signature(handler)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError) as e:
         # Some callables have no signature Python can read. Those fail when they are called instead
+        log.debug("%s: couldn't read the signature of %s: %s", label, name, e)
         return
     try:
         signature.bind(*args)
@@ -289,8 +290,9 @@ def check_web_dir(value: t.Any, cog: t.Any) -> tuple[Path, str]:
     web_dir = Path(value).expanduser()
     try:
         source = Path(inspect.getfile(type(cog))).resolve()
-    except (TypeError, OSError):
+    except (TypeError, OSError) as e:
         # A class that wasn't made from a file (typed into a REPL, say) has no folder to start from
+        log.debug("%s has no source file: %s", type(cog).__name__, e)
         source = None
     if source is not None and not web_dir.is_absolute():
         # A relative path starts at the cog's own folder, not wherever the bot was started from
@@ -374,8 +376,9 @@ def check_ctx_function(name: str, value: t.Any, refused: str) -> t.Callable:
         raise GameError(refused)
     try:
         signature = inspect.signature(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError) as e:
         # Some callables have no signature Python can read. Those fail when they are called instead
+        log.debug("Couldn't read the signature of %s: %s", name, e)
         return value
     try:
         signature.bind(None)

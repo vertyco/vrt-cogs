@@ -18,6 +18,7 @@
 }
 
 .stats-period {
+  min-height: 36px;
   padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -126,8 +127,17 @@
   opacity: 0.3;
 }
 
-.stats-bar:hover {
-  opacity: 0.8;
+/* Only a mouse: a phone would keep a pressed bar looking hovered */
+@media (hover: hover) {
+  .stats-bar:hover {
+    opacity: 0.8;
+  }
+}
+
+@media (pointer: coarse) {
+  .stats-period {
+    min-height: 44px;
+  }
 }
 
 /* Marks spill over their empty neighbors; the end ones lean inward so they stay inside the chart */

@@ -130,7 +130,8 @@ class HubServer:
         """Whether the web server still listens. Asking a socket Python closed for its address raises OSError"""
         try:
             return bool(self.runner.addresses)
-        except OSError:
+        except OSError as e:
+            log.debug("The web server's port is closed: %s", e)
             return False
 
     async def reopen_port(self, host: str, port: int) -> None:

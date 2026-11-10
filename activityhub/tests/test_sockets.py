@@ -67,7 +67,7 @@ def connect(rooms, game, user_id, instance="i-1", guild_id=9, ws=None):
     ctx = ActivityContext(author=SimpleNamespace(id=user_id), guild=guild, instance_id=instance)
     # The ctx the game's handlers get, the way the hub hands it over
     ctx = dataclasses.replace(ctx, room_id=room_id(game.room, ctx))
-    conn = Connection(ws or FakeWebSocket(), ctx, game, rooms)
+    conn = Connection(ws or FakeWebSocket(), ctx, game)
     rooms.add(conn)
     return conn
 
@@ -422,9 +422,9 @@ async def test_close_all():
 @pytest.mark.asyncio
 async def test_a_connection_without_a_game_says_what_it_is():
     ctx = ActivityContext(author=SimpleNamespace(id=1), guild=None, instance_id="i-1")
-    conn = Connection(FakeWebSocket(), ctx, None, None)
+    conn = Connection(FakeWebSocket(), ctx, None)
     assert conn.label == "the menu" and conn.follow is None and conn.peers() == []
     await conn.send({"hi": 1})
     await delivered(conn)
     assert conn.ws.sent == [{"hi": 1}]
-    assert Connection(FakeWebSocket(), ctx, make_game("snake"), Rooms()).label == "snake"
+    assert Connection(FakeWebSocket(), ctx, make_game("snake")).label == "snake"

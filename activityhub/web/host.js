@@ -3,7 +3,7 @@
 // page must never navigate or reload itself while inside Discord.
 import { DiscordSDK } from "./vendor/discord-sdk.js";
 import { HEAT_EVENT, request } from "./sdk.js";
-import { PeopleUI } from "./people.js";
+import { PeopleUI, initial } from "./people.js";
 import { Presence } from "./presence.js";
 
 export const GAME_FRAME_ID = "game-frame";
@@ -62,6 +62,32 @@ function leftGame(frame, key) {
   } catch (e) {
     return true;
   }
+}
+
+// What shows the moment a game is opened, until its page has loaded: the game's icon and name, so a tap is answered at
+// once however long the game takes to arrive (menu.css draws it)
+function launchSplash(game, key) {
+  const name = game?.name || key;
+  const splash = document.createElement("div");
+  splash.className = "launch";
+  splash.setAttribute("role", "status");
+  splash.setAttribute("aria-label", `Opening ${name}`);
+  const picture = document.createElement("span");
+  picture.className = "launch-picture";
+  picture.textContent = initial(name);
+  if (game?.icon) {
+    const img = document.createElement("img");
+    img.alt = "";
+    // Discord's frame may block a picture; the letter under it shows then
+    img.addEventListener("error", () => img.remove());
+    img.src = game.icon;
+    picture.append(img);
+  }
+  const label = document.createElement("span");
+  label.className = "launch-name";
+  label.textContent = name;
+  splash.append(picture, label);
+  return splash;
 }
 
 // How long each loading step took, in the browser console, for finding what makes the menu slow to open
@@ -153,6 +179,8 @@ export class Host {
     this.frame = null;
     this.gameKey = null;
     this.showTimer = null;
+    // What shows while the open game's page loads (launchSplash)
+    this.splash = null;
     // Discord's last word on how hot the phone is, as it sent it: { thermal_state }
     this.heat = null;
     this.safeArea = safeAreaProbe();
@@ -284,7 +312,8 @@ export class Host {
     return this.relogging;
   }
 
-  // The menu fades out at once, and the game stays hidden until its page has loaded
+  // The menu fades out at once, a splash with the game's name takes its place, and the game stays hidden until its
+  // page has loaded
   openGame(key, follow = null) {
     this.closeGame(false);
     this.follow = follow;
@@ -314,7 +343,9 @@ export class Host {
       this.people.gameLoaded();
     });
     this.showTimer = setTimeout(() => this.showGame(frame), SHOW_ANYWAY_MS);
-    document.body.append(frame);
+    this.splash = launchSplash(this.games.get(key), key);
+    // The frame goes after the splash, so the game fades in over it
+    document.body.append(this.splash, frame);
     document.body.classList.add("opening");
     this.frame = frame;
     this.gameKey = key;
@@ -335,6 +366,7 @@ export class Host {
     fade.finished.then(() => {
       if (frame === this.frame) {
         document.body.classList.replace("opening", "playing");
+        this.splash?.remove();
       }
     });
   }
@@ -345,6 +377,8 @@ export class Host {
     }
     clearTimeout(this.showTimer);
     this.frame.remove();
+    this.splash?.remove();
+    this.splash = null;
     this.frame = null;
     this.gameKey = null;
     this.follow = null;

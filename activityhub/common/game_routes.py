@@ -5,7 +5,7 @@ import typing as t
 
 from aiohttp import WSMsgType, web
 
-from .files import build_id, file_response, inject_head, resolve_inside
+from .files import build_id, file_response, inject_head, is_current, resolve_inside
 from .games import Game
 from .replies import (
     dumps,
@@ -19,6 +19,7 @@ from .replies import (
     SESSION_EXPIRED,
     SOMETHING_WRONG,
     TURNED_OFF,
+    discord_id,
     error,
     notice_page,
     read_object,
@@ -182,7 +183,8 @@ class GameRoutes:
             return await self.socket(request, game)
         if head == "raw":
             return await self.raw(request, game, rest)
-        return await self.file(request, game, rest)
+        # Anything else is a build code in front of a file's path
+        return await self.file(request, game, rest, head)
 
     def importmap_tag(self, game: Game | None) -> str:
         """
@@ -227,12 +229,12 @@ class GameRoutes:
     async def turned_off_here(self, request: web.Request, game: Game) -> str | None:
         # A page load carries no session, so this can only trust the address's guild_id. It is a courtesy:
         # the real locks are on actions, raw routes and the live connection, which use the proven server
-        guild_id = request.query.get("guild_id", "")
-        if guild_id.isdigit():
-            return await self.server.why_off(int(guild_id), game.key)
+        guild_id = discord_id(request.query.get("guild_id"))
+        if guild_id is not None:
+            return await self.server.why_off(guild_id, game.key)
         return TURNED_OFF if await self.server.off_everywhere(game.key) else None
 
-    async def file(self, request: web.Request, game: Game, path: str) -> web.StreamResponse:
+    async def file(self, request: web.Request, game: Game, path: str, build: str) -> web.StreamResponse:
         if request.method not in READ_METHODS:
             raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
         target = resolve_inside(game.web_dir, path)
@@ -240,7 +242,7 @@ class GameRoutes:
             # A link or reload to index.html itself gets the page with the hub's tags, so the helper still loads
             return await self.page(request, game)
         if target is not None:
-            return file_response(target)
+            return file_response(target, lasting=is_current(game.web_dir, build))
         if not is_page_load(request):
             raise web.HTTPNotFound()
         # The game frame itself went to an address that isn't there. A bare 404 would leave the player stuck in it
@@ -349,7 +351,7 @@ class GameRoutes:
         if reason:
             await ws.close(code=CLOSE_TURNED_OFF, message=reason.encode())
             return ws
-        conn = Connection(ws, await game.context(ctx), game, self.server.rooms)
+        conn = Connection(ws, await game.context(ctx), game)
         conn.follow = self.server.presence.follow_target(ctx, first.get("follow"))
         # Ready goes out before join, so nothing join sends can reach the page ahead of it
         await conn.send(READY)

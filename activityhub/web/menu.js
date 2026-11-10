@@ -1,7 +1,8 @@
+import { $, clamp, el } from "./dom.js";
 import { mark, startHost } from "./host.js";
 import { request } from "./sdk.js";
 import { FrameRate } from "./fps.js";
-import { glide, restingPlace, speed, stretch } from "./glide.js";
+import { RESTED_MS, glide, restingPlace, speed, stretch } from "./glide.js";
 import { MenuSounds } from "./sounds.js";
 import {
   applyGlow,
@@ -15,42 +16,10 @@ import {
   turnPanels,
 } from "./orb.js";
 import { PressHold, avatar, elsewhereLine, icon, initial, personRow, statusText } from "./people.js";
-import { StatsPanel } from "./stats.js";
+import { SettingsPanel } from "./settings.js";
 
-const TAB_NAMES = { look: "My look", order: "My order", server: "This server", defaults: "Defaults", stats: "Stats" };
-// Each look tab edits one saved level and falls back to the levels before it
-const LEVELS = ["global", "guild", "user"];
-const TAB_LEVEL = { defaults: "global", server: "guild", look: "user" };
-// Tabs with game on/off switches: the state list they come from and their heading
-const SWITCHES = {
-  server: { list: "switches", legend: "Activities in this server" },
-  defaults: { list: "globalSwitches", legend: "Activities in every server" },
-};
-const FIELDS = ["theme", "layout", "accent", "glow", "background", "details", "sounds", "fps"];
-// Fields only My look saves: the bot refuses them as a server or bot-wide default
-const PLAYER_FIELDS = ["volume"];
-const FIELD_NAMES = {
-  theme: "Theme",
-  layout: "Layout",
-  accent: "Accent color",
-  glow: "Glow color",
-  background: "Background",
-  details: "Descriptions",
-  sounds: "Menu sounds",
-  fps: "Frame rate",
-};
-const CHOICES = {
-  theme: [["standard", "Standard"], ["orb", "Orb"]],
-  layout: [["grid", "Grid"], ["list", "List"], ["compact", "Compact"]],
-  background: [["dark", "Dark"], ["darker", "Darker"], ["gradient", "Gradient"]],
-  details: [[true, "Show"], [false, "Hide"]],
-  sounds: [[true, "On"], [false, "Off"]],
-  fps: [[true, "Show"], [false, "Hide"]],
-};
-const TRUE_FALSE = new Set(["details", "sounds", "fps"]);
 // Settings is the orb theme's last pill, with an empty key, in place of the gear button
 const SETTINGS_ITEM = { key: "", name: "Settings", description: "Change how this menu looks and the order of your games." };
-const ACCENTS = ["#5865F2", "#57F287", "#FEE75C", "#EB459E", "#ED4245", "#00A8FC", "#F0B232", "#99AAB5"];
 // How long the mouse rests on a card (or the keyboard on it) before its players show
 const HOVER_MS = 250;
 const HOVER_LEAVE_MS = 150;
@@ -83,13 +52,15 @@ const HOT = 2;
 const HOT_NOTE = "Your phone is running hot, so the menu's moving background is paused until it cools down.";
 // The lists with Join buttons or a button to press: a card's players, the header's people, the Orb screen's players
 const PEOPLE_LISTS = "#hover-people, #people-row, .screen-people";
+// Where this device keeps the look the menu last showed, so the next visit opens in it while the player logs in
+// instead of opening in the plain look and changing a moment later
+const LOOK_KEY = "activityhub:look";
+const LOOK_COLOR = /^#[0-9a-f]{6}$/i;
 // A phone held upright, as orb.css lays it out
 const UPRIGHT = window.matchMedia("(max-aspect-ratio: 4/5)");
 // A phone or tablet, where a finger is the main way in, and the Orb's ring is a picker
 const TOUCH = window.matchMedia("(pointer: coarse)");
 
-const $ = (id) => document.getElementById(id);
-const clamp = (value, low, high) => Math.min(Math.max(value, low), high);
 const page = {
   host: null,
   state: null,
@@ -120,7 +91,6 @@ const page = {
   // The Orb theme's tones from orb.js, and the size and color the web behind the orb was last drawn at
   tones: null,
   webDrawn: "",
-  dragging: null,
   // The card whose players the hover list shows, and the timer that opens or closes it
   hoverTimer: null,
   hoverKey: null,
@@ -130,27 +100,47 @@ const page = {
   counts: new Map(),
   // Watches the Orb screen's size, which the people list changes
   screenWatch: null,
-  // The volume saves still on their way. Each waits for the one before, so the bot keeps the last one sent
-  volumeSaves: Promise.resolve(),
+  // The settings panel (settings.js)
+  settings: null,
 };
 const sounds = new MenuSounds();
 const frameRate = new FrameRate();
 
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) {
-    node.className = className;
+// ---------- Loading ----------
+
+// Browsers can refuse storage inside Discord's frame, and what is there may be from an older version, so a look that
+// can't be read or isn't whole counts as none
+function rememberedLook() {
+  try {
+    const look = JSON.parse(localStorage.getItem(LOOK_KEY));
+    const whole = look && ["standard", "orb"].includes(look.theme) && [look.accent, look.glow].every((color) => LOOK_COLOR.test(color));
+    return whole ? look : null;
+  } catch (e) {
+    console.debug("ActivityHub: no look remembered on this device", e);
+    return null;
   }
-  if (text !== undefined) {
-    node.textContent = text;
-  }
-  return node;
 }
 
-// ---------- Loading ----------
+function rememberLook(look) {
+  try {
+    localStorage.setItem(LOOK_KEY, JSON.stringify(look));
+  } catch (e) {
+    console.debug("ActivityHub: this device can't remember the menu's look", e);
+  }
+}
+
+// The page starts out loading (index.html), which shows placeholders where the games will be. It ends with the first
+// menu, or with a notice saying why there is none
+function doneLoading() {
+  document.body.classList.remove("loading");
+}
 
 async function start() {
   mark("menu script running");
+  const remembered = rememberedLook();
+  if (remembered) {
+    applyLook(remembered);
+  }
   page.host = startHost({
     onGameClosed: gameClosed,
     onJoin: (key, follow) => openGame(key, follow),
@@ -161,9 +151,26 @@ async function start() {
     onDiscordSilent: (text) => showNotice(text),
     onHeat: heatChanged,
   });
-  bindPanel();
+  page.settings = new SettingsPanel({
+    host: page.host,
+    sounds,
+    state: () => page.state,
+    setState: (state) => {
+      page.state = state;
+    },
+    applyLook,
+    renderGames,
+    render,
+    turn: turnMenu,
+    focusOpener,
+    sessionExpired,
+  });
   buildOrbParts();
   bindOrb();
+  // A remembered Orb look has its scene behind the placeholders from the start
+  if (orbTheme()) {
+    drawOrbWeb();
+  }
   page.hold = new PressHold((node) => Boolean(node.closest?.(PEOPLE_LISTS)), redrawPeople);
   bindHover();
   bindCurrencyTip();
@@ -183,6 +190,7 @@ async function start() {
     await page.host.loggedIn;
   } catch (e) {
     console.error(e);
+    doneLoading();
     showNotice(`Couldn't log in to Discord: ${e.message}`);
     return;
   }
@@ -207,6 +215,7 @@ async function loadState() {
   try {
     page.state = await fetchState();
   } catch (e) {
+    doneLoading();
     if (e.status === 401 && !page.retried) {
       await sessionExpired();
     } else if (e.status === 401) {
@@ -232,7 +241,7 @@ async function loadState() {
 // toolkit handshake per Activity), so it asks the still-connected toolkit for a fresh login instead.
 async function sessionExpired() {
   sounds.setInMenu(true);
-  closePanel();
+  page.settings.close();
   page.retried = true;
   try {
     await page.host.relogin();
@@ -269,7 +278,7 @@ function openGame(key, follow = null) {
     page.host.refuseOpen(key);
     return false;
   }
-  closePanel();
+  page.settings.close();
   hideHover();
   page.selected = key;
   sounds.setInMenu(false);
@@ -361,8 +370,10 @@ function render() {
   if (!page.state) {
     return;
   }
+  doneLoading();
   page.host.setGames(page.state.games);
   applyLook(page.state.look);
+  rememberLook(page.state.look);
   renderHeader();
   renderGames(page.state.games);
   $("gear").hidden = page.state.tabs.length === 0;
@@ -470,6 +481,8 @@ function gameCard(game) {
 function thumbnail(game, failed) {
   const img = el("img", "thumb");
   img.alt = "";
+  // Decoded off the page's own thread, so a long list of pictures doesn't hold up a scroll or a tap
+  img.decoding = "async";
   img.addEventListener("error", () => {
     img.remove();
     failed();
@@ -595,7 +608,7 @@ function orbPill(item) {
     if (item.key) {
       openGame(item.key);
     } else {
-      openPanel();
+      page.settings.open();
     }
   });
   return pill;
@@ -943,11 +956,20 @@ function focusSelected() {
   }
 }
 
+// Keyboard focus goes back to what opened Settings: its pod in the Orb, the gear in the Standard theme
+function focusOpener() {
+  if (orbTheme()) {
+    focusSelected();
+  } else {
+    $("gear").focus({ preventScroll: true });
+  }
+}
+
 // The ring takes the arrow keys, the wheel and slides only while nothing covers it: a game, Settings, the people
 // panel or the hub's message box. A panel over it scrolls the usual way, and its keys stay its own
 function ringFree() {
   const people = page.host.people;
-  return orbTheme() && page.staged === null && !page.host.frame && !people.isOpen() && !people.isAsking();
+  return orbTheme() && !page.settings.isOpen() && !page.host.frame && !people.isOpen() && !people.isAsking();
 }
 
 // Up and down, the scroll wheel, or a swipe move between the pills like a controller. A tap opens a game without
@@ -1057,7 +1079,8 @@ function bindSwipe() {
     }
     page.swallowClick = 0;
     const touch = ringFree() && event.pointerType === "touch";
-    page.swipe = touch ? { id: event.pointerId, x: event.clientX, y: event.clientY, moves: [] } : null;
+    const [x, y, time] = [event.clientX, event.clientY, event.timeStamp];
+    page.swipe = touch ? { id: event.pointerId, x, y, time, moves: [] } : null;
     // A finger landing on a turning picker holds it where it is
     if (touch && page.turning) {
       stopGlide();
@@ -1073,10 +1096,18 @@ function bindSwipe() {
     if (!swipe.axis && Math.hypot(dx, dy) >= SWIPE_START) {
       swipe.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
       if (picking()) {
-        // The picker follows the finger from here, so it doesn't jump by the distance that told a slide from a tap
-        [swipe.x, swipe.y, swipe.from] = [event.clientX, event.clientY, page.pick];
+        // The picker follows the finger from the distance that told a slide from a tap, so it doesn't jump by that
+        // much. A fast slide's first move goes well past it, and the picker keeps the rest of that move
+        const along = swipe.axis === "x" ? dx : dy;
+        swipe[swipe.axis] += Math.sign(along) * Math.min(Math.abs(along), SWIPE_START);
+        swipe.from = page.pick;
+        // Where the finger was a moment ago, so a flick that is over in one more move still has a speed
+        swipe.moves.push([swipe.time, page.pick]);
         startTurning();
       }
+    }
+    if (!swipe.axis) {
+      swipe.time = event.timeStamp;
     }
     if (swipe.axis && picking()) {
       turnPicker(swipe, event);
@@ -1148,7 +1179,11 @@ function letGo(event, lifted) {
   const velocity = swipe.axis && lifted ? speed(swipe.moves, event.timeStamp) : 0;
   const to = restingPlace(page.pick, velocity, pillCount() - 1, FLICK_SPEED / page.ring.row);
   const path = glide(page.pick, to, velocity);
-  const started = performance.now();
+  // A flicked picker has been still since the finger's last move, which came a moment before the lift. The glide
+  // counts that moment as its own and makes it up at once, so the picker never stops and starts again under a flick
+  const moved = swipe.moves[swipe.moves.length - 1];
+  const since = velocity && moved ? clamp(event.timeStamp - moved[0], 0, RESTED_MS) : 0;
+  const started = performance.now() - since;
   const frame = (time) => {
     turnTo(path.at(time - started));
     page.glide = time - started < path.duration ? requestAnimationFrame(frame) : null;
@@ -1156,6 +1191,9 @@ function letGo(event, lifted) {
       stopTurning();
     }
   };
+  if (since) {
+    turnTo(path.at(since));
+  }
   page.glide = requestAnimationFrame(frame);
 }
 
@@ -1809,511 +1847,6 @@ function fitScreenPeople() {
   const bottom = window.innerHeight - parseFloat(getComputedStyle($("menu")).paddingBottom) - EDGE;
   const top = document.querySelector(".bar").getBoundingClientRect().bottom;
   screen.classList.toggle("no-room", select.bottom > bottom || panel.top < top);
-}
-
-// ---------- Settings panel ----------
-
-function bindPanel() {
-  $("gear").addEventListener("click", openPanel);
-  $("close").addEventListener("click", closeByPlayer);
-  $("scrim").addEventListener("click", closeByPlayer);
-  $("save").addEventListener("click", save);
-  $("reset").addEventListener("click", reset);
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeByPlayer();
-    }
-  });
-  $("panel").inert = true;
-}
-
-function closeByPlayer() {
-  if (page.staged === null) {
-    return;
-  }
-  sounds.play("back");
-  closePanel();
-  // Keyboard focus goes back to what opened Settings: its pod in the Orb, the gear in the Standard theme
-  if (orbTheme()) {
-    focusSelected();
-  } else {
-    $("gear").focus({ preventScroll: true });
-  }
-}
-
-// Keyboard focus moves into the panel, so Tab doesn't wander through the menu behind it first
-function openPanel() {
-  selectTab(page.state.tabs[0]);
-  turnMenu(1);
-  document.body.classList.add("panel-open");
-  $("panel").inert = false;
-  $("panel").setAttribute("aria-hidden", "false");
-  $("tabs").querySelector('[aria-selected="true"]')?.focus({ preventScroll: true });
-}
-
-// Closing drops unsaved edits: the menu goes back to the saved state
-function closePanel() {
-  if (page.staged === null) {
-    return;
-  }
-  document.body.classList.remove("panel-open");
-  $("panel").inert = true;
-  $("panel").setAttribute("aria-hidden", "true");
-  page.tab = null;
-  page.staged = null;
-  render();
-  turnMenu(-1);
-}
-
-function selectTab(tab) {
-  page.tab = tab;
-  page.staged = stagedFrom(tab);
-  status("");
-  renderPanel();
-}
-
-function stagedFrom(tab) {
-  // Stats has nothing to stage, but an open panel always has something staged
-  if (tab === "stats") {
-    return {};
-  }
-  const state = page.state;
-  if (tab === "order") {
-    return { order: state.games.map((game) => game.key), cleared: false };
-  }
-  const staged = { look: { ...state.looks[TAB_LEVEL[tab]] } };
-  if (tab in SWITCHES) {
-    staged.disabled = state[SWITCHES[tab].list].filter((game) => !game.on).map((game) => game.key);
-  }
-  if (labelsTab(tab)) {
-    staged.economyLabels = state.economyLabels.on;
-  }
-  return staged;
-}
-
-// What a look tab falls back to: the built-in look plus the levels before the tab's own
-function inherited(tab) {
-  const looks = page.state.looks;
-  const below = LEVELS.slice(0, LEVELS.indexOf(TAB_LEVEL[tab]));
-  return Object.assign({}, looks.builtin, ...below.map((level) => looks[level]));
-}
-
-// The preview leaves out levels after the tab's own, so an admin sees the server look even if they set their own.
-// The volume stays the player's own on every tab, since only My look holds one
-function previewLook() {
-  const look = { ...inherited(page.tab), ...page.staged.look };
-  if (page.tab !== "look") {
-    look.volume = page.state.look.volume;
-  }
-  return look;
-}
-
-function preview() {
-  if (page.tab === "order") {
-    applyLook(page.state.look);
-    const byKey = new Map(page.state.games.map((game) => [game.key, game]));
-    renderGames(page.staged.order.map((key) => byKey.get(key)).filter(Boolean));
-  } else if (page.tab === "stats") {
-    applyLook(page.state.look);
-    renderGames(page.state.games);
-  } else {
-    applyLook(previewLook());
-    renderGames(page.state.games);
-  }
-}
-
-function renderPanel() {
-  $("tabs").replaceChildren(...page.state.tabs.map(tabButton));
-  $("panel").classList.toggle("read-only", page.tab === "stats");
-  const body = $("tab-body");
-  if (page.tab === "order") {
-    body.replaceChildren(orderEditor());
-  } else if (page.tab === "stats") {
-    body.replaceChildren(new StatsPanel((query) => askBot(`/hub/api/stats?${query}`), sessionExpired).root);
-  } else {
-    body.replaceChildren(
-      ...lookEditor(),
-      ...(page.tab in SWITCHES ? [switchEditor()] : []),
-      ...(labelsTab(page.tab) ? [labelsEditor()] : []),
-    );
-  }
-  preview();
-}
-
-function tabButton(tab) {
-  const button = el("button", "tab", TAB_NAMES[tab]);
-  button.type = "button";
-  button.dataset.tab = tab;
-  button.setAttribute("role", "tab");
-  button.setAttribute("aria-selected", String(tab === page.tab));
-  button.addEventListener("click", () => selectTab(tab));
-  return button;
-}
-
-function refocus(selector) {
-  const target = document.querySelector(selector);
-  if (target && !target.disabled) {
-    target.focus();
-  }
-}
-
-function status(text) {
-  $("panel-status").textContent = text;
-}
-
-// ---------- Look fields ----------
-
-// The orb theme has its own background and layout, its glow color in place of the accent, and only it has menu
-// sounds. Their volume slider sits under the switch in My look alone
-function lookEditor() {
-  const base = inherited(page.tab);
-  if (previewLook().theme === "orb") {
-    const menuSounds = choiceField("sounds", base);
-    if (page.tab === "look") {
-      menuSounds.append(volumeSlider());
-    }
-    return [
-      choiceField("theme", base),
-      colorField("glow", base),
-      choiceField("details", base),
-      menuSounds,
-      choiceField("fps", base),
-    ];
-  }
-  return [
-    choiceField("theme", base),
-    choiceField("layout", base),
-    colorField("accent", base),
-    choiceField("background", base),
-    choiceField("details", base),
-    choiceField("fps", base),
-  ];
-}
-
-function field(name, control) {
-  const box = el("div", "field");
-  const label = el("label", "field-label", FIELD_NAMES[name]);
-  if (control.tagName === "SELECT") {
-    label.htmlFor = control.id;
-  }
-  box.append(label, control);
-  return box;
-}
-
-// The menu sounds' volume. It changes as the slider moves, and saves once let go, on its own: the tab's other edits
-// still wait for Save
-function volumeSlider() {
-  const slider = el("input", "volume");
-  slider.type = "range";
-  slider.id = "field-volume";
-  slider.min = "0";
-  slider.max = "100";
-  slider.step = "5";
-  slider.value = String(previewLook().volume);
-  slider.setAttribute("aria-label", "Menu sounds volume");
-  const fill = () => slider.style.setProperty("--level", `${slider.value}%`);
-  fill();
-  slider.addEventListener("input", () => {
-    page.staged.look.volume = Number(slider.value);
-    fill();
-    sounds.setVolume(page.staged.look.volume);
-  });
-  slider.addEventListener("change", () => {
-    // One short sound at the new level, so the player hears where it landed
-    sounds.play("move");
-    saveVolume(Number(slider.value));
-  });
-  return slider;
-}
-
-function option(value, label) {
-  const node = el("option", "", label);
-  node.value = value;
-  return node;
-}
-
-function choiceField(name, base) {
-  const select = el("select");
-  select.id = `field-${name}`;
-  const fallback = CHOICES[name].find(([value]) => value === base[name]);
-  select.append(option("", `Default (${fallback ? fallback[1] : base[name]})`));
-  for (const [value, label] of CHOICES[name]) {
-    select.append(option(String(value), label));
-  }
-  const staged = page.staged.look[name];
-  select.value = staged === undefined ? "" : String(staged);
-  select.addEventListener("change", () => {
-    if (select.value === "") {
-      delete page.staged.look[name];
-    } else {
-      page.staged.look[name] = TRUE_FALSE.has(name) ? select.value === "true" : select.value;
-    }
-    if (name === "theme") {
-      renderPanel();
-      refocus("#field-theme");
-    } else {
-      preview();
-    }
-  });
-  return field(name, select);
-}
-
-function sameColor(a, b) {
-  return Boolean(a) && a.toLowerCase() === b.toLowerCase();
-}
-
-// The accent color in the Standard theme and the glow color in the Orb theme: a default, the preset colors and
-// a picker for any other
-function colorField(name, base) {
-  const row = el("div", "swatches");
-  row.id = `field-${name}`;
-  const current = page.staged.look[name];
-  row.append(swatch(name, null, base[name], current === undefined));
-  for (const color of ACCENTS) {
-    row.append(swatch(name, color, color, sameColor(current, color)));
-  }
-  const picker = el("input");
-  picker.type = "color";
-  picker.setAttribute("aria-label", `Custom ${FIELD_NAMES[name].toLowerCase()}`);
-  picker.value = (current || base[name]).toLowerCase();
-  picker.addEventListener("input", () => {
-    page.staged.look[name] = picker.value;
-    preview();
-  });
-  picker.addEventListener("change", renderPanel);
-  row.append(picker);
-  return field(name, row);
-}
-
-function swatch(name, value, color, pressed) {
-  const button = el("button", value === null ? "swatch default" : "swatch");
-  button.type = "button";
-  button.dataset.swatch = value === null ? "default" : value;
-  button.style.backgroundColor = color;
-  button.title = value === null ? `Default (${color})` : color;
-  button.setAttribute("aria-label", button.title);
-  button.setAttribute("aria-pressed", String(pressed));
-  button.addEventListener("click", () => {
-    if (value === null) {
-      delete page.staged.look[name];
-    } else {
-      page.staged.look[name] = value;
-    }
-    renderPanel();
-    refocus(`.swatch[data-swatch="${button.dataset.swatch}"]`);
-  });
-  return button;
-}
-
-// ---------- Order and server switches ----------
-
-function orderEditor() {
-  const list = el("ol", "order");
-  const names = new Map(page.state.games.map((game) => [game.key, game.name]));
-  page.staged.order.forEach((key, index) => list.append(orderRow(key, names.get(key), index)));
-  if (!page.staged.order.length) {
-    list.append(el("li", "empty", "No activities to arrange yet."));
-  }
-  return list;
-}
-
-function orderRow(key, name, index) {
-  const row = el("li", "order-row");
-  row.draggable = true;
-  row.dataset.key = key;
-  const handle = el("span", "handle", "⠿");
-  handle.setAttribute("aria-hidden", "true");
-  const last = page.staged.order.length - 1;
-  row.append(
-    handle,
-    el("span", "order-name", name),
-    moveButton("up", `Move ${name} up`, index, index - 1, index === 0),
-    moveButton("down", `Move ${name} down`, index, index + 1, index === last),
-  );
-  row.addEventListener("dragstart", (event) => {
-    event.dataTransfer.setData("text/plain", String(index));
-    page.dragging = index;
-    row.classList.add("dragging");
-  });
-  row.addEventListener("dragend", () => {
-    page.dragging = null;
-    row.classList.remove("dragging");
-  });
-  row.addEventListener("dragover", (event) => event.preventDefault());
-  row.addEventListener("drop", (event) => {
-    event.preventDefault();
-    // Only a row dragged from this list moves, not a file or text dropped from elsewhere
-    if (page.dragging !== null) {
-      moveGame(page.dragging, index);
-    }
-  });
-  return row;
-}
-
-function moveButton(direction, label, from, to, disabled) {
-  const button = el("button", "icon-button", direction === "up" ? "↑" : "↓");
-  button.type = "button";
-  button.dataset.move = direction;
-  button.setAttribute("aria-label", label);
-  button.disabled = disabled;
-  button.addEventListener("click", () => moveGame(from, to, direction));
-  return button;
-}
-
-function moveGame(from, to, direction) {
-  const order = page.staged.order;
-  if (Number.isNaN(from) || to < 0 || to >= order.length || from === to) {
-    return;
-  }
-  const [key] = order.splice(from, 1);
-  order.splice(to, 0, key);
-  page.staged.cleared = false;
-  renderPanel();
-  if (direction) {
-    refocus(`.order-row[data-key="${CSS.escape(key)}"] [data-move="${direction}"]`);
-  }
-}
-
-function switchEditor() {
-  const { list, legend } = SWITCHES[page.tab];
-  const switches = page.state[list];
-  const box = el("fieldset", "switches");
-  box.append(el("legend", "field-label", legend));
-  for (const game of switches) {
-    const input = el("input");
-    input.type = "checkbox";
-    input.dataset.key = game.key;
-    input.checked = !page.staged.disabled.includes(game.key);
-    input.addEventListener("change", () => {
-      const off = new Set(page.staged.disabled);
-      if (input.checked) {
-        off.delete(game.key);
-      } else {
-        off.add(game.key);
-      }
-      page.staged.disabled = [...off];
-    });
-    const label = el("label", "switch");
-    label.append(input, el("span", "", game.name));
-    box.append(label);
-  }
-  if (!switches.length) {
-    box.append(el("p", "", "No activities installed yet."));
-  }
-  return box;
-}
-
-// The tab holding the currency labels switch: the server tab, or the owner's defaults tab with a global bank
-function labelsTab(tab) {
-  return page.state.economyLabels?.tab === tab;
-}
-
-function labelsEditor() {
-  const input = el("input");
-  input.type = "checkbox";
-  input.id = "economy-labels";
-  input.checked = page.staged.economyLabels;
-  input.addEventListener("change", () => {
-    page.staged.economyLabels = input.checked;
-  });
-  const label = el("label", "switch");
-  label.append(input, el("span", "", "Show currency labels"));
-  const box = el("fieldset", "switches");
-  box.append(el("legend", "field-label", "Games that use currency"), label);
-  return box;
-}
-
-// ---------- Save and reset ----------
-
-function saveBody() {
-  const body = { tab: page.tab };
-  if (page.tab === "order") {
-    // After Reset no order means "alphabetical", so games installed later also land in order. An empty list
-    // can't mean that: it is what a server with every game off sends
-    body.order = page.staged.cleared ? null : page.staged.order;
-  } else {
-    const names = page.tab === "look" ? [...FIELDS, ...PLAYER_FIELDS] : FIELDS;
-    body.look = Object.fromEntries(names.map((name) => [name, name in page.staged.look ? page.staged.look[name] : null]));
-  }
-  if (page.tab in SWITCHES) {
-    body.disabled = page.staged.disabled;
-  }
-  if (labelsTab(page.tab)) {
-    body.economyLabels = page.staged.economyLabels;
-  }
-  return body;
-}
-
-// A bot restart forgets every login. A request goes again once with a fresh login, like a game's request does, so
-// the edits on screen aren't thrown away
-async function askBot(path, body) {
-  try {
-    return await request(path, { body, session: page.host.login?.session });
-  } catch (e) {
-    if (e.status !== 401 || !page.host.inDiscord) {
-      throw e;
-    }
-    // Without a fresh login the refusal stands, and the menu says the session expired
-    const login = await page.host.relogin().catch((failed) => {
-      console.error(failed);
-      throw e;
-    });
-    return request(path, { body, session: login.session });
-  }
-}
-
-// Takes the menu the bot sends back after a save. False when the save failed, once the panel says why
-async function sendSettings(body) {
-  try {
-    page.state = await askBot("/hub/api/settings", body);
-    return true;
-  } catch (e) {
-    if (e.status === 401) {
-      await sessionExpired();
-    } else {
-      status(e.message);
-    }
-    return false;
-  }
-}
-
-async function save() {
-  status("Saving…");
-  if (!(await sendSettings(saveBody()))) {
-    return;
-  }
-  // The panel may have closed while the save was on its way
-  if (page.tab === null) {
-    render();
-    return;
-  }
-  page.staged = stagedFrom(page.tab);
-  renderPanel();
-  status("Saved.");
-}
-
-// Only the volume is sent, so it saves without the tab's other edits, which stay on screen
-function saveVolume(volume) {
-  page.volumeSaves = page.volumeSaves
-    .then(async () => {
-      if ((await sendSettings({ tab: "look", look: { volume } })) && page.tab === null) {
-        render();
-      }
-    })
-    .catch((e) => console.error(e));
-}
-
-// Reset is staged like any other edit: it shows the level above and saves nothing until Save
-function reset() {
-  if (page.tab === "order") {
-    const games = [...page.state.games].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
-    page.staged.order = games.map((game) => game.key);
-    page.staged.cleared = true;
-  } else {
-    page.staged.look = {};
-  }
-  renderPanel();
-  status("Reset. Save to keep it.");
 }
 
 start();
