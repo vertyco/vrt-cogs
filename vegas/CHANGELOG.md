@@ -1,5 +1,9 @@
 # Vegas Changelog
 
+## 0.5.8
+
+- When the bot's data folder is on a Windows network share (a path like `\\server\share`), the cog now refuses to load and says why. The check for this never matched, so the cog loaded and its database could fail later with a confusing error.
+
 ## 0.5.7
 
 Phone polish, checked at the size of the game's window inside Discord's phone app.
