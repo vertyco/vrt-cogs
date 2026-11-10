@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- When the bot's data folder is on a Windows network share (a path like `\\server\share`), the cog now refuses to load and says why. The check for this never matched, so the cog loaded and its database could fail later with a confusing error.
+
 ## 0.5.0
 
 - `[p]appeal deny` can now set how long this user must wait before appealing again, by starting the reason with a duration: `[p]appeal deny 12 6mo Ban evasion`. It replaces the server's re-appeal cooldown for that denial, whether longer or shorter; `0` lets them appeal again right away. Durations are written without spaces and accept years and months (`2y`, `6mo`, `2w`, `30d`, `12h`, `30m`; `m` is minutes, `mo` is months). Denials without a duration keep using the server default.
