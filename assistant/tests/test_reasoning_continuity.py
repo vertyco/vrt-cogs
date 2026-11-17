@@ -156,3 +156,52 @@ def test_remember_reasoning_ignores_messages_without_items_or_calls():
     remember_reasoning(store, ChatCompletionMessage(role="assistant", content="hi"))
     remember_reasoning(store, ChatCompletionMessage(role="assistant", content=None, reasoning_items=[REASONING_ITEM]))
     assert store == {}
+
+
+def test_gpt6_tool_routing():
+    tools = [{"name": "a"}]
+    # Tool calls on these models only work on the Responses API, even with no reasoning
+    assert calls.needs_responses_api("gpt-6.2-sol", tools, "none")
+    assert calls.needs_responses_api("gpt-6.1-terra", tools, None)
+    assert calls.needs_responses_api("gpt-6-astra", tools, "low")
+    # gpt-6-sol/luna behave like gpt-5.6: Chat Completions with effort none, Responses otherwise
+    assert not calls.needs_responses_api("gpt-6-sol", tools, "none")
+    assert calls.needs_responses_api("gpt-6-luna", tools, "high")
+    assert not calls.needs_responses_api("gpt-6.2-sol", None, "low")
+    assert not calls.needs_responses_api("gpt-6.2-sol", tools, "low", base_url="https://example.com/v1")
+
+
+def test_supported_effort():
+    assert calls.supported_effort("gpt-6.2-astra", "none") == "low"
+    assert calls.supported_effort("gpt-6.1-sol", "none") == "low"
+    assert calls.supported_effort("gpt-6.1-terra", "none") == "none"
+    assert calls.supported_effort("gpt-6-sol", "minimal") == "low"
+    assert calls.supported_effort("gpt-6-astra", "max") == "max"
+    assert calls.supported_effort("gpt-5.5", None) is None
+
+
+@pytest.mark.asyncio
+async def test_gpt6_chat_completion_skips_sampling_params(monkeypatch):
+    captured: dict = {}
+
+    class FakeCompletions:
+        async def create(self, **kwargs):
+            captured.update(kwargs)
+            return SimpleNamespace(choices=[], usage=None)
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=FakeCompletions()))
+    monkeypatch.setattr(calls, "get_client", lambda *a, **k: client)
+    # The fake reply has no choices, so the call raises after the request was built
+    with pytest.raises(RuntimeError):
+        await calls.request_chat_completion_raw(
+            model="gpt-6.2-sol",
+            messages=[{"role": "user", "content": "hi"}],
+            temperature=0.7,
+            api_key="k",
+            reasoning_effort="none",
+            verbosity="low",
+        )
+    assert "temperature" not in captured
+    assert "frequency_penalty" not in captured
+    assert captured["reasoning_effort"] == "low"
+    assert captured["verbosity"] == "low"

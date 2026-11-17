@@ -171,9 +171,8 @@ class AssistantFunctions(MixinMeta):
         conf: GuildSettings,
         prompt: str,
         size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
-        quality: t.Literal["standard", "hd", "low", "medium", "high"] = "medium",
-        style: t.Optional[t.Literal["natural", "vivid"]] = "vivid",
-        model: t.Literal["dall-e-3", "gpt-image-1.5"] = "gpt-image-1.5",
+        quality: t.Literal["low", "medium", "high"] = "medium",
+        model: t.Literal["gpt-image-2.6-sunburst", "gpt-image-2.6-flare"] = "gpt-image-2.6-sunburst",
         *args,
         **kwargs,
     ):
@@ -183,7 +182,6 @@ class AssistantFunctions(MixinMeta):
                 self.get_api_key(conf),
                 size,
                 quality,
-                style,
                 model,
                 base_url=conf.endpoint_override or self.db.endpoint_override,
             )
@@ -193,20 +191,14 @@ class AssistantFunctions(MixinMeta):
             raise
 
         desc = _("-# Size: {}\n-# Quality: {}\n-# Model: {}").format(size, quality, model)
-        if model == "dall-e-3":
-            desc += _("\n-# Style: {}").format(style)
 
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
         embed = discord.Embed(description=desc, color=color).set_image(url="attachment://image.png")
-        txt = "Image has been generated and sent to the user!"
-        if hasattr(image, "revised_prompt") and image.revised_prompt:
-            embed.add_field(name=_("Revised Prompt"), value=image.revised_prompt)
-            txt += f"\n{_('Revised prompt:')} {image.revised_prompt}"
 
         content = [
             {
                 "type": "text",
-                "text": txt,
+                "text": "Image has been generated and sent to the user!",
             },
             {
                 "type": "image_url",

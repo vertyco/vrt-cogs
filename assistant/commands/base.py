@@ -91,7 +91,6 @@ If a file has no extension it will still try to read it only if it can be decode
     @app_commands.describe(prompt=_("What would you like to draw?"))
     @app_commands.describe(size=_("The size of the image to generate"))
     @app_commands.describe(quality=_("The quality of the image to generate"))
-    @app_commands.describe(style=_("The style of the image to generate"))
     @app_commands.describe(model=_("The model to use for image generation"))
     @commands.guild_only()
     async def draw(
@@ -99,9 +98,8 @@ If a file has no extension it will still try to read it only if it can be decode
         interaction: discord.Interaction,
         prompt: str,
         size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
-        quality: t.Literal["low", "medium", "high", "standard", "hd"] = "medium",
-        style: t.Literal["natural", "vivid"] = "vivid",
-        model: t.Literal["dall-e-3", "gpt-image-1.5"] = "dall-e-3",
+        quality: t.Literal["low", "medium", "high"] = "medium",
+        model: t.Literal["gpt-image-2.6-sunburst", "gpt-image-2.6-flare"] = "gpt-image-2.6-sunburst",
     ):
         conf = self.db.get_conf(interaction.guild)
         has_endpoint = bool(conf.endpoint_override or self.db.endpoint_override)
@@ -110,20 +108,12 @@ If a file has no extension it will still try to read it only if it can be decode
         if not conf.image_command:
             return await interaction.response.send_message(_("Image generation is disabled!"), ephemeral=True)
 
-        # Model-specific parameter validation
-        if model == "gpt-image-1.5" and quality in ["standard", "hd"]:
-            quality = "medium"  # Default for gpt-image-1.5 if dall-e-3 quality is provided
-        if model == "dall-e-3" and quality in ["low", "medium", "high"]:
-            quality = "standard"  # Default for dall-e-3 if gpt-image-1.5 quality is provided
-
         color = await self.bot.get_embed_color(interaction.channel)
         embed = discord.Embed(description=_("Generating image..."), color=color)
         embed.set_thumbnail(url=LOADING)
         await interaction.response.send_message(embed=embed)
 
         desc = _("-# Size: {}\n-# Quality: {}\n-# Model: {}").format(size, quality, model)
-        if model == "dall-e-3":
-            desc += _("\n-# Style: {}").format(style)
 
         base_url = conf.endpoint_override or self.db.endpoint_override
         try:
@@ -132,7 +122,6 @@ If a file has no extension it will still try to read it only if it can be decode
                 self.get_api_key(conf),
                 size,
                 quality,
-                style,
                 model,
                 base_url=base_url,
             )
@@ -146,16 +135,6 @@ If a file has no extension it will still try to read it only if it can be decode
         file = discord.File(BytesIO(image_bytes), filename="image.png")
         embed = discord.Embed(description=desc, color=color)
         embed.set_image(url="attachment://image.png")
-
-        if hasattr(image, "revised_prompt") and image.revised_prompt:
-            chunks = [p for p in pagify(image.revised_prompt, page_length=1000)]
-            for idx, chunk in enumerate(chunks):
-                embed.add_field(
-                    name=_("Revised Prompt") if idx == 0 else _("Continued"),
-                    value=chunk,
-                    inline=False,
-                )
-
         await interaction.edit_original_response(embed=embed, attachments=[file])
 
     @commands.command(

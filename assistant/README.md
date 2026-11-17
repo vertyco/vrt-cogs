@@ -133,11 +133,10 @@ The `[p]assistant` command uses hierarchical groups to organize configuration. U
 
 Generate an image with AI<br/>
 
- - Usage: `/draw <prompt> [size] [quality] [style] [model]`
+ - Usage: `/draw <prompt> [size] [quality] [model]`
  - `prompt:` (Required) What would you like to draw?
  - `size:` (Optional) The size of the image to generate
  - `quality:` (Optional) The quality of the image to generate
- - `style:` (Optional) The style of the image to generate
  - `model:` (Optional) The model to use for image generation
 
  - Checks: `Server Only`

@@ -58,9 +58,17 @@ MODELS = {
     "gpt-5.5": 1050000,
     "gpt-5.5-2026-04-23": 1050000,
     "gpt-5.6-sol": 1050000,
-    "gpt-6-astra": 1050000,
+    "gpt-5.6": 1050000,
     "gpt-5.6-terra": 1050000,
     "gpt-5.6-luna": 1050000,
+    "gpt-6-astra": 1050000,
+    "gpt-6-sol": 1050000,
+    "gpt-6-luna": 1050000,
+    "gpt-6-cyber": 1050000,
+    "gpt-6.1-sol": 1050000,
+    "gpt-6.1-terra": 1050000,
+    "gpt-6.2-astra": 1050000,
+    "gpt-6.2-sol": 1050000,
 }
 
 SUPPORTS_SEED = [
@@ -105,10 +113,18 @@ SUPPORTS_SEED = [
     "gpt-5.4-nano-2026-03-17",
     "gpt-5.5",
     "gpt-5.5-2026-04-23",
+    "gpt-5.6",
     "gpt-5.6-sol",
     "gpt-5.6-terra",
     "gpt-5.6-luna",
     "gpt-6-astra",
+    "gpt-6-sol",
+    "gpt-6-luna",
+    "gpt-6-cyber",
+    "gpt-6.1-sol",
+    "gpt-6.1-terra",
+    "gpt-6.2-astra",
+    "gpt-6.2-sol",
 ]
 NO_DEVELOPER_ROLE = [  # Also doesnt support system messages
     "o1-mini",
@@ -159,10 +175,18 @@ SUPPORTS_VISION = [
     "gpt-5.4-nano-2026-03-17",
     "gpt-5.5",
     "gpt-5.5-2026-04-23",
+    "gpt-5.6",
     "gpt-5.6-sol",
     "gpt-5.6-terra",
     "gpt-5.6-luna",
     "gpt-6-astra",
+    "gpt-6-sol",
+    "gpt-6-luna",
+    "gpt-6-cyber",
+    "gpt-6.1-sol",
+    "gpt-6.1-terra",
+    "gpt-6.2-astra",
+    "gpt-6.2-sol",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -210,16 +234,28 @@ SUPPORTS_TOOLS = [
     "gpt-5.4-nano-2026-03-17",
     "gpt-5.5",
     "gpt-5.5-2026-04-23",
+    "gpt-5.6",
     "gpt-5.6-sol",
     "gpt-5.6-terra",
     "gpt-5.6-luna",
     "gpt-6-astra",
+    "gpt-6-sol",
+    "gpt-6-luna",
+    "gpt-6-cyber",
+    "gpt-6.1-sol",
+    "gpt-6.1-terra",
+    "gpt-6.2-astra",
+    "gpt-6.2-sol",
 ]
 OLD_TOOL_SCHEMA = [i for i in MODELS.keys() if i not in SUPPORTS_TOOLS]
 # Model families that only support configurable reasoning_effort + function tools
 # via the Responses API (/v1/responses). Chat Completions rejects the combination
 # for these, so calls that need both are routed through the Responses adapter.
 RESPONSES_API_MODEL_PREFIXES = ("gpt-5.4", "gpt-5.5", "gpt-5.6", "gpt-6")
+# Models whose function tools only work on the Responses API, at any reasoning effort.
+RESPONSES_ONLY_TOOLS_MODEL_PREFIXES = ("gpt-6-astra", "gpt-6-cyber", "gpt-6.1", "gpt-6.2")
+# Models that reject reasoning effort "none"; their lowest effort is "low".
+NO_NONE_EFFORT_MODEL_PREFIXES = ("gpt-6-astra", "gpt-6-cyber", "gpt-6.1-sol", "gpt-6.2")
 READ_EXTENSIONS = [
     ".txt",
     ".py",
@@ -298,13 +334,8 @@ GENERATE_IMAGE = {
             },
             "quality": {
                 "type": "string",
-                "enum": ["standard", "hd", "low", "medium", "high"],
-                "description": "The quality of the image. For dall-e-3, use 'standard' or 'hd'. For gpt-image-1.5, use 'low', 'medium', or 'high'. Defaults to 'medium'.",
-            },
-            "style": {
-                "type": "string",
-                "enum": ["natural", "vivid"],
-                "description": "Vivid leans toward more hyper-real and dramatic images. Natural creates more natural, less hyper-real looking images. Only applies to dall-e-3. Defaults to 'vivid'",
+                "enum": ["low", "medium", "high"],
+                "description": "The quality of the image. Defaults to 'medium'.",
             },
             "size": {
                 "type": "string",
@@ -313,8 +344,8 @@ GENERATE_IMAGE = {
             },
             "model": {
                 "type": "string",
-                "enum": ["dall-e-3", "gpt-image-1.5"],
-                "description": "The model to use for image generation. dall-e-3 is the standard model, gpt-image-1.5 is a newer model with different pricing. Defaults to 'dall-e-3'",
+                "enum": ["gpt-image-2.6-sunburst", "gpt-image-2.6-flare"],
+                "description": "The model to use for image generation. gpt-image-2.6-sunburst is for detailed images, gpt-image-2.6-flare is faster for quick drafts at the same price. Defaults to 'gpt-image-2.6-sunburst'",
             },
         },
         "required": ["prompt"],

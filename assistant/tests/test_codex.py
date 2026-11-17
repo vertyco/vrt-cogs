@@ -338,9 +338,12 @@ def test_settings_roundtrip_codex_auth():
 def test_codex_catalog_models_have_context_sizes():
     for slug in ("gpt-5.5", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-astra"):
         assert MODELS[slug] == 1050000
-    assert "gpt-6-astra" in SUPPORTS_SEED
-    assert "gpt-6-astra" in SUPPORTS_VISION
-    assert "gpt-6-astra" in SUPPORTS_TOOLS
+    gpt6 = ("gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-6-cyber", "gpt-6.1-sol", "gpt-6.1-terra")
+    for slug in gpt6 + ("gpt-6.2-astra", "gpt-6.2-sol", "gpt-5.6"):
+        assert MODELS[slug] == 1050000
+        assert slug in SUPPORTS_SEED
+        assert slug in SUPPORTS_VISION
+        assert slug in SUPPORTS_TOOLS
 
 
 class FakeStream:

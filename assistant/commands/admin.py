@@ -2368,7 +2368,7 @@ class Admin(MixinMeta):
         """Switch reasoning effort between none, minimal, low, medium, high, and xhigh
 
         Not all models support every level. Unsupported levels are automatically mapped to the closest supported value.
-        - **none**: No reasoning (gpt-5.4 and newer only, skipped for other models)
+        - **none**: No reasoning (gpt-5.4 and newer only, skipped for other models, low on gpt-6-astra, gpt-6.1-sol and gpt-6.2)
         - **minimal**: Minimal reasoning (gpt-5 only, mapped to low for o-series)
         - **low**: Low reasoning effort
         - **medium**: Medium reasoning effort

@@ -1,5 +1,13 @@
 # Assistant Changelog
 
+## v8.25.0
+
+- **New**: Added OpenAI's newer chat models: `gpt-6-sol`, `gpt-6-luna`, `gpt-6.1-sol`, `gpt-6.1-terra`, `gpt-6.2-astra`, `gpt-6.2-sol`, `gpt-6-cyber` (needs OpenAI's restricted access), and the `gpt-5.6` alias. All have the 1.05M context window, vision and tools.
+- **Fix**: GPT-6 models on an API key were sent `temperature` and the penalty settings, which they reject, and never got the configured reasoning effort or verbosity. They are now treated like the GPT-5 reasoning models.
+- **Fix**: `gpt-6-astra`, `gpt-6-cyber` and the 6.1 and 6.2 models only take function tools on the Responses API, so every tool call for them now goes there, even with reasoning set to `none`. `gpt-6-astra`, `gpt-6-cyber`, `gpt-6.1-sol` and the 6.2 models also reject `none`, so it becomes `low` for them (`minimal` already became `low` on every GPT-5.4 and newer model).
+- **New**: Image generation uses `gpt-image-2.6-sunburst` (detailed, the default for `/draw`, the image tool and image edits) and `gpt-image-2.6-flare` (faster, same price).
+- **Removed**: `dall-e-3` (OpenAI shut it off on May 12, 2026, and it was the `/draw` default) and `gpt-image-1.5` (OpenAI shuts it off on December 1, 2026). With them go the `style` option and the `standard`/`hd` quality values on `/draw` and the image tool, and the "Revised Prompt" field, which only `dall-e-3` filled in. Quality is now `low`, `medium` or `high`. Bot owners need to run `[p]slash sync` once so `/draw` shows the new options.
+
 ## v8.24.6
 
 - **Change**: A Codex login now stays signed in while nobody uses it. OpenAI's access token lasts about 10 days and the renewal token behind it expires if it goes unused, but the cog only renewed a login when someone chatted, so a quiet server could lose its login. The cog now renews each stored server and global Codex login once it is 8 days old (the same schedule the Codex CLI uses), checking every hour in the background, and chat renews on that schedule too. Pasted tokens have nothing to renew with and still last only until they expire. The host's `auth.json` is still left to the Codex CLI.

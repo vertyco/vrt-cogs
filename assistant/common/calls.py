@@ -21,8 +21,10 @@ from .codex import CODEX_BACKEND_URL, CodexAuth, backend_headers
 from .constants import (
     MODELS,
     NO_DEVELOPER_ROLE,
+    NO_NONE_EFFORT_MODEL_PREFIXES,
     OLD_TOOL_SCHEMA,
     RESPONSES_API_MODEL_PREFIXES,
+    RESPONSES_ONLY_TOOLS_MODEL_PREFIXES,
     SUPPORTS_SEED,
 )
 from .responses import responses_to_chat_completion, to_responses_input, to_responses_tools
@@ -112,18 +114,33 @@ def needs_responses_api(
 ) -> bool:
     """Whether this call must go through the Responses API.
 
-    The gpt-5.4/5.5/5.6 family can only combine a configurable ``reasoning_effort``
-    with function tools on ``/v1/responses``. Only reroute direct-OpenAI calls that
-    actually need both (tools present and reasoning enabled); everything else stays
-    on Chat Completions, which is cheaper and unchanged.
+    The gpt-5.4 and newer families can only combine a configurable ``reasoning_effort``
+    with function tools on ``/v1/responses``, and some gpt-6 models take function tools
+    only there at any effort. Only reroute direct-OpenAI calls with tools that need it;
+    everything else stays on Chat Completions, which is cheaper and unchanged.
     """
     if base_url is not None:
         return False
     if not functions:
         return False
+    if model.startswith(RESPONSES_ONLY_TOOLS_MODEL_PREFIXES):
+        return True
     if not reasoning_effort or reasoning_effort == "none":
         return False
-    return any(model.startswith(prefix) for prefix in RESPONSES_API_MODEL_PREFIXES)
+    return model.startswith(RESPONSES_API_MODEL_PREFIXES)
+
+
+def supported_effort(model: str, reasoning_effort: Optional[str]) -> Optional[str]:
+    """Map the configured effort onto what a gpt-5.4 or newer model accepts.
+
+    None of them take ``minimal``, and some gpt-6 models reject ``none`` too;
+    both become ``low``, the lowest level every one of them accepts.
+    """
+    if reasoning_effort == "minimal":
+        return "low"
+    if reasoning_effort == "none" and model.startswith(NO_NONE_EFFORT_MODEL_PREFIXES):
+        return "low"
+    return reasoning_effort
 
 
 async def request_responses_raw(
@@ -141,15 +158,15 @@ async def request_responses_raw(
 ) -> ChatCompletion:
     """Call the Responses API and adapt the result back into a ``ChatCompletion``.
 
-    Used for the gpt-5.4/5.5/5.6 family when reasoning + tools are both needed.
+    Used for the gpt-5.4 and newer families when reasoning + tools are both needed,
+    and for gpt-6 models that take function tools only on the Responses API.
     Stateless (``store=False``): the full conversation is translated and sent each
     call, so the Chat-Completions-format conversation store remains the source of
     truth. Retries are handled by the calling ``request_chat_completion_raw``.
     """
     client = get_client(api_key, base_url)
 
-    # 5.4/5.5/5.6 support none/low/medium/high/xhigh (+max on 5.6); not minimal.
-    effort = "low" if reasoning_effort == "minimal" else reasoning_effort
+    effort = supported_effort(model, reasoning_effort)
 
     kwargs: dict = {
         "model": model,
@@ -242,7 +259,7 @@ async def request_codex_raw(
     the rest of the pipeline is unchanged.
     """
     client = get_client(auth.access_token, CODEX_BACKEND_URL, backend_headers(auth))
-    effort = "low" if reasoning_effort == "minimal" else reasoning_effort
+    effort = supported_effort(model, reasoning_effort)
     kwargs: dict = {
         "model": model,
         "input": to_responses_input(messages, reasoning_items),
@@ -350,20 +367,20 @@ async def request_chat_completion_raw(
             kwargs["max_tokens"] = max_tokens
     elif model in MODELS:
         # Using an OpenAI model
-        if not model.startswith("o") and "gpt-5" not in model:
+        reasoning_model = model.startswith(("o", "gpt-5", "gpt-6"))
+        if not reasoning_model:
             kwargs["temperature"] = temperature
             kwargs["frequency_penalty"] = frequency_penalty
             kwargs["presence_penalty"] = presence_penalty
 
-        if (model.startswith("o") or "gpt-5" in model) and reasoning_effort is not None:
-            if "gpt-5.6" in model:
-                # gpt-5.6 (sol/terra/luna) supports: none, low, medium, high, xhigh, max (not minimal)
+        if reasoning_model and reasoning_effort is not None:
+            if model.startswith(("gpt-5.6", "gpt-6")):
+                # gpt-5.6 and gpt-6.x support: low, medium, high, xhigh, max, most also none (never minimal)
                 # On Chat Completions, function tools require reasoning_effort='none'. Unlike 5.4/5.5,
                 # omitting the param is not enough: the model's default effort is non-none and is
                 # rejected alongside tools, so it must be set to 'none' explicitly when tools are sent.
-                if reasoning_effort == "minimal":
-                    reasoning_effort = "low"
-                kwargs["reasoning_effort"] = "none" if functions else reasoning_effort
+                # Models that reject 'none' never get here with tools: needs_responses_api reroutes them.
+                kwargs["reasoning_effort"] = "none" if functions else supported_effort(model, reasoning_effort)
             elif "gpt-5.4" in model or "gpt-5.5" in model:
                 # gpt-5.4/5.5 support: none, low, medium, high, xhigh (not minimal)
                 # Chat Completions does not support reasoning_effort + tools together for these,
@@ -387,7 +404,7 @@ async def request_chat_completion_raw(
                     reasoning_effort = "high"
                 kwargs["reasoning_effort"] = reasoning_effort
 
-        if "gpt-5" in model and verbosity is not None:
+        if model.startswith(("gpt-5", "gpt-6")) and verbosity is not None:
             kwargs["verbosity"] = verbosity
 
         if max_tokens and max_tokens > 0:
@@ -600,36 +617,14 @@ async def request_image_raw(
     prompt: str,
     api_key: str,
     size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
-    quality: t.Literal["standard", "hd", "low", "medium", "high"] = "standard",
-    style: t.Optional[t.Literal["natural", "vivid"]] = "vivid",
-    model: t.Literal["dall-e-3", "gpt-image-1.5"] = "dall-e-3",
+    quality: t.Literal["low", "medium", "high"] = "medium",
+    model: t.Literal["gpt-image-2.6-sunburst", "gpt-image-2.6-flare"] = "gpt-image-2.6-sunburst",
     base_url: Optional[str] = None,
 ) -> Image:
     client = get_client(api_key, base_url)
-
-    kwargs = {
-        "model": model,
-        "prompt": prompt,
-        "size": size,
-        "n": 1,
-    }
-
-    # Handle model-specific parameters
-    if model == "dall-e-3":
-        kwargs["quality"] = quality if quality in ["standard", "hd"] else "standard"
-        kwargs["style"] = style
-        kwargs["response_format"] = "b64_json"
-    elif model == "gpt-image-1.5":
-        if quality in ["low", "medium", "high"]:
-            kwargs["quality"] = quality
-        else:
-            kwargs["quality"] = "medium"
-        kwargs["response_format"] = "b64_json"
-        # gpt-image-1.5 doesn't support style parameter
-
-    response: ImagesResponse = await client.images.generate(**kwargs)
-    images: list[Image] = response.data
-    return images[0]
+    # gpt-image models always return base64, so no response_format is needed
+    response: ImagesResponse = await client.images.generate(model=model, prompt=prompt, size=size, quality=quality, n=1)
+    return response.data[0]
 
 
 async def request_image_edit_raw(
@@ -644,9 +639,8 @@ async def request_image_edit_raw(
     client = get_client(api_key, base_url)
 
     response: ImagesResponse = await client.images.edit(
-        model="gpt-image-1.5",
+        model="gpt-image-2.6-sunburst",
         prompt=prompt,
         image=images,
     )
-    images: list[Image] = response.data
-    return images[0]
+    return response.data[0]
