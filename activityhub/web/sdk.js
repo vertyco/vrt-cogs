@@ -86,16 +86,39 @@ function gameKey() {
 }
 
 // A listener that isn't a function, like the result of calling one by mistake, would only fail on every update
-function needListener(listener) {
+function needListener(name, listener) {
   if (typeof listener !== "function") {
-    throw new TypeError(`hub.onPeople() needs a function, got ${typeof listener}`);
+    throw new TypeError(`hub.${name}() needs a function, got ${typeof listener}`);
   }
 }
 
 // hub.onPeople: the listener gets the list as this game sees it, and goes away with the game's page
 function watchPeople(host, key, listener) {
-  needListener(listener);
+  needListener("onPeople", listener);
   const stop = host.presence.listen(() => listener(host.presence.view(key)));
+  window.addEventListener("pagehide", stop, { once: true });
+  return stop;
+}
+
+// A game page opened on its own has the whole window, with nothing of the hub's or Discord's over it
+function lonelyLayout() {
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    safe: { top: 0, right: 0, bottom: 0, left: 0 },
+    covered: [],
+  };
+}
+
+// hub.onLayout: the listener gets the layout each time it changes, and goes away with the game's page
+function watchLayout(host, listener) {
+  needListener("onLayout", listener);
+  if (!host) {
+    const resized = () => listener(lonelyLayout());
+    window.addEventListener("resize", resized);
+    return () => window.removeEventListener("resize", resized);
+  }
+  const stop = host.onLayout(() => listener(host.layout()));
   window.addEventListener("pagehide", stop, { once: true });
   return stop;
 }
@@ -148,11 +171,15 @@ function offlineHub(host) {
     status: () => {},
     busy: () => {},
     onPeople(listener) {
-      needListener(listener);
+      needListener("onPeople", listener);
       return () => {};
     },
     peopleButton: () => (host ? host.people.frameButton(document) : lonelyButton()),
     openPeople: () => host?.people.open(),
+    get layout() {
+      return host ? host.layout() : lonelyLayout();
+    },
+    onLayout: (listener) => watchLayout(host, listener),
     backToMenu,
   };
 }
@@ -550,6 +577,10 @@ function onlineHub(host, login) {
     busy: (on) => host.setBusy(on),
     peopleButton: () => host.people.frameButton(document),
     openPeople: () => host.people.open(),
+    get layout() {
+      return host.layout();
+    },
+    onLayout: (listener) => watchLayout(host, listener),
     backToMenu,
   };
 }
@@ -558,9 +589,7 @@ export async function connect() {
   const host = findHost();
   if (host) {
     const login = await host.ready;
-    const hub = login ? onlineHub(host, login) : offlineHub(host);
-    host.people.connected();
-    return hub;
+    return login ? onlineHub(host, login) : offlineHub(host);
   }
   if (new URLSearchParams(location.search).has("frame_id")) {
     // Inside Discord only the menu may start the Discord toolkit, so a game opened on its own goes there

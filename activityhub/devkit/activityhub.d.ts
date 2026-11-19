@@ -31,6 +31,26 @@ declare module "activityhub" {
     here: boolean;
   }
 
+  /** A box the hub draws over your page, in your page's own CSS pixels. */
+  export interface HubCover {
+    /** "buttons" for the hub's own buttons ("hub_buttons"), "fps" for the frame rate counter. */
+    name: string;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  }
+
+  export interface HubLayout {
+    /** Your page's size in CSS pixels. */
+    width: number;
+    height: number;
+    /** The room Discord's own buttons and the phone's notch take at each edge, in CSS pixels. */
+    safe: { top: number; right: number; bottom: number; left: number };
+    /** Everything the hub draws over your page right now. Empty when it draws nothing. */
+    covered: HubCover[];
+  }
+
   /** A live connection, page side. */
   export interface HubConnection {
     /** The latest round trip to the bot and back in milliseconds, or null before the first one and while reconnecting. */
@@ -72,6 +92,10 @@ declare module "activityhub" {
     onPeople(fn: (people: HubPerson[]) => void): () => void;
     peopleButton(): HTMLElement;
     openPeople(): void;
+    /** What part of the screen is yours. A new object on each read. */
+    readonly layout: HubLayout;
+    /** Calls `fn` each time the layout changes (not straight away). Returns a function that stops it. */
+    onLayout(fn: (layout: HubLayout) => void): () => void;
     backToMenu(): void;
   }
 

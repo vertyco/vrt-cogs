@@ -21,6 +21,14 @@ document.body.append(hub.peopleButton());
 window.demo = { done: true };
 """
 FLOATING = "document.querySelector('.hub-people.floating')"
+BAR = "document.querySelector('.hub-game-buttons')"
+# What each game asked the hub to draw over it, as the menu's data gives it. The test page has no menu to load it
+GAMES = [
+    {"key": "demo", "hubButtons": ["people"]},
+    {"key": "placed", "hubButtons": ["people"]},
+    {"key": "bare", "hubButtons": []},
+    {"key": "backed", "hubButtons": ["back"]},
+]
 PANEL = "document.querySelector('.hub-people-panel')"
 CONFIRM = "document.querySelector('.hub-confirm')"
 PREVIEW = "Open this from Discord to see who's here."
@@ -42,6 +50,8 @@ def live(tmp_path, driver):
     placed = write_demo_web(tmp_path / "placed")
     (placed / "game.js").write_text(PLACED_JS, encoding="utf-8")
     register(hub, DemoCog(placed, key="placed", name="Placed", cog_name="Placed"))
+    for key in ("bare", "backed"):
+        register(hub, DemoCog(write_demo_web(tmp_path / key), key=key, name=key.title(), cog_name=key.title()))
     server = LiveHub(hub, hub_web_copy(tmp_path, index=TEST_HOST_PAGE))
     server.start()
     driver.set_window_size(1280, 800)
@@ -53,6 +63,7 @@ def live(tmp_path, driver):
 def open_game(driver, live, key="demo"):
     driver.get(f"{live.url}/{DISCORD_QUERY}")
     assert wait_for(driver, "document.body.dataset.login") == "online"
+    driver.execute_script("window.testHost.setGames(arguments[0])", GAMES)
     driver.execute_script(f"window.testHost.openGame('{key}')")
     wait_for(driver, "document.body.classList.contains('playing')")
 
@@ -76,8 +87,28 @@ def ask_to_leave(driver, live):
     open_panel(driver)
 
 
-def test_a_game_that_does_nothing_gets_the_floating_button(driver, live):
+def test_a_game_that_asks_for_nothing_gets_nothing_drawn_over_it(driver, live):
+    open_game(driver, live, "bare")
+    driver.execute_script("window.testHost.presence.quietUntil = 0")
+    live.add_person(MANAGER_ID, where="bare")
+    wait_for(driver, "window.testHost.presence.people.length === 2")
+    assert driver.execute_script(f"return [{BAR}.hidden, {BAR}.querySelector('.hub-note')]") == [True, None]
+    assert driver.execute_script("return window.testHost.layout().covered") == []
+
+
+def test_a_game_can_ask_for_the_hubs_back_button(driver, live):
+    open_game(driver, live, "backed")
+    shown = f"return [{BAR}.hidden, {BAR}.querySelector('.hub-back').hidden, {FLOATING}.hidden]"
+    assert driver.execute_script(shown) == [False, False, True]
+    assert driver.execute_script("return window.testHost.layout().covered.map((box) => box.name)") == ["buttons"]
+    driver.find_element(By.CLASS_NAME, "hub-back").click()
+    wait_for(driver, "window.testHost.gameKey === null && document.body.dataset.closed === '1'")
+    assert driver.execute_script(f"return {BAR}.hidden") is True
+
+
+def test_a_game_that_asks_for_the_people_button_gets_the_floating_one(driver, live):
     open_game(driver, live)
+    assert driver.execute_script(f"return {BAR}.querySelector('.hub-back').hidden") is True
     wait_for(driver, f"!{FLOATING}.hidden")
     # Alone in the window, the button offers an invite
     label = driver.execute_script(f"return {FLOATING}.querySelector('button').getAttribute('aria-label')")
@@ -91,9 +122,7 @@ def test_a_placed_button_replaces_the_floating_one(driver, live):
     driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
     wait_for(driver, "document.querySelector('.hub-people .hub-people-button')")
     driver.switch_to.default_content()
-    # Past the floating button's fallback after the page loaded
-    driver.execute_async_script("setTimeout(arguments[0], 2300)")
-    assert driver.execute_script(f"return {FLOATING}.hidden") is True
+    assert driver.execute_script(f"return [{FLOATING}.hidden, {BAR}.hidden]") == [True, True]
 
 
 def test_the_panel_groups_people_and_joins(driver, live):
@@ -277,7 +306,7 @@ def test_closing_the_game_hides_the_button_and_forgets_a_placed_one(driver, live
     assert driver.execute_script(f"return {FLOATING}.hidden") is True
     assert driver.execute_script(f"return {PANEL}.hidden") is True
     assert driver.execute_script("return window.testHost.people.placed") is None
-    # The next game, one that places no button, gets the floating one
+    # The next game, one that asks for the floating button and places none, gets it
     driver.execute_script("window.testHost.openGame('demo')")
     wait_for(driver, f"!{FLOATING}.hidden")
 
@@ -367,7 +396,7 @@ def test_a_long_note_from_a_button_mid_screen_stays_on_the_screen(driver, live, 
     # A game can put its button anywhere, such as the middle of its bar. The note opens toward the far side
     shown = driver.execute_async_script(
         f"""const done = arguments[arguments.length - 1];
-        Object.assign({FLOATING}.style, {{ left: '{left}', right: 'auto', top: '40%' }});
+        Object.assign({BAR}.style, {{ left: '{left}', right: 'auto', top: '40%' }});
         import('./people.js').then(({{ showNote }}) => {{
           showNote({FLOATING}, 'x'.repeat(400));
           const note = {FLOATING}.querySelector('.hub-note');

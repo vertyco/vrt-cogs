@@ -1,5 +1,22 @@
 # ActivityHub Changelog
 
+## 0.17.0
+
+The hub now stays out of a game's way. While a game is open the hub draws nothing over it unless that game asks.
+
+For players:
+
+- The people button no longer floats over the top-right corner of a game that didn't place one. Games that put the button in their own bar (every game in this repo) look the same as before.
+- The frame rate counter is unchanged: it still follows each player's own **Frame rate** setting.
+
+For game developers:
+
+- **The floating people button is now opt-in.** A game that relied on it must either place the button with `hub.peopleButton()`, or ask for the floating one with `"hub_buttons": ["people"]` in `activityhub_game()`. Without either, the game has no people button.
+- New `hub_buttons` field in `activityhub_game()`: a list holding `"back"`, `"people"`, or both. `"back"` is new: a small hub-drawn button that takes the player back to the menu, for a game with no Back button of its own. It shows from the moment the game opens, so it also gets a player out of a page that is slow to load. The buttons share one small bar in the top-right corner. Set `"requires": "0.17.0"` with it.
+- New `hub.layout` tells a page what part of the screen is its own: the page's size, the room Discord's own buttons and the phone's notch take at each edge (as numbers, for canvas games), and the box of everything the hub draws over the page right now (its buttons and the frame rate counter). `hub.onLayout(fn)` calls `fn` each time that changes.
+- `hub.peopleButton()` no longer has to be called straight after `connect()`: there is no floating button to beat any more.
+- `DEVELOPERS.md` has a new part, "What the hub draws over your game", and `activityhub.d.ts` has the new types.
+
 ## 0.16.0
 
 A pass over how the menu looks, feels and loads, mostly for phones.

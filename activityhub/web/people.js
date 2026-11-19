@@ -1,13 +1,11 @@
-// The drawn parts of "who's here": the people panel, the floating people button over a game, arrival notes, the
-// question before Join takes a player out of a round, and the pieces the menu reuses (rows, avatars, the button's
-// face). Names and status lines come from players, so they only ever go in as text.
+// The drawn parts of "who's here": the people panel, the hub's own buttons over a game that asked for them, arrival
+// notes, the question before Join takes a player out of a round, and the pieces the menu reuses (rows, avatars, the
+// button's face). Names and status lines come from players, so they only ever go in as text.
 const NOTE_MS = 3000;
 // The space an arrival note leaves between itself and the edge of the screen
 const NOTE_GUTTER = 16;
 // Arrivals this close together share one note
 const MERGE_MS = 1000;
-// A game page that never calls connect() still gets the floating button this long after it loads
-const FLOAT_FALLBACK_MS = 2000;
 const STACK = 3;
 // What a page says where the real list would be, with no Discord around it
 export const PREVIEW_TEXT = "Open this from Discord to see who's here.";
@@ -22,6 +20,7 @@ const ICONS = {
     '<path d="M17 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1"/><circle cx="10" cy="7" r="3.5"/>' +
     '<path d="M21 19v-1a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   hot: '<path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>',
   // The same cog as the included games' settings button (arcade.js)
   gear:
@@ -327,17 +326,28 @@ export function showNote(wrap, text) {
   view.setTimeout(() => note.remove(), NOTE_MS);
 }
 
-// The menu page's half: the panel, the floating button, notes and the Join question, all drawn over the game frame
+// The menu page's half: the panel, the hub's own buttons, notes and the Join question, all drawn over the game frame
 export class PeopleUI {
   constructor(host) {
     this.host = host;
     useStyles(document);
+    // The hub's own buttons over a game, in one small bar. Each shows only for a game that asked for it with
+    // "hub_buttons", so a game that asked for none has nothing of the hub's drawn over it
+    this.back = make(document, "button", "hub-back");
+    this.back.type = "button";
+    this.back.title = "Back to the menu";
+    this.back.setAttribute("aria-label", "Back to the menu");
+    this.back.append(icon(document, "back"));
+    this.back.addEventListener("click", () => this.host.closeGame());
     this.floating = buttonWrap(document, () => this.open());
     this.floating.classList.add("floating");
-    this.floating.hidden = true;
+    this.bar = make(document, "div", "hub-game-buttons");
+    this.bar.append(this.back, this.floating);
+    this.bar.hidden = true;
+    host.cover("buttons", this.bar);
     // A game's own button, in its frame, once it calls hub.peopleButton()
     this.placed = null;
-    this.floatTimer = null;
+    this.showButtons();
     this.noted = [];
     this.noteStarted = 0;
     this.answer = null;
@@ -349,7 +359,7 @@ export class PeopleUI {
     this.scrim.addEventListener("click", () => this.dismiss());
     this.panel = this.buildPanel();
     this.confirmBox = this.buildConfirm();
-    document.body.append(this.floating, this.scrim, this.panel, this.confirmBox);
+    document.body.append(this.bar, this.scrim, this.panel, this.confirmBox);
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         this.dismiss();
@@ -590,11 +600,15 @@ export class PeopleUI {
     }
   }
 
-  // ---------- The button's place over a game ----------
+  // ---------- The hub's buttons over a game ----------
 
-  // The game's page called connect(). Unless it places its own button straight after, the floating one shows
-  connected() {
-    requestAnimationFrame(() => this.float());
+  // Shows the buttons the open game asked for with "hub_buttons". The floating people button gives way to one the
+  // game placed in its own page
+  showButtons() {
+    const asked = this.host.games.get(this.host.gameKey)?.hubButtons || [];
+    this.back.hidden = !asked.includes("back");
+    this.floating.hidden = !asked.includes("people") || Boolean(this.placed);
+    this.bar.hidden = this.back.hidden && this.floating.hidden;
   }
 
   gameLoaded() {
@@ -602,20 +616,12 @@ export class PeopleUI {
     if (this.placed && this.placed.ownerDocument !== this.host.frame?.contentDocument) {
       this.placed = null;
     }
-    clearTimeout(this.floatTimer);
-    this.floatTimer = setTimeout(() => this.float(), FLOAT_FALLBACK_MS);
-  }
-
-  float() {
-    if (this.host.frame && !this.placed) {
-      this.floating.hidden = false;
-    }
+    this.showButtons();
   }
 
   gameClosed() {
-    clearTimeout(this.floatTimer);
-    this.floating.hidden = true;
     this.placed = null;
+    this.showButtons();
     this.close();
     // A question about leaving a game that is already gone has no answer to wait for
     this.answer?.(false);
@@ -626,8 +632,7 @@ export class PeopleUI {
     useStyles(doc);
     const wrap = buttonWrap(doc, () => this.open());
     this.placed = wrap;
-    this.floating.hidden = true;
-    clearTimeout(this.floatTimer);
+    this.showButtons();
     fillButton(wrap.querySelector("button"), this.people());
     return wrap;
   }

@@ -83,6 +83,7 @@ def test_game_json():
         "economy": None,
         "platforms": ["desktop", "mobile"],
         "opensIn": "everywhere",
+        "hubButtons": [],
     }
     plain = game_json(game("mid", "Middle"), "abc123", "Bet credits")
     assert plain["icon"] is None and plain["thumbnail"] is None and plain["economy"] == "Bet credits"
@@ -133,3 +134,8 @@ def test_the_menu_data_says_where_each_game_opens(tmp_path):
     local = Game(key="local", name="Local", web_dir=tmp_path, cog=None, opens_in="server")
     assert game_json(local, "b")["opensIn"] == "server"
     assert game_json(Game(key="any", name="Any", web_dir=tmp_path, cog=None), "b")["opensIn"] == "everywhere"
+
+
+def test_the_menu_data_says_which_hub_buttons_each_game_asked_for(tmp_path):
+    asked = Game(key="asked", name="Asked", web_dir=tmp_path, cog=None, hub_buttons=["back", "people"])
+    assert game_json(asked, "b")["hubButtons"] == ["back", "people"]

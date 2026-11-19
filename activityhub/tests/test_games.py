@@ -940,3 +940,22 @@ async def test_opens_in_only_knows_server_and_everywhere(web_dir, value):
     with pytest.raises(GameError) as refused:
         await validate_game(GameCog(web_dir, opens_in=value))
     assert str(refused.value) == f'opens_in must be "server" or "everywhere", got {value!r}'
+
+
+@pytest.mark.asyncio
+async def test_a_game_gets_none_of_the_hubs_buttons_unless_it_asks(web_dir):
+    assert (await validate_game(GameCog(web_dir))).hub_buttons == []
+
+
+@pytest.mark.asyncio
+async def test_a_game_can_ask_for_the_hubs_buttons_each_once(web_dir):
+    game = await validate_game(GameCog(web_dir, hub_buttons=["people", "back", "people"]))
+    assert game.hub_buttons == ["people", "back"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value", [["menu"], "back", True, None, [1], ["back", "Back"]])
+async def test_hub_buttons_only_knows_back_and_people(web_dir, value):
+    with pytest.raises(GameError) as refused:
+        await validate_game(GameCog(web_dir, hub_buttons=value))
+    assert str(refused.value) == f'hub_buttons can only hold "back" and "people", got {value!r}'

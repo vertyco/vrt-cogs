@@ -523,6 +523,64 @@ def test_offline_on_people_needs_a_function_too(driver, live):
     assert in_game(driver, BAD_LISTENER) == BAD_LISTENER_ERROR
 
 
+ALL_CLEAR = {"top": 0, "right": 0, "bottom": 0, "left": 0}
+
+
+def test_nothing_of_the_hubs_is_over_a_game_that_asked_for_nothing(driver, live):
+    open_game_in_host(driver, live)
+    layout = in_game(driver, "done(hub.layout);")
+    assert layout["covered"] == [] and layout["safe"] == ALL_CLEAR
+    assert layout["width"] > 0 and layout["height"] > 0
+
+
+def test_layout_gives_the_box_of_the_hubs_buttons_when_they_show(driver, live):
+    open_game_in_host(driver, live)
+    script = (
+        "hub.onLayout((layout) => done(layout));"
+        "const host = window.parent.testHost;"
+        "host.setGames([{ key: 'demo', hubButtons: ['back'] }]);"
+        "host.people.showButtons();"
+    )
+    layout = in_game(driver, script)
+    [box] = layout["covered"]
+    assert box["name"] == "buttons" and box["width"] > 0 and box["height"] > 0
+    # The top-right corner, 8 px in from each edge
+    assert box["top"] == 8 and round(box["left"] + box["width"]) == layout["width"] - 8
+
+
+def test_layout_follows_the_room_discords_buttons_take(driver, live):
+    open_game_in_host(driver, live)
+    script = (
+        "hub.onLayout((layout) => done(layout.safe));"
+        "window.parent.document.documentElement.style.setProperty('--discord-safe-area-inset-top', '40px');"
+    )
+    assert in_game(driver, script) == {**ALL_CLEAR, "top": 40}
+
+
+def test_on_layout_needs_a_function(driver, live):
+    open_game_in_host(driver, live)
+    script = "try { hub.onLayout('nope'); } catch (e) { done([e.name, e.message]); }"
+    assert in_game(driver, script) == ["TypeError", "hub.onLayout() needs a function, got string"]
+
+
+def test_a_game_opened_on_its_own_has_the_whole_window(driver, live):
+    driver.get(f"{live.url}/games/demo/")
+    wait_for(driver, "window.demo && window.demo.done")
+    layout = in_game(driver, "const stop = hub.onLayout(() => {}); stop(); done(hub.layout);")
+    assert layout["covered"] == [] and layout["safe"] == ALL_CLEAR
+    assert layout["width"] > 0 and layout["height"] > 0
+
+
+def test_layout_listeners_a_game_added_go_when_it_closes(driver, live):
+    assert open_host(driver, live) == "online"
+    open_game(driver)
+    count = "window.parent.testHost.layoutListeners.size"
+    assert in_game(driver, f"hub.onLayout(() => {{}}); done({count});") == 1
+    driver.switch_to.default_content()
+    driver.execute_script("window.testHost.closeGame()")
+    assert driver.execute_script("return window.testHost.layoutListeners.size") == 0
+
+
 # How many people listeners the menu holds, read from inside a game frame
 LISTENER_COUNT = "window.parent.testHost.presence.listeners.size"
 

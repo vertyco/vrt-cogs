@@ -41,6 +41,7 @@ You don't need to know anything about Discord Activities, web servers or Discord
 | Make a fast action game | [Speed and fast-paced games](#speed-and-fast-paced-games) |
 | Let players aim with the mouse, like in a shooter | [Aiming: locking the mouse](#aiming-locking-the-mouse) |
 | Show who is playing what | [7. Who's here](#7-whos-here) |
+| Know what part of the screen is mine, or get a Back button from the hub | [What the hub draws over your game](#what-the-hub-draws-over-your-game) |
 | Let players upload files | [8. Uploads](#8-uploads-and-other-raw-requests) |
 | Use extra Discord features, like the player's Discord status | [9. Extra Discord permissions](#9-extra-discord-permissions) |
 | Open my game from my own command or button | [10. Opening your game from a command or button](#10-opening-your-game-from-a-command-or-button) |
@@ -183,7 +184,7 @@ Most steps in Discord's own Activity guides don't apply here. This table shows w
 | Discord permissions | You choose the scopes in your own login. | List them in `scopes`. They join the one login every game shares. |
 | Opening it | The Entry Point command (the Play button in Discord's App Launcher) or a launch reply to a command. | The Entry Point command opens the hub's menu, and players pick your game there. `hub.launch()` opens your game straight from your own button or slash command. |
 | Turning it off | Up to you. | Server admins can turn your game off in their server, and the bot owner in every server, from the menu's settings. The hub enforces it. |
-| Phone layout | Your page reads Discord's safe area sizes (the room Discord's own buttons take) from CSS. | The same, under the same names: the hub copies them into your frame. |
+| Phone layout | Your page reads Discord's safe area sizes (the room Discord's own buttons take) from CSS. | The same, under the same names: the hub copies them into your frame. `hub.layout` has them as numbers, with the box of anything the hub draws over your page. |
 | Phone heat, small window, turning sideways | Your page subscribes to `THERMAL_STATE_UPDATE`, `ACTIVITY_LAYOUT_MODE_UPDATE` and `ORIENTATION_UPDATE`. | The same, through `hub.discord.subscribe()`. The heat arrives as soon as you subscribe, as it does in your own Activity. See [phone heat](#phone-heat-the-small-window-and-turning-sideways). |
 
 What stays the same:
@@ -1138,7 +1139,7 @@ Some things to know:
 
 ## 7. Who's here
 
-**In short:** the hub shows everyone who is playing what, in the menu and inside every game, with no code from you. A few calls let your game say what its player is doing, and show the others in its own way.
+**In short:** the hub shows everyone who is playing what in the menu, with no code from you. A few calls let your game say what its player is doing, show the people button, and show the others in its own way.
 
 Friends usually open the Activity together, from one voice channel, and then spread out over different games. A **window** is everyone who opened the Activity from the same voice channel (or the same DM call). They share one `ctx.instance_id`. Everything in this section is about the people in the player's window.
 
@@ -1146,12 +1147,12 @@ Friends usually open the Activity together, from one voice channel, and then spr
 
 1. **Say what the player is doing** with `hub.status("...")`, each time it changes.
 2. **Say when leaving would cost them:** `hub.busy(true)` when a round starts, `hub.busy(false)` when it ends.
-3. **Make sure the people button covers nothing.** If it does, place it yourself with `hub.peopleButton()`.
+3. **Show the people button.** Place it in your own layout with `hub.peopleButton()`, or ask the hub to float one over your game with `"hub_buttons": ["people"]`. The hub draws nothing over a game that does neither.
 
 What players get without you writing anything:
 
 - **In the menu,** a game that people in this window are playing has a number bubble on its corner. Resting the mouse on the game (or tapping the bubble on a phone) lists them, with what each one is doing and a **Join** button, plus how many play it in other channels of the same server. The Orb theme lists them on its big screen for the selected game, under **Playing now**. The menu's header shows everyone else in the window.
-- **In your game,** a **people button** floats in the top-right corner. It opens the **people panel**: who is in your game, who is in each other game, who is in the menu, how many play in other channels, and an **Invite friends** button that opens Discord's invite window. When someone opens your game, a short "Ann joined" note slides out of the button.
+- **In your game,** the **people button** (once you place it or ask for it, as above) opens the **people panel**: who is in your game, who is in each other game, who is in the menu, how many play in other channels, and an **Invite friends** button that opens Discord's invite window. When someone opens your game, a short "Ann joined" note slides out of the button.
 - **Join** opens the other person's game for the player. If your game says its player is mid-round, the hub asks first: "Leave Tanks to join Ann in Snake?", with **Stay** picked by default.
 - **Away:** people whose Discord is in the background (a locked phone, another app or tab in front) show dimmed, with "Away" in place of what they're doing.
 
@@ -1275,7 +1276,7 @@ Your Python sees none of the people list. Status lines, data, busy flags and who
 
 ### Put the people button in your layout: `hub.peopleButton()`
 
-The floating button in the top-right corner can cover something of yours. Place it yourself instead. This example puts it in the page's `<header>` element:
+The best place for the people button is your own layout, where it covers nothing. This example puts it in the page's `<header>` element:
 
 ```js
 import { connect } from "activityhub";
@@ -1284,7 +1285,7 @@ const hub = await connect();
 document.querySelector("header").append(hub.peopleButton());
 ```
 
-- **Call it right after `connect()`,** before anything else you `await`, and the floating button never shows. The hub shows the floating one a frame after `connect()` resolves, and hides it as soon as you call `hub.peopleButton()`. A page that never calls `connect()` gets the floating one 2 seconds after it loads.
+- **No layout to put it in?** Ask for the floating one instead, with `"hub_buttons": ["people"]` in `activityhub_game()`: see [what the hub draws over your game](#what-the-hub-draws-over-your-game). A button you place replaces the floating one.
 - It returns one element: the button, plus the spot its arrival notes slide out of. Put it anywhere in your page. Notes appear under it, lined up with whichever side of the screen it is nearer. Keep it out of boxes with `overflow: hidden`, which cut the notes off.
 - Call it once. Only the newest button it returned keeps up with the list.
 - The button shows up to 3 faces of the others in your game, and how many others are in the window. With nobody else there, it shows an invite icon.
@@ -1756,8 +1757,8 @@ This one shows up when a player logs in, not when your game registers:
 | `hub.onPeople() needs a function, got ...` | You passed something else, often a call: `hub.onPeople(draw())`. | Pass the function itself: `hub.onPeople(draw)`. |
 | `hub.people` is empty | You're in the browser preview, the first list hasn't arrived yet, or the menu lost its connection to the bot for more than a minute. | Draw from `hub.people` once, then again in `hub.onPeople()`, and show something sensible for an empty list. |
 | The people panel says "Open this from Discord to see who's here." | You're in the browser preview. | Open the Activity from Discord. |
-| The people button covers one of your buttons | The floating button sits in the top-right corner. | Place it yourself with `hub.peopleButton()`. |
-| The floating people button shows for a moment, then goes away | You called `hub.peopleButton()` after another `await`. | Call it right after `connect()`. |
+| Your game has no people button | The hub only draws one for a game that asks. | Place it with `hub.peopleButton()`, or set `"hub_buttons": ["people"]` in `activityhub_game()`. |
+| The hub's buttons cover something of yours | The buttons you asked for sit in the top-right corner. | Place the people button yourself with `hub.peopleButton()` and make your own Back button, or read `hub.layout` and keep that corner clear. See [what the hub draws over your game](#what-the-hub-draws-over-your-game). |
 | `conn.follow` is `None` after a Join | Only the first live connection after a Join has it. A reconnect, a later `hub.socket()`, or a friend who left the window before it opened gives `None`. | Read it in `join`, and keep what you need from it in your own state. |
 
 ## 14. Discord's limits
@@ -1776,7 +1777,7 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
   - For Godot 4, export with Thread Support turned off, because Activities can't turn on the browser isolation that threads need.
   - Unity's Gzip, Brotli and uncompressed builds work as exported, without Decompression Fallback. The hub sends files ending in `.gz` or `.br` with `Content-Encoding`, so the browser unpacks them. That also means your code never sees those files packed: if you unpack a file yourself (with `DecompressionStream`, say), give it another extension, like `.bin`.
   - From a script that isn't a module (an engine loader, a Unity `.jslib`, Godot's `JavaScriptBridge`), reach the helper inside an async function with `const { connect } = await import("activityhub");`, and set `window.hub = await connect();` if the engine needs a global.
-- **Discord's buttons cover the top of the screen on phones.** Discord's back button and **Leave** button float over the top of your page, and a phone's notch can cover an edge too. Discord gives the room they take as `--discord-safe-area-inset-top`, `-right`, `-bottom` and `-left`, and the hub copies them into your page. So pad your top bar, and anything else along an edge, the way Discord's own guide does. The included games do this (`activityhub/web/arcade.css`):
+- **Discord's buttons cover the top of the screen on phones.** Discord's back button and **Leave** button float over the top of your page, and a phone's notch can cover an edge too. Discord gives the room they take as `--discord-safe-area-inset-top`, `-right`, `-bottom` and `-left`, and the hub copies them into your page. So pad your top bar, and anything else along an edge, the way Discord's own guide does. A game that draws on a canvas reads the same sizes as numbers from `hub.layout.safe` ([what the hub draws over your game](#what-the-hub-draws-over-your-game)). The included games do this (`activityhub/web/arcade.css`):
 
   ```css
   .top-bar {
@@ -1810,6 +1811,66 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
     }
   });
   ```
+
+### What the hub draws over your game
+
+**In short:** nothing, unless your game asks. The whole window is your page's, apart from the room Discord's own buttons take. `hub.layout` tells your page what is where.
+
+What can sit over your page:
+
+- **The hub's own buttons, only if you ask.** List the ones you want in `activityhub_game()`:
+
+  ```python
+  async def activityhub_game(self) -> dict:
+      return {
+          "key": "mygame",
+          "name": "My Game",
+          "web_dir": Path(__file__).parent / "web",
+          "hub_buttons": ["back", "people"],
+          "requires": "0.17.0",
+      }
+  ```
+
+  - `"back"` is a small round button that takes the player back to the menu, the same as calling `backToMenu()`. It is there from the moment your game opens, so it also gets a player out of a page that is slow to load. Use it when your page has no Back button of its own, like an engine export.
+  - `"people"` is the floating people button from [Who's here](#7-whos-here), for a game that doesn't place one with `hub.peopleButton()`. A button you place yourself replaces it.
+  - They share one small bar in the top-right corner, below Discord's own buttons. Each button is 36 px high.
+  - Leaving `hub_buttons` out means neither, and the hub then draws no button over your game.
+- **The frame rate counter,** when the player has it on (the menu's **Frame rate** setting). It is small dim text in the bottom-left corner.
+- **Things the player asked for:** the people panel after a press on the people button, and Join's question. They go away again.
+
+Your page reads all of it from `hub.layout`, in its own CSS pixels:
+
+```js
+import { connect } from "activityhub";
+
+const hub = await connect();
+
+function fit() {
+  const { width, height, safe, covered } = hub.layout;
+  // The part of the page clear of Discord's own buttons and the phone's notch
+  const inner = {
+    left: safe.left,
+    top: safe.top,
+    width: width - safe.left - safe.right,
+    height: height - safe.top - safe.bottom,
+  };
+  console.log("Buttons and text go inside", inner);
+  // Each box the hub draws over the page right now
+  for (const box of covered) {
+    console.log(box.name, "covers", box.left, box.top, box.width, box.height);
+  }
+}
+
+fit();
+hub.onLayout(fit);
+```
+
+- `width` and `height` are your page's size.
+- `safe` is `{ top, right, bottom, left }`: the room Discord's own buttons and the phone's notch take at each edge. These are the same sizes as the `--discord-safe-area-inset-*` CSS variables below, as numbers, for a game that draws on a canvas.
+- `covered` is a list of boxes, each `{ name, left, top, width, height }`. `name` is `"buttons"` for the bar of buttons you asked for, and `"fps"` for the frame rate counter. The list is empty when the hub draws nothing.
+- `hub.onLayout(fn)` calls `fn(layout)` each time any of it changes (not straight away): the window changes size, the phone turns, a button shows or hides, the counter's text gets wider. It returns a function that stops it, and your listeners are removed when your game closes.
+- An arrival note ("Ann joined") shows under a people button for 3 seconds. It isn't in `covered`.
+- `hub.layout` and `hub.onLayout()` need ActivityHub 0.17.0 or later. In the browser preview they work the same. A page opened in a tab of its own gets its whole window, with nothing covered.
 
 ### Phone heat, the small window and turning sideways
 
@@ -1871,7 +1932,7 @@ Your users need ActivityHub too, and Red doesn't install required cogs by itself
 - [ ] Payouts use `ctx.author` and have limits.
 - [ ] If your game uses the server's currency, `economy` says how in one short line.
 - [ ] Your actions return `{"error": "..."}` with friendly text for every expected problem.
-- [ ] The page has a way back to the menu (`backToMenu()`).
+- [ ] The page has a way back to the menu: its own button calling `backToMenu()`, or the hub's (`"hub_buttons": ["back"]`).
 - [ ] Every file the page needs is inside `web_dir`, loaded with a relative path.
 - [ ] Nothing secret is in `web_dir`.
 - [ ] `web_dir` holds only page files: not your cog's `.py` files, `.env` or `node_modules`.
@@ -1879,7 +1940,7 @@ Your users need ActivityHub too, and Red doesn't install required cogs by itself
 - [ ] Taps don't wait on an iPhone: the page and every box that scrolls have `touch-action: manipulation` (or `none` where your page takes the finger itself), and nothing waits for a `focus` event before the first tap ([Discord's limits](#14-discords-limits)).
 - [ ] If you use a live connection: the page shows when it's reconnecting (`conn.onReconnecting`), `join` sends the full state, and the page says something useful in `conn.onClose`.
 - [ ] Your game sets a status line (`hub.status`), and `hub.busy(true)` while a round is on.
-- [ ] The people button doesn't cover anything, on a computer and on a phone.
+- [ ] Your game shows the people button (`hub.peopleButton()`, or `"hub_buttons": ["people"]`), and nothing of the hub's covers anything of yours, on a computer and on a phone (`hub.layout`).
 - [ ] If your game makes sound, its sound button opens a small panel with an on/off switch and a volume slider under it for each kind of sound the game has (sound effects, music), saved on each device. The hub's own volume only covers the menu's sounds, and turning the computer down also turns down everyone's voices in Discord. Marble Munch (`marblemunch/web/`) and Vegas (`vegas/web/`) show how.
 - [ ] `info.json` has an `end_user_data_statement`, and your cog deletes a player's data when Red asks it to (`red_delete_data_for_user`).
 - [ ] `info.json`'s `install_msg` (or your README) says how to get ActivityHub.
@@ -1966,7 +2027,7 @@ Boulder Bash is a cog in the same repo (`boulderbash/`): a remake of Neopets' De
 | **Key** | Your game's short id, like `clickcounter`. It's in your game's address, `/games/<key>/`. |
 | **Live connection** | A WebSocket: a connection between the page and the bot that stays open, so both can send at any time. Used for multiplayer. |
 | **Page** | Your game's web side: `index.html` and the files it loads. |
-| **People button** | The hub's button in your game that opens the people panel. It floats in the top-right corner unless you place it with `hub.peopleButton()`. |
+| **People button** | The hub's button in your game that opens the people panel. You place it with `hub.peopleButton()`, or ask for a floating one in the top-right corner with `"hub_buttons": ["people"]`. |
 | **People panel** | The hub's list of everyone in the window, grouped by where they are, with Join and Invite buttons. |
 | **Preview** | The menu and your game opened in a normal browser, outside Discord. `hub.offline` is `true` there. |
 | **Raw route** | A handler that gets `ctx` and the raw web request, and returns any response. Used for uploads and anything actions can't do. |

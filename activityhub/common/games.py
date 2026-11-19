@@ -43,6 +43,7 @@ FIELDS = {
     "platforms",
     "room",
     "opens_in",
+    "hub_buttons",
 }
 REQUIRED = ("key", "name", "web_dir")
 # The most characters a game's currency line can have, so the badge fits a card on a phone
@@ -54,6 +55,8 @@ PLATFORMS = ("desktop", "mobile")
 ROOMS = ("window", "server", "everywhere")
 # Where a game opens: only in servers the bot is in, or in DMs and servers the bot isn't in too
 OPENS_IN = ("server", "everywhere")
+# The hub's own buttons a game can ask to have drawn over it: a way back to the menu, and the people button
+HUB_BUTTONS = ("back", "people")
 # Seconds a game's room function has to answer, since every action of that game waits on it
 ROOM_WAIT = 2
 SCOPE_NAME = re.compile(r"[a-z0-9_.]+")
@@ -107,6 +110,8 @@ class Game:
     room: str | t.Callable = "window"
     # One of OPENS_IN. Outside the bot's servers the menu marks a "server" game, and won't open it
     opens_in: str = "everywhere"
+    # The hub's own buttons drawn over the game, from HUB_BUTTONS. With none, the hub draws nothing over it
+    hub_buttons: list[str] = field(default_factory=list)
     # One of the games that come with the hub, which may use a hub- key and the shared arcade frame
     included: bool = False
 
@@ -413,6 +418,13 @@ def check_opens_in(value: t.Any) -> str:
     return value
 
 
+def check_hub_buttons(value: t.Any) -> list[str]:
+    """The hub's own buttons a game asks for, each once"""
+    if not isinstance(value, list) or not all(isinstance(item, str) and item in HUB_BUTTONS for item in value):
+        raise GameError(f'hub_buttons can only hold "back" and "people", got {value!r}')
+    return list(dict.fromkeys(value))
+
+
 def check_picture(desc: dict, field_name: str, web_dir: Path) -> str | None:
     picture = desc.get(field_name)
     if picture is None:
@@ -487,6 +499,7 @@ async def validate_game(cog: t.Any, hub_version: str | None = None, included: bo
         platforms=check_platforms(desc.get("platforms", list(PLATFORMS))),
         room=check_room(desc.get("room", "window")),
         opens_in=check_opens_in(desc.get("opens_in", "everywhere")),
+        hub_buttons=check_hub_buttons(desc.get("hub_buttons", [])),
         included=included,
     )
     warn_about_page(key, web_dir, html)

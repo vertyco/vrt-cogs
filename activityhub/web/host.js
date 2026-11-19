@@ -188,6 +188,11 @@ export class Host {
     new ResizeObserver(() => this.shareSafeArea()).observe(this.safeArea, { box: "border-box" });
     window.addEventListener("resize", () => this.shareSafeArea());
     window.addEventListener("message", (event) => this.checkGameMessage(event));
+    // What the hub draws over an open game, by name (cover), and the games listening for hub.layout changes
+    this.covers = new Map();
+    this.coverSizes = new ResizeObserver(() => this.layoutChanged());
+    this.layoutListeners = new Set();
+    this.lastLayout = "";
     // The person whose Join opened the current game, and the menu's games by key, for names and icons
     this.follow = null;
     this.games = new Map();
@@ -282,6 +287,7 @@ export class Host {
   // A frame can't see this page's CSS, so the game's page gets the safe area sizes under Discord's own names,
   // and a game padded the way Discord's guide says (var(--discord-safe-area-inset-top, ...)) works unchanged
   shareSafeArea() {
+    this.layoutChanged();
     const root = this.frame?.contentDocument?.documentElement;
     if (!root) {
       return;
@@ -290,6 +296,46 @@ export class Host {
     for (const side of SAFE_SIDES) {
       root.style.setProperty(`--discord-safe-area-inset-${side}`, sizes.getPropertyValue(`padding-${side}`));
     }
+  }
+
+  // Something the hub draws over an open game, like its own buttons or the frame rate counter. hub.layout tells the
+  // game the box each one takes, and the game hears when one shows, hides or changes size
+  cover(name, node) {
+    this.covers.set(name, node);
+    this.coverSizes.observe(node);
+  }
+
+  // hub.layout: the size of the game's page, the room Discord's buttons and the phone's notch take at each edge, and
+  // the box of everything the hub draws over the game right now. The frame fills the window, so this page's pixels
+  // are the game's own
+  layout() {
+    const sizes = getComputedStyle(this.safeArea);
+    const safe = {};
+    for (const side of SAFE_SIDES) {
+      safe[side] = parseFloat(sizes.getPropertyValue(`padding-${side}`)) || 0;
+    }
+    const covered = [];
+    for (const [name, node] of this.covers) {
+      const box = node.getBoundingClientRect();
+      if (box.width && box.height) {
+        covered.push({ name, left: box.left, top: box.top, width: box.width, height: box.height });
+      }
+    }
+    return { width: window.innerWidth, height: window.innerHeight, safe, covered };
+  }
+
+  // Listeners only hear a layout that differs from the last one: the frame rate counter's text changes twice a second
+  layoutChanged() {
+    const layout = JSON.stringify(this.layout());
+    if (layout !== this.lastLayout) {
+      this.lastLayout = layout;
+      this.layoutListeners.forEach((listener) => listener());
+    }
+  }
+
+  onLayout(listener) {
+    this.layoutListeners.add(listener);
+    return () => this.layoutListeners.delete(listener);
   }
 
   // After a bot restart the hub has forgotten every session. The toolkit is still connected and
@@ -349,6 +395,8 @@ export class Host {
     document.body.classList.add("opening");
     this.frame = frame;
     this.gameKey = key;
+    // The game's Back button is there from the start, so a game that is slow to load can still be left
+    this.people.showButtons();
   }
 
   // A page's load waits for its scripts and stylesheets, so the game appears already built instead of

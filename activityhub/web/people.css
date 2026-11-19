@@ -11,19 +11,26 @@
 
 /* The display rules above and below would otherwise win over the hidden attribute */
 .hub-people[hidden],
+.hub-back[hidden],
+.hub-game-buttons[hidden],
 .hub-people-panel[hidden] {
   display: none;
 }
 
-.hub-people.floating {
+/* The hub's own buttons over a game that asked for them ("hub_buttons"): one small bar in the top-right corner,
+   under Discord's own buttons. A game that asked for none has nothing here */
+.hub-game-buttons {
   position: fixed;
   top: calc(8px + var(--safe-top, 0px));
   right: calc(8px + var(--safe-right, 0px));
   z-index: 3;
+  display: flex;
+  gap: 6px;
 }
 
 /* A game's page sets --hub-people-size (36px by default) to make its button bigger or smaller */
-.hub-people-button {
+.hub-people-button,
+.hub-back {
   display: inline-flex;
   align-items: center;
   box-sizing: border-box;
@@ -41,12 +48,18 @@
 
 /* Only a mouse: a phone keeps a tapped button looking hovered */
 @media (hover: hover) {
-  .hub-people-button:hover {
-    border-color: var(--hub-accent);
+  .hub-people-button:hover,
+  .hub-back:hover {
+    border-color: var(--accent, #5865f2);
   }
 }
 
+.hub-back {
+  justify-content: center;
+}
+
 .hub-people-button:focus-visible,
+.hub-back:focus-visible,
 .hub-people-panel button:focus-visible,
 .hub-confirm button:focus-visible,
 .hub-join:focus-visible {

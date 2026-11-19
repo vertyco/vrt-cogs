@@ -151,6 +151,7 @@ async function start() {
     onDiscordSilent: (text) => showNotice(text),
     onHeat: heatChanged,
   });
+  page.host.cover("fps", frameRate.node);
   page.settings = new SettingsPanel({
     host: page.host,
     sounds,
