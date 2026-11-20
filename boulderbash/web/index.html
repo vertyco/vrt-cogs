@@ -122,14 +122,14 @@
           </div>
         </div>
         <div class="signs">
-          <button type="button" class="sign s2" id="restart">Restart Game</button>
+          <button type="button" class="sign s2" id="restart">Play Again</button>
         </div>
       </section>
 
       <p class="toast" id="toast" role="status" hidden></p>
     </div>
 
-    <!-- Opened by the title's Sound sign, and placed beside it by game.js -->
+    <!-- Opened by the title's Sound sign, or by the speaker button in a game, and placed beside it by game.js -->
     <div class="sound-panel" id="sound-panel" role="dialog" aria-label="Sound" hidden>
       <div class="sound-row">
         <span id="sfx-name">Sound effects</span>
@@ -144,7 +144,12 @@
     </div>
 
     <p class="pass" id="pass" aria-live="polite" hidden></p>
-    <div class="people" id="people"></div>
+    <!-- The speaker button shows in a game only, where the title's Sound sign is out of reach -->
+    <div class="people" id="people">
+      <button type="button" class="icon-button sound-button" id="play-sound" aria-label="Sound" aria-expanded="false" aria-controls="sound-panel">
+        <svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 9.5h3.5l5-4v13l-5-4H3.5z" fill="currentColor" /><path class="waves" d="M15.5 9a4.5 4.5 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /><path class="cross" d="M16 9.5l5 5M21 9.5l-5 5" /></svg>
+      </button>
+    </div>
 
     <p class="banner" id="banner" role="status" hidden>Reconnecting...</p>
     <div class="message" id="message" role="alert" hidden>
@@ -180,6 +185,26 @@
       </div>
     </dialog>
 
+    <!-- The first layout, the same as game.js's layout(). game.js only runs once the drawing library it imports has
+         downloaded, so without this the title would show at full stage size until then, and jump into place -->
+    <script>
+      {
+        const tall = innerWidth / innerHeight < 0.8;
+        document.body.classList.toggle("tall", tall);
+        if (!tall) {
+          const safe = getComputedStyle(document.getElementById("safe"));
+          const [top, right, bottom, left] = ["Top", "Right", "Bottom", "Left"].map(
+            (side) => parseFloat(safe[`padding${side}`]) || 0,
+          );
+          const roomW = innerWidth - left - right;
+          const roomH = innerHeight - top - bottom;
+          const scale = Math.min(roomW / 800, roomH / 600);
+          const x = left + (roomW - 800 * scale) / 2;
+          const y = top + (roomH - 600 * scale) / 2;
+          document.getElementById("stage").style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+        }
+      }
+    </script>
     <script type="module" src="game.js"></script>
   </body>
 </html>

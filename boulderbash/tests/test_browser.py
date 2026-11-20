@@ -11,6 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 
+from boulderbash.common.game import OVER
 from boulderbash.common.rules import MAX_COLORS, board_origin, tile_size
 from boulderbash.main import BoulderBash
 
@@ -110,8 +111,8 @@ def pause(driver, ms: int) -> None:
     driver.execute_script(f"return new Promise((done) => setTimeout(done, {ms}))")
 
 
-def wait_idle(live, driver):
-    game = live.cog.games[KEY]
+def wait_idle(live, driver, key=KEY):
+    game = live.cog.games[key]
     for _ in range(100):
         # A little past the bot's idle time, since the page plays the same motion a moment later
         if game.idle_at[0] + 150 <= live.cog.clock():
@@ -159,6 +160,12 @@ def smash_a_group(live, driver):
     return game
 
 
+def wait_eased_in(driver, selector=".result"):
+    """Wait until the element has finished easing in. It starts see-through, and WebDriver won't press a control in
+    something it can't see"""
+    browser.wait_for(driver, f"document.querySelector('{selector}').getAnimations().length === 0")
+
+
 def problems(driver):
     return [line for line in browser.console_lines(driver) if "Uncaught" in line or "Boulder Bash" in line]
 
@@ -172,6 +179,13 @@ def test_the_title_and_how_to_play_work(driver, live):
     for page in (2, 3, 4, 1):
         driver.find_element(By.ID, "help-more").click()
         assert driver.find_element(By.CSS_SELECTOR, f'.help-page[data-page="{page}"]').is_displayed()
+    # A mouse click leaves no focus behind, while Enter keeps the keyboard on More, page after page
+    assert driver.execute_script("return document.activeElement.id") != "help-more"
+    driver.execute_script("document.getElementById('help-more').focus()")
+    for page in (2, 3):
+        ActionChains(driver).send_keys(Keys.ENTER).perform()
+        assert driver.find_element(By.CSS_SELECTOR, f'.help-page[data-page="{page}"]').is_displayed()
+        assert driver.execute_script("return document.activeElement.id") == "help-more"
     driver.find_element(By.ID, "help-back").click()
     browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'title'")
     assert not problems(driver)
@@ -210,12 +224,23 @@ def test_the_finished_game_cashes_in_from_the_game_over_tablet(driver, live):
     browser.wait_for(driver, "!document.getElementById('cashin').hidden", timeout=10)
     assert f"Worth {game.score} credits" in driver.find_element(By.ID, "cashin-text").text
     assert "New best! #1 on this server" in driver.find_element(By.ID, "standing").text
+    wait_eased_in(driver)
     driver.find_element(By.ID, "cashin-button").click()
     browser.wait_for(driver, "document.getElementById('cashin').hidden")
     assert f"+{game.score} credits" in driver.find_element(By.ID, "toast").text
     assert live.cog.payouts.bank.balances[fakes.MEMBER_ID] == game.score
+    # Play Again goes straight to the mode list
+    assert driver.find_element(By.ID, "restart").text == "Play Again"
     driver.find_element(By.ID, "restart").click()
-    browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'title'")
+    browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'modes'")
+    # Straight into the next game, inside the toast's 3 seconds: the toast stays behind, off the new boards
+    assert driver.find_element(By.ID, "toast").is_displayed()
+    driver.find_element(By.XPATH, "//button[@data-mode][text()='Normal']").click()
+    browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'play'", timeout=10)
+    assert not driver.find_element(By.ID, "toast").is_displayed()
+    # A toast from the new game still shows
+    run(live, live.cog.conns[KEY].send({"notice": "Hello"}))
+    browser.wait_for(driver, "!document.getElementById('toast').hidden")
 
 
 def test_a_server_admin_sets_payouts_from_the_title(driver, live):
@@ -250,6 +275,11 @@ def test_the_browser_preview_shows_the_title_and_says_to_open_discord(driver, li
     browser.wait_for(driver, "!document.getElementById('message').hidden")
     assert "Open Boulder Bash in Discord to play" in driver.find_element(By.ID, "message-text").text
     assert driver.execute_script("return document.getElementById('stage').dataset.screen") == "title"
+    # Its plain OK only hides it
+    assert driver.find_element(By.ID, "message-close").text == "OK"
+    driver.find_element(By.ID, "message-close").click()
+    browser.wait_for(driver, "document.getElementById('message').hidden")
+    assert driver.execute_script("return location.pathname") == "/games/boulderbash/"
     assert not problems(driver)
 
 
@@ -468,6 +498,43 @@ def test_a_closed_connection_says_not_connected(driver, live):
     run(live, live.cog.conns[KEY].close(4100))
     browser.wait_for(driver, "!document.getElementById('message').hidden")
     WebDriverWait(driver, 5).until(said(live, "Not connected", False))
+
+
+def leaves_for_the_menu(driver):
+    """Press the message's button, and wait until the hub has closed the game and shows its menu again"""
+    assert driver.find_element(By.ID, "message-close").text == "Back to menu"
+    driver.find_element(By.ID, "message-close").click()
+    driver.switch_to.default_content()
+    browser.wait_for(driver, "!document.body.classList.contains('playing') && !document.getElementById('game-frame')")
+
+
+@pytest.mark.parametrize("code", [1000, 4100])
+def test_a_link_closed_for_good_mid_game_leads_back_to_the_menu(driver, live, code):
+    open_game(driver, live)
+    start_mode(driver, "Normal")
+    wait_idle(live, driver)
+    # A level's popup is up too, and must not swallow the press
+    score_to(live, 40)
+    browser.wait_for(driver, "!document.getElementById('popup').hidden")
+    run(live, live.cog.conns[KEY].close(code))
+    browser.wait_for(driver, "!document.getElementById('message').hidden")
+    assert driver.execute_script("return document.getElementById('popup').hidden") is True
+    leaves_for_the_menu(driver)
+
+
+def test_a_link_closed_on_the_mode_list_never_says_to_open_discord(driver, live):
+    open_game(driver, live)
+    WebDriverWait(driver, 5).until(lambda _: KEY in live.cog.conns)
+    driver.find_element(By.ID, "start").click()
+    browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'modes'")
+    run(live, live.cog.conns[KEY].close(1000))
+    browser.wait_for(driver, "!document.getElementById('message').hidden")
+    closed = driver.find_element(By.ID, "message-text").text
+    driver.execute_script("document.querySelector('[data-mode=\"1\"]').click()")
+    pause(driver, 200)
+    assert driver.find_element(By.ID, "message-text").text == closed
+    assert "Discord" not in closed
+    leaves_for_the_menu(driver)
 
 
 def test_the_browser_preview_has_a_people_button_and_says_nothing(driver, live):
@@ -1109,3 +1176,332 @@ def test_every_sound_control_fits_and_can_be_pressed(driver, live, size):
                 driver.find_element(By.ID, control),
             )
             assert hit, control
+
+
+@pytest.mark.parametrize("size", SIZES)
+def test_the_speaker_button_in_a_game_opens_the_sound_panel(driver, live, size):
+    with at_size(driver, *size):
+        open_game(driver, live)
+        browser.wait_for(driver, "!!document.querySelector('#people .hub-people')")
+        # The title has its Sound sign, so the button only shows in a game
+        assert not driver.find_element(By.ID, "play-sound").is_displayed()
+        start_mode(driver, "Normal x2")
+        browser.wait_for(driver, "document.getElementById('next-1').textContent !== ''")
+        speaker, people = box(driver, "#play-sound"), box(driver, "#people .hub-people")
+        assert inside_screen(driver, speaker) and speaker["width"] >= 24
+        clear_of(driver, speaker, [people, *hud_boxes(driver), board_box(driver)])
+        hit = (
+            "const r = arguments[0].getBoundingClientRect();"
+            "return arguments[0].contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))"
+        )
+        for button in ("#play-sound", "#people .hub-people-button"):
+            assert driver.execute_script(hit, driver.find_element(By.CSS_SELECTOR, button)), button
+        driver.find_element(By.ID, "play-sound").click()
+        assert panel_open(driver)
+        assert driver.find_element(By.ID, "play-sound").get_attribute("aria-expanded") == "true"
+        panel = box(driver, "#sound-panel")
+        assert inside_screen(driver, panel)
+        clear_of(driver, panel, [speaker, people])
+        for control in SOUND_CONTROLS:
+            assert driver.execute_script(hit, driver.find_element(By.ID, control)), control
+        # Muting both crosses out this speaker too
+        driver.find_element(By.ID, "sfx-switch").click()
+        driver.find_element(By.ID, "music-switch").click()
+        assert "muted" in driver.find_element(By.ID, "play-sound").get_attribute("class")
+        driver.find_element(By.ID, "sfx-switch").click()
+        driver.find_element(By.ID, "music-switch").click()
+        # Escape gives the keyboard back to the button, and the end of the game closes an open panel
+        ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+        assert not panel_open(driver)
+        assert driver.execute_script("return document.activeElement.id") == "play-sound"
+        driver.find_element(By.ID, "play-sound").click()
+        driver.execute_script("document.getElementById('end').click()")
+        browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'over'", timeout=10)
+        assert not panel_open(driver)
+        assert not driver.find_element(By.ID, "play-sound").is_displayed()
+        assert not problems(driver)
+
+
+# ---------- Boxes, buttons and overlays ----------
+
+# Records how many animations each overlay has at the moment it shows: the level popup, the toast, and the game over
+# tablet with its screen
+RECORD_SHOWS = """
+window.shows = [];
+const watch = (id, selector) => new MutationObserver(() => {
+  if (!document.getElementById(id).hidden) {
+    window.shows.push([id, document.querySelector(selector).getAnimations().length]);
+  }
+}).observe(document.getElementById(id), { attributes: true, attributeFilter: ['hidden'] });
+watch('popup', '#popup');
+watch('toast', '#toast');
+watch('over', '.result');
+"""
+
+
+def screen_now(driver):
+    return driver.execute_script("return document.getElementById('stage').dataset.screen")
+
+
+def lands_on(driver, element_id, dx=0, dy=0):
+    """What a press this far from the element's middle lands on: a button's id, "people" for the people button, or
+    None for a spot off the screen"""
+    return driver.execute_script(
+        "const r = document.getElementById(arguments[0]).getBoundingClientRect();"
+        "const x = r.left + r.width / 2 + arguments[1];"
+        "const y = r.top + r.height / 2 + arguments[2];"
+        "if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return null;"
+        "const hit = document.elementFromPoint(x, y);"
+        "if (!hit) return '';"
+        "if (hit.closest('#people')) return 'people';"
+        "return hit.closest('button')?.id || hit.id || hit.tagName;",
+        element_id,
+        dx,
+        dy,
+    )
+
+
+def presses_land_around(driver, element_id, neighbors=(), reach=22):
+    """Presses this far left, right, above and below the element's middle land on it, or on a control right beside it
+    (the people button, or the neighbors named), never on the bare game behind"""
+    for dx, dy in ((-reach, 0), (reach, 0), (0, -reach), (0, reach)):
+        landed = lands_on(driver, element_id, dx, dy)
+        assert landed in (element_id, "people", None, *neighbors), (element_id, dx, dy, landed)
+
+
+def check_panel(driver, panel_id):
+    """The open box lies inside the screen, every control in it can be pressed (scrolled to inside the box if need be),
+    and no tap on the page waits to see if a second tap zooms"""
+    assert inside_screen(driver, box(driver, f"#{panel_id}"))
+    assert driver.execute_script(browser.WAITS_FOR_DOUBLE_TAP) == []
+    for control in driver.find_elements(By.CSS_SELECTOR, f"#{panel_id} button, #{panel_id} input"):
+        hit = driver.execute_script(
+            "const node = arguments[0]; node.scrollIntoView({ block: 'nearest' });"
+            "const r = node.getBoundingClientRect();"
+            "return r.top >= 0 && r.bottom <= innerHeight"
+            "  && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === node",
+            control,
+        )
+        assert hit, control.get_attribute("id")
+
+
+@pytest.mark.parametrize("size", SIZES)
+def test_the_high_scores_and_payouts_boxes_fit_the_screen_and_answer_taps_at_once(driver, live, size):
+    for i in range(10):
+        group = live.cog.config.member_from_ids(fakes.GUILD_ID, 1001 + i)
+        run(live, group.best.set(90000 - 1000 * i))
+        run(live, group.name.set(f"Player {i + 1}"))
+    run(live, live.cog.config.guild_from_id(fakes.GUILD_ID).payouts.set({}))
+    with at_size(driver, *size):
+        live.user_id = fakes.MANAGER_ID
+        open_game(driver, live)
+        browser.wait_for(driver, "!document.getElementById('open-payouts').hidden")
+        driver.find_element(By.ID, "open-scores").click()
+        browser.wait_for(driver, "document.querySelectorAll('#leaders li').length === 10")
+        check_panel(driver, "scores")
+        if size == DESKTOP:
+            # 460 inside plus the padding and border, so a long name has the room it always had
+            assert box(driver, "#scores")["width"] == 512
+        leaders = driver.execute_script(
+            "const list = document.getElementById('leaders');"
+            "return [list.scrollHeight <= list.clientHeight, getComputedStyle(list).scrollbarWidth]"
+        )
+        # All ten rows where there is room, and a thin scrollbar where there isn't
+        assert leaders == [size != SIDEWAYS, "thin"]
+        driver.find_element(By.ID, "close-scores").click()
+        driver.find_element(By.ID, "open-payouts").click()
+        browser.wait_for(driver, "document.getElementById('payouts-today').textContent !== ''")
+        check_panel(driver, "payouts")
+        assert box(driver, ".payout-switch")["height"] >= 44
+
+
+@pytest.mark.parametrize("size", SIZES)
+def test_back_on_the_mode_list_goes_to_the_title(driver, live, size):
+    with at_size(driver, *size):
+        open_game(driver, live)
+        browser.wait_for(driver, "!!document.querySelector('#people .hub-people')")
+        driver.find_element(By.ID, "start").click()
+        browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'modes'")
+        assert lands_on(driver, "back") == "back"
+        # The people button beside it, as on the title
+        back = box(driver, "#back")
+        button = check_people_button(driver)
+        assert (
+            button["left"] > back["right"] and abs(button["top"] + button["bottom"] - back["top"] - back["bottom"]) < 2
+        )
+        driver.find_element(By.ID, "back").click()
+        browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'title'")
+        # Back on the title still leaves for the hub's menu
+        driver.find_element(By.ID, "back").click()
+        driver.switch_to.default_content()
+        browser.wait_for(driver, "!document.body.classList.contains('playing')")
+
+
+def test_the_press_that_closes_the_level_popup_does_nothing_else(driver, live):
+    open_game(driver, live)
+    start_mode(driver, "Normal")
+    game = wait_idle(live, driver)
+
+    async def popup():
+        for message in game.show_popup({"kind": "level", "left": 3, "bonus": 30, "levelScore": 100}):
+            await live.cog.conns[KEY].send(message)
+
+    run(live, popup())
+    browser.wait_for(driver, "!document.getElementById('popup').hidden")
+    assert lands_on(driver, "end") == "end"
+    ActionChains(driver).click(driver.find_element(By.ID, "end")).perform()
+    browser.wait_for(driver, "document.getElementById('popup').hidden")
+    pause(driver, 300)
+    assert screen_now(driver) == "play" and game.state != OVER
+    # A moment later, End Game works again
+    pause(driver, 300)
+    driver.find_element(By.ID, "end").click()
+    browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'over'", timeout=10)
+
+
+def layout_now(driver):
+    return driver.execute_script(
+        "return [document.getElementById('stage').style.transform, document.body.classList.contains('tall')]"
+    )
+
+
+# The game's page once it has been read to the end, seen from the hub's page around it: while PixiJS is held back the
+# game's frame never finishes loading, and switching into it would wait for that
+LOADING_TITLE = """
+const page = document.getElementById('game-frame')?.contentWindow;
+const doc = page?.document;
+if (!doc?.getElementById('stage') || doc.readyState === 'loading') return null;
+const signs = [...doc.querySelectorAll('#title .sign')].map((node) => node.getBoundingClientRect());
+return {
+  started: !!page.boulderbashSound,
+  layout: [doc.getElementById('stage').style.transform, doc.body.classList.contains('tall')],
+  signsOff: signs.filter((r) => r.left < 0 || r.top < 0 || r.right > page.innerWidth || r.bottom > page.innerHeight)
+    .length,
+};
+"""
+
+
+@pytest.mark.parametrize("size", SIZES)
+def test_the_title_is_laid_out_while_the_game_loads(driver, live, size):
+    with at_size(driver, *size):
+        driver.get(f"{live.url}/{browser.DISCORD_QUERY}")
+        browser.wait_for(driver, f"document.querySelector('{CARD}')")
+        # PixiJS (the drawing library game.js imports) and one block's picture are held back until the test lets them
+        # go. PixiJS fetches photos from a worker, out of reach here, but pictures like this one from the page itself.
+        # With the cache off, an earlier test's copy can't stand in for either
+        driver.execute_cdp_cmd("Network.enable", {})
+        driver.execute_cdp_cmd("Network.setCacheDisabled", {"cacheDisabled": True})
+        held = [{"urlPattern": "*pixi.min.mjs*"}, {"urlPattern": "*/art/block0.svg*"}]
+        driver.execute_cdp_cmd("Fetch.enable", {"patterns": held})
+        try:
+            driver.find_element(By.CSS_SELECTOR, CARD).click()
+            WebDriverWait(driver, 10).until(lambda d: d.execute_script(LOADING_TITLE))
+            pause(driver, 300)
+            loading = driver.execute_script(LOADING_TITLE)
+            # game.js hasn't run yet, so this layout is index.html's own
+            assert not loading["started"]
+            if size == UPRIGHT:
+                assert loading["layout"][1]
+            else:
+                assert "scale(" in loading["layout"][0]
+            assert loading["signsOff"] == 0
+        finally:
+            driver.execute_cdp_cmd("Fetch.disable", {})
+            driver.execute_cdp_cmd("Network.setCacheDisabled", {"cacheDisabled": False})
+            driver.execute_cdp_cmd("Network.disable", {})
+        driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+        browser.wait_for(driver, "!!window.boulderbashScene", timeout=20)
+        # Nothing jumps once game.js and the art arrive
+        assert layout_now(driver) == loading["layout"]
+
+
+def test_small_buttons_on_a_sideways_phone_take_presses_just_outside_them(driver, live):
+    run(
+        live,
+        live.cog.config.guild_from_id(fakes.GUILD_ID).payouts.set({"on": True, "rate": 1, "cap": 1000, "plays": 3}),
+    )
+    run(live, live.cog.config.guild_from_id(fakes.GUILD_ID).tally.set({}))
+    run(live, live.cog.config.member_from_ids(fakes.GUILD_ID, fakes.MEMBER_ID).cashed.set({}))
+    with at_size(driver, *SIDEWAYS):
+        live.user_id = fakes.MANAGER_ID
+        open_game(driver, live)
+        browser.wait_for(driver, "!document.getElementById('open-payouts').hidden")
+        browser.wait_for(driver, "!!document.querySelector('#people .hub-people')")
+        presses_land_around(driver, "back")
+        # Start Game ends a few pixels left of the gear, and keeps its own presses
+        presses_land_around(driver, "open-payouts", neighbors=("start",))
+        live.user_id = fakes.MEMBER_ID
+        open_game(driver, live)
+        start_mode(driver, "Normal")
+        smash_a_group(live, driver)
+        presses_land_around(driver, "end")
+        driver.find_element(By.ID, "end").click()
+        browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'over'", timeout=10)
+        browser.wait_for(driver, "!document.getElementById('cashin').hidden", timeout=10)
+        wait_eased_in(driver)
+        presses_land_around(driver, "cashin-button")
+
+
+def pressed_transform(driver, element_id):
+    """The element's transform while a press holds it. The press lets go in the middle of the screen, off the element,
+    so it does nothing"""
+    element = driver.find_element(By.ID, element_id)
+    ActionChains(driver).click_and_hold(element).perform()
+    try:
+        pause(driver, 150)
+        return driver.execute_script("return getComputedStyle(arguments[0]).transform", element)
+    finally:
+        ActionChains(driver).move_to_element(driver.find_element(By.CSS_SELECTOR, "#scene canvas")).release().perform()
+
+
+def test_round_buttons_slots_and_switches_sink_while_pressed(driver, live):
+    key = (fakes.GUILD_ID, fakes.MANAGER_ID)
+    live.user_id = fakes.MANAGER_ID
+    open_game(driver, live)
+    browser.wait_for(driver, "!document.getElementById('open-payouts').hidden")
+    for control in ("back", "open-payouts"):
+        assert pressed_transform(driver, control) != "none", control
+    driver.find_element(By.ID, "sound").click()
+    for control in ("sfx-switch", "music-switch"):
+        assert pressed_transform(driver, control) != "none", control
+    driver.find_element(By.ID, "sound").click()
+    start_mode(driver, "Normal")
+    game = wait_idle(live, driver, key)
+    assert pressed_transform(driver, "slot-shuffle") == "none"
+
+    async def charge():
+        now = live.cog.clock()
+        numbers = game.board_numbers(0, now)
+        slots = {"undo": "ready", "shuffle": "empty"}
+        timer = {"board": 0, "events": [], "clear": game.clearing(0, now), "selection": [], **numbers, "slots": slots}
+        await live.cog.conns[key].send({"timer": timer})
+
+    run(live, charge())
+    browser.wait_for(driver, "document.getElementById('slot-undo').dataset.state === 'ready'")
+    assert pressed_transform(driver, "slot-undo") != "none"
+
+
+@pytest.mark.parametrize("reduced", [False, True], ids=["motion", "reduced-motion"])
+def test_the_popup_toast_and_result_tablet_ease_in(driver, live, reduced):
+    features = [{"name": "prefers-reduced-motion", "value": "reduce" if reduced else "no-preference"}]
+    driver.execute_cdp_cmd("Emulation.setEmulatedMedia", {"features": features})
+    try:
+        open_game(driver, live)
+        driver.execute_script(RECORD_SHOWS)
+        start_mode(driver, "Normal")
+        wait_idle(live, driver)
+        score_to(live, 40)
+        browser.wait_for(driver, "!document.getElementById('popup').hidden")
+        run(live, live.cog.conns[KEY].send({"notice": "Hello"}))
+        browser.wait_for(driver, "!document.getElementById('toast').hidden")
+        ActionChains(driver).send_keys(Keys.ENTER).perform()
+        # Past the moment after the popup closes, when buttons ignore presses
+        pause(driver, 600)
+        driver.find_element(By.ID, "end").click()
+        browser.wait_for(driver, "document.getElementById('stage').dataset.screen === 'over'", timeout=10)
+        shows = dict(driver.execute_script("return window.shows"))
+        assert set(shows) == {"popup", "toast", "over"}
+        for name, count in shows.items():
+            assert (count == 0) if reduced else (count > 0), (name, count)
+    finally:
+        driver.execute_cdp_cmd("Emulation.setEmulatedMedia", {"features": []})

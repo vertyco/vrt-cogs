@@ -27,15 +27,19 @@ const CLOSED_BECAUSE = {
 const CLOSED_OTHERWISE = "The game ended. Go back to the menu and open it again.";
 const OFFLINE_PLAY = "Open Boulder Bash in Discord to play.";
 const EFFECTS_KEY = "boulderbash:effects";
-// A phone held upright gets the stacked layout
+// A phone held upright gets the stacked layout. index.html's first layout uses the same number
 const TALL_BELOW = 0.8;
 // The sound panel keeps this far from the screen's edges, and this far from the Sound sign
 const PANEL_EDGE = 10;
 const PANEL_GAP = 14;
+// The press that closes the level popup lands on whatever is under it, so buttons ignore clicks this soon after
+const POPUP_GRACE_MS = 500;
 const sound = new Sound();
 // The browser tests read the sound's levels from outside
 window.boulderbashSound = sound;
 const page = {
+  // The button that opened the sound panel: the title's Sound sign, or the speaker button in a game
+  soundOpener: null,
   hub: null,
   conn: null,
   scene: null,
@@ -44,6 +48,9 @@ const page = {
   boards: [],
   result: null,
   popupOpen: false,
+  popupClosedAt: -Infinity,
+  // What the message's button does besides hiding it
+  messageAction: null,
   helpPage: 1,
   logoBuilt: false,
   effects: readEffects(),
@@ -81,6 +88,9 @@ function saveEffects(on) {
 
 async function start() {
   bindButtons();
+  // Laid out before the art arrives, so the title sits in place while it loads
+  window.addEventListener("resize", layout);
+  layout();
   try {
     page.scene = await createScene($("scene"));
     // Where the scene drew things can be read from outside, as the browser tests do
@@ -95,7 +105,6 @@ async function start() {
   scene.onTap = tap;
   scene.onSound = playSound;
   scene.onCameo = () => scene.cameo() && sound.play("roar");
-  window.addEventListener("resize", layout);
   showScreen("title");
   try {
     page.hub = await connect();
@@ -118,8 +127,7 @@ async function goLive() {
   try {
     page.conn = await page.hub.socket();
   } catch (e) {
-    showMessage(CLOSED_BECAUSE[e.status] || e.message);
-    disconnected();
+    closedForGood(CLOSED_BECAUSE[e.status] || e.message);
     return;
   }
   page.conn.on(receive);
@@ -129,15 +137,23 @@ async function goLive() {
   page.conn.onReconnected(() => {
     $("banner").hidden = true;
   });
-  page.conn.onClose((code) => {
-    $("banner").hidden = true;
-    showMessage(CLOSED_BECAUSE[code] || CLOSED_OTHERWISE);
-    disconnected();
-  });
+  page.conn.onClose((code) => closedForGood(CLOSED_BECAUSE[code] || CLOSED_OTHERWISE));
 }
 
-function showMessage(text) {
+// Nothing more can be played once the link is closed for good, so the message's button leaves for the hub's menu.
+// The popup goes too, or its guard would eat the press
+function closedForGood(text) {
+  $("banner").hidden = true;
+  hidePopup();
+  showMessage(text, { label: "Back to menu", run: backToMenu });
+  disconnected();
+}
+
+// The button reads OK and only hides the message, unless an action comes with it
+function showMessage(text, action = null) {
   $("message-text").textContent = text;
+  $("message-close").textContent = action ? action.label : "OK";
+  page.messageAction = action ? action.run : null;
   $("message").hidden = false;
 }
 
@@ -162,8 +178,12 @@ function showScreen(name) {
   if (name !== "play") {
     hidePopup();
     hidePass();
+  } else if (before !== "play") {
+    // A cash-in's toast from the last game stays behind, off the new boards
+    clearTimeout(page.toastTimer);
+    $("toast").hidden = true;
   }
-  if (name !== "title") {
+  if (name !== before) {
     closeSoundPanel();
   }
   layout();
@@ -513,6 +533,7 @@ function closePopup(event) {
   }
   event.preventDefault();
   hidePopup();
+  page.popupClosedAt = performance.now();
   sound.play("click");
   send({ next: true });
   renderHud();
@@ -593,7 +614,7 @@ function restart() {
   page.game = null;
   page.result = null;
   page.logoBuilt = !page.effects;
-  showScreen("title");
+  showScreen("modes");
 }
 
 // ---------- High scores ----------
@@ -710,8 +731,11 @@ async function savePayouts() {
 
 function click(id, handler) {
   $(id).addEventListener("click", (event) => {
-    event.currentTarget.blur();
-    if (page.popupOpen) {
+    // A mouse or finger leaves no focus ring behind, and a keyboard player keeps their place
+    if (event.detail > 0) {
+      event.currentTarget.blur();
+    }
+    if (page.popupOpen || performance.now() - page.popupClosedAt < POPUP_GRACE_MS) {
       return;
     }
     if (event.currentTarget.classList.contains("sign")) {
@@ -728,14 +752,15 @@ function showHelpPage(number) {
   });
 }
 
+// Only the browser preview says to open Discord. After the link closed, its own message stays up
 function startMode(mode) {
-  if (!send({ start: mode })) {
+  if (!send({ start: mode }) && page.hub?.offline) {
     showMessage(OFFLINE_PLAY);
   }
 }
 
 function bindButtons() {
-  click("back", () => backToMenu());
+  click("back", () => (page.screen === "modes" ? showScreen("title") : backToMenu()));
   // The browser preview can't play: games need the bot
   click("start", () => (page.hub?.offline ? showMessage(OFFLINE_PLAY) : showScreen("modes")));
   click("how", () => {
@@ -765,6 +790,7 @@ function bindButtons() {
   click("cashin-button", cashIn);
   click("message-close", () => {
     $("message").hidden = true;
+    page.messageAction?.();
   });
   bindPayouts();
   bindSoundPanel();
@@ -798,7 +824,9 @@ function showToggles() {
 // ---------- The sound panel ----------
 
 function bindSoundPanel() {
-  click("sound", () => ($("sound-panel").hidden ? openSoundPanel() : closeSoundPanel()));
+  for (const id of ["sound", "play-sound"]) {
+    click(id, () => ($("sound-panel").hidden ? openSoundPanel($(id)) : closeSoundPanel()));
+  }
   $("sfx-switch").addEventListener("click", () => {
     sound.setSfx(!sound.sfxOn);
     showSound();
@@ -815,7 +843,7 @@ function bindSoundPanel() {
     "pointerdown",
     (event) => {
       const panel = $("sound-panel");
-      if (!panel.hidden && !panel.contains(event.target) && !$("sound").contains(event.target)) {
+      if (!panel.hidden && !panel.contains(event.target) && !page.soundOpener.contains(event.target)) {
         closeSoundPanel();
       }
     },
@@ -828,7 +856,7 @@ function bindSoundPanel() {
     const inside = $("sound-panel").contains(document.activeElement);
     closeSoundPanel();
     if (inside) {
-      $("sound").focus({ preventScroll: true });
+      page.soundOpener.focus({ preventScroll: true });
     }
   });
 }
@@ -847,24 +875,26 @@ function bindSlider(id, set, done = () => {}) {
 }
 
 // Focus moves into the panel, so a keyboard player can go straight on to its switches
-function openSoundPanel() {
+function openSoundPanel(opener) {
+  page.soundOpener = opener;
   $("sound-panel").hidden = false;
-  $("sound").setAttribute("aria-expanded", "true");
+  opener.setAttribute("aria-expanded", "true");
   placeSoundPanel();
   $("sfx-switch").focus({ preventScroll: true });
 }
 
 function closeSoundPanel() {
   $("sound-panel").hidden = true;
-  $("sound").setAttribute("aria-expanded", "false");
+  page.soundOpener?.setAttribute("aria-expanded", "false");
 }
 
-// Beside the Sound sign: level with it and left of every title sign where the screen has room, otherwise under it, or
-// over it when the screen is too short below. Always inside the safe area
+// Beside the button that opened it. The Sound sign: level with it and left of every title sign where the screen has
+// room. Otherwise, and for the speaker button in a game, under the button, or over it when the screen is too short
+// below. Always inside the safe area
 function placeSoundPanel() {
   const panel = $("sound-panel");
-  const sign = $("sound").getBoundingClientRect();
-  const signs = [...$("title").querySelectorAll(".sign")];
+  const sign = page.soundOpener.getBoundingClientRect();
+  const signs = page.soundOpener.id === "sound" ? [...$("title").querySelectorAll(".sign")] : [];
   const signsLeft = Math.min(...signs.map((node) => node.getBoundingClientRect().left));
   const safe = safeArea();
   const left = safe.left + PANEL_EDGE;
@@ -875,7 +905,7 @@ function placeSoundPanel() {
   const height = panel.offsetHeight;
   let x = signsLeft - PANEL_GAP - width;
   let y = sign.top + (sign.height - height) / 2;
-  if (x < left) {
+  if (!signs.length || x < left) {
     x = sign.left + (sign.width - width) / 2;
     y = sign.bottom + PANEL_GAP + height <= bottom ? sign.bottom + PANEL_GAP : sign.top - PANEL_GAP - height;
   }
@@ -885,7 +915,9 @@ function placeSoundPanel() {
 
 // The Sound sign's speaker is crossed out while music and effects are both off
 function showSound() {
-  $("sound").classList.toggle("muted", !sound.musicOn && !sound.sfxOn);
+  for (const id of ["sound", "play-sound"]) {
+    $(id).classList.toggle("muted", !sound.musicOn && !sound.sfxOn);
+  }
   $("sfx-switch").setAttribute("aria-checked", String(sound.sfxOn));
   $("music-switch").setAttribute("aria-checked", String(sound.musicOn));
   showSlider("sfx-volume", sound.sfxVolume);

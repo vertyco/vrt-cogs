@@ -169,12 +169,12 @@ body {
   height: 28px;
 }
 
-.sound-sign .cross,
-.sound-sign.muted .waves {
+:is(.sound-sign, .sound-button) .cross,
+:is(.sound-sign, .sound-button).muted .waves {
   display: none;
 }
 
-.sound-sign.muted .cross {
+:is(.sound-sign, .sound-button).muted .cross {
   display: inline;
 }
 
@@ -213,6 +213,14 @@ body {
   background: var(--stone);
   color: var(--ink);
   cursor: pointer;
+  transition: transform 0.08s;
+}
+
+/* Round buttons, the slots and the sound switches sink a little while pressed, like the signs */
+.icon-button:active,
+.slot:not(:disabled):active,
+.switch:active {
+  transform: translateY(2px) scale(0.96);
 }
 
 .icon-button svg {
@@ -231,7 +239,8 @@ body {
   top: 8px;
 }
 
-.stage:not([data-screen="title"]) .corner-left,
+/* Back shows on the title and the mode list, the gear on the title only */
+.stage:not([data-screen="title"]):not([data-screen="modes"]) .corner-left,
 .stage:not([data-screen="title"]) .corner-right {
   display: none;
 }
@@ -442,6 +451,7 @@ body {
   border: 0;
   background: url("art/slab.svg") center / 100% 100% no-repeat;
   cursor: pointer;
+  transition: transform 0.08s;
 }
 
 .slot img {
@@ -501,6 +511,8 @@ body {
   flex-direction: column;
   justify-content: center;
   gap: 10px;
+  /* Eases in like the passing note, each time it shows */
+  animation: pass-in 0.25s ease-out;
 }
 
 .popup h2,
@@ -537,6 +549,16 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  animation: pass-in 0.25s ease-out;
+}
+
+/* With a cash-in offer on a wide screen, a smaller score keeps the button clear of the tablet's bottom groove */
+body:not(.tall) .result:has(.cashin:not([hidden])) {
+  padding-bottom: 46px;
+}
+
+body:not(.tall) .result:has(.cashin:not([hidden])) .big {
+  font-size: 46px;
 }
 
 .result .big {
@@ -614,6 +636,7 @@ body {
   font-size: 18px;
   font-weight: 800;
   white-space: nowrap;
+  animation: pass-in 0.25s ease-out;
 }
 
 .banner {
@@ -654,8 +677,13 @@ body {
 
 /* ---------- Panels: high scores and payouts ---------- */
 
+/* The width and the browser's own most width and height for a dialog hold the border and padding too, so a panel
+   never runs off a phone's screen, and a tall one scrolls inside. 512px is 460 inside plus the padding and border. A
+   scrolling box starts touch-action over (WebKit), so it says manipulation again: no wait for a second tap */
 .panel {
-  width: min(92vw, 460px);
+  box-sizing: border-box;
+  touch-action: manipulation;
+  width: min(92vw, 512px);
   border: 4px solid var(--ink);
   border-radius: 24px;
   padding: 22px;
@@ -687,8 +715,11 @@ body {
   padding: 0;
   display: grid;
   gap: 6px;
-  max-height: 50vh;
+  /* Room for all ten rows where the screen has it */
+  max-height: min(62vh, 480px);
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sand-deep) transparent;
 }
 
 .leaders li {
@@ -732,6 +763,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-height: 44px;
   margin: 0 0 12px;
   font-weight: 700;
 }
@@ -830,7 +862,9 @@ body {
   border-radius: 22px;
   background: var(--sand-deep);
   cursor: pointer;
-  transition: background 0.12s;
+  transition:
+    background 0.12s,
+    transform 0.08s;
 }
 
 .switch[aria-checked="true"] {
@@ -911,6 +945,26 @@ body {
   }
 }
 
+/* A short screen shrinks the stage, so Back, the gear, End Game and Cash in get a bigger invisible hit area around
+   them for a finger. It is placed from inside the 3px border of the round buttons and Cash in, so it reaches 17 to 20
+   stage pixels past each edge: about 11 to 13 on a phone held sideways */
+@media (max-height: 520px) {
+  body:not(.tall) :is(.icon-button, .sign.end, #cashin-button)::after {
+    content: "";
+    position: absolute;
+    inset: -20px;
+  }
+
+  body:not(.tall) #cashin-button {
+    position: relative;
+  }
+
+  /* The speaker button's hit area stops at its own edge toward End Game and the boards */
+  body:not(.tall) .people .sound-button::after {
+    inset: -3px -12px -20px -3px;
+  }
+}
+
 /* ---------- A phone held upright: the same screens, stacked in a column ---------- */
 
 body.tall .stage {
@@ -972,7 +1026,7 @@ body.tall .slab {
   bottom: calc(var(--safe-bottom) + 96px);
   width: auto;
   height: auto;
-  padding: 50px 30px 30px;
+  padding: 68px 40px 30px;
   overflow-y: auto;
 }
 
@@ -1079,6 +1133,12 @@ body.tall .result {
   padding: 40px 28px;
 }
 
+/* The tablet art stretches with the box, so its bottom groove sits about a sixth of the height up: with a cash-in
+   offer, the room below keeps its button above the groove */
+body.tall .result:has(.cashin:not([hidden])) {
+  padding: 60px 28px 84px;
+}
+
 body.tall .over .signs {
   position: static;
 }
@@ -1110,8 +1170,33 @@ body.tall .toast {
   transform: translateY(-50%);
 }
 
-/* Beside Back on the title */
-body[data-screen="title"] .people {
+/* The speaker button, in a game only. On an upright phone: left of the people button and as big */
+.people .sound-button {
+  position: relative;
+  flex: none;
+  width: var(--speaker-size, var(--hub-people-size));
+  height: var(--speaker-size, var(--hub-people-size));
+  margin-right: 6px;
+  padding: calc(var(--speaker-size, var(--hub-people-size)) * 0.14);
+}
+
+body:not([data-screen="play"]) .sound-button {
+  display: none;
+}
+
+/* On a wide screen: under End Game, in the room right of the boards, whose middle is at 770 on the stage. Placed from
+   the people button's box, whose right edge is at 598 and whose middle is at 31 down */
+body:not(.tall) .people .sound-button {
+  --speaker-size: clamp(24px, calc(44px * var(--stage-s)), 40px);
+  position: absolute;
+  margin: 0;
+  right: calc(-172px * var(--stage-s) - var(--speaker-size) / 2);
+  top: calc(35px * var(--stage-s) + var(--hub-people-size) / 2);
+}
+
+/* Beside Back on the title and the mode list */
+body[data-screen="title"] .people,
+body[data-screen="modes"] .people {
   left: calc(var(--stage-x) + 48px * var(--stage-s) + 8px);
 }
 
@@ -1316,9 +1401,9 @@ body.strip-column .live .points {
   }
 }
 
-/* An upright phone: the people button in Back's corner on the menus (beside Back on the title), and under End Game
-   in a game, with the strip in a column under the score beside it. whoshere.js puts the passing note in the sky
-   above the boards */
+/* An upright phone: the people button in Back's corner on the menus (beside Back on the title and the mode list), and
+   under End Game in a game, with the strip in a column under the score beside it. whoshere.js puts the passing note in
+   the sky above the boards */
 body.tall .people {
   --hub-people-size: 40px;
   left: calc(var(--safe-left) + 10px);
@@ -1327,7 +1412,8 @@ body.tall .people {
   transform: translateY(-50%);
 }
 
-body.tall[data-screen="title"] .people {
+body.tall[data-screen="title"] .people,
+body.tall[data-screen="modes"] .people {
   left: calc(var(--safe-left) + 58px);
 }
 
@@ -1353,7 +1439,10 @@ body.tall .pass {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pass.show {
+  .pass.show,
+  .popup,
+  .toast,
+  .result {
     animation: none;
   }
 }

@@ -1,5 +1,22 @@
 # Boulder Bash Changelog
 
+## 0.4.1
+
+- A speaker button now shows during a game and opens the same sound panel as the title's Sound sign, so the music and sound effects can be changed without ending the game. It sits under End Game on wide screens and beside the people button on an upright phone.
+- The sign on the game over screen now reads "Play Again" and goes straight to the mode list. Before, it read "Restart Game" and went to the title screen. Back on the mode list still goes to the title.
+- The High Scores and Payouts boxes fit on a phone's screen, held upright or sideways. A box taller than the screen scrolls inside, so Save, Reset and Close can always be reached. High Scores shows all ten rows where there is room, with a thin sand-colored scrollbar where there isn't.
+- On iPhones, taps in the High Scores and Payouts boxes work at once, instead of waiting to see if a second tap zooms.
+- When the connection to the bot closes for good, the message's button says "Back to menu" and takes the player there, instead of leaving them on a board they can't play.
+- The mode list has a Back button, which goes back to the title screen.
+- Pressing End Game, Undo or Shuffle to close a level's popup only closes the popup. Before, the same press also ended the game or used the slot.
+- While the game loads, the title screen is already laid out in its place, instead of jumping there once it arrives.
+- On an upright phone, the How to Play heading keeps clear of the tablet's carved edges, and so does the "Your score" tablet while it offers a cash-in. On every screen, the Cash in button sits above the tablet's bottom groove.
+- On a phone held sideways, Back, the payout settings gear, End Game and Cash in can be pressed a little outside their edges, so they are easier to hit. The Payouts on/off row is taller.
+- The round buttons, the Undo and Shuffle slots and the sound switches sink a little while pressed.
+- A cash-in's message no longer follows the player into their next game.
+- The level popup, short messages and the game over tablet ease in, like the passing note.
+- Keyboard players keep their place after pressing a button, such as More on How to Play.
+
 ## 0.4.0
 
 - The Sound sign on the title screen now opens a sound panel beside it, instead of turning music and sound off and on in turn. Sound effects and Music each have their own switch and their own volume slider. A slider changes the loudness as it moves, and letting go of the effects slider plays a click at the new loudness. Each device remembers the switches and volumes. The sign's speaker is crossed out while both are off. A tap outside the panel, Escape, or pressing Sound again closes it.

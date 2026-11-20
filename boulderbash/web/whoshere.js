@@ -400,7 +400,8 @@ function placeNote(note) {
   return own.place === "tall" ? placeTallNote(note) : placeWideNote(note);
 }
 
-// On a wide screen, the first of these the note fits in: the room right of the boards under End Game, then the band
+// On a wide screen, the first of these the note fits in: the room right of the boards under the speaker button, then
+// the band
 // above the boards between the score and the people button (above the strip when that is a row under the score),
 // each at full size and then smaller, and last the room right of the boards with long words broken. The band stops
 // above the people button's foot, where its arrival notes slide out. A small window with no room in any of them gets
@@ -414,7 +415,7 @@ function placeWideNote(note) {
   const side = {
     left: boards.right + GAP,
     right: window.innerWidth - safe.right - GAP,
-    top: $("end").getBoundingClientRect().bottom + GAP,
+    top: $("play-sound").getBoundingClientRect().bottom + GAP,
     bottom: window.innerHeight - safe.bottom - GAP,
   };
   const band = {
@@ -467,7 +468,9 @@ function placeTallNote(note) {
   const top = Math.max(...above.map((node) => node.getBoundingClientRect().bottom)) + GAP;
   const height = note.getBoundingClientRect().height;
   const boards = page.scene.boardsBox().top;
-  const floor = $("popup").hidden ? boards : Math.min(boards, $("popup").getBoundingClientRect().top);
+  // Where the popup rests, centred on the screen: its on-screen box is smaller and lower while it eases in
+  const popup = $("popup");
+  const floor = popup.hidden ? boards : Math.min(boards, popup.offsetTop - popup.offsetHeight / 2);
   const room = floor - GAP - top;
   if (room < height && floor < boards) {
     return false;
