@@ -1,0 +1,2839 @@
+@font-face {
+  font-family: "Lilita One";
+  src: url("fonts/lilita-one.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nunito";
+  src: url("fonts/nunito.woff2") format("woff2");
+  font-weight: 200 1000;
+  font-display: swap;
+}
+
+:root {
+  --safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --sea: #0e3a4f;
+  --sea-deep: #082636;
+  --ice: #eef9fe;
+  --ink: #10222e;
+  --sun: #ffcf33;
+  --sun-dark: #c99700;
+  --glass: rgba(8, 38, 54, 0.6);
+  --scroll-thumb: rgba(16, 34, 46, 0.35);
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --people-size: 44px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--sea-deep);
+  color: var(--ice);
+  font-family: "Nunito", "Segoe UI", system-ui, sans-serif;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+canvas#game {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* A mouse shows the ice can be dragged, while this player has a penguin or seal to move (game.js) */
+body.can-move canvas#game {
+  cursor: grab;
+}
+
+body.can-move canvas#game:active {
+  cursor: grabbing;
+}
+
+/* ---------- Names over the penguins ---------- */
+
+#tags {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(8, 38, 54, 0.62);
+  color: var(--ice);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.tag.you {
+  background: var(--sun);
+  color: var(--ink);
+}
+
+.tag.seal {
+  opacity: 0.8;
+}
+
+/* The player's own seal: bright when it can dive, dim while it waits, as the ring under their penguin greys */
+.tag.you.seal {
+  opacity: 1;
+  transition: opacity 0.15s;
+}
+
+.tag.you.seal.wait {
+  opacity: 0.45;
+}
+
+.tag.away {
+  opacity: 0.5;
+}
+
+/* A title is a small line under the name, so its tag is a box, with corners a two-line pill could not have */
+.tag.titled {
+  padding: 4px 8px 5px;
+  border-radius: 11px;
+  text-align: center;
+}
+
+.tag-title {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+/* A name style needs the dark behind it, so the player's own tag keeps its yellow as a ring */
+.tag.styled {
+  background: rgba(8, 38, 54, 0.82);
+}
+
+.tag.you.styled {
+  color: var(--ice);
+  box-shadow: 0 0 0 2px var(--sun);
+}
+
+/* This player's nemesis, marked on their own page alone: a red ring, and a skull before the name */
+.tag.nemesis {
+  box-shadow: 0 0 0 2px #ff5a6e;
+}
+
+.tag.nemesis::before {
+  content: "";
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin: -2px 4px -2px -3px;
+  vertical-align: -1px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 13'%3E%3Ccircle cx='6.5' cy='6.5' r='6.5' fill='%23ff5a6e'/%3E%3Cpath fill='%23fff' d='M6.5 2.3a3.600 3.600 0 0 0-3.600 3.600c0 1.200.5 2.100 1.300 2.700v1.700h4.600V8.600c.8-.6 1.300-1.500 1.300-2.700a3.600 3.600 0 0 0-3.600-3.600z'/%3E%3Ccircle cx='5' cy='6.100' r='1.050' fill='%23a3122a'/%3E%3Ccircle cx='8' cy='6.100' r='1.050' fill='%23a3122a'/%3E%3Cpath stroke='%23a3122a' stroke-width='.6' d='M5.700 8.700v1.600M7.300 8.700v1.600'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+/* ---------- Name styles ---------- */
+
+/* The name styles a player can wear, by the bot's ids: a color, a gradient or a glow. Each is made to be read on a
+   dark plate, which a name tag is. A name anywhere else gets a plate of its own (tags.js) */
+.styled-name,
+.name-plate {
+  unicode-bidi: isolate;
+}
+
+.name-plate {
+  display: inline-block;
+  padding: 0.06em 0.36em 0.1em;
+  border-radius: 0.42em;
+  background: var(--sea-deep);
+  color: var(--ice);
+}
+
+.name-rose {
+  color: #ff9ebd;
+}
+
+.name-ice {
+  color: #9be3ff;
+}
+
+.name-mint {
+  color: #8ff0c0;
+}
+
+.name-sunset,
+.name-aurora,
+.name-lava {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.name-sunset {
+  background-image: linear-gradient(90deg, #ffd166, #ff8a5c 55%, #ff6fae);
+}
+
+.name-aurora {
+  background-image: linear-gradient(90deg, #6ef3c5, #6fc7ff 50%, #c9a2ff);
+}
+
+.name-lava {
+  background-image: linear-gradient(90deg, #ffe066, #ff9a3c 45%, #ff5a47);
+}
+
+.name-neon {
+  color: #f0ffff;
+  text-shadow:
+    0 0 3px #19e6ff,
+    0 0 7px #19e6ff,
+    0 0 12px #b44dff;
+}
+
+.name-gold {
+  color: #ffe27a;
+  text-shadow:
+    0 0 3px #ffb300,
+    0 0 9px rgba(255, 179, 0, 0.85);
+}
+
+/* ---------- The bar ---------- */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: max(12px, var(--safe-top)) max(16px, var(--safe-right)) max(14px, var(--safe-bottom))
+    max(16px, var(--safe-left));
+  pointer-events: none;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* A press on the bar stays on the bar, and never starts a drag on the canvas under it */
+  pointer-events: auto;
+}
+
+.bar .grow {
+  flex: 1;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--glass);
+  font-weight: 800;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dots {
+  display: flex;
+  gap: 4px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.dot.out {
+  opacity: 0.22;
+  transform: scale(0.75);
+}
+
+.dot.you {
+  box-shadow: 0 0 0 2px var(--sun);
+}
+
+/* The count of penguins left stays on one line. When the bar has no room for it, game.js drops its words, and the
+   dots still say who is left */
+#round {
+  white-space: nowrap;
+}
+
+.bar.short #round {
+  gap: 0;
+}
+
+.bar.short #left {
+  width: 0;
+  overflow: hidden;
+}
+
+.icon-btn {
+  pointer-events: auto;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--glass);
+  color: var(--ice);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+/* The hub colors the button's arrival notes and letter faces with the page's accent, or Discord's blurple without one */
+.bar .hub-people {
+  --hub-people-size: var(--people-size);
+  --accent: var(--sun);
+  --on-accent: var(--ink);
+  pointer-events: auto;
+}
+
+/* The hint at the bottom, and beside it the Shop button for someone watching a round */
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.hint {
+  min-width: 0;
+  /* Clears the hub's frame rate counter, which sits 8 to 28 px above the safe area in the corner. The hud's bottom
+     padding is the larger of 14 px and the safe area, so this puts the chip 34 px above the safe area either way */
+  margin-bottom: calc(20px + min(var(--safe-bottom), 14px));
+  text-align: center;
+  /* A line that wraps splits evenly, never leaving one word on its own */
+  text-wrap: balance;
+  transition: opacity 0.5s;
+}
+
+.hint.gone {
+  opacity: 0;
+}
+
+/* A watcher's chip is a button: at least 44 px tall, and above the hub's frame rate counter in the corner. The Shop
+   button only shows beside a watcher's chip, so it sits at the same height */
+.hint.tap,
+.foot .shop-button {
+  pointer-events: auto;
+  cursor: pointer;
+  min-height: 44px;
+  max-width: 100%;
+  margin-bottom: 40px;
+  box-sizing: border-box;
+}
+
+.hint.tap.gone {
+  pointer-events: none;
+}
+
+/* The cards' Shop button on its own bit of ice, a little smaller */
+.foot .shop-button {
+  flex: none;
+  height: 44px;
+  padding: 0 14px 0 10px;
+  background: var(--ice);
+  font-size: 16px;
+}
+
+/* Sideways the row is centered, far from the corner counter, so it sits low enough for the Shop button to clear the
+   near edge of the ice */
+@media (max-height: 520px) {
+  .hint.tap,
+  .foot .shop-button {
+    margin-bottom: 10px;
+  }
+}
+
+/* ---------- Who is watching ---------- */
+
+.watching {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  /* With the gaps to the bar above and the row below, this makes room for a face's 44 px press area */
+  margin: 1px 0;
+  pointer-events: auto;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.watching .face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: #2ec4b6;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.watching .face.away {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.watching .face img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* A face opens its person's card, so a finger gets 44 px to press around the small picture, and the faces stand that
+   far apart from middle to middle. The inset counts from inside the face's 2 px border */
+.watching .face::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
+}
+
+.watching .face + .face {
+  margin-left: 14px;
+}
+
+.watching .more,
+.watching .label {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--glass);
+}
+
+/* ---------- Cards ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Where a card's top clears the bar, and the row of people watching under it. Both stay on top of the cards, so a
+     card never climbs above the row while it shows */
+  --pad-top: max(20px, var(--safe-top));
+  --bar-top: calc(max(12px, var(--safe-top)) + 52px);
+  --row-top: calc(max(12px, var(--safe-top)) + 86px);
+  --card-top: var(--bar-top);
+  padding: var(--pad-top) max(20px, var(--safe-right)) max(20px, var(--safe-bottom)) max(20px, var(--safe-left));
+  background: rgba(8, 38, 54, 0.45);
+}
+
+/* Equal room above and below keeps a card in the middle of the screen, under the bar and the watchers. On a screen too
+   short for that, the room below goes first, then the room above down to the watchers, or to the bar when nobody is
+   watching. A card taller than what is left scrolls */
+.overlay::before,
+.overlay::after {
+  content: "";
+  flex: 1 1000 calc(var(--row-top) - var(--pad-top));
+}
+
+.overlay::before {
+  flex-shrink: 1;
+  min-height: calc(var(--card-top) - var(--pad-top));
+}
+
+body:has(#watching:not([hidden])) .overlay {
+  --card-top: var(--row-top);
+}
+
+/* An upright phone has no room for the watchers' row beside the hub's arrival notes, so it starts under them */
+@media (max-width: 499px) {
+  .watching {
+    margin-top: 30px;
+  }
+
+  .overlay {
+    --row-top: calc(max(12px, var(--safe-top)) + 116px);
+  }
+}
+
+.card {
+  flex: none;
+  width: 100%;
+  max-width: 360px;
+  max-height: calc(100% - var(--card-top) + var(--pad-top));
+  overflow: auto;
+  background: var(--ice);
+  color: var(--ink);
+  border-radius: 24px;
+  padding: 24px 22px 20px;
+  text-align: center;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card h1,
+.card h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-wrap: balance;
+}
+
+.card h1 {
+  font-size: 42px;
+  line-height: 1;
+}
+
+.card h2 {
+  font-size: 34px;
+  line-height: 1.05;
+}
+
+.card p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-wrap: pretty;
+}
+
+.steps b {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--ice);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 16px;
+}
+
+.seated .steps {
+  display: none;
+}
+
+.stats {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.ice {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ice li {
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--ice);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.ice li.away {
+  opacity: 0.5;
+}
+
+.ice li.you {
+  background: var(--sun);
+  color: var(--ink);
+}
+
+.ice li.more {
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--ink);
+}
+
+/* A name that opens its player's card. A finger gets 44 px of height to press, around a name that is shorter */
+.who {
+  position: relative;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.who::after {
+  content: "";
+  position: absolute;
+  inset: -9px 0;
+}
+
+.ice .who {
+  min-width: 44px;
+  padding: 4px 10px;
+}
+
+/* On the end card the winner's name is part of the heading, so a line under it says it can be pressed */
+.card h2 .who {
+  text-decoration: underline 2px rgba(16, 34, 46, 0.3);
+  text-underline-offset: 4px;
+}
+
+.btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* The leaderboard, profile and Shop buttons move to a new row together, so none is left on a row of its own. On a
+   screen too narrow for them all, the row wraps */
+.btns .pair {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* The narrowest phones fit the four on one row with the Looks button as its word alone */
+@media (max-width: 359px) {
+  .btns .pair {
+    gap: 8px;
+  }
+
+  .pair .shop-button {
+    padding: 0 14px;
+  }
+
+  .pair .shop-button svg {
+    display: none;
+  }
+}
+
+.play,
+.plain {
+  border: 0;
+  border-radius: 16px;
+  cursor: pointer;
+  font-family: var(--display);
+  touch-action: manipulation;
+}
+
+.play {
+  padding: 12px 30px 13px;
+  background: var(--sun);
+  color: var(--ink);
+  font-size: 24px;
+  box-shadow: 0 5px 0 var(--sun-dark);
+}
+
+.play:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--sun-dark);
+}
+
+.plain:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.play:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+  box-shadow: 0 5px 0 var(--sun-dark);
+}
+
+.plain {
+  padding: 12px 22px 13px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 20px;
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+
+.note {
+  font-size: 12px;
+  opacity: 0.65;
+}
+
+:focus-visible {
+  outline: 3px solid var(--sun);
+  outline-offset: 3px;
+}
+
+/* Every button gives a little under a press. iPhones only draw this on a page that listens for touches (game.js) */
+.icon-btn,
+.plain,
+.trophy,
+.item,
+.tab,
+.who,
+.leaders .row,
+.watching .face {
+  transition:
+    transform 0.08s ease-out,
+    filter 0.08s ease-out;
+}
+
+/* The watcher's chip keeps its slow fade as well */
+.hint.tap {
+  transition:
+    opacity 0.5s,
+    transform 0.08s ease-out,
+    filter 0.08s ease-out;
+}
+
+.icon-btn:active,
+.item:active,
+.tab:active,
+.who:active,
+.leaders .row:active,
+.hint.tap:active,
+.watching .face:active {
+  transform: scale(0.94);
+  filter: brightness(0.88);
+}
+
+.plain:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.switch:active .knob {
+  scale: 1.15;
+}
+
+/* A win gets a trophy by the heading, which pops */
+#end.won h2 {
+  animation: pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+#end.won h2::before {
+  content: "";
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-right: 0.22em;
+  vertical-align: -0.06em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310222e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 6H3.5v1.5A3.5 3.5 0 0 0 7 11M17 6h3.5v1.5A3.5 3.5 0 0 1 17 11'/%3E%3Cpath d='M7 3.5h10V9a5 5 0 0 1-10 0z' fill='%23ffcf33'/%3E%3Cpath d='M12 14v3.5' /%3E%3Cpath d='M8 20.5h8v-1.5a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 0 8 19z' fill='%23ffcf33'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #end.won h2 {
+    animation: none;
+  }
+}
+
+/* ---------- 3, 2, 1, banner, toast ---------- */
+
+.count {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-family: var(--display);
+  font-size: min(36vw, 36vh, 220px);
+  color: var(--ice);
+  /* An outline, as the digit is as white as the ice under it */
+  text-shadow:
+    4px 0 0 var(--sea-deep),
+    -4px 0 0 var(--sea-deep),
+    0 4px 0 var(--sea-deep),
+    0 -4px 0 var(--sea-deep),
+    3px 3px 0 var(--sea-deep),
+    -3px 3px 0 var(--sea-deep),
+    3px -3px 0 var(--sea-deep),
+    -3px -3px 0 var(--sea-deep),
+    0 10px 0 rgba(8, 38, 54, 0.55);
+}
+
+/* "Go!" is in the game's yellow, and grows a little as it fades away */
+.count.go {
+  color: var(--sun);
+  animation: go 0.8s ease-in forwards;
+}
+
+@keyframes go {
+  0%,
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+/* Only the fade, for people who turned motion down */
+@media (prefers-reduced-motion: reduce) {
+  .count.go {
+    animation-name: go-fade;
+  }
+}
+
+@keyframes go-fade {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.banner,
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--glass);
+  font-weight: 800;
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.banner {
+  top: calc(max(12px, var(--safe-top)) + 56px);
+  background: var(--sun);
+  color: var(--ink);
+}
+
+.toast {
+  bottom: max(70px, calc(var(--safe-bottom) + 70px));
+}
+
+/* Someone watching a round has the line chip and the Shop button at the bottom, which stand taller than a player's
+   hint, so a toast sits above them */
+.toast.raised {
+  bottom: max(120px, calc(var(--safe-bottom) + 120px));
+}
+
+/* A sideways phone's ice fills the screen from top to bottom, hint and all, so a toast goes over the open sea in the
+   bottom right corner */
+@media (max-height: 520px) {
+  .toast,
+  .toast.raised {
+    left: auto;
+    right: max(12px, var(--safe-right));
+    bottom: max(12px, var(--safe-bottom));
+    max-width: min(200px, 21vw);
+    padding: 8px 12px;
+    border-radius: 16px;
+    transform: none;
+    text-wrap: balance;
+  }
+}
+
+@media (hover: hover) {
+  .icon-btn:hover,
+  .watching .face:hover {
+    filter: brightness(1.2);
+  }
+
+  .plain:hover {
+    background: rgba(16, 34, 46, 0.08);
+  }
+}
+
+@media (max-width: 399px) {
+  :root {
+    --people-size: 36px;
+  }
+
+  .hud {
+    padding-left: max(10px, var(--safe-left));
+    padding-right: max(10px, var(--safe-right));
+  }
+
+  .bar {
+    gap: 6px;
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .chip {
+    padding: 6px 9px;
+    gap: 6px;
+  }
+
+  .dots {
+    gap: 3px;
+  }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+  }
+}
+
+/* A wider screen whose bar still has no room for full-size buttons, such as the bot owner's with every button in it,
+   gets the small ones (game.js) */
+@media (min-width: 400px) {
+  .bar.small {
+    gap: 6px;
+    --people-size: 36px;
+  }
+
+  .bar.small .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .bar.small .chip {
+    padding: 6px 9px;
+    gap: 6px;
+  }
+
+  .bar.small .dots {
+    gap: 3px;
+  }
+
+  .bar.small .dot {
+    width: 9px;
+    height: 9px;
+  }
+}
+
+/* A short upright phone gets a tighter card, so the title card's Play button shows without scrolling */
+@media (max-width: 499px) and (max-height: 700px) {
+  .card {
+    padding: 14px 16px;
+    gap: 8px;
+  }
+
+  .card h1 {
+    font-size: 30px;
+  }
+
+  .btns {
+    gap: 8px;
+  }
+
+  .card h2 {
+    font-size: 30px;
+  }
+
+  .card p {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .steps {
+    gap: 4px;
+  }
+
+  .steps li {
+    grid-template-columns: 24px 1fr;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .steps b {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+  }
+}
+
+@media (max-height: 520px) {
+  .overlay {
+    --pad-top: calc(max(12px, var(--safe-top)) + 50px);
+    padding: var(--pad-top) max(10px, var(--safe-right)) max(10px, var(--safe-bottom)) max(10px, var(--safe-left));
+  }
+
+  .card {
+    padding: 12px 18px;
+    gap: 8px;
+    max-width: 640px;
+  }
+
+  .card p {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .steps {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 14px;
+  }
+
+  .card h1 {
+    font-size: 30px;
+  }
+
+  .card h2 {
+    font-size: 26px;
+  }
+
+  .steps li {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+}
+
+/* ---------- Leaderboard ---------- */
+
+.trophy {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+
+.trophy:active {
+  transform: translateY(2px);
+}
+
+.board {
+  width: min(100% - 40px, 400px);
+  max-height: calc(100% - 40px);
+  margin: auto;
+  padding: 22px 20px 18px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--ice);
+  color: var(--ink);
+  text-align: center;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.22);
+}
+
+.board[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.board::backdrop {
+  background: rgba(8, 38, 54, 0.6);
+}
+
+.board h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.05;
+}
+
+.board p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.board .dim {
+  opacity: 0.7;
+}
+
+.board .you {
+  font-weight: 800;
+}
+
+.leaders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+  text-align: left;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+.leaders:empty {
+  display: none;
+}
+
+.leaders li {
+  border-radius: 12px;
+  background: #dbeef7;
+}
+
+.leaders li.mine {
+  background: var(--sun);
+}
+
+/* A row is one button, which opens that player's card */
+.leaders .row {
+  display: grid;
+  grid-template-columns: 3ch minmax(0, 1fr);
+  gap: 1px 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.leaders .place {
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.leaders .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.leaders .numbers {
+  grid-column: 2;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A sideways phone has little height, so each row becomes one line */
+@media (max-height: 500px) {
+  .board {
+    width: min(100% - 40px, 640px);
+    padding: 12px 18px 12px;
+    gap: 8px;
+  }
+
+  .board h2 {
+    font-size: 26px;
+  }
+
+  .board .dim {
+    display: none;
+  }
+
+  .leaders .row {
+    grid-template-columns: 3.5ch minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 44px;
+    padding: 4px 10px;
+  }
+
+  .leaders .numbers {
+    grid-column: auto;
+  }
+}
+
+/* ---------- Shop ---------- */
+
+.shop-button {
+  grid-auto-flow: column;
+  gap: 6px;
+  width: auto;
+  padding: 0 16px 0 12px;
+  border-radius: 24px;
+  font-family: var(--display);
+  font-size: 18px;
+}
+
+/* The preview shows through the window, so nothing of the page may sit behind the shop or a profile card */
+body.shopping .hud,
+body.shopping .overlay,
+body.shopping .count,
+body.shopping .told,
+body.shopping .final-call,
+body.shopping #tags {
+  visibility: hidden;
+}
+
+.shop {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.shop[open] {
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+}
+
+.shop::backdrop {
+  background: transparent;
+}
+
+.shop-box {
+  display: grid;
+  grid-template-rows: clamp(130px, 38%, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+}
+
+/* A gap in the dialog, with nothing painted in it: the game's canvas shows through, where the preview camera draws.
+   Its shadow dims the game around it, and the panel's rounded corners cover its edge */
+.shop-window {
+  position: relative;
+  margin-bottom: -24px;
+  /* A finger on the penguin turns it, and never scrolls or zooms the page */
+  touch-action: none;
+  cursor: grab;
+  box-shadow: 0 0 0 100vmax rgba(8, 38, 54, 0.6);
+}
+
+/* The name tag over the penguin's head on the Title and Name tabs, larger than on the ice, as the penguin is. A
+   finger on it still turns the penguin */
+.shop-window .tag {
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.shop-window .tag-title {
+  font-size: 12px;
+}
+
+.shop-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  /* The bottom clears the hub's frame rate counter, which sits 8 to 28 px above the safe area in the corner */
+  padding: 14px max(16px, var(--safe-right)) calc(var(--safe-bottom) + 34px) max(16px, var(--safe-left));
+  border-radius: 24px 24px 0 0;
+  background: var(--ice);
+}
+
+.shop-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shop h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.shop p {
+  margin: 0;
+}
+
+.shop-balance {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* One tab for each thing a penguin wears, each 44 px tall for a finger. Nine share the row where they fit at 44 px
+   wide. On a narrower screen the row scrolls sideways, and fades out at an end that has more tabs past it (panels.js
+   marks the ends) */
+.shop-tabs {
+  --tab-min: 44px;
+  --fade: 28px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(var(--tab-min), 1fr);
+  gap: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.shop-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.shop-tabs.more-right {
+  -webkit-mask-image: linear-gradient(to left, transparent, #000 var(--fade));
+  mask-image: linear-gradient(to left, transparent, #000 var(--fade));
+}
+
+.shop-tabs.more-left {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade));
+  mask-image: linear-gradient(to right, transparent, #000 var(--fade));
+}
+
+.shop-tabs.more-left.more-right {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade) calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 var(--fade) calc(100% - var(--fade)), transparent);
+}
+
+/* The row cuts off a ring drawn outside a tab, so the keyboard's ring is drawn inside it */
+.tab:focus-visible {
+  outline-offset: -3px;
+}
+
+.tab {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 1px;
+  min-height: 44px;
+  padding: 4px 0 3px;
+  border: 0;
+  border-radius: 12px;
+  background: #dbeef7;
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.tab svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tab[aria-selected="true"] {
+  background: var(--ink);
+  color: var(--ice);
+}
+
+/* The tab's cards. They scroll inside the panel, so the penguin above never leaves the screen. The padding keeps the
+   picked card's ring from being cut */
+.shelf {
+  --thumb: 64px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  align-content: start;
+  gap: 6px;
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+  touch-action: pan-y;
+}
+
+.item {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 14px;
+  background: #dbeef7;
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* One picture out of looks.webp, which holds every item's in catalog order, eight to a row. panels.js says which */
+.item .thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  border-radius: 12px;
+  background: url("looks.webp") calc(var(--col) * var(--thumb) * -1) calc(var(--row) * var(--thumb) * -1) /
+    calc(var(--thumb) * 8) auto no-repeat;
+}
+
+/* A title or a name style has no picture. Its words stand on a dark plate, which the name styles are made for */
+.item .thumb.words {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: auto;
+  min-height: 44px;
+  padding: 6px;
+  background: var(--sea-deep);
+  color: var(--ice);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* The card that takes a title off */
+.item .thumb.words.none {
+  color: rgba(238, 249, 254, 0.55);
+}
+
+/* The card that takes a thing off: an empty ring */
+.item .thumb.bare {
+  background: none;
+  box-shadow: inset 0 0 0 3px rgba(16, 34, 46, 0.25);
+  border-radius: 50%;
+  scale: 0.6;
+}
+
+.item .name {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.item .state {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.15;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.item.owned .state {
+  color: #0a6d62;
+  opacity: 1;
+}
+
+.item.worn {
+  background: var(--sun);
+}
+
+.item.worn .state {
+  opacity: 1;
+}
+
+/* Still to be earned: its picture is dimmed, and a bar shows how far along the player is (--done, from panels.js) */
+.item.locked .thumb {
+  filter: grayscale(0.8);
+  opacity: 0.55;
+}
+
+/* Words still to be earned keep their colors, as a name style is nothing else */
+.item.locked .thumb.words {
+  filter: none;
+  opacity: 0.7;
+}
+
+.item .bar {
+  width: 78%;
+  height: 5px;
+  margin-top: 1px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(16, 34, 46, 0.16);
+}
+
+.item .bar span {
+  display: block;
+  width: var(--done);
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+.item[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+
+.shop-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 10px;
+}
+
+.shop-note:empty {
+  display: none;
+}
+
+.shop-note {
+  flex: 1 1 130px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.shop-foot .play,
+.shop-foot .plain {
+  min-height: 46px;
+  padding: 8px 18px 9px;
+  font-size: 20px;
+}
+
+/* ---------- Profile ---------- */
+
+/* A player's card has the wardrobe's shape: their penguin in the window, and a panel with their name, play counts and
+   achievements. Only the panel's body scrolls, so the name and Close stay on screen */
+.profile-who {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 7px 14px 9px;
+  border-radius: 14px;
+  background: var(--sea-deep);
+  color: var(--ice);
+}
+
+.profile .profile-who h2 {
+  font-size: 26px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+/* An upright phone gives the penguin less of the screen than the wardrobe does, as the card has more to read */
+@media (max-width: 899px) and (min-height: 521px) {
+  .profile .shop-box {
+    grid-template-rows: clamp(130px, 30%, 300px) minmax(0, 1fr);
+  }
+}
+
+.profile-title {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 800;
+  opacity: 0.85;
+}
+
+.profile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+  touch-action: pan-y;
+}
+
+.counts,
+.earned {
+  list-style: none;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.counts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.counts li {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 2px;
+  padding: 7px 4px 6px;
+  border-radius: 12px;
+  background: #dbeef7;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.counts b {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A wide panel, beside the penguin, has the width for each number with its words after it, which takes less height */
+@media (min-width: 900px), (max-height: 520px) {
+  .counts li {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    justify-items: start;
+    gap: 8px;
+    padding: 6px 10px;
+    text-align: left;
+  }
+}
+
+.profile-line {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* The skull that marks a nemesis on the ice */
+.profile-line.foe::before {
+  content: "";
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 5px;
+  vertical-align: -2px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 13'%3E%3Ccircle cx='6.5' cy='6.5' r='6.5' fill='%23e03a52'/%3E%3Cpath fill='%23fff' d='M6.5 2.3a3.6 3.6 0 0 0-3.6 3.6c0 1.2.5 2.1 1.3 2.7v1.7h4.6V8.6c.8-.6 1.3-1.5 1.3-2.7a3.6 3.6 0 0 0-3.6-3.6z'/%3E%3Ccircle cx='5' cy='6.1' r='1.05' fill='%23a3122a'/%3E%3Ccircle cx='8' cy='6.1' r='1.05' fill='%23a3122a'/%3E%3Cpath stroke='%23a3122a' stroke-width='.6' d='M5.7 8.7v1.6M7.3 8.7v1.6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.profile h3 {
+  margin: 4px 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* The looks the player has earned, by name */
+.earned-names {
+  list-style: none;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.earned-names:empty {
+  display: none;
+}
+
+.earned-names li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #cfeee3;
+  color: #0a5a52;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.earned {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+/* An achievement still to be earned: the look it gives and what kind of thing that is, how far along the player is,
+   what to do for it, and a bar (--done, from panels.js) */
+.earned li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 6px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: #dbeef7;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.earned b {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.earned .kind {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.6;
+}
+
+.earned .far {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.earned .how,
+.earned .bar {
+  grid-column: 1 / -1;
+}
+
+.earned .how {
+  opacity: 0.8;
+}
+
+.earned .bar {
+  height: 5px;
+  margin-top: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(16, 34, 46, 0.16);
+}
+
+.earned .bar span {
+  display: block;
+  width: var(--done);
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+/* ---------- Prices ---------- */
+
+.settings .line {
+  font-weight: 700;
+}
+
+.settings .status {
+  min-height: 1.35em;
+  font-weight: 800;
+}
+
+.prices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  flex: 0 1 auto;
+  /* One row stays, so a phone's keyboard can't squash away the box being typed in. The dialog scrolls instead */
+  min-height: 70px;
+  overflow-y: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+  text-align: left;
+  touch-action: pan-y;
+}
+
+.prices label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* What a title or a name style is, after its name */
+.prices small {
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+.prices input {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: #dbeef7;
+  color: var(--ink);
+  font: inherit;
+  /* Under 16 px, an iPhone zooms the page in when the box takes focus */
+  font-size: 16px;
+  font-weight: 700;
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: manipulation;
+}
+
+.settings .btns .play,
+.settings .btns .plain {
+  min-height: 46px;
+  padding: 8px 16px 9px;
+  font-size: 18px;
+}
+
+@media (min-width: 900px) and (min-height: 521px) {
+  .shop-box {
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-columns: 340px minmax(0, 1fr);
+    width: min(100% - 48px, 920px);
+    height: min(100% - 48px, 600px);
+  }
+
+  .shop-window {
+    margin: 0 -24px 0 0;
+    border-radius: 24px 0 0 24px;
+  }
+
+  .shop-panel {
+    padding: 20px;
+    border-radius: 24px;
+  }
+}
+
+/* A sideways phone: the preview at one side and the shelves beside it */
+@media (max-height: 520px) {
+  .shop-box {
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-columns: minmax(150px, 32%) minmax(0, 1fr);
+  }
+
+  .shop-window {
+    margin: 0 -24px 0 0;
+  }
+
+  .shop-panel {
+    gap: 5px;
+    padding: max(10px, var(--safe-top)) max(14px, var(--safe-right)) max(10px, var(--safe-bottom)) 16px;
+    border-radius: 24px 0 0 24px;
+  }
+
+  .shop h2 {
+    font-size: 24px;
+  }
+
+  .shop-top {
+    align-items: center;
+  }
+
+  /* Smaller pictures, and the tabs lose their words, so two rows of cards show on a 360 px tall screen */
+  .shelf {
+    --thumb: 48px;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  }
+
+  .tab {
+    min-height: 40px;
+    font-size: 0;
+  }
+
+  .shop-foot .play,
+  .shop-foot .plain {
+    min-height: 40px;
+    padding: 5px 16px 6px;
+  }
+
+  .prices {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (hover: hover) {
+  .item:hover,
+  .tab:hover {
+    filter: brightness(1.05);
+  }
+}
+
+/* A look that play just unlocked: a line on the end card, and a dot on the Looks buttons until the wardrobe is opened */
+.card .unlocked {
+  align-self: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--sun);
+  font-weight: 800;
+  text-wrap: balance;
+}
+
+body.new-looks .shop-button {
+  position: relative;
+}
+
+body.new-looks .shop-button::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff5a5f;
+  box-shadow: 0 0 0 2px var(--ice);
+}
+
+/* ---------- Crates and party rounds ---------- */
+
+/* A row of its own under the bar and the watching row, so neither button nor call-out can crowd them: the crate
+   button at the left, clear of the bot owner's sliders at the right, and the party round's call-out beside it */
+.extras {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Drops a crate on the ice for credits. Its first press only asks, so a stray thumb never spends anything */
+.crate-btn {
+  pointer-events: auto;
+  flex: none;
+  order: -1;
+  min-height: 44px;
+  border: 0;
+  color: var(--ice);
+  font: inherit;
+  font-weight: 800;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 0.08s ease-out,
+    filter 0.08s ease-out;
+}
+
+.crate-btn svg {
+  flex: none;
+}
+
+.crate-btn.armed {
+  background: var(--sun);
+  color: var(--ink);
+}
+
+.crate-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.crate-btn:active:not(:disabled) {
+  transform: scale(0.94);
+  filter: brightness(0.88);
+}
+
+/* Someone watching a round throws snowballs: one press gets them out, and then each tap on the ice throws one. It
+   dims for the moment between two throws */
+.snow-btn.wait {
+  opacity: 0.6;
+}
+
+body.throwing canvas#game {
+  cursor: crosshair;
+}
+
+/* Where a snowball was just aimed, under the finger, for the moment before the ball itself shows */
+.snow-ping {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border: 3px solid var(--ice);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px rgba(8, 38, 54, 0.55),
+    inset 0 0 0 2px rgba(8, 38, 54, 0.55);
+  pointer-events: none;
+}
+
+/* The party round that is paid for and still to come, on the cards */
+.card .next-twist {
+  align-self: center;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #dbeef7;
+  font-weight: 800;
+  text-wrap: balance;
+}
+
+/* The round's call-outs through its 3-2-1, one under the other: the party round's, then the map's */
+.calls {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+/* The round's map: its shape, and its hazard with what to do about it. Quieter than a party round's call-out */
+.map-call {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 6px 14px 7px;
+  border-radius: 16px;
+  background: var(--glass);
+  text-align: center;
+}
+
+.map-call b {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.map-call span {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+/* It stays for the round's first moments, as the party round's does, and for as long after someone arrives mid-round */
+.map-call.leaving {
+  animation: twist-leave 0.4s ease-in 2.5s forwards;
+}
+
+/* Once the round is on, the crate and snowball buttons share the row. Beside a party round's call that leaves room
+   for the map's names only, and its line has been read through the 3-2-1 */
+.calls:has(.twist-call:not([hidden])) .map-call.leaving span {
+  display: none;
+}
+
+/* A wide screen's ice reaches up close to the bar, and it has the room to put the two side by side */
+@media (min-width: 900px) and (min-height: 521px) {
+  .calls {
+    grid-auto-flow: column;
+    align-items: start;
+    gap: 8px;
+  }
+}
+
+/* A shorter upright phone's ice reaches up to just under the party round's call-out, with no room there for a second
+   one. The map's goes over the open sea under the ice, above the hint and the toasts, where it keeps its line */
+@media (max-width: 499px) and (max-height: 800px) {
+  .map-call {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: max(124px, calc(var(--safe-bottom) + 124px));
+    width: fit-content;
+    margin: 0 auto;
+  }
+
+  .calls:has(.twist-call:not([hidden])) .map-call.leaving span {
+    display: inline;
+  }
+
+  /* A toast for someone watching comes up in that same spot and is the newer word, so the call-out gives way */
+  body:has(.toast.raised:not([hidden])) .map-call {
+    visibility: hidden;
+  }
+}
+
+@keyframes call-hide {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* With motion turned down it still gets its moments, since it says what the round's hazard does, then just goes */
+@media (prefers-reduced-motion: reduce) {
+  .map-call.leaving {
+    animation: call-hide 0s linear 2.9s forwards;
+  }
+}
+
+/* What is different about a party round, called out over the ice through its 3-2-1 */
+.twist-call {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 8px 18px 9px;
+  border-radius: 18px;
+  background: var(--sun);
+  color: var(--ink);
+  text-align: center;
+}
+
+.twist-call b {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.twist-call span {
+  font-size: 14px;
+  font-weight: 800;
+  text-wrap: balance;
+}
+
+/* It stays for the round's first moments, for whoever looked away during the 3-2-1, then leaves the ice clear */
+.twist-call.leaving {
+  animation: twist-leave 0.4s ease-in 2.5s forwards;
+}
+
+@keyframes twist-leave {
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .twist-call.leaving {
+    display: none;
+  }
+}
+
+/* A star on the round's chip for as long as a party round is played */
+#round.party::before {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: var(--sun);
+  clip-path: polygon(50% 0, 62% 35%, 100% 38%, 70% 60%, 80% 100%, 50% 76%, 20% 100%, 30% 60%, 0 38%, 38% 35%);
+}
+
+dialog.party {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+dialog.party[open] {
+  display: flex;
+}
+
+.twists {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.twist {
+  display: grid;
+  gap: 2px;
+  min-height: 56px;
+  padding: 9px 14px 10px;
+  border: 0;
+  border-radius: 14px;
+  background: #dbeef7;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 0.08s ease-out,
+    filter 0.08s ease-out;
+}
+
+.twist b {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.twist span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.twist:active:not(:disabled) {
+  transform: scale(0.97);
+  filter: brightness(0.9);
+}
+
+.twist:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.party .cost {
+  margin: 0;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.party .cost:empty,
+.party .status:empty {
+  display: none;
+}
+
+@media (hover: hover) {
+  .twist:hover:not(:disabled) {
+    filter: brightness(1.05);
+  }
+}
+
+/* A sideways phone: the four kinds sit two by two, so the dialog fits without scrolling */
+@media (max-height: 520px) {
+  .twists {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* The ice fills a sideways phone from top to bottom, so the calls sit over the sea at its right */
+  .calls {
+    justify-items: end;
+    max-width: 170px;
+    margin: 0 0 0 auto;
+  }
+
+  .twist-call {
+    max-width: 170px;
+    margin: 0 0 0 auto;
+    padding: 6px 12px 7px;
+  }
+
+  .map-call {
+    padding: 5px 10px 6px;
+  }
+
+  .map-call b {
+    font-size: 16px;
+  }
+
+  .map-call span {
+    font-size: 12px;
+  }
+
+  .twist-call b {
+    font-size: 20px;
+  }
+
+  .twist-call span {
+    font-size: 13px;
+  }
+}
+
+/* ---------- Tuning (bot owner) ---------- */
+
+/* A sheet beside the ice, never over it, and never a modal: the game stays playable while the numbers move */
+.tuning {
+  position: fixed;
+  z-index: 6;
+  margin: 0;
+  padding: 10px 14px 12px;
+  border: 0;
+  background: var(--glass);
+  color: var(--ice);
+  backdrop-filter: blur(6px);
+  /* Bottom sheet while upright, a share of the screen so the ice above it stays clear */
+  inset: auto 0 0 0;
+  width: auto;
+  max-width: none;
+  height: clamp(150px, 29dvh, 284px);
+  max-height: none;
+  border-radius: 20px 20px 0 0;
+  /* The sliders stop above the hub's frame rate counter in the bottom left corner, so none scrolls under it */
+  padding-bottom: calc(var(--safe-bottom) + 34px);
+  overflow: hidden;
+}
+
+.tuning[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The buttons wrap under the heading as one, whenever a narrow sheet has no room for all three on a row */
+.tuning-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tuning-buttons {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.tuning-top h2 {
+  flex: 1;
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 24px;
+}
+
+.tuning .plain {
+  min-height: 40px;
+  padding: 4px 10px 5px;
+  font-size: 16px;
+  color: var(--ice);
+  box-shadow: inset 0 0 0 2px var(--ice);
+}
+
+.tuning-status {
+  margin: 0;
+  min-height: 1.3em;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sliders {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  touch-action: pan-y;
+}
+
+.slider-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 3px 0 5px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.slider-row output {
+  font-variant-numeric: tabular-nums;
+  color: var(--sun);
+}
+
+.slider-row input {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  accent-color: var(--sun);
+  /* Up and down scrolls the list, sideways moves the slider, and neither reaches the game */
+  touch-action: pan-y;
+}
+
+/* Sideways or on a desktop: a sheet down the right side, under the bar and away from the counter */
+@media (min-aspect-ratio: 1/1) {
+  .tuning {
+    inset: calc(max(12px, var(--safe-top)) + 52px) 0 0 auto;
+    width: clamp(180px, 28vw, 260px);
+    height: auto;
+    border-radius: 20px 0 0 0;
+    padding-right: max(14px, var(--safe-right));
+    padding-bottom: max(12px, var(--safe-bottom));
+  }
+}
+
+@media (min-aspect-ratio: 1/1) and (min-width: 900px) and (min-height: 521px) {
+  .tuning {
+    width: 300px;
+  }
+}
+
+@media (max-width: 399px) {
+  .tuning {
+    padding-left: max(10px, var(--safe-left));
+    padding-right: max(10px, var(--safe-right));
+  }
+}
+
+/* ---------- Sound ---------- */
+
+/* A small icy card under the sound button, lined up with the bar's right end. It starts below the band where the
+   hub's arrival notes slide out of the people button beside it, and stays inside the safe area. The rest of the page
+   waits behind a clear backdrop, which takes the press that closes the panel */
+.sound-panel {
+  --top: calc(max(12px, var(--safe-top)) + var(--people-size) + 42px);
+  --side: max(16px, var(--safe-right));
+  position: fixed;
+  inset: var(--top) var(--side) auto auto;
+  width: 260px;
+  max-width: calc(100% - var(--side) - max(16px, var(--safe-left)));
+  max-height: calc(100% - var(--top) - max(12px, var(--safe-bottom)));
+  margin: 0;
+  padding: 10px 16px 8px 18px;
+  overflow: auto;
+  border: 0;
+  border-radius: 20px;
+  background: var(--ice);
+  color: var(--ink);
+  /* The dark ring keeps its edge clear where it lies over a card, which is the same ice */
+  box-shadow:
+    0 0 0 3px var(--ink),
+    0 6px 0 3px rgba(0, 0, 0, 0.22);
+}
+
+.sound-panel::backdrop {
+  background: transparent;
+}
+
+.sound-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  font-family: var(--display);
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+/* On is the game's yellow, off is an empty outline like the cards' plain buttons. The button is 44 px tall for a
+   finger and draws a smaller pill inside */
+.switch {
+  position: relative;
+  width: 60px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.switch::before {
+  content: "";
+  position: absolute;
+  inset: 7px 2px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 3px var(--ink);
+  transition: background 0.15s;
+}
+
+.switch[aria-checked="true"]::before {
+  background: var(--sun);
+}
+
+.switch .knob {
+  position: absolute;
+  top: 13px;
+  left: 9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 0.15s;
+}
+
+.switch[aria-checked="true"] .knob {
+  transform: translateX(24px);
+}
+
+/* A thick track that fills with yellow up to the level (--level, set by panels.js), with an ink knob. The whole
+   44 px height takes a finger */
+.volume {
+  --level: 100%;
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.volume::-webkit-slider-runnable-track {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--sun) var(--level), transparent var(--level));
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+
+.volume::-moz-range-track {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--sun) var(--level), transparent var(--level));
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+
+.volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.volume::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch::before,
+  .switch .knob {
+    transition: none;
+  }
+}
+
+/* The bar comes closer to the edge on narrow phones, and the panel stays lined up with it */
+@media (max-width: 399px) {
+  .sound-panel {
+    --side: max(10px, var(--safe-right));
+  }
+}
+
+/* A 320 px phone squeezes the bar a little more, and narrows the cards' margins so Play, the leaderboard and Shop
+   still share one row */
+@media (max-width: 359px) {
+  .hud {
+    padding-left: max(8px, var(--safe-left));
+    padding-right: max(8px, var(--safe-right));
+  }
+
+  .overlay {
+    padding-left: max(10px, var(--safe-left));
+    padding-right: max(10px, var(--safe-right));
+  }
+
+  .card {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .bar {
+    gap: 4px;
+  }
+
+  .sound-panel {
+    --side: max(8px, var(--safe-right));
+  }
+}
+
+/* ---------- Knockouts in words ---------- */
+
+/* A line for each knockout, newest on top. On an upright screen the lines hang from the top of the row under the bar,
+   beside its buttons: the spot the round's call-outs have through its first moments, and game.js holds a line back
+   until those have left. That is over the sea, above the far edge of the ice and the names there */
+.feed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+@media not all and (min-aspect-ratio: 5/4) {
+  .calls {
+    position: relative;
+    flex: 1;
+    margin: 0;
+  }
+}
+
+.feed-line {
+  max-width: 100%;
+  margin: 0;
+  padding: 5px 11px;
+  border-radius: 13px;
+  background: var(--glass);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+  text-wrap: balance;
+  /* It leaves by itself: moments.js takes it away at 3.2 s */
+  animation:
+    feed-in 0.2s ease-out backwards,
+    feed-out 0.3s ease-in 2.9s forwards;
+}
+
+.feed-line b {
+  font-weight: 900;
+}
+
+.feed-line b.you {
+  color: var(--sun);
+}
+
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes feed-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* The far edge of the ice is nearer the bar on a shorter upright phone, so fewer lines show there, down to two small
+   ones as tall as the buttons beside them. Someone watching has a second button in the row, which leaves the lines
+   too narrow to stay on one row each, so they get one */
+@media (max-height: 800px) and (max-aspect-ratio: 5/4) {
+  .feed-line:nth-child(n + 3) {
+    display: none;
+  }
+}
+
+@media (max-height: 700px) and (max-aspect-ratio: 5/4) {
+  .feed-line {
+    padding: 3px 9px;
+    font-size: 12px;
+  }
+
+  .extras:has(#throw-snow:not([hidden])) .feed-line:nth-child(n + 2) {
+    display: none;
+  }
+}
+
+/* A screen wider than it is tall has the ice in its middle from top to bottom, and open sea at its left under the
+   row's buttons, so the lines stack there in a narrow column */
+@media (min-aspect-ratio: 5/4) {
+  .extras {
+    position: relative;
+  }
+
+  .feed {
+    top: 52px;
+    right: auto;
+    justify-items: start;
+    width: max-content;
+    max-width: min(260px, 20vw);
+  }
+
+  .feed-line {
+    text-align: left;
+  }
+}
+
+/* A sideways phone's column is short and narrow: two small lines */
+@media (max-height: 520px) {
+  .feed-line:nth-child(n + 3) {
+    display: none;
+  }
+
+  .feed-line {
+    padding: 3px 9px;
+    font-size: 12px;
+  }
+}
+
+/* The big words for the player they are about: what knocked them out, or their revenge. Over the middle of the ice
+   for a moment, like the 3-2-1, and well clear of the hint at the bottom */
+.told {
+  position: fixed;
+  left: 50%;
+  top: 38%;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  animation: told 2.2s ease-out both;
+}
+
+.told b {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: min(9vw, 40px);
+  line-height: 1.08;
+  color: var(--ice);
+  text-wrap: balance;
+  text-shadow:
+    2px 0 0 var(--sea-deep),
+    -2px 0 0 var(--sea-deep),
+    0 2px 0 var(--sea-deep),
+    0 -2px 0 var(--sea-deep),
+    2px 2px 0 var(--sea-deep),
+    -2px 2px 0 var(--sea-deep),
+    2px -2px 0 var(--sea-deep),
+    -2px -2px 0 var(--sea-deep),
+    0 5px 0 rgba(8, 38, 54, 0.55);
+}
+
+.told.glad b {
+  color: var(--sun);
+}
+
+/* Long words get smaller letters, so they take two rows at most on a phone */
+.told.long b {
+  font-size: min(6.8vw, 32px);
+}
+
+/* On a screen wider than it is tall the knockout lines stack in a column at the left. The big words keep clear of it,
+   and of as much at the right */
+@media (min-aspect-ratio: 5/4) {
+  .told {
+    max-width: calc(100% - 2 * min(260px, 20vw) - 64px);
+  }
+}
+
+/* A sideways phone leaves them a narrow strip, which long words fill in two rows at this size */
+@media (max-height: 520px) {
+  .told.long b {
+    font-size: 26px;
+  }
+}
+
+.told span {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--sea-deep);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+@keyframes told {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+  9% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  82% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -64%) scale(1);
+  }
+}
+
+/* The banner over the last knockout's slow motion, low on the screen so the fall in the middle shows */
+.final-call {
+  position: fixed;
+  left: 50%;
+  bottom: max(150px, 19%);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+  font-family: var(--display);
+  font-size: min(11vw, 52px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--sun);
+  text-align: center;
+  text-shadow:
+    3px 0 0 var(--sea-deep),
+    -3px 0 0 var(--sea-deep),
+    0 3px 0 var(--sea-deep),
+    0 -3px 0 var(--sea-deep),
+    2px 2px 0 var(--sea-deep),
+    -2px 2px 0 var(--sea-deep),
+    2px -2px 0 var(--sea-deep),
+    -2px -2px 0 var(--sea-deep),
+    0 7px 0 rgba(8, 38, 54, 0.55);
+  transform: translateX(-50%);
+  animation: final-in 0.35s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+
+@keyframes final-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.7);
+  }
+}
+
+/* The slow motion fills the screen with the last two penguins, so the hint steps aside while its banner shows */
+body:has(.final-call:not([hidden])) .hint {
+  visibility: hidden;
+}
+
+/* A card says how the round went. The hud is drawn over the cards, so the last knockout's line would lie on one */
+body:has(> .overlay:not([hidden])) .feed {
+  display: none;
+}
+
+/* A sideways phone has no room under the middle of the ice, so the banner sits under the bar */
+@media (max-height: 520px) {
+  .final-call {
+    top: calc(max(12px, var(--safe-top)) + 50px);
+    bottom: auto;
+    font-size: 34px;
+  }
+}
+
+/* Only fades, for people who turned motion down */
+@media (prefers-reduced-motion: reduce) {
+  .feed-line {
+    animation: feed-out 0.3s ease-in 2.9s forwards;
+  }
+
+  .told {
+    animation-name: told-fade;
+  }
+
+  .final-call {
+    animation: none;
+  }
+}
+
+@keyframes told-fade {
+  0%,
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

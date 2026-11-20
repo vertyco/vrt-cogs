@@ -161,6 +161,7 @@ tests/
 !swearjar/tests/
 !activityhub/tests/
 !marblemunch/tests/
+!penguinwars/tests/
 !tanks/tests/
 !boulderbash/tests/
 !vegas/tests/

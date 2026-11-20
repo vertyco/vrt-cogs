@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Penguin Wars</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="game" aria-label="Penguin Wars game"></canvas>
+    <div id="tags"></div>
+
+    <div class="hud">
+      <div class="bar" id="bar">
+        <button class="icon-btn" id="back" type="button" aria-label="Back to the menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <div class="chip" id="round" hidden><span class="dots" id="dots"></span><span id="left"></span></div>
+        <span class="grow"></span>
+        <button class="icon-btn" id="open-settings" type="button" aria-label="Prices" hidden>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.4"/><path d="M12 3v2.6M12 18.4V21M3 12h2.6M18.4 12H21M5.6 5.6l1.9 1.9M16.5 16.5l1.9 1.9M5.6 18.4l1.9-1.9M16.5 7.5l1.9-1.9"/></svg>
+        </button>
+        <button class="icon-btn" id="open-tuning" type="button" aria-label="Tuning sliders" hidden>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.6" fill="currentColor"/><circle cx="15" cy="17" r="2.6" fill="currentColor"/></svg>
+        </button>
+        <button class="icon-btn" id="mute" type="button" aria-label="Sound" aria-expanded="false" aria-controls="sound-panel">
+          <svg id="sound-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+          <svg id="sound-off" hidden width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+        </button>
+      </div>
+      <div class="watching" id="watching" hidden></div>
+      <div class="extras">
+        <div class="calls">
+          <div class="twist-call" id="twist-call" hidden aria-live="polite">
+            <b id="twist-name"></b>
+            <span id="twist-line"></span>
+          </div>
+          <div class="map-call" id="map-call" hidden aria-live="polite">
+            <b id="map-name"></b>
+            <span id="map-line"></span>
+          </div>
+          <div class="feed" id="feed" role="log" aria-live="polite"></div>
+        </div>
+        <button class="chip crate-btn" id="drop-crate" type="button" hidden>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="9" width="17" height="11.5" rx="2"/><path d="M3.5 13.5h17M12 9v11.5M12 9C10 5.5 6.5 5 6.5 7s3 2 5.5 2zM12 9c2-3.5 5.5-4 5.5-2s-3 2-5.5 2z"/></svg>
+          <span id="crate-text"></span>
+        </button>
+        <button class="chip crate-btn snow-btn" id="throw-snow" type="button" aria-pressed="false" hidden>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="13.5" cy="12" r="7" fill="currentColor"/><path d="M2 8.5h3.5M1.5 12h3M2 15.5h3.5"/></svg>
+          <span id="snow-text"></span>
+        </button>
+      </div>
+      <div class="foot">
+        <div class="chip hint gone" id="hint"></div>
+        <button class="trophy shop-button" id="watch-shop" type="button" hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 4h8a1 1 0 0 1 1 1v9.5H7V5a1 1 0 0 1 1-1z"/><rect x="3" y="15.5" width="18" height="3.6" rx="1.8"/></svg>
+          Looks
+        </button>
+      </div>
+    </div>
+
+    <div class="count" id="count" hidden aria-live="polite"></div>
+    <div class="snow-ping" id="snow-ping" hidden></div>
+    <div class="told" id="told" hidden aria-live="polite">
+      <b id="told-head"></b>
+      <span id="told-line" hidden></span>
+    </div>
+    <div class="final-call" id="final-call" hidden>Final knockout</div>
+
+    <div class="overlay" id="title" hidden>
+      <div class="card" role="dialog" aria-labelledby="title-head">
+        <h1 id="title-head">Penguin Wars</h1>
+        <p>Knock everyone else into the sea. The ice sinks from the edges in. The last penguin on it wins.</p>
+        <ol class="steps">
+          <li><b>1</b>Drag back anywhere, then let go to belly-slide</li>
+          <li><b>2</b>Tap to brace: anyone who slides into you bounces off</li>
+          <li><b>3</b>Grab a fish for one extra-heavy slide</li>
+          <li><b>4</b>Knocked in? You come back as a seal. Tap near the edge to splash penguins in</li>
+        </ol>
+        <p class="stats" id="starting" hidden></p>
+        <p class="next-twist" id="title-twist" hidden></p>
+        <ul class="ice" id="ice" hidden></ul>
+        <div class="btns">
+          <button class="play" id="go" type="button">Play</button>
+          <button class="play" id="start" type="button" hidden>Start now</button>
+          <button class="plain" id="stand" type="button" hidden>Leave</button>
+          <span class="pair">
+            <button class="trophy" id="open-board" type="button" aria-label="Leaderboard">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z" fill="currentColor"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 14v4M8 20h8"/></svg>
+            </button>
+            <button class="trophy party-button" id="open-party" type="button" aria-label="Party round" hidden>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4.5-12 7.5 7.5z" fill="currentColor"/><path d="M14 4.5c1.5 1 1.5 2.5.5 4M19.5 10c-1.5-.5-2.5 0-3.5 1M18 3.5v.1M20.5 6.5v.1M13.5 9.5v.1"/></svg>
+            </button>
+            <button class="trophy" id="open-profile" type="button" aria-label="Your profile">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M4 20.5c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/></svg>
+            </button>
+            <button class="trophy shop-button" id="open-shop" type="button">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 4h8a1 1 0 0 1 1 1v9.5H7V5a1 1 0 0 1 1-1z"/><rect x="3" y="15.5" width="18" height="3.6" rx="1.8"/></svg>
+              Looks
+            </button>
+          </span>
+        </div>
+        <p class="note" id="note" hidden></p>
+      </div>
+    </div>
+
+    <div class="overlay" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="end-head">
+        <h2 id="end-head"></h2>
+        <p id="end-text"></p>
+        <p class="stats" id="end-stats"></p>
+        <p class="stats" id="end-next" hidden></p>
+        <p class="unlocked" id="end-unlocked" hidden></p>
+        <p class="next-twist" id="end-twist" hidden></p>
+        <div class="btns">
+          <button class="play" id="again" type="button">Play again</button>
+          <button class="trophy party-button" id="end-party" type="button" aria-label="Party round" hidden>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4.5-12 7.5 7.5z" fill="currentColor"/><path d="M14 4.5c1.5 1 1.5 2.5.5 4M19.5 10c-1.5-.5-2.5 0-3.5 1M18 3.5v.1M20.5 6.5v.1M13.5 9.5v.1"/></svg>
+          </button>
+          <button class="trophy shop-button" id="end-shop" type="button">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 4h8a1 1 0 0 1 1 1v9.5H7V5a1 1 0 0 1 1-1z"/><rect x="3" y="15.5" width="18" height="3.6" rx="1.8"/></svg>
+            Looks
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="message" hidden>
+      <div class="card" role="alertdialog" aria-labelledby="message-head">
+        <h2 id="message-head">Sorry!</h2>
+        <p id="message-text"></p>
+        <div class="btns"><button class="play" id="message-back" type="button">Back to the menu</button></div>
+      </div>
+    </div>
+
+    <dialog class="board" id="board" aria-labelledby="board-head">
+      <h2 id="board-head">Leaderboard</h2>
+      <p class="dim">This server's top 10 by wins. Knockouts break ties. Rounds need two people.</p>
+      <ol class="leaders" id="leaders"></ol>
+      <p class="you" id="you"></p>
+      <div class="btns">
+        <button class="play" id="invite" type="button" hidden>Invite friends</button>
+        <button class="plain" id="close-board" type="button">Close</button>
+      </div>
+    </dialog>
+
+    <dialog class="shop" id="shop" aria-labelledby="shop-head">
+      <div class="shop-box">
+        <div class="shop-window" id="shop-window" aria-label="Your penguin. Drag to turn it"></div>
+        <div class="shop-panel">
+          <div class="shop-top">
+            <h2 id="shop-head">Looks</h2>
+            <p class="shop-balance" id="shop-balance"></p>
+          </div>
+          <div class="shop-tabs" id="shop-tabs" role="tablist" aria-label="What to change"></div>
+          <div class="shelf" id="shop-shelf" role="tabpanel"></div>
+          <div class="shop-foot">
+            <p class="shop-note" id="shop-note" role="status"></p>
+            <button class="play" id="shop-act" type="button" hidden></button>
+            <button class="plain" id="close-shop" type="button">Close</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="shop profile" id="profile" aria-labelledby="profile-name">
+      <div class="shop-box">
+        <div class="shop-window" id="profile-window" aria-label="Their penguin. Drag to turn it"></div>
+        <div class="shop-panel">
+          <div class="profile-who">
+            <h2 id="profile-name"></h2>
+            <p class="profile-title" id="profile-title" hidden></p>
+          </div>
+          <div class="profile-body" id="profile-body" hidden>
+            <ul class="counts" id="profile-counts"></ul>
+            <p class="profile-line" id="profile-server"></p>
+            <p class="profile-line" id="profile-nemesis"></p>
+            <h3 id="profile-earned-head"></h3>
+            <ul class="earned-names" id="profile-earned"></ul>
+            <h3 id="profile-next-head">Next up</h3>
+            <ul class="earned" id="profile-next"></ul>
+          </div>
+          <div class="shop-foot">
+            <p class="shop-note" id="profile-note" role="status"></p>
+            <button class="plain" id="close-profile" type="button">Close</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="board party" id="party" aria-labelledby="party-head">
+      <h2 id="party-head">Party round</h2>
+      <p class="dim">Pick what is different about the next round. Everyone plays it.</p>
+      <p class="cost" id="party-cost"></p>
+      <div class="twists" id="twists"></div>
+      <p class="line status" id="party-status" role="status"></p>
+      <div class="btns">
+        <button class="plain" id="close-party" type="button">Close</button>
+      </div>
+    </dialog>
+
+    <dialog class="board settings" id="settings" aria-labelledby="settings-head">
+      <h2 id="settings-head">Prices</h2>
+      <p class="dim">Leave a box empty to not sell that. What people already bought stays theirs.</p>
+      <p class="line" id="settings-global" hidden>The bank is global, so these prices apply in every server.</p>
+      <div class="prices" id="prices"></div>
+      <p class="line" id="settings-today"></p>
+      <p class="line status" id="settings-status" role="status"></p>
+      <div class="btns">
+        <button class="play" id="save-settings" type="button">Save</button>
+        <button class="plain" id="reset-settings" type="button">Reset to defaults</button>
+        <button class="plain" id="close-settings" type="button">Close</button>
+      </div>
+    </dialog>
+
+    <dialog class="tuning" id="tuning" aria-labelledby="tuning-head">
+      <div class="tuning-top">
+        <h2 id="tuning-head">Tuning</h2>
+        <div class="tuning-buttons">
+          <button class="plain" id="reset-tuning" type="button">Reset</button>
+          <button class="plain" id="close-tuning" type="button" aria-label="Close tuning">Close</button>
+        </div>
+      </div>
+      <p class="tuning-status" id="tuning-status" role="status"></p>
+      <div class="sliders" id="sliders"></div>
+    </dialog>
+
+    <dialog class="sound-panel" id="sound-panel" aria-label="Sound">
+      <div class="sound-row">
+        <span id="sfx-name">Sound effects</span>
+        <button class="switch" id="sfx-switch" type="button" role="switch" aria-checked="true" aria-labelledby="sfx-name"><span class="knob"></span></button>
+        <input class="volume" id="sfx-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Sound effects volume" />
+      </div>
+    </dialog>
+
+    <p class="banner" id="banner" role="status" hidden>Reconnecting...</p>
+    <p class="toast" id="toast" role="status" hidden></p>
+
+    <script src="vendor/playcanvas.min.js.gz"></script>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

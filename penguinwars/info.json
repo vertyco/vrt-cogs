@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "A penguin knockout game for ActivityHub. Up to six penguins slide into each other on a shrinking ice floe, and the last one standing wins. CPUs fill empty seats. Works on phones held either way and on desktop. Needs ActivityHub 0.8.0 or later.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores each player's Discord user ID, the looks they bought with credits, which ones they wear, their play counts (rounds, wins, knockouts and the like), which unlock other looks, and how many times each other player knocked them out, with that player's ID and name. It keeps the name and win, knockout and round counts of players on each server's leaderboard. It also keeps the IDs of players who bought something with credits, so admins can see how many bought today. That list stays until the next purchase on a later day replaces it. All of it is deleted when a user requests data deletion.",
+  "hidden": false,
+  "install_msg": "Thank you for installing Penguin Wars!\n\nPenguin Wars is a game for ActivityHub, which must be installed and set up first:\n`[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`\n`[p]cog install vrt-cogs activityhub`\n`[p]load activityhub`\nThen follow ActivityHub's README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nOnce both are loaded, Penguin Wars shows up in the hub's menu.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "A penguin knockout game for ActivityHub",
+  "tags": ["activity", "games", "fun", "multiplayer", "vert"],
+  "type": "COG"
+}
