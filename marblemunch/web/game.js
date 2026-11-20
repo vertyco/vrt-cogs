@@ -317,13 +317,18 @@ function showRate() {
 
 // ---------- Who's here ----------
 
+// A long name cut by whole characters, the way the board's name tags show it
+function shortName(name) {
+  const letters = characters(name);
+  return letters.length > TAG_NAME_MAX ? `${letters.slice(0, TAG_NAME_MAX - 1).join("")}…` : name;
+}
+
 // A name tag over a hippo. Long names are cut so a tag stays near its own hippo, and "(away)" goes under the name
 function tagFor(seat) {
   if (seat.kind === "empty") {
     return "";
   }
-  const letters = characters(seat.name);
-  const name = letters.length > TAG_NAME_MAX ? `${letters.slice(0, TAG_NAME_MAX - 1).join("")}…` : seat.name;
+  const name = shortName(seat.name);
   return seat.away ? `${name}\n(away)` : name;
 }
 
@@ -362,9 +367,12 @@ function report(state) {
   }
 }
 
-// The game's connection is gone for good, so a friend's Join has nothing to interrupt
+// The game's connection is gone for good, so a friend's Join has nothing to interrupt, and the buttons that need it go
 function leaveRound() {
   page.closed = true;
+  for (const id of ["cashin", "start", "stand", "munch"]) {
+    $(id).hidden = true;
+  }
   if (page.hub.status) {
     tell("Not connected", null, false);
   }
@@ -391,7 +399,8 @@ function renderWatchers() {
   }
   page.watchLook = look;
   const box = $("watching");
-  box.hidden = !count;
+  // A player alone sees no row of just their own face; the people button offers Invite instead
+  box.hidden = !count || (watchers.length === 1 && watchers[0].you);
   if (!count) {
     box.replaceChildren();
     return;
@@ -456,7 +465,7 @@ function scoreCard(seat, index, score) {
   // Names come from Discord, so they only ever go in as text
   name.textContent = seat.kind === "empty" ? "Empty seat" : seat.name;
   if (seat.kind === "npc") {
-    name.append(tag("NPC"));
+    name.append(tag("CPU"));
   }
   if (seat.away) {
     name.append(tag("Away"));
@@ -496,7 +505,8 @@ function renderStatus(state) {
   const stage = state.stage;
   $("start").hidden = !(seated && stage === "waiting" && state.countdown !== null);
   $("stand").hidden = !(seated && (stage === "waiting" || stage === "results"));
-  $("munch").hidden = !(seated && stage === "playing");
+  // Shown from "Get ready", so the board doesn't jump when play starts. Presses only count once it has
+  $("munch").hidden = !(seated && (stage === "playing" || stage === "starting"));
   $("open-leaderboard").hidden = stage !== "waiting";
   $("hint").textContent = hintFor(state);
   showLeft(state.board);
@@ -514,7 +524,10 @@ function hintFor(state) {
       ? "Hold the munch button to stretch out. Let go to munch."
       : "Hold Space or press the board to stretch out. Let go to munch.";
   }
-  return "You're in! The round starts soon, or press Start to go now.";
+  // Start only shows while waiting
+  return stage === "results"
+    ? "You're in for the next round."
+    : "You're in! The round starts soon, or press Start to go now.";
 }
 
 function overlayText(state) {
@@ -537,7 +550,7 @@ function resultTitle(state) {
   if (state.winners.length > 1) {
     return "It's a tie!";
   }
-  return `${state.seats[state.winners[0]].name} wins!`;
+  return `${shortName(state.seats[state.winners[0]].name)} wins!`;
 }
 
 function showLeft(board) {
@@ -559,8 +572,9 @@ function showOverlay(big, small) {
 function flash(text) {
   showOverlay(text, "");
   clearTimeout(page.flashTimer);
+  // Only while the board still shows this word: a message that replaced it, like a closed connection's, stays
   page.flashTimer = setTimeout(() => {
-    if (page.state?.stage === "playing") {
+    if (page.state?.stage === "playing" && $("overlay-big").textContent === text) {
       showOverlay("", "");
     }
   }, 700);
@@ -592,6 +606,9 @@ function bindButtons() {
     $("payouts-status").textContent = "Reset. Save to keep it.";
   });
   click("close-leaderboard", () => $("leaderboard").close());
+  // The opening button gave up its focus when pressed, so a closed dialog hands it back for the keyboard
+  $("leaderboard").addEventListener("close", () => $("open-leaderboard").focus());
+  $("payouts").addEventListener("close", () => $("open-payouts").focus());
   bindSound();
 }
 

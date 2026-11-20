@@ -1,5 +1,19 @@
 # Marble Munch Changelog
 
+## 0.6.1
+
+Needs ActivityHub 0.8.0 or later.
+
+- Phones held sideways: the page always fits the screen. A crowded score panel scrolls on its own, so Start, Stand up, Cash in, Back and Sound can always be reached, and the round's Hold to munch button no longer covers the panel.
+- Upright phones: the cash-in box takes one row, so the board stays big enough to read the name tags. The Hold to munch button shows from "Get ready", so the board no longer jumps when play starts, and the Reconnecting note sits on the board instead of over the title.
+- A cash-in note with nothing to cash in ("Munch some marbles to earn credits." or "No cash-ins left today.") steps aside while a round is on, so the board keeps its room. A round that can still be cashed in stays up, as before.
+- Long messages wrap inside the board instead of running off the screen, and taps go through them to the hippos. A long winner's name is shortened the same way as on the board.
+- Taps answer at once on iPhones, with no wait for a possible double tap.
+- The Leaderboard and Payouts windows fit on phones, their Reset and Close buttons look like buttons, and the payout boxes are easier to tap. On a phone held sideways the Payouts window is wider, so its buttons show without scrolling.
+- When the game's connection closes for good, Cash in, Start, Stand up and Hold to munch go away, and the "Sorry!" message stays on the board.
+- Computer players are labeled CPU. A player alone no longer sees "1 watching" with their own face, and the page says "Loading..." until the game arrives.
+- The people button matches the game's buttons in size and color, watcher faces are easier to tap, and Back, Sound, the payout gear and faces show when pressed. Back is always the first button, and closing a window puts the keyboard back on the button that opened it.
+
 ## 0.6.0
 
 Needs ActivityHub 0.8.0 or later.

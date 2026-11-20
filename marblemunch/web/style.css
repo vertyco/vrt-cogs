@@ -47,6 +47,8 @@ body {
   color: var(--paper);
   font-family: "Fredoka", "Trebuchet MS", "Segoe UI", sans-serif;
   overflow: hidden;
+  /* No wait for a second tap that would zoom, so every tap answers at once */
+  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -66,6 +68,8 @@ body {
   display: grid;
   gap: 16px;
   grid-template-columns: minmax(170px, 1fr) minmax(0, 2.6fr) minmax(210px, 1fr);
+  /* The one row is the screen's height, however tall a column's content is */
+  grid-template-rows: minmax(0, 1fr);
   grid-template-areas: "intro play side";
 }
 
@@ -134,6 +138,13 @@ h1 {
 
 .icon-button.muted .off {
   display: block;
+}
+
+/* Before the open sound button's rule, which wins over it */
+.icon-button:active,
+.watching .face:active {
+  transform: translateY(2px);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .icon-button[aria-expanded="true"] {
@@ -294,7 +305,9 @@ h1 {
   display: grid;
   place-content: center;
   gap: 4px;
+  padding: 0 12px;
   text-align: center;
+  overflow-wrap: anywhere;
   pointer-events: none;
 }
 
@@ -313,26 +326,33 @@ h1 {
   text-shadow: 0 2px 0 var(--purple-deep);
 }
 
+/* A long one wraps inside the board. Presses go through it to the board under it */
 .toast {
   position: absolute;
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100% - 24px);
   margin: 0;
   padding: 10px 18px;
-  border-radius: 999px;
+  border-radius: 20px;
   background: var(--paper);
   color: var(--ink);
   font-weight: 600;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
   box-shadow: 0 4px 0 var(--purple-deep);
+  pointer-events: none;
 }
 
+/* Centered when it fits. A column taller than the window starts at the top, so the player's own card stays in view */
 .side {
   grid-area: side;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: safe center;
   gap: 12px;
   min-width: 0;
 }
@@ -468,6 +488,12 @@ h1 {
   display: none;
 }
 
+/* A note with nothing to cash in steps aside for the round, so the board keeps its room. A round that can still be
+   cashed in stays, since the next finished round is what replaces it */
+.app:is([data-stage="starting"], [data-stage="playing"]) .cashin:has(.button[hidden]) {
+  display: none;
+}
+
 .cashin-text {
   margin: 0;
   font-weight: 600;
@@ -543,8 +569,47 @@ h1 {
 
 /* A phone held sideways: smaller score cards, so the munch button in the corner doesn't cover them */
 @media (orientation: landscape) and (pointer: coarse) {
+  /* A crowded panel scrolls inside the screen. A scrolling box starts touch-action over (WebKit), so it says it again.
+     It cuts off whatever reaches past it, so 5 px of padding, given back by the margin, keeps the yellow ring around
+     the player's own card inside */
   .side {
     justify-content: flex-start;
+    min-height: 0;
+    margin: -5px;
+    padding: 5px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: manipulation;
+    container-type: inline-size;
+  }
+
+  /* The panel cuts off whatever reaches past it, so a long arrival note wraps at the panel's width, not its button's */
+  .side .hub-note {
+    width: max-content;
+    max-width: 100cqw !important;
+    white-space: normal;
+  }
+
+  /* Room for the munch button under the panel, only while it shows: its 112 px and 18 px from the edge, less the
+     page's 12 px. A margin, since a scrolling panel would still show its content in its own padding */
+  .app:has(> .munch:not([hidden])) .side {
+    margin-bottom: 118px;
+  }
+
+  /* A smaller people button there, so a player alone sees it whole above the munch button */
+  .app:has(> .munch:not([hidden])) .people {
+    --hub-people-size: 36px;
+  }
+
+  /* A dialog may fill the screen's height but for a sliver, so its buttons show without scrolling */
+  .leaderboard {
+    max-height: calc(100% - 8px);
+  }
+
+  /* The payout settings run wide and shallow, since their long note takes fewer lines that way */
+  .leaderboard.payouts {
+    width: min(92vw, 720px);
+    padding: 16px 22px;
   }
 
   .scores {
@@ -571,9 +636,10 @@ h1 {
   }
 }
 
+/* Over the top of the board, like the toast, so an upright phone's title row stays clear */
 .banner {
-  position: fixed;
-  top: calc(var(--safe-top) + 12px);
+  position: absolute;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
@@ -584,7 +650,10 @@ h1 {
   font-weight: 600;
 }
 
+/* The padding counts inside the width, so the browser's own size limits hold. An open dialog scrolls, which starts
+   touch-action over */
 .leaderboard {
+  box-sizing: border-box;
   width: min(92vw, 460px);
   border: 0;
   border-radius: 24px;
@@ -593,12 +662,19 @@ h1 {
   color: var(--ink);
   font-family: inherit;
   box-shadow: 0 8px 0 var(--purple-deep);
+  touch-action: manipulation;
+}
+
+/* White buttons would vanish on the white dialog */
+.leaderboard .button:not(.primary) {
+  background: var(--paper-tint);
 }
 
 .payout-switch {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-height: 44px;
   margin: 0 0 12px;
   font-weight: 600;
 }
@@ -628,6 +704,7 @@ h1 {
 .payout-numbers input {
   width: 100%;
   min-width: 0;
+  min-height: 44px;
   box-sizing: border-box;
   padding: 8px 10px;
   border: 2px solid var(--paper-tint);
@@ -666,6 +743,7 @@ h1 {
   gap: 6px;
   max-height: 50vh;
   overflow-y: auto;
+  touch-action: manipulation;
 }
 
 .leaders li {
@@ -779,6 +857,22 @@ h1 {
     font-size: 1.3rem;
   }
 
+  /* The text and the Cash in button share one row, so the board keeps its height */
+  .cashin {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .cashin-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.85rem;
+  }
+
+  .cashin .button {
+    flex: none;
+  }
+
   .munch {
     position: static;
     grid-area: munch;
@@ -790,8 +884,12 @@ h1 {
 
 /* ---------- Who's here ---------- */
 
-/* The watchers, then the hub's people button at the end of the row */
+/* The watchers, then the hub's people button at the end of the row. The button is as big as the game's own, and its
+   focus ring and arrival notes use the game's yellow */
 .people {
+  --hub-people-size: 44px;
+  --accent: var(--yellow);
+  --on-accent: var(--ink);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -839,6 +937,33 @@ h1 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* A finger gets a 44 px circle around each face, which still looks 26 px. The circle is measured from inside the
+   face's 2 px border, so 11 px each way. The circles sit under every face, so a press on a face is always that face
+   and only the gaps between faces go to the nearest circle */
+@media (pointer: coarse) {
+  .watching {
+    position: relative;
+    z-index: 0;
+  }
+
+  .watching .face {
+    position: relative;
+    overflow: visible;
+  }
+
+  .watching .face::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -11px;
+    border-radius: 50%;
+  }
+
+  .watching .face img {
+    border-radius: 50%;
+  }
 }
 
 .watching .more,
