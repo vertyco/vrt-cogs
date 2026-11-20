@@ -101,8 +101,8 @@
 .v128 { background: #f6e05e; }
 .v256 { background: #f6ad55; }
 .v512 { background: #fc8181; }
-.v1024 { background: #f687b3; color: #ffffff; }
-.v2048 { background: #b794f4; color: #ffffff; }
+.v1024 { background: #f687b3; }
+.v2048 { background: #b794f4; }
 .vbig { background: #805ad5; color: #ffffff; }
 
 /* The big tiles glow in their own color */
@@ -141,6 +141,16 @@
   to {
     opacity: 0;
     transform: translateY(-28px);
+  }
+}
+
+/* A short screen leaves the board only the stage's 12 px padding above it, so the points start inside the board and
+   finish their rise before the stage's edge cuts them off. They start over the top-right cell, so they draw above a
+   tile just merged there (z-index 1) */
+@media (max-height: 520px) {
+  .gain {
+    top: 18px;
+    z-index: 2;
   }
 }
 

@@ -24,6 +24,34 @@ canvas {
     0 18px 50px rgba(0, 0, 0, 0.5);
 }
 
+/* The hint and banners sit over the board, not the middle of the stage, which on a sideways touch screen is over
+   the arrow pad. The game sets the board's middle and width as it sizes it. The hint may take the board's whole width,
+   so "Tap an arrow or swipe to start" stays on one line over the narrower board left beside the row of scores */
+#stage .arcade-hint,
+#stage .arcade-banner {
+  left: var(--board-x, 50%);
+}
+
+#stage .arcade-hint {
+  max-width: var(--board-width, 100%);
+}
+
+#stage .arcade-banner {
+  max-width: calc(var(--board-width, 100%) - 16px);
+}
+
+/* "You filled the board!" is wider than an upright phone's board at the banner's usual size, so its title is a little
+   smaller there and keeps to one line */
+@media (max-width: 460px) {
+  #stage .arcade-banner {
+    padding: 10px 18px;
+  }
+
+  #stage .arcade-banner strong {
+    font-size: 1.6rem;
+  }
+}
+
 /* On a touch screen the hint moves to the top, clear of the arrow pad */
 #stage.touch .arcade-hint {
   top: 14px;

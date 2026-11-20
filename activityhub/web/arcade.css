@@ -81,9 +81,10 @@ button:focus-visible {
 
 /* ---------- Top bar ---------- */
 
+/* Above the screens' dark layer (10), so the hub's arrival note hanging below the people button stays bright */
 .arcade-bar {
   position: relative;
-  z-index: 5;
+  z-index: 11;
   flex: none;
   display: flex;
   align-items: center;
@@ -106,6 +107,12 @@ button:focus-visible {
   color: var(--arcade-muted);
 }
 
+.arcade-back,
+.arcade-icon,
+.arcade-bar .hub-people-button {
+  transition: transform 0.12s;
+}
+
 .arcade-back {
   padding: 0 12px 0 6px;
   font-weight: 600;
@@ -123,6 +130,66 @@ button:focus-visible {
     background: var(--arcade-line);
     color: var(--arcade-text);
   }
+}
+
+/* The press look, for a finger too */
+.arcade-back:active,
+.arcade-icon:active,
+.arcade-bar .hub-people-button:active {
+  background: var(--arcade-line);
+  color: var(--arcade-text);
+  transform: scale(0.94);
+}
+
+/* A finger gets a tap area at least 44 px tall, drawn as nothing, so the bar looks the same. The sides stay short of
+   the gap between buttons, so no tap lands on a neighbour */
+@media (pointer: coarse) {
+  .arcade-back,
+  .arcade-icon,
+  .arcade-bar .hub-people-button {
+    position: relative;
+  }
+
+  .arcade-back::after,
+  .arcade-icon::after,
+  .arcade-bar .hub-people-button::after {
+    content: "";
+    position: absolute;
+    inset: -5px -2px;
+  }
+
+  /* The people button is shorter, and its border sits outside the area the inset counts from */
+  .arcade-bar .hub-people-button::after {
+    inset: -6px -2px;
+  }
+}
+
+/* The sound button's panel: the sound effects switch, with their volume under it. It hangs below the bar's right end.
+   It is part of the bar, so it shows over a screen's dark layer, and its z-index of -1 inside the bar keeps the hub's
+   arrival notes on top of it */
+.arcade-sound-panel {
+  position: fixed;
+  top: calc(var(--arcade-top) + 6px);
+  right: calc(8px + var(--arcade-safe-right));
+  z-index: -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(240px, calc(100vw - 16px - var(--arcade-safe-left) - var(--arcade-safe-right)));
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  background: var(--arcade-card);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  animation: card-in 0.16s ease-out;
+}
+
+.arcade-volume {
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  accent-color: var(--arcade-accent);
+  cursor: pointer;
 }
 
 .arcade-name {
@@ -248,10 +315,13 @@ button:focus-visible {
   }
 }
 
+/* As wide as its words, up to the stage less a margin: without a width, left: 50% would leave it half the stage */
 .arcade-banner {
   position: absolute;
   top: 32%;
   left: 50%;
+  width: max-content;
+  max-width: calc(100% - 32px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -302,6 +372,7 @@ button:focus-visible {
   position: absolute;
   bottom: 18px;
   left: 50%;
+  width: max-content;
   max-width: calc(100% - 32px);
   padding: 7px 16px;
   border: 1px solid var(--arcade-line);
@@ -320,6 +391,11 @@ button:focus-visible {
   50% {
     opacity: 0.6;
   }
+}
+
+/* A card's own buttons are the only instructions while it is open */
+body:has(.arcade-screen:not([hidden])) .arcade-hint {
+  visibility: hidden;
 }
 
 /* ---------- Screens ---------- */
@@ -362,6 +438,11 @@ button:focus-visible {
   }
 }
 
+/* The payout settings open the same way as a card */
+.arcade-payouts[open] {
+  animation: card-in 0.16s ease-out;
+}
+
 .arcade-logo {
   width: 64px;
   height: 64px;
@@ -389,13 +470,15 @@ button:focus-visible {
   color: var(--arcade-bad);
 }
 
+/* As wide as its rows, so its auto margins centre it on the card */
 .arcade-controls {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 6px 10px;
   margin: 14px auto 6px;
   padding: 0;
-  max-width: 300px;
+  width: max-content;
+  max-width: min(300px, 100%);
   list-style: none;
   font-size: 0.85rem;
   text-align: left;
@@ -497,6 +580,18 @@ button:focus-visible {
   justify-content: center;
   gap: 10px;
   margin-top: 16px;
+}
+
+/* A card's last button row stays on the card's bottom edge, over its bottom padding, while everything above it scrolls
+   under it, so a card too tall for the screen never hides Play again or Menu. The offset counts from inside the card's
+   padding, so -20px puts the row on the edge itself. A card that fits looks the same: the 8px margin merges with the
+   one above it (8px at most), and the 8px padding makes up the usual 16px gap, a band the list scrolls under */
+.arcade-card > .arcade-actions:last-child {
+  position: sticky;
+  bottom: -20px;
+  margin: 8px -22px -20px;
+  padding: 8px 22px 20px;
+  background: var(--arcade-card);
 }
 
 .arcade-actions button {
@@ -651,6 +746,8 @@ button:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .arcade-card,
+  .arcade-payouts[open],
+  .arcade-sound-panel,
   .arcade-hint,
   .arcade-pass.show,
   .arcade-score.bump {
@@ -754,14 +851,15 @@ button:focus-visible {
   font-weight: 700;
 }
 
-/* "You passed Ann!" over the playfield, apart from the game's own hint. A long name is cut short, not the stage */
+/* "You passed Ann!" over the strip row, off the playfield. A pass needs someone with a score, so the strip is showing.
+   It sits under the bar, whose arrival notes stay on top. A long name is cut short, not the window */
 .arcade-pass {
-  position: absolute;
-  top: 18%;
+  position: fixed;
+  top: calc(var(--arcade-top) + 4px);
   left: 50%;
-  z-index: 5;
+  z-index: 4;
   max-width: calc(100% - 16px);
-  padding: 8px 16px;
+  padding: 3px 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   border-radius: 999px;
@@ -908,6 +1006,10 @@ button:focus-visible {
   color: var(--arcade-muted);
   font-size: 0.9rem;
   text-align: center;
+}
+
+.arcade-payouts-status.arcade-error {
+  color: var(--arcade-bad);
 }
 
 .arcade-payouts .arcade-actions {

@@ -12,6 +12,30 @@ body {
   bottom: 30%;
 }
 
+/* The hint and banners keep inside the playfield's walls, which on a wide, short screen are far narrower than the
+   stage. The game sets the field's width as it sizes it */
+#stage .arcade-hint,
+#stage .arcade-banner {
+  max-width: min(calc(100% - 32px), calc(var(--field-width, 100%) - 16px));
+}
+
+/* A short stage leaves too little room under the bricks for both, so the hint moves down to just above the ball. The
+   field fills the stage's height here, with the ball's top 9.5% of it from the bottom. The field is narrow there too,
+   so the banner's title is smaller and "Level cleared!" keeps to one line */
+@media (max-height: 520px) {
+  #stage .arcade-banner {
+    padding: 10px 14px;
+  }
+
+  #stage .arcade-banner strong {
+    font-size: 1.4rem;
+  }
+
+  #stage .arcade-hint {
+    bottom: 12%;
+  }
+}
+
 /* The pointer is the paddle while playing, so the arrow cursor would only cover the ball */
 canvas {
   display: block;
@@ -19,4 +43,9 @@ canvas {
   box-shadow:
     0 0 0 1px #2d3348,
     0 18px 60px rgba(0, 0, 0, 0.55);
+}
+
+/* Until the game sizes it, the canvas is the browser's default empty box. The game sets its size as it starts */
+canvas:not([style]) {
+  visibility: hidden;
 }

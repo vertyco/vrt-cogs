@@ -28,7 +28,15 @@ const MAX_SPEED = 620;
 const MAX_BOUNCE = (60 * Math.PI) / 180;
 const MIN_VERTICAL = 0.3;
 const READY_HINT = "Click, tap or press Space to launch";
-const READY_HINT_TOUCH = "Tap to launch, then drag anywhere to move";
+const READY_HINT_TOUCH = "Drag to aim, tap to launch";
+// A finger that slid less than this far, in screen pixels, before lifting was a tap
+const TAP_SLOP = 10;
+// The level, lives and power-up timers are drawn bigger on a small screen, up to this many times their size, so the
+// level reads about this many pixels tall there
+const HUD_MIN_PX = 10;
+const HUD_MAX_SCALE = 1.7;
+// How long the last lost ball shows before the Game over card, the same wait as Snake's crash
+const OVER_MS = 500;
 
 // Score values, mirrored in bundled/bricks.py
 const POINTS_PER_BRICK = 10;
@@ -64,6 +72,7 @@ const back = backdrop.getContext("2d");
 
 const game = {
   mode: "idle", // idle | ready | playing | paused | over
+  round: 0, // counts rounds, so a round's delayed end can't end the one after it
   levels: [],
   level: 0,
   levelsCleared: 0,
@@ -134,6 +143,7 @@ function proof() {
 }
 
 function play() {
+  game.round += 1;
   game.level = 0;
   game.levelsCleared = 0;
   game.bricks = 0;
@@ -281,7 +291,13 @@ function loseLife() {
   game.mode = "over";
   arcade.hint("");
   sounds.over();
-  arcade.over(game.score, proof());
+  // The player may end this round and start another during the wait, and this one's results must not end that
+  const round = game.round;
+  setTimeout(() => {
+    if (game.round === round) {
+      arcade.over(game.score, proof());
+    }
+  }, OVER_MS);
 }
 
 function burst(x, y, color, count) {
@@ -625,15 +641,17 @@ function glow(x, y, paint, radius) {
   ctx.restore();
 }
 
+let hudScale = 1;
+
 function drawHud() {
-  text(`LEVEL ${game.level + 1}`, 16, 26, 14, "#e2e8f0", "left");
+  text(`LEVEL ${game.level + 1}`, 16, 26, 14 * hudScale, "#e2e8f0", "left");
   // Lives as small balls, from the right edge in
   for (let i = 0; i < game.lives; i++) {
-    const x = W - 18 - i * 16;
+    const x = W - (18 + i * 16) * hudScale;
     glow(x, 26, PAINT.ballGlow, BALL_R * 3);
     ctx.fillStyle = "#fefcbf";
     ctx.beginPath();
-    ctx.arc(x, 26, 5, 0, Math.PI * 2);
+    ctx.arc(x, 26, 5 * hudScale, 0, Math.PI * 2);
     ctx.fill();
   }
   drawTimers();
@@ -645,11 +663,13 @@ function drawTimers() {
     ["wide", WIDE_SECONDS],
     ["slow", SLOW_SECONDS],
   ].filter(([kind]) => game.effects[kind] > 0);
+  // Two rows sit further apart as their letters grow
+  const step = 16 + (hudScale - 1) * 10;
   timers.forEach(([kind, total], i) => {
-    const y = timers.length === 1 ? 26 : 18 + i * 16;
+    const y = timers.length === 1 ? 26 : 26 + (i - 0.5) * step;
     const power = POWERS[kind];
-    roundRect(W / 2 - 74, y - 6, 18, 12, 6, power.color);
-    text(power.letter, W / 2 - 65, y + 0.5, 9, "#1a202c");
+    roundRect(W / 2 - 56 - 18 * hudScale, y - 6 * hudScale, 18 * hudScale, 12 * hudScale, 6 * hudScale, power.color);
+    text(power.letter, W / 2 - 56 - 9 * hudScale, y + 0.5, 9 * hudScale, "#1a202c");
     roundRect(W / 2 - 50, y - 3, 124, 6, 3, "rgba(255,255,255,0.1)");
     roundRect(W / 2 - 50, y - 3, 124 * (game.effects[kind] / total), 6, 3, power.color);
   });
@@ -715,7 +735,7 @@ function drawCapsule(capsule) {
   ctx.beginPath();
   ctx.roundRect(-CAPSULE_W / 2 + 0.5, -CAPSULE_H / 2 + 0.5, CAPSULE_W - 1, CAPSULE_H - 1, CAPSULE_H / 2);
   ctx.stroke();
-  text(power.letter, 0, 1, 11, "#1a202c");
+  text(power.letter, 0, 1, 14, "#1a202c");
   ctx.restore();
 }
 
@@ -837,13 +857,15 @@ function aim(event) {
 }
 
 // A finger moves the paddle as far as it moves itself, from wherever it touched, so it never has to cover the
-// paddle or the ball. Going back the other way moves the paddle at once, even after it stopped at a wall
+// paddle or the ball. Going back the other way moves the paddle at once, even after it stopped at a wall. A finger
+// that lifts without having slid launches the ball, so a slide before the launch lines the paddle up first
 let drag = null;
 
 function dragTo(event) {
   const rect = canvas.getBoundingClientRect();
   const [low, high] = paddleLimits();
   game.paddle.x = clamp(game.paddle.x + ((event.clientX - drag.x) / rect.width) * W, low, high);
+  drag.travel += Math.abs(event.clientX - drag.x);
   drag.x = event.clientX;
   wake();
 }
@@ -858,15 +880,18 @@ window.addEventListener("pointermove", (event) => {
 
 stage.addEventListener("pointerdown", (event) => {
   if (event.pointerType === "touch") {
-    drag = { id: event.pointerId, x: event.clientX };
+    drag = { id: event.pointerId, x: event.clientX, travel: 0 };
   } else {
     aim(event);
+    act();
   }
-  act();
 });
 
 window.addEventListener("pointerup", (event) => {
   if (drag && event.pointerId === drag.id) {
+    if (drag.travel < TAP_SLOP) {
+      act();
+    }
     drag = null;
   }
 });
@@ -911,6 +936,9 @@ function resize() {
   const dpr = window.devicePixelRatio || 1;
   canvas.style.width = `${W * scale}px`;
   canvas.style.height = `${H * scale}px`;
+  // The hint and banners keep inside the playfield, which is far narrower than the stage on a wide, short screen
+  stage.style.setProperty("--field-width", `${W * scale}px`);
+  hudScale = clamp(HUD_MIN_PX / (14 * scale), 1, HUD_MAX_SCALE);
   canvas.width = Math.max(1, Math.round(W * scale * dpr));
   canvas.height = Math.max(1, Math.round(H * scale * dpr));
   ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
@@ -926,7 +954,7 @@ const arcade = await startArcade({
   title: "Brick Breaker",
   icon: "icon.svg",
   accent: "#c05621",
-  help: "Bounce the ball off your paddle and break every brick to clear the level. Catch falling power-ups. You have 3 balls.",
+  help: "Bounce the ball off your paddle and break every brick to clear the level. Catch falling power-ups. You have 3 lives.",
   controls: [
     ["Mouse", "Move the paddle", "keys"],
     ["Arrow keys / A D", "Move the paddle", "keys"],

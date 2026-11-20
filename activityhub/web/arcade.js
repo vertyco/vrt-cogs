@@ -15,7 +15,14 @@
 import { connect } from "activityhub";
 
 const MUTE_KEY = "activityhub-arcade-muted";
+// The sound effects' volume, 0 to 100, saved per device next to the switch
+const VOLUME_KEY = "activityhub-arcade-volume";
 const PAUSE_KEYS = ["Escape", "p", "P"];
+// The keys each control on the sound panel uses itself, by its input type, which never reach the game
+const PANEL_KEYS = {
+  range: ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"],
+  checkbox: [" "],
+};
 const BANNER_MS = 1500;
 const COUNT_UP_MS = 700;
 const MEDALS = ["gold", "silver", "bronze"];
@@ -123,6 +130,24 @@ function saveMuted(muted) {
   }
 }
 
+function readVolume() {
+  try {
+    const saved = localStorage.getItem(VOLUME_KEY);
+    const level = saved === null ? 100 : Number(saved);
+    return Number.isFinite(level) ? Math.min(100, Math.max(0, level)) : 100;
+  } catch {
+    return 100;
+  }
+}
+
+function saveVolume(level) {
+  try {
+    localStorage.setItem(VOLUME_KEY, String(level));
+  } catch {
+    // Storage can be blocked in the activity frame; the level still holds until the game closes
+  }
+}
+
 class Arcade {
   constructor(hub, options) {
     this.hub = hub;
@@ -140,6 +165,7 @@ class Arcade {
     this.best = null;
     this.audio = null;
     this.muted = readMuted();
+    this.volume = readVolume();
     this.stage = document.getElementById("stage") || document.body;
     if (options.accent) {
       document.documentElement.style.setProperty("--arcade-accent", options.accent);
@@ -163,12 +189,13 @@ class Arcade {
     this.hintText = el("div", { class: "arcade-hint", "aria-live": "polite" });
     this.hintText.hidden = true;
     this.stage.append(this.hintText);
-    this.passNoteBox = el("div", { class: "arcade-pass", "aria-live": "polite" });
-    this.passNoteBox.hidden = true;
-    this.stage.append(this.passNoteBox);
     this.strip = el("ol", { class: "arcade-live", "aria-label": "Playing here now" });
     this.strip.hidden = true;
     this.bar.after(this.strip);
+    // The passing note sits over the strip, off the playfield, and outside the stage, which shakes
+    this.passNoteBox = el("div", { class: "arcade-pass", "aria-live": "polite" });
+    this.passNoteBox.hidden = true;
+    this.strip.after(this.passNoteBox);
     this.liveMore = el("li", { class: "arcade-live-more" });
     hub.onPeople(() => {
       this.followRivals();
@@ -197,7 +224,14 @@ class Arcade {
     this.bestStat = el("span", { class: "arcade-best-room" }, [
       el("span", { class: "arcade-stat" }, [el("small", { text: "Best" }), this.bestText]),
     ]);
-    this.muteButton = el("button", { type: "button", class: "arcade-icon", onclick: () => this.toggleMute() });
+    this.soundButton = el("button", {
+      type: "button",
+      class: "arcade-icon arcade-sound",
+      "aria-label": "Sound",
+      "aria-expanded": "false",
+      onclick: () => this.toggleSoundPanel(),
+    });
+    this.buildSoundPanel();
     this.pauseButton = el("button", { type: "button", class: "arcade-icon", "aria-label": "Pause" }, [icon("pause")]);
     this.pauseButton.addEventListener("click", () => this.pause());
     const back = el("button", { type: "button", class: "arcade-back", onclick: () => this.leave() }, [
@@ -220,11 +254,15 @@ class Arcade {
     );
     this.gearButton.addEventListener("click", () => this.openPayouts());
     this.gearButton.hidden = true;
-    const buttons = [people, this.gearButton, this.muteButton, this.pauseButton];
+    const buttons = [people, this.gearButton, this.soundButton, this.soundPanel, this.pauseButton];
     const bar = el("header", { class: "arcade-bar" }, [back, name, stats, ...buttons]);
     // A clicked button would keep the keyboard, so the next Space or Enter meant for the game would press it again.
-    // Tab still reaches the buttons
-    bar.addEventListener("mousedown", (event) => event.preventDefault());
+    // Tab still reaches the buttons. The sound panel's slider needs its press to drag
+    bar.addEventListener("mousedown", (event) => {
+      if (!this.soundPanel.contains(event.target)) {
+        event.preventDefault();
+      }
+    });
     document.body.prepend(bar);
     this.bar = bar;
     this.showMute();
@@ -427,13 +465,14 @@ class Arcade {
       this.passAt = now;
       this.passExtended = false;
     }
-    // Each name sits in its own <bdi>, so a name written right to left can't reorder the words around it
+    // Each name sits in its own <bdi>, so a name written right to left can't reorder the words around it. A long one
+    // is cut short the same as in the strip, so a second name still shows
     const parts = ["You passed "];
     this.passNames.forEach((name, i) => {
       if (i > 0) {
         parts.push(i === this.passNames.length - 1 ? " and " : ", ");
       }
-      parts.push(el("bdi", { text: name }));
+      parts.push(el("bdi", { text: cutName(name) }));
     });
     parts.push("!");
     this.passNoteBox.replaceChildren(...parts);
@@ -457,15 +496,51 @@ class Arcade {
     return this.note(`${ordinal(place)} of ${rivals.length + 1} here right now`, "arcade-note arcade-place");
   }
 
+  // ---------- Sound settings ----------
+
+  // The panel under the bar's sound button: a switch for the sound effects and their volume under it
+  buildSoundPanel() {
+    this.soundSwitch = el("input", { type: "checkbox" });
+    this.soundSwitch.addEventListener("change", () => this.setMuted(!this.soundSwitch.checked));
+    this.volumeSlider = el("input", {
+      type: "range",
+      class: "arcade-volume",
+      min: "0",
+      max: "100",
+      step: "1",
+      "aria-label": "Sound effects volume",
+    });
+    this.volumeSlider.value = String(this.volume);
+    this.volumeSlider.addEventListener("input", () => {
+      this.volume = Number(this.volumeSlider.value);
+      saveVolume(this.volume);
+    });
+    this.soundPanel = el("div", { class: "arcade-sound-panel", role: "group", "aria-label": "Sound" }, [
+      el("label", { class: "arcade-switch" }, [this.soundSwitch, el("span", { text: "Sound effects" })]),
+      this.volumeSlider,
+    ]);
+    this.soundPanel.hidden = true;
+  }
+
+  // Opens or closes the panel. It never pauses or starts anything
+  toggleSoundPanel(open = this.soundPanel.hidden) {
+    this.soundPanel.hidden = !open;
+    this.soundButton.setAttribute("aria-expanded", String(open));
+  }
+
   showMute() {
-    this.muteButton.replaceChildren(icon(this.muted ? "muted" : "sound"));
-    this.muteButton.setAttribute("aria-label", this.muted ? "Turn sound on" : "Turn sound off");
+    this.soundButton.replaceChildren(icon(this.muted ? "muted" : "sound"));
+    this.soundSwitch.checked = !this.muted;
+  }
+
+  setMuted(muted) {
+    this.muted = muted;
+    saveMuted(muted);
+    this.showMute();
   }
 
   toggleMute() {
-    this.muted = !this.muted;
-    saveMuted(this.muted);
-    this.showMute();
+    this.setMuted(!this.muted);
   }
 
   // ---------- Sound ----------
@@ -480,9 +555,9 @@ class Arcade {
     }
   }
 
-  // Every sound is a short synthesized tone, so there are no audio files to load
+  // Every sound is a short synthesized tone, so there are no audio files to load. The player's volume scales each one
   tone(freq, duration, { type = "square", volume = 0.08, slide = 1, delay = 0 } = {}) {
-    if (this.muted || !this.audio) {
+    if (this.muted || !this.audio || this.volume <= 0) {
       return;
     }
     const start = this.audio.currentTime + delay;
@@ -493,7 +568,7 @@ class Arcade {
     if (slide !== 1) {
       osc.frequency.exponentialRampToValueAtTime(freq * slide, start + duration);
     }
-    gain.gain.setValueAtTime(volume, start);
+    gain.gain.setValueAtTime((volume * this.volume) / 100, start);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
     osc.connect(gain).connect(this.audio.destination);
     osc.start(start);
@@ -543,10 +618,18 @@ class Arcade {
     this.focusPrimary();
   }
 
+  // Without the browser's own scrolling, so a card too tall for the screen opens at its top, with its last button row
+  // in view. A focused button that row would cover is raised just clear of it, focus ring and all
   focusPrimary() {
-    const first = this.screen.querySelector("button.primary:not(:disabled)");
-    if (first) {
-      first.focus();
+    const button = this.screen.querySelector("button.primary:not(:disabled)");
+    if (!button) {
+      return;
+    }
+    button.focus({ preventScroll: true });
+    const row = this.screen.querySelector(".arcade-card > .arcade-actions:last-child");
+    if (row && !row.contains(button)) {
+      const covered = button.getBoundingClientRect().bottom + 4 - row.getBoundingClientRect().top;
+      row.parentElement.scrollTop += Math.max(0, Math.ceil(covered));
     }
   }
 
@@ -592,8 +675,13 @@ class Arcade {
     this.scored = false;
     this.report();
     this.showLive();
-    const status = this.note(problem, problem ? "arcade-note arcade-error" : "arcade-note");
-    const buttons = [this.button(problem ? "Try again" : "Play", () => this.play(), true)];
+    // In a server the standing arrives a moment later, so its line holds its height from the start
+    const status = this.note(
+      problem || (this.inServer ? "Loading..." : ""),
+      problem ? "arcade-note arcade-error" : "arcade-note",
+    );
+    const play = this.button(problem ? "Try again" : "Play", () => this.play(play), true);
+    const buttons = [play];
     if (this.inServer) {
       buttons.push(this.button("Leaderboard", () => this.showBoard()));
     }
@@ -681,15 +769,20 @@ class Arcade {
     return this.hub.api("start");
   }
 
-  async play() {
+  // The card stays while the round starts, with every button off and the pressed one saying so. A request that got no
+  // answer already says what happened and what to do
+  async play(button) {
     this.unlockAudio();
-    this.show([this.note("Starting...")]);
+    this.screen.querySelectorAll("button").forEach((node) => {
+      node.disabled = true;
+    });
+    button.textContent = "Starting...";
     let round;
     try {
       round = await this.newRound();
     } catch (e) {
       console.warn("Arcade: couldn't start a round", e);
-      this.showTitle(`Couldn't start a round: ${e.message}`);
+      this.showTitle(e.status === 0 ? e.message : `Couldn't start a round: ${e.message}`);
       return;
     }
     this.run = round.run;
@@ -726,9 +819,10 @@ class Arcade {
     this.paused = true;
     this.report();
     this.game.pause();
+    // A touch screen has no Esc or P: Resume says it there
     this.show([
       el("h1", { text: "Paused" }),
-      this.note("Press Esc or P to keep playing."),
+      ...(touchScreen.matches ? [] : [this.note("Press Esc or P to keep playing.")]),
       this.actions([this.button("Resume", () => this.resume(), true), this.button("End round", () => this.endNow())]),
     ]);
   }
@@ -801,9 +895,11 @@ class Arcade {
     this.report();
     this.showLive();
     const place = this.placeLine(score);
-    const final = el("p", { class: "arcade-final" });
+    // The count-up starts from 0 on the next frame. Starting the line at 0 gives the card its full height at once, so a
+    // save answered before that frame focuses its button on the card as it will stay
+    const final = el("p", { class: "arcade-final", text: "0" });
     const status = this.note(this.run ? "Saving..." : "");
-    const again = this.button("Play again", () => this.play(), true);
+    const again = this.button("Play again", () => this.play(again), true);
     const menu = this.button("Menu", () => this.leave());
     this.show(
       [el("h1", { text: "Game over" }), final, ...(place ? [place] : []), status, this.actions([again, menu])],
@@ -831,14 +927,25 @@ class Arcade {
       if (this.run === null) {
         return;
       }
-      const retry = this.button("Retry save", () => {
-        status.classList.remove("arcade-error");
-        status.textContent = "Saving...";
-        this.saving = this.finishSave(proof, status, again);
-      });
-      status.append(" ", retry);
+      // A button row of its own, first to take the keyboard, so Enter can't start a new round over the unsaved score
+      const retry = this.button(
+        "Retry save",
+        () => {
+          row.remove();
+          status.classList.remove("arcade-error");
+          status.textContent = "Saving...";
+          const saving = this.finishSave(proof, status, again);
+          this.saving = saving;
+          saving.then(() => this.focusPrimary());
+        },
+        true,
+      );
+      const row = this.actions([retry]);
+      status.after(row);
     } finally {
       again.disabled = false;
+      // Menu only waits for a save still on its way
+      this.saving = null;
     }
   }
 
@@ -863,7 +970,7 @@ class Arcade {
       return [];
     }
     if (offer.left <= 0) {
-      return [this.note("No cash-ins left for this game today. They come back at midnight UTC.")];
+      return [this.note("No cash-ins left today. They come back at midnight UTC.")];
     }
     if (offer.worth <= 0) {
       return [this.note(`Score more to earn ${offer.currency}.`)];
@@ -871,21 +978,21 @@ class Arcade {
     const text = this.note(
       `Worth ${fmt(offer.worth)} ${offer.currency} · ${offer.left} of ${offer.plays} cash-ins left today`,
     );
-    const button = this.button(`Cash in ${fmt(offer.worth)}`, () => this.cashIn(box, button), true);
+    const button = this.button(`Cash in ${fmt(offer.worth)}`, () => this.cashIn(box, button, offer.plays), true);
     button.classList.add("arcade-cash");
     const box = el("div", { class: "arcade-offer" }, [text, button]);
     return [box];
   }
 
-  async cashIn(box, button) {
+  // The answer has no total, so the offer's comes along, and the line reads the same as the offer's
+  async cashIn(box, button, plays) {
     button.disabled = true;
     button.textContent = "Cashing in...";
     try {
       const paid = await this.hub.api("cashin", { run: this.cashRun });
-      const left = paid.left === 1 ? "1 cash-in" : `${paid.left} cash-ins`;
       box.replaceChildren(
         el("span", { class: "arcade-paid", text: `+${fmt(paid.paid)} ${paid.currency}` }),
-        this.note(`${left} left for this game today.`),
+        this.note(`${paid.left} of ${plays} cash-ins left today.`),
       );
       this.tune([784, 988, 1175, 1568], 0.06);
       this.focusPrimary();
@@ -984,7 +1091,7 @@ class Arcade {
     }
     this.namePayouts();
     this.fillPayouts(this.payouts.settings);
-    this.payoutStatus.textContent = "";
+    this.payoutNote("");
     // A swipe already under way (a second finger tapped the gear) is dropped, the way the games drop a swipe the
     // browser takes over, so it can't finish as a first move behind the dialog or after it closes
     window.dispatchEvent(new PointerEvent("pointercancel"));
@@ -1003,14 +1110,14 @@ class Arcade {
     };
     // One save at a time, so a second click can't send the same save again
     this.payoutSave.disabled = true;
-    this.payoutStatus.textContent = "Saving...";
+    this.payoutNote("Saving...");
     try {
       this.showPayouts(await this.hub.api("save_payouts", { settings }));
       this.namePayouts();
       this.fillPayouts(this.payouts.settings);
-      this.payoutStatus.textContent = "Saved.";
+      this.payoutNote("Saved.");
     } catch (e) {
-      this.payoutStatus.textContent = e.message;
+      this.payoutNote(e.message, true);
     } finally {
       this.payoutSave.disabled = false;
     }
@@ -1019,19 +1126,27 @@ class Arcade {
   // Shows the defaults without saving them, like the menu's settings
   resetPayouts() {
     this.fillPayouts(this.payouts.defaults);
-    this.payoutStatus.textContent = "Reset. Save to keep it.";
+    this.payoutNote("Reset. Save to keep it.");
   }
 
-  // Leaving mid-round still saves the score so far
+  // The line under the settings: a refused save in the error red, everything else plain
+  payoutNote(text, error = false) {
+    this.payoutStatus.textContent = text;
+    this.payoutStatus.classList.toggle("arcade-error", error);
+  }
+
+  // Leaving mid-round still saves the score so far. A card says so while the save is on its way
   async leave() {
     if (this.playing) {
       const { score, proof } = this.game.stop();
       this.playing = false;
-      if (score > 0) {
+      if (score > 0 && this.run) {
+        this.show([this.note("Saving your score...")]);
         await this.save(proof).catch((e) => console.warn("Arcade: couldn't save the round before leaving", e));
       }
     } else if (this.saving) {
       // Closing the game frame can cancel a save still on its way, when it was too big to go as keepalive
+      this.show([this.note("Saving your score...")]);
       await this.saving;
     }
     this.hub.backToMenu();
@@ -1075,6 +1190,7 @@ class Arcade {
     for (const name of ["keydown", "pointerdown", "pointermove", "pointerup"]) {
       window.addEventListener(name, guard, true);
     }
+    this.listenSoundPanel();
     window.addEventListener("keydown", (event) => {
       this.unlockAudio();
       if (PAUSE_KEYS.includes(event.key) && this.playing) {
@@ -1098,11 +1214,43 @@ class Arcade {
       }
     });
   }
+
+  // Presses on the sound panel stay there, so a drag on the slider doesn't move a paddle. So do the keys the focused
+  // control uses, so an arrow key moving the slider doesn't also steer. Every other key still reaches the game: with
+  // the switch focused, arrows steer, P pauses and M flips it. Escape there only closes the panel: hiding it hides the
+  // focused slider or switch, so the keyboard goes back to the game, as no bar button ever keeps it
+  listenSoundPanel() {
+    const soundGuard = (event) => {
+      if (this.soundPanel.hidden || !this.soundPanel.contains(event.target)) {
+        return;
+      }
+      const keys = PANEL_KEYS[event.target.type] ?? [];
+      if (event.type === "keydown" && event.key !== "Escape" && !keys.includes(event.key)) {
+        return;
+      }
+      event.stopPropagation();
+      if (event.key === "Escape") {
+        this.toggleSoundPanel(false);
+      }
+    };
+    for (const name of ["keydown", "pointerdown", "pointermove", "pointerup"]) {
+      window.addEventListener(name, soundGuard, true);
+    }
+    // A press anywhere else closes the panel, and goes on to whatever it pressed
+    window.addEventListener("pointerdown", (event) => {
+      if (!this.soundPanel.hidden && !this.soundButton.contains(event.target) && !this.soundPanel.contains(event.target)) {
+        this.toggleSoundPanel(false);
+      }
+    });
+  }
 }
 
 export async function startArcade(options) {
   const hub = await connect();
   const arcade = new Arcade(hub, options);
   arcade.showTitle();
+  // The menu focuses the game's frame once it has loaded, which can come after the title and take the keyboard off
+  // Play, so Play gets it back
+  window.addEventListener("focus", () => arcade.focusPrimary(), { once: true });
   return arcade;
 }

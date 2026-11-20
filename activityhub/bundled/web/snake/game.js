@@ -415,6 +415,9 @@ function resize() {
   canvas.style.height = `${px}px`;
   canvas.width = Math.round(px * dpr);
   canvas.height = Math.round(px * dpr);
+  // The hint and banners centre on the board, which sits left of the arrow pad on a sideways screen
+  stage.style.setProperty("--board-x", `${canvas.offsetLeft + px / 2}px`);
+  stage.style.setProperty("--board-width", `${px}px`);
   paintBackdrop();
   draw();
 }

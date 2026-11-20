@@ -1,5 +1,55 @@
 # ActivityHub Changelog
 
+## 0.18.0
+
+A polish pass on the frame the included games (2048, Snake and Brick Breaker) share: the top bar, the cards and the notes.
+
+Sound:
+
+- The sound button now opens a small panel with a **Sound effects** switch and a volume slider under it. Each device keeps its own choice. M still turns the sound effects on and off.
+
+Cards:
+
+- On short screens, like a phone held sideways, the results and leaderboard cards keep **Play again**, **Menu** and **Back** on screen. The list scrolls under them, and a card opens at its top, moving up only as far as it takes to show the button the keyboard is on, like **Cash in** or **Retry save**.
+- Pressing **Play**, **Play again** or **Try again** keeps the card on screen, with that button reading "Starting...", instead of swapping in a small separate card.
+- Pressing **Menu** while a score is still saving shows "Saving your score..." until the save lands. Before, nothing happened for up to a few seconds.
+- **Retry save** after a failed save now looks like the other buttons and has the keyboard, so Enter retries the save instead of starting a new round over the unsaved score.
+- The title card no longer jumps when your best score loads, and its list of controls sits in the middle on phones.
+- Phones no longer see "Press Esc or P to keep playing." on the pause card.
+- A round that can't start because the connection dropped says "Couldn't reach the bot. Check your connection and try again." once, instead of "Couldn't start a round: Couldn't reach the bot...".
+- Cash-ins left read the same way everywhere, like "2 of 3 cash-ins left today." When none are left: "No cash-ins left today. They come back at midnight UTC."
+- On a computer, **Play** has the keyboard as soon as a game opens, so Enter starts the first round.
+
+Notes and the top bar:
+
+- "You passed Ann!" now shows over the row of scores above the game, not on the game itself. Long names in it are cut short the same way as in that row, so a second name still shows.
+- The hub's "Ann joined" note stays bright while a card is open.
+- The top bar's buttons are easier to hit with a finger, and show a press while held. They look the same as before.
+- Hints and banners no longer squeeze into half the screen on an upright phone.
+- The game's hint ("Tap to launch", "Press an arrow key or swipe to start") hides while a card is open, so the pause card is the only instruction.
+- A refused payout save shows its reason in red, not in the same gray as "Saved."
+- The payout settings open with the same short animation as every other card.
+
+2048:
+
+- The 1024 and 2048 tiles have dark numbers, like the smaller tiles, so they are easy to read.
+- On a phone held sideways, the "+8" points that float up after a merge now start a little lower, inside the board, so the top of the play area no longer cuts them off. They show on top of the tiles there, even a tile that just merged.
+
+Snake:
+
+- On a phone held sideways, the hint ("Tap an arrow or swipe to start") and banners like "You filled the board!" now sit over the board instead of the middle of the screen, so they no longer hang over the arrow pad.
+- On an upright phone, a banner's title is a little smaller, so "You filled the board!" fits on one line.
+
+Brick Breaker:
+
+- On a phone, sliding a finger before the launch lines the paddle up, and a tap launches the ball. Before, the first touch launched it. The hint reads "Drag to aim, tap to launch".
+- On a small screen, like a phone held sideways, the level, the lives and the power-up timers at the top are drawn bigger, so they can be read.
+- Losing the last ball now waits half a second before the **Game over** card, the same as Snake's crash, so you see the ball go and hear the falling tune start first.
+- While the game loads, the page no longer shows an empty outlined box.
+- On a phone held sideways, the launch hint and banners like "Level cleared!" stay inside the playfield's walls. The banner's title is a little smaller there, so "Level cleared!" stays on one line, and the hint sits just above the ball, so the two no longer touch.
+- The letters on falling power-ups (W, M, S and +) are bigger, so they are easy to read on a phone.
+- The title card says "You have 3 lives." instead of "You have 3 balls.", so "+2 balls" from Multi-ball can't be read as two more lives.
+
 ## 0.17.0
 
 The hub now stays out of a game's way. While a game is open the hub draws nothing over it unless that game asks.
