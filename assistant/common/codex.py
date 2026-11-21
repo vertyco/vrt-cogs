@@ -29,8 +29,9 @@ CODEX_DEVICE_URL = "https://auth.openai.com/codex/device"
 CODEX_DEVICE_REDIRECT = "https://auth.openai.com/deviceauth/callback"
 CODEX_BACKEND_URL = "https://chatgpt.com/backend-api/codex"
 CODEX_ORIGINATOR = "codex_cli_rs"
-CODEX_CLIENT_VERSION = "0.153.4"
-CODEX_DEFAULT_MODEL = "gpt-5.5"
+# The backend only lists models released up to this Codex CLI version, so raise it when new models ship.
+CODEX_CLIENT_VERSION = "0.170.0"
+CODEX_DEFAULT_MODEL = "gpt-6.2-sol"
 CODEX_REFRESH_WINDOW_SECONDS = 300
 # Refresh tokens expire when left unused, so like the Codex CLI a login is renewed once it is 8 days old.
 CODEX_RENEW_AFTER_SECONDS = 8 * 24 * 3600

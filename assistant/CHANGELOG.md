@@ -1,5 +1,11 @@
 # Assistant Changelog
 
+## v8.25.1
+
+- **Fix**: A Codex login only showed four models (`gpt-6-astra` and the `gpt-5.6` ones), so `[p]assistant set model gpt-6.2-sol` warned that the model was not on the subscription and chats ran on the fallback model instead. Codex only lists the models released up to the Codex CLI version the cog reports, and that version was old. The cog now reports 0.170.0, which adds `gpt-6.2-sol`, `gpt-6.2-astra`, `gpt-6.1-sol`, `gpt-6.1-terra`, `gpt-6-sol` and `gpt-6-luna`.
+- **Change**: The fallback for a model the Codex subscription does not serve is now `gpt-6.2-sol`. The old fallback, `gpt-5.5`, is no longer on the Codex list.
+- **Change**: The Codex model list is fetched again every time the cog loads, so an update shows new models right away instead of up to an hour later.
+
 ## v8.25.0
 
 - **New**: Added OpenAI's newer chat models: `gpt-6-sol`, `gpt-6-luna`, `gpt-6.1-sol`, `gpt-6.1-terra`, `gpt-6.2-astra`, `gpt-6.2-sol`, `gpt-6-cyber` (needs OpenAI's restricted access), and the `gpt-5.6` alias. All have the 1.05M context window, vision and tools.

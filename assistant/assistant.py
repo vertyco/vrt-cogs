@@ -83,7 +83,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.25.0"
+    __version__ = "8.25.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -200,6 +200,8 @@ class Assistant(
             await self.config.db.set(data)
 
         self.db = await asyncio.to_thread(DB.model_validate, data)
+        # Refetch the Codex model catalog after every load: the saved copy may predate newer models.
+        self.db.codex_models_fetched = 0.0
 
         # Load per-file conversations into the in-memory cache (persistent setups only).
         if self.db.persistent_conversations:
