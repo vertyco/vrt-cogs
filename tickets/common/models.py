@@ -390,7 +390,7 @@ class GuildSettings(Base):
     user_can_close: bool = True
     user_can_manage: bool = False  # Add users to ticket
     user_can_escalate: bool = False  # Escalate own ticket to admins only
-    escalated_log_channel: int = 0  # Admin-only channel for the close logs of escalated tickets (0 = not posted)
+    escalated_log_channel: int = 0  # Admin-only close log for escalated tickets (0 = use the panel's log channel)
     ping_optins: list[int] = []  # Staff user IDs pinged on every new ticket they can see
 
     # Transcript settings

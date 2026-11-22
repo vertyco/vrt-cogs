@@ -1,5 +1,9 @@
 # Tickets Changelog
 
+## v3.9.1
+
+- **Change**: With no admin log channel set (`[p]tickets escalatedlog`), a closed escalated ticket posts its full log and transcript in the panel's log channel again, like any other ticket. Transcripts are only kept away from support staff once an admin log channel is set.
+
 ## v3.9.0
 
 - **Security**: Closing an escalated (admins only) ticket no longer posts its transcript, attachments or close reason in the panel's log channel, where support staff could read them. That channel now only gets a short notice that the ticket was closed.

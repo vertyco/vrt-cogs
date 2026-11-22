@@ -1732,13 +1732,14 @@ class AdminCommands(MixinMeta):
         When a ticket that was escalated to admins is closed, its close reason and transcript are posted here
         instead of the panel's log channel, which only gets a short notice. Use a channel only admins can see.
 
-        Leave the channel out to turn this off. Transcripts of escalated tickets are then not posted anywhere.
+        Leave the channel out to turn this off. Escalated tickets are then logged in the panel's log channel
+        like any other ticket, where support staff can read the transcript.
         """
         conf = self.db.get_conf(ctx.guild)
         if not channel:
             conf.escalated_log_channel = 0
             await self.save()
-            return await ctx.send(_("Transcripts of escalated tickets will no longer be posted anywhere"))
+            return await ctx.send(_("Closed escalated tickets will now be logged in their panel's log channel"))
         perms = channel.permissions_for(ctx.guild.me)
         if not all([perms.view_channel, perms.send_messages, perms.embed_links, perms.attach_files]):
             return await ctx.send(

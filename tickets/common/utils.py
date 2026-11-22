@@ -930,13 +930,12 @@ async def close_ticket(
             attachments.append(zip_file)
 
         admin_chan = guild.get_channel(conf.escalated_log_channel) if ticket.escalated else None
-        if not ticket.escalated or admin_chan == log_chan:
+        if not admin_chan or admin_chan == log_chan:
             await send_close_log(log_chan, embed, backup_text, attachments, view)
         else:
             # Support staff can read the panel's log channel, so an escalated ticket's
-            # reason and transcript only go to the admin log channel (when one is set)
-            if admin_chan:
-                await send_close_log(admin_chan, embed, backup_text, attachments, view)
+            # reason and transcript go to the admin log channel instead
+            await send_close_log(admin_chan, embed, backup_text, attachments, view)
             notice = _(
                 "Escalated ticket created by **{}-{}** has been closed.\n"
                 "`PanelType: `{}\n"
