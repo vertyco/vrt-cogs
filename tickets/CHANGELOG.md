@@ -1,5 +1,10 @@
 # Tickets Changelog
 
+## v3.9.0
+
+- **Security**: Closing an escalated (admins only) ticket no longer posts its transcript, attachments or close reason in the panel's log channel, where support staff could read them. That channel now only gets a short notice that the ticket was closed.
+- **New**: `[p]tickets escalatedlog <channel>` sets an admin log channel. Closed escalated tickets post their full log and transcript there. Run it with no channel to turn it off, and escalated transcripts are then not posted anywhere. The setting shows in `[p]tickets view`.
+
 ## v3.8.2
 
 - **Security**: Transcripts only open attached images as PNG, JPEG, WebP or GIF when shrinking them, whatever the file's extension says. A crafted image in a rarer format (such as FlashPix) could run code through a Pillow bug. BMP and TIFF attachments are now kept as they are instead of being converted to WebP.

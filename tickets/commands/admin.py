@@ -1066,6 +1066,8 @@ class AdminCommands(MixinMeta):
         msg += _("`Users can Close:  `") + f"{conf.user_can_close}\n"
         msg += _("`Users can Manage: `") + f"{conf.user_can_manage}\n"
         msg += _("`Users can Escal.: `") + f"{conf.user_can_escalate}\n"
+        escalated_log = ctx.guild.get_channel(conf.escalated_log_channel)
+        msg += _("`Escalated Log:    `") + (escalated_log.mention if escalated_log else _("None")) + "\n"
         msg += _("`Save Transcripts: `") + f"{conf.transcript} ({transcript_type})\n"
         msg += _("`Show Resp. Time:  `") + f"{conf.show_response_time}\n"
         msg += _("`Auto Close:       `") + (_("On") if inactive else _("Off")) + "\n"
@@ -1721,6 +1723,30 @@ class AdminCommands(MixinMeta):
             await ctx.send(_("User can now escalate their support ticket to admins"))
         else:
             await ctx.send(_("User can no longer escalate their support ticket to admins"))
+
+    @tickets.command()
+    async def escalatedlog(self, ctx: commands.Context, channel: discord.TextChannel | None = None):
+        """
+        Set the log channel for escalated tickets
+
+        When a ticket that was escalated to admins is closed, its close reason and transcript are posted here
+        instead of the panel's log channel, which only gets a short notice. Use a channel only admins can see.
+
+        Leave the channel out to turn this off. Transcripts of escalated tickets are then not posted anywhere.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not channel:
+            conf.escalated_log_channel = 0
+            await self.save()
+            return await ctx.send(_("Transcripts of escalated tickets will no longer be posted anywhere"))
+        perms = channel.permissions_for(ctx.guild.me)
+        if not all([perms.view_channel, perms.send_messages, perms.embed_links, perms.attach_files]):
+            return await ctx.send(
+                _("I need View Channel, Send Messages, Embed Links and Attach Files in that channel!")
+            )
+        conf.escalated_log_channel = channel.id
+        await self.save()
+        await ctx.send(_("Closed escalated tickets will now be logged in {}").format(channel.mention))
 
     @tickets.command()
     async def autoadd(self, ctx: commands.Context):

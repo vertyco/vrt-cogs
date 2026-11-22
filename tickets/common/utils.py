@@ -653,6 +653,27 @@ async def record_response_time(
     await cog.save()
 
 
+async def send_close_log(
+    channel: discord.TextChannel,
+    embed: discord.Embed,
+    backup_text: str,
+    files: list[discord.File],
+    view: discord.ui.View | None,
+) -> None:
+    """Post a closed ticket's log, falling back to plain text or no files when permissions are missing"""
+    perms = channel.permissions_for(channel.guild.me)
+    try:
+        if perms.embed_links and perms.attach_files:
+            await channel.send(embed=embed, files=files or None, view=view)
+        elif perms.embed_links:
+            await channel.send(embed=embed, view=view)
+        elif perms.attach_files:
+            await channel.send(backup_text, files=files or None, view=view)
+    except discord.HTTPException as e:
+        # Don't crash ticket closing over a failed log
+        log.error(f"Failed to send log message to {channel.id}", exc_info=e)
+
+
 async def close_ticket(
     bot: Red,
     member: discord.Member | discord.User,
@@ -900,11 +921,6 @@ async def close_ticket(
         text_file = text_to_file(fitted_text, fitted_name) if fitted_text else None
         zip_file = discord.File(BytesIO(zip_bytes), filename="attachments.zip") if zip_bytes else None
 
-        perms = [
-            log_chan.permissions_for(guild.me).embed_links,
-            log_chan.permissions_for(guild.me).attach_files,
-        ]
-
         attachments = []
         used = 0
         if text_file:
@@ -913,18 +929,25 @@ async def close_ticket(
         if zip_file and zip_size and (used + zip_size) <= upload_limit:
             attachments.append(zip_file)
 
-        log_msg: discord.Message = None
-        try:
-            if all(perms):
-                log_msg = await log_chan.send(embed=embed, files=attachments or None, view=view)
-            elif perms[0]:
-                log_msg = await log_chan.send(embed=embed, view=view)
-            elif perms[1]:
-                log_msg = await log_chan.send(backup_text, files=attachments or None, view=view)
-        except discord.HTTPException as e:
-            # If this still fails, don't crash ticket closing.
-            log.error(f"Failed to send log message: {e}")
-            log_msg = None
+        admin_chan = guild.get_channel(conf.escalated_log_channel) if ticket.escalated else None
+        if not ticket.escalated or admin_chan == log_chan:
+            await send_close_log(log_chan, embed, backup_text, attachments, view)
+        else:
+            # Support staff can read the panel's log channel, so an escalated ticket's
+            # reason and transcript only go to the admin log channel (when one is set)
+            if admin_chan:
+                await send_close_log(admin_chan, embed, backup_text, attachments, view)
+            notice = _(
+                "Escalated ticket created by **{}-{}** has been closed.\n"
+                "`PanelType: `{}\n"
+                "`Opened on: `<t:{}:F>\n"
+                "`Closed on: `<t:{}:F>\n"
+                "`Closed by: `{}\n"
+                "This ticket was escalated to admins, so its transcript is not posted here.\n"
+            ).format(member.name, member.id, panel_name, opened_ts, closed_ts, closer_name)
+            notice_embed = discord.Embed(title=embed_title, description=notice, color=discord.Color.green())
+            notice_embed.set_thumbnail(url=pfp)
+            await send_close_log(log_chan, notice_embed, f"{embed_title}\n{notice}", [], None)
 
         # Delete old log msg
         log_msg_id = ticket.logmsg
