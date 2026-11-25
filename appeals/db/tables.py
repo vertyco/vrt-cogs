@@ -122,7 +122,9 @@ class AppealSubmission(Table):
             return ""
         return f"<t:{int(self.decided_at.timestamp())}:{type}>"
 
-    def embed(self, user: discord.Member | discord.User = None) -> discord.Embed:
+    def embed(
+        self, user: discord.Member | discord.User = None, votes: tuple[int, int] | None = None
+    ) -> discord.Embed:
         colors = {
             "pending": discord.Color.blurple(),
             "approved": discord.Color.green(),
@@ -150,6 +152,8 @@ class AppealSubmission(Table):
             embed.add_field(name="Reason for Denial", value=self.reason)
         elif self.reason and self.status == "approved":
             embed.add_field(name="Reason for Approval", value=self.reason)
+        if votes is not None:
+            embed.add_field(name="Votes", value=f"✅ {votes[0]} / ❌ {votes[1]}")
         return embed
 
 

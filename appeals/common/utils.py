@@ -40,6 +40,21 @@ def next_appeal_at(decided_at: datetime | None, reappeal_at: datetime | None, gu
     return decided_at + timedelta(seconds=guild_cooldown)
 
 
+def tally_votes(reactions) -> tuple[int, int] | None:
+    """Count the ✅ and ❌ votes on a pending appeal message, leaving out the bot's own seed reaction.
+
+    Returns (approve, deny), or None when neither vote emoji is on the message.
+    """
+    counts = {}
+    for reaction in reactions:
+        emoji = str(reaction.emoji)
+        if emoji in ("✅", "❌"):
+            counts[emoji] = max(reaction.count - (1 if reaction.me else 0), 0)
+    if not counts:
+        return None
+    return counts.get("✅", 0), counts.get("❌", 0)
+
+
 def denial_message(
     guild_name: str,
     targetname: str,

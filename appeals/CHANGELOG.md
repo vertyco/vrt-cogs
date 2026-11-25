@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2
+
+- Approved and denied submissions now show the staff vote tally as a "Votes" field (for example `✅ 3 / ❌ 1`) when vote emojis are enabled. The votes are read off the pending message before it is deleted, leaving out the bot's own reactions; the field is skipped when voting is off or the pending message is gone.
+
 ## 0.5.1
 
 - When the bot's data folder is on a Windows network share (a path like `\\server\share`), the cog now refuses to load and says why. The check for this never matched, so the cog loaded and its database could fail later with a confusing error.

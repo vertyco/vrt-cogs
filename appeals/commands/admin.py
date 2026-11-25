@@ -9,7 +9,7 @@ from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
 
 from ..abc import MixinMeta
 from ..common.checks import ensure_db_connection
-from ..common.utils import add_duration, denial_message, next_appeal_at, parse_deny_duration
+from ..common.utils import add_duration, denial_message, next_appeal_at, parse_deny_duration, tally_votes
 from ..db.tables import AppealGuild, AppealQuestion, AppealSubmission
 from ..views.appeal import AppealView
 from ..views.dynamic_menu import DynamicMenu
@@ -34,17 +34,43 @@ class Admin(MixinMeta):
         )
         return await ctx.send(txt)
 
+    async def fetch_pending_message(
+        self, guild: discord.Guild, appealguild: AppealGuild, submission: AppealSubmission
+    ) -> discord.Message | None:
+        """Fetch a submission's message from the pending channel, or None if it can't be read."""
+        pending_channel: discord.TextChannel = guild.get_channel(appealguild.pending_channel)
+        if not pending_channel or not submission.message_id:
+            return None
+        try:
+            return await pending_channel.fetch_message(submission.message_id)
+        except (discord.NotFound, discord.Forbidden):
+            return None
+
+    def pending_votes(self, appealguild: AppealGuild, message: discord.Message | None) -> tuple[int, int] | None:
+        """The vote tally on a pending submission message, or None if voting is off or there is nothing to count."""
+        if not appealguild.vote_emojis or message is None:
+            return None
+        return tally_votes(message.reactions)
+
     async def remove_pending_message(
-        self, ctx: commands.Context, appealguild: AppealGuild, submission: AppealSubmission
+        self,
+        ctx: commands.Context,
+        appealguild: AppealGuild,
+        submission: AppealSubmission,
+        message: discord.Message | None = None,
     ):
-        """Delete a decided submission's message and discussion thread from the pending channel."""
+        """Delete a decided submission's message and discussion thread from the pending channel.
+
+        Pass the already fetched pending message to skip fetching it again.
+        """
         pending_channel: discord.TextChannel = ctx.guild.get_channel(appealguild.pending_channel)
         if pending_channel:
             if not pending_channel.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.send(f"I do not have permissions to delete messages from {pending_channel.mention}")
             else:
                 try:
-                    message = await pending_channel.fetch_message(submission.message_id)
+                    if message is None:
+                        message = await pending_channel.fetch_message(submission.message_id)
                     if message.thread:
                         await message.thread.delete()
                     elif thread := ctx.guild.get_thread(submission.discussion_thread):
@@ -313,29 +339,17 @@ class Admin(MixinMeta):
         member = ctx.guild.get_member(submission.user_id)
         if not member:
             member = await self.bot.get_or_fetch_user(submission.user_id)
+        # Read the vote tally off the pending message before it is deleted
+        pending_message = await self.fetch_pending_message(ctx.guild, appealguild, submission)
+        votes = self.pending_votes(appealguild, pending_message)
         # Send the submission to the approved channel and then delete from the pending channel
         approved_channel: discord.TextChannel = ctx.guild.get_channel(appealguild.approved_channel)
         if approved_channel:
-            new_message = await approved_channel.send(embed=submission.embed(member))
+            new_message = await approved_channel.send(embed=submission.embed(member, votes=votes))
             await AppealSubmission.update({AppealSubmission.message_id: new_message.id}).where(
                 (AppealSubmission.id == submission_id) & (AppealSubmission.guild == ctx.guild.id)
             )
-        pending_channel: discord.TextChannel = ctx.guild.get_channel(appealguild.pending_channel)
-        if pending_channel:
-            if not pending_channel.permissions_for(ctx.guild.me).manage_messages:
-                await ctx.send(f"I do not have permissions to delete messages from {pending_channel.mention}")
-            else:
-                try:
-                    message = await pending_channel.fetch_message(submission.message_id)
-                    if message.thread:
-                        await message.thread.delete()
-                    elif thread := ctx.guild.get_thread(submission.discussion_thread):
-                        await thread.delete()
-                    await message.delete()
-                except discord.NotFound:
-                    await ctx.send(f"Submission message not found in {pending_channel.mention}")
-        else:
-            await ctx.send("Pending channel not found, could not delete the message.")
+        await self.remove_pending_message(ctx, appealguild, submission, pending_message)
         # Now unban them from the target guild
         target_guild = self.bot.get_guild(appealguild.target_guild_id)
         if not target_guild:
@@ -435,15 +449,18 @@ class Admin(MixinMeta):
         member = ctx.guild.get_member(submission.user_id)
         if not member:
             member = await self.bot.get_or_fetch_user(submission.user_id)
+        # Read the vote tally off the pending message before it is deleted
+        pending_message = await self.fetch_pending_message(ctx.guild, appealguild, submission)
+        votes = self.pending_votes(appealguild, pending_message)
         # Send the submission to the denied channel and then delete from the pending channel
         denied_channel: discord.TextChannel = ctx.guild.get_channel(appealguild.denied_channel)
         if denied_channel:
-            new_embed = submission.embed(member)
+            new_embed = submission.embed(member, votes=votes)
             new_message = await denied_channel.send(embed=new_embed)
             await AppealSubmission.update({AppealSubmission.message_id: new_message.id}).where(
                 (AppealSubmission.id == submission_id) & (AppealSubmission.guild == ctx.guild.id)
             )
-        await self.remove_pending_message(ctx, appealguild, submission)
+        await self.remove_pending_message(ctx, appealguild, submission, pending_message)
         # Alert the user that their appeal has been denied
         target_guild = self.bot.get_guild(appealguild.target_guild_id)
         targetname = f"**{target_guild.name}**" if target_guild else "the target server"
