@@ -55,6 +55,7 @@ class RPCMethods(MixinMeta, ABC):
             self.rpc_voice_members,
             self.rpc_get_balance,
             self.rpc_deposit_credits,
+            self.rpc_withdraw_credits,
             self.rpc_warn,
             self.rpc_unwarn,
             self.rpc_get_warnings,
@@ -622,6 +623,65 @@ class RPCMethods(MixinMeta, ABC):
             timestamp=datetime.now(timezone.utc),
         )
         embed.add_field(name="Recipient", value=f"{member.mention}\n`{member.id}`")
+        embed.add_field(name="Amount", value=f"{amount:,} {currency}")
+        embed.add_field(name="Old Balance", value=f"{old_balance:,}")
+        embed.add_field(name="New Balance", value=f"{new_balance:,}")
+        embed.add_field(name="Reason", value=reason[:1024], inline=False)
+        try:
+            msg = await channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+            out["audit_message_id"] = msg.id
+        except Exception as e:
+            out["warning"] = f"audit post failed: {type(e).__name__}: {e}"
+        return out
+
+    async def rpc_withdraw_credits(
+        self,
+        guild_id: int,
+        user_id: int,
+        amount: int,
+        reason: str,
+        audit_channel_id: int = 1226006586816729108,
+    ) -> dict:
+        """Withdraw bank credits from a member's account and post an audit embed.
+
+        Counterpart to rpc_deposit_credits (e.g. reversing a mistaken transfer). Refuses
+        to take more than the member holds, so a balance never goes negative. Red's own
+        set_balance event still fires (BankEvents). The audit post failing does not undo
+        the withdrawal.
+        """
+        if isinstance(amount, bool) or not isinstance(amount, (int, str)):
+            return {"ok": False, "error": "amount must be an integer"}
+        try:
+            amount = int(amount)
+        except ValueError:
+            return {"ok": False, "error": "amount must be an integer"}
+        if amount <= 0:
+            return {"ok": False, "error": "amount must be > 0"}
+        reason = str(reason or "").strip()
+        if not reason:
+            return {"ok": False, "error": "reason is required"}
+        guild, member, err = await self._vc_member(guild_id, user_id)
+        if err:
+            return err
+        old_balance = await bank.get_balance(member)
+        if amount > old_balance:
+            return {"ok": False, "error": f"insufficient funds: balance {old_balance:,}, asked {amount:,}"}
+        try:
+            new_balance = await bank.withdraw_credits(member, amount)
+        except (ValueError, TypeError) as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        currency = await bank.get_currency_name(guild)
+        out = {"ok": True, "user_id": member.id, "amount": amount, "old_balance": old_balance, "new_balance": new_balance}
+        channel = self.bot.get_channel(int(audit_channel_id))
+        if channel is None:
+            out["warning"] = f"audit channel not found: {audit_channel_id}"
+            return out
+        embed = discord.Embed(
+            title="Bank Event: NoA Withdrawal",
+            color=await self.bot.get_embed_color(channel),
+            timestamp=datetime.now(timezone.utc),
+        )
+        embed.add_field(name="Member", value=f"{member.mention}\n`{member.id}`")
         embed.add_field(name="Amount", value=f"{amount:,} {currency}")
         embed.add_field(name="Old Balance", value=f"{old_balance:,}")
         embed.add_field(name="New Balance", value=f"{new_balance:,}")
