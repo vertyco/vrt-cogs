@@ -13,7 +13,7 @@ from .files import build_id
 from .game_routes import GameRoutes
 from .hub_routes import HubRoutes
 from .presence import Presence
-from .replies import MAX_BODY, SERVER_ONLY, TURNED_OFF
+from .replies import MAX_BODY, NOT_FOR_YOU, SERVER_ONLY, TURNED_OFF
 from .sessions import ActivityContext
 from .sockets import CLOSE_GOING_AWAY, Rooms
 
@@ -43,7 +43,7 @@ class HubServer:
         self.bot = hub.bot
         self.web_dir = web_dir
         self.rooms = Rooms()
-        self.presence = Presence(self.game_on, hub.playlog)
+        self.presence = Presence(self.game_on, self.private, hub.playlog)
         self.runner: web.AppRunner | None = None
         self.http: aiohttp.ClientSession | None = None
         self.watchdog: asyncio.Task | None = None
@@ -192,9 +192,25 @@ class HubServer:
             return SERVER_ONLY if game is not None and game.opens_in == "server" else None
         return TURNED_OFF if key in await self.hub.config.guild_from_id(guild_id).disabled() else None
 
-    async def game_on(self, guild_id: int | None, key: str) -> bool:
-        """Whether a game is installed and on in that server"""
-        return key in self.hub.registry.games and not await self.game_off(guild_id, key)
+    async def why_closed(self, ctx: ActivityContext, key: str) -> str | None:
+        """
+        Why a logged-in player can't use a game, worded for them, or None when they can: why_off where they are,
+        then the game's own "visible" check
+        """
+        reason = await self.why_off(ctx.guild_id, key)
+        if reason:
+            return reason
+        game = self.hub.registry.games.get(key)
+        return NOT_FOR_YOU if game is not None and not await game.visible_to(ctx) else None
+
+    async def game_on(self, ctx: ActivityContext, key: str) -> bool:
+        """Whether a game is installed, on where the player is, and not hidden from them"""
+        return key in self.hub.registry.games and await self.why_closed(ctx, key) is None
+
+    def private(self, key: str | None) -> bool:
+        """Whether a game hides itself from some players with "visible\""""
+        game = self.hub.registry.games.get(key)
+        return game is not None and game.visible is not None
 
     async def exchange_code(self, code: str) -> tuple[str, int] | None:
         if time.monotonic() < self.logins_paused_until:

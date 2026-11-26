@@ -51,6 +51,11 @@ log = logging.getLogger("red.vrt.activityhub.hub_routes")
 REASON_LIMIT = 200
 
 
+def switch_list(games: t.Iterable[Game], off: t.Collection[str]) -> list[dict]:
+    """An on/off switch for each game, in the menu's alphabetical order"""
+    return [{"key": game.key, "name": game.name, "on": game.key not in off} for game in ordered_games(games, [])]
+
+
 class HubRoutes:
     """The menu page, the hub's own files, and the /hub/api requests"""
 
@@ -209,10 +214,12 @@ class HubRoutes:
         return state
 
     async def preview_state(self) -> dict:
-        """What the menu shows outside Discord: every game, the owner's look, no settings"""
+        """What the menu shows outside Discord: every game that doesn't hide itself, the owner's look, no settings"""
         global_look = await self.hub.config.look()
+        # Nobody is logged in to ask a game's "visible" about, so a game that has one is left out
+        shown = [game for game in await self.allowed_games() if game.visible is None]
         # Fingerprinting walks every file of every game, which can be thousands, so it runs off the bot's worker
-        games = await asyncio.to_thread(games_json, ordered_games(await self.allowed_games(), []))
+        games = await asyncio.to_thread(games_json, ordered_games(shown, []))
         return {
             "player": None,
             "games": games,
@@ -228,13 +235,14 @@ class HubRoutes:
 
     async def player_state(self, ctx: ActivityContext) -> dict:
         disabled = await self.hub.config.guild(ctx.guild).disabled() if ctx.guild else []
-        installed = await self.allowed_games()
-        visible = [game for game in installed if game.key not in disabled]
+        blocked = await self.hub.config.disabled()
+        # A game hidden from this player has no card and no switch in either settings tab
+        seen = await self.seen_games(ctx)
+        installed = [game for game in seen if game.key not in blocked]
         order = await self.hub.config.user(ctx.author).order()
         looks = await self.player_looks(ctx)
         tabs = await self.player_tabs(ctx)
-        switches = [{"key": g.key, "name": g.name, "on": g.key not in disabled} for g in ordered_games(installed, [])]
-        shown = ordered_games(visible, order)
+        shown = ordered_games([game for game in installed if game.key not in disabled], order)
         # Off the bot's worker, like the preview's
         games = await asyncio.to_thread(games_json, shown, await self.economy_lines(ctx, shown))
         return {
@@ -243,17 +251,18 @@ class HubRoutes:
             "look": effective_look(looks["global"], looks["guild"], looks["user"]),
             "looks": looks,
             "tabs": tabs,
-            "switches": switches if "server" in tabs else [],
-            "globalSwitches": await self.global_switches() if "defaults" in tabs else [],
+            "switches": switch_list(installed, disabled) if "server" in tabs else [],
+            "globalSwitches": switch_list(seen, blocked) if "defaults" in tabs else [],
             "economyLabels": await self.labels_switch(ctx, tabs),
             "launch": None,
             "version": self.hub.registry.hub_version,
         }
 
-    async def global_switches(self) -> list[dict]:
-        blocked = await self.hub.config.disabled()
-        games = ordered_games(self.hub.registry.games.values(), [])
-        return [{"key": g.key, "name": g.name, "on": g.key not in blocked} for g in games]
+    async def seen_games(self, ctx: ActivityContext) -> list[Game]:
+        """Installed games that don't hide themselves from this player, with every game's "visible" asked at once"""
+        games = list(self.hub.registry.games.values())
+        answers = await asyncio.gather(*(game.visible_to(ctx) for game in games))
+        return [game for game, seen in zip(games, answers, strict=True) if seen]
 
     async def labels_switch(self, ctx: ActivityContext, tabs: list[str]) -> dict | None:
         """The currency labels switch and the tab holding it, or None when this player has no such tab"""
@@ -293,7 +302,7 @@ class HubRoutes:
         key = self.hub.launches.take(ctx.author.id)
         if key is None or key not in self.hub.registry.games:
             return None
-        if await self.server.game_off(ctx.guild_id, key):
+        if await self.server.why_closed(ctx, key):
             return None
         return key
 
@@ -330,18 +339,20 @@ class HubRoutes:
             group = config.user(ctx.author)
             await group.order.set(merge_order(await group.order(), body.get("order"), self.hub.registry.games))
         elif tab == "server":
-            await self.save_server(ctx.guild, body)
+            await self.save_server(ctx, body)
         elif tab == "defaults":
-            await self.save_defaults(body)
+            await self.save_defaults(ctx, body)
 
-    async def save_defaults(self, body: dict) -> None:
+    async def save_defaults(self, ctx: ActivityContext, body: dict) -> None:
         """Save the owner's defaults tab. A missing look, disabled or economyLabels key keeps its saved value"""
         config = self.hub.config
         look, disabled, labels = await config.look(), await config.disabled(), await config.economy_labels()
         if "look" in body:
             look = apply_look_change(look, body["look"])
         if "disabled" in body:
-            disabled = merge_disabled(disabled, body["disabled"], self.hub.registry.games)
+            # Games hidden from the owner have no switch, so they count as uninstalled and keep the saved choice
+            seen = [game.key for game in await self.seen_games(ctx)]
+            disabled = merge_disabled(disabled, body["disabled"], seen)
         # The switch is only here when every server shares one balance
         if await self.hub.payouts.bank.is_global():
             labels = check_labels(body, labels)
@@ -350,16 +361,19 @@ class HubRoutes:
         await config.economy_labels.set(labels)
         await self.server.rooms.close_games(disabled)
 
-    async def save_server(self, guild: discord.Guild, body: dict) -> None:
+    async def save_server(self, ctx: ActivityContext, body: dict) -> None:
         """Save the server tab. A missing look, disabled or economyLabels key keeps its saved value"""
+        guild = ctx.guild
         group = self.hub.config.guild(guild)
         look, disabled, labels = await group.look(), await group.disabled(), await group.economy_labels()
         # Check every part before saving any, so a bad part can't leave a half-saved change
         if "look" in body:
             look = apply_look_change(look, body["look"])
         if "disabled" in body:
-            # Games the owner turned off have no switch, so they count as uninstalled and keep this server's choice
-            allowed = [game.key for game in await self.allowed_games()]
+            # Games the owner turned off, or that are hidden from this admin, have no switch, so they count as
+            # uninstalled and keep this server's choice
+            blocked = await self.hub.config.disabled()
+            allowed = [game.key for game in await self.seen_games(ctx) if game.key not in blocked]
             disabled = merge_disabled(disabled, body["disabled"], allowed)
         # With a global bank the switch is the owner's, in the defaults tab
         if not await self.hub.payouts.bank.is_global():

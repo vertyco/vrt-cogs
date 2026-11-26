@@ -11,6 +11,7 @@ from activityhub.tests.fakes import (
     MEMBER_ID,
     OWNER_ID,
     DemoCog,
+    add_hiding_game,
     session_headers,
     write_demo_web,
 )
@@ -367,7 +368,7 @@ async def test_only_the_owner_gets_global_switches(client, hub, demo):
 
 async def add_priced(hub, tmp_path, economy, key="priced"):
     cog = DemoCog(write_demo_web(tmp_path / key), key=key, name="Priced", cog_name=key.title(), economy=economy)
-    assert await hub.registry.add(cog) is not None
+    assert await hub.registry.add(cog)
     return cog
 
 
@@ -541,3 +542,53 @@ async def test_a_line_can_differ_per_player(client, hub, tmp_path):
     _, manager = await menu(client, session_headers(hub, user_id=MANAGER_ID))
     assert lines(member) == {"priced": f"Player {MEMBER_ID}"}
     assert lines(manager) == {"priced": f"Player {MANAGER_ID}"}
+
+
+@pytest.mark.asyncio
+async def test_a_game_hidden_from_a_player_has_no_card_or_switch(client, hub, demo, tmp_path):
+    await add_hiding_game(hub, tmp_path / "secret", MANAGER_ID)
+    status, state = await menu(client, session_headers(hub))
+    assert keys(state) == ["demo"]
+    status, state = await menu(client, session_headers(hub, user_id=ADMIN_ID))
+    assert keys(state) == ["demo"] and [s["key"] for s in state["switches"]] == ["demo"]
+    status, state = await menu(client, session_headers(hub, user_id=MANAGER_ID))
+    assert keys(state) == ["demo", "secret"] and [s["key"] for s in state["switches"]] == ["demo", "secret"]
+
+
+@pytest.mark.asyncio
+async def test_the_preview_leaves_out_games_that_hide_themselves(client, hub, demo, tmp_path):
+    await add_hiding_game(hub, tmp_path / "secret", MANAGER_ID)
+    status, state = await menu(client)
+    assert keys(state) == ["demo"]
+
+
+@pytest.mark.asyncio
+async def test_server_save_keeps_its_choice_for_games_hidden_from_the_admin(client, hub, demo, tmp_path):
+    await add_hiding_game(hub, tmp_path / "secret", MANAGER_ID)
+    admin = session_headers(hub, user_id=ADMIN_ID)
+    await save(client, admin, {"tab": "server", "disabled": ["secret", "demo"]})
+    assert hub.config.guilds[GUILD_ID]["disabled"] == ["demo"]
+    await save(client, session_headers(hub, user_id=MANAGER_ID), {"tab": "server", "disabled": ["secret"]})
+    assert hub.config.guilds[GUILD_ID]["disabled"] == ["secret"]
+    await save(client, admin, {"tab": "server", "disabled": []})
+    assert hub.config.guilds[GUILD_ID]["disabled"] == ["secret"]
+
+
+@pytest.mark.asyncio
+async def test_a_game_hidden_from_the_owner_has_no_switch_in_defaults(client, hub, demo, tmp_path):
+    await add_hiding_game(hub, tmp_path / "secret", MANAGER_ID)
+    await hub.config.disabled.set(["secret"])
+    headers = session_headers(hub, user_id=OWNER_ID)
+    status, state = await menu(client, headers)
+    assert [s["key"] for s in state["globalSwitches"]] == ["demo"]
+    await save(client, headers, {"tab": "defaults", "disabled": []})
+    assert hub.config.globals["disabled"] == ["secret"]
+
+
+@pytest.mark.asyncio
+async def test_a_launch_of_a_hidden_game_only_opens_the_menu(client, hub, demo, tmp_path):
+    await add_hiding_game(hub, tmp_path / "secret", MANAGER_ID)
+    hub.launches.remember(MEMBER_ID, "secret")
+    hub.launches.remember(MANAGER_ID, "secret")
+    assert (await menu(client, session_headers(hub)))[1]["launch"] is None
+    assert (await menu(client, session_headers(hub, user_id=MANAGER_ID)))[1]["launch"] == "secret"

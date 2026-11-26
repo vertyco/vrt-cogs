@@ -63,15 +63,16 @@ class Person:
     # Takes them off the list once the grace after their last link dropped is over
     leaving: asyncio.Task | None = None
 
-    def view(self) -> dict:
+    def view(self, hidden: bool = False) -> dict:
+        """What the others see of this person. With hidden, they look like they are in the menu"""
         return {
             "id": str(self.member.id),
             "name": self.member.display_name,
             "avatar": self.member.display_avatar.url,
-            "game": self.where,
-            "status": self.status,
-            "data": self.data,
-            "busy": self.busy,
+            "game": None if hidden else self.where,
+            "status": "" if hidden else self.status,
+            "data": None if hidden else self.data,
+            "busy": False if hidden else self.busy,
             # Someone whose link dropped is shown away until they're back or the grace is over
             "away": self.away or not self.links,
         }
@@ -93,9 +94,17 @@ class Window:
 class Presence:
     """The people list of every window, kept up to date by each player's menu link"""
 
-    def __init__(self, game_on: t.Callable[[int | None, str], t.Awaitable[bool]], playlog: PlayLog):
-        # Whether a game is installed and on in a server, so a page can't claim to be somewhere it can't be
+    def __init__(
+        self,
+        game_on: t.Callable[[ActivityContext, str], t.Awaitable[bool]],
+        private: t.Callable[[str | None], bool],
+        playlog: PlayLog,
+    ):
+        # Whether a game is installed, on where the player is and not hidden from them, so a page can't claim to be
+        # somewhere it can't be
         self.game_on = game_on
+        # Whether a game hides itself from some players. Being in one is only shown to those who can see it too
+        self.private = private
         self.playlog = playlog
         self.windows: dict[str, Window] = {}
 
@@ -152,7 +161,7 @@ class Presence:
         self.changed(window, moved)
 
     async def clean_where(self, ctx: ActivityContext, value: t.Any) -> str | None:
-        if not isinstance(value, str) or not await self.game_on(ctx.guild_id, value):
+        if not isinstance(value, str) or not await self.game_on(ctx, value):
             return None
         return value
 
@@ -179,10 +188,14 @@ class Presence:
         self.changed(window, person.where is not None)
 
     def log_play(self, window: Window, person: Person) -> None:
-        """Tell the play log where the person is, and whether their play's clock runs: in a game, linked, not away"""
+        """
+        Tell the play log where the person is, and whether their play's clock runs: in a game, linked, not away.
+        A game that hides itself is never logged, so the Stats tab can't show it to someone it is hidden from
+        """
         running = bool(person.links) and not person.away
         key = (window.instance_id, person.member.id)
-        self.playlog.sync(key, window.guild_id, person.member.id, person.where, person.platform, running)
+        where = None if self.private(person.where) else person.where
+        self.playlog.sync(key, window.guild_id, person.member.id, where, person.platform, running)
 
     def follow_target(self, ctx: ActivityContext, value: t.Any) -> int | None:
         """The user id a game connection's follow names, when that person is someone else in the same window"""
@@ -214,17 +227,40 @@ class Presence:
             await asyncio.sleep(wait)
         window.sent_at = loop.time()
         try:
-            text = dumps(self.snapshot(window))
+            unseen = await self.unseen(window)
+            # One text for each set of hidden games, which is one text for everyone unless a game hides itself
+            texts = {hidden: dumps(self.snapshot(window, hidden)) for hidden in set(unseen.values())}
         except Exception as e:
             # Left alone, the task would fail with nobody told, and every later list for this window would too
             log.error("Couldn't build the people list of window %s: %s", window.instance_id, e, exc_info=e)
             return
-        for conn in window.links():
-            conn.queue_text(text)
+        for conn, hidden in unseen.items():
+            conn.queue_text(texts[hidden])
 
-    def snapshot(self, window: Window) -> dict:
+    def private_keys(self, window: Window) -> set[str]:
+        """The games on this window's list that hide themselves from some players"""
+        keys = {person.where for person in window.people.values()} | set(self.elsewhere(window))
+        return {key for key in keys if self.private(key)}
+
+    async def unseen(self, window: Window) -> dict[Connection, frozenset[str]]:
+        """
+        Each link's games on the list that are hidden from its player. Asking the games takes a moment, and the list
+        can change meanwhile, so it asks again until every game on the list has an answer for every link
+        """
+        seen: dict[tuple[Connection, str], bool] = {}
+        while True:
+            links, keys = window.links(), self.private_keys(window)
+            missing = [(conn, key) for conn in links for key in keys if (conn, key) not in seen]
+            if not missing:
+                return {conn: frozenset(key for key in keys if not seen[conn, key]) for conn in links}
+            answers = await asyncio.gather(*(self.game_on(conn.ctx, key) for conn, key in missing))
+            seen.update(zip(missing, answers, strict=True))
+
+    def snapshot(self, window: Window, hidden: t.Collection[str] = ()) -> dict:
+        """The window's list, as sent to a player the games in hidden are hidden from"""
         people = sorted(window.people.values(), key=lambda person: person.arrived)
-        return {"people": [person.view() for person in people], "elsewhere": self.elsewhere(window)}
+        elsewhere = {key: count for key, count in self.elsewhere(window).items() if key not in hidden}
+        return {"people": [person.view(person.where in hidden) for person in people], "elsewhere": elsewhere}
 
     def elsewhere(self, window: Window) -> dict[str, int]:
         """How many people play each game in the server's other windows. Nothing outside a server"""

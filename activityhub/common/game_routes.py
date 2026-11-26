@@ -14,6 +14,7 @@ from .replies import (
     MAX_BODY,
     NO_CACHE,
     NO_SUCH_ACTION,
+    NOT_FOR_YOU,
     NOT_INSTALLED,
     PAGE_MISSING,
     SESSION_EXPIRED,
@@ -228,7 +229,8 @@ class GameRoutes:
 
     async def turned_off_here(self, request: web.Request, game: Game) -> str | None:
         # A page load carries no session, so this can only trust the address's guild_id. It is a courtesy:
-        # the real locks are on actions, raw routes and the live connection, which use the proven server
+        # the real locks are on actions, raw routes and the live connection, which use the proven server. With no
+        # player to ask a game's "visible" about, the page and its files load for anyone who has the address
         guild_id = discord_id(request.query.get("guild_id"))
         if guild_id is not None:
             return await self.server.why_off(guild_id, game.key)
@@ -260,7 +262,7 @@ class GameRoutes:
         ctx = self.server.request_context(request)
         if ctx is None:
             return error(SESSION_EXPIRED, 401)
-        reason = await self.server.why_off(ctx.guild_id, game.key)
+        reason = await self.server.why_closed(ctx, game.key)
         if reason:
             return error(reason, 403)
         ctx = await game.context(ctx)
@@ -315,7 +317,10 @@ class GameRoutes:
             # login at all
             return web.json_response({"error": SESSION_EXPIRED}, status=401, headers=EXPIRED_HEADER)
         if ctx is not None:
-            reason = await self.server.why_off(ctx.guild_id, game.key)
+            reason = await self.server.why_closed(ctx, game.key)
+        elif game.visible is not None:
+            # Nobody to ask the game's "visible" about, so a game that hides itself takes no request without a login
+            reason = NOT_FOR_YOU
         else:
             # No login means no proven server, so only the bot owner's switch for every server applies
             reason = TURNED_OFF if await self.server.off_everywhere(game.key) else None
@@ -347,7 +352,7 @@ class GameRoutes:
         if ctx is None:
             await ws.close(code=CLOSE_SESSION, message=b"Session missing or expired")
             return ws
-        reason = await self.server.why_off(ctx.guild_id, game.key)
+        reason = await self.server.why_closed(ctx, game.key)
         if reason:
             await ws.close(code=CLOSE_TURNED_OFF, message=reason.encode())
             return ws
@@ -385,12 +390,13 @@ class GameRoutes:
 
     async def late_close_code(self, conn: Connection) -> int | None:
         """
-        Why a connection that just joined its room must close: the game was unloaded or turned off while it waited.
-        Closing sweeps only reach connections already in a room, so the room is checked again after joining it
+        Why a connection that just joined its room must close: the game was unloaded, turned off or hidden from the
+        player while it waited. Closing sweeps only reach connections already in a room, so the room is checked again
+        after joining it
         """
         if self.hub.registry.games.get(conn.game.key) is not conn.game:
             return CLOSE_GOING_AWAY
-        if await self.server.game_off(conn.ctx.guild_id, conn.game.key):
+        if await self.server.why_closed(conn.ctx, conn.game.key):
             return CLOSE_TURNED_OFF
         return None
 

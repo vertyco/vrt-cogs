@@ -12,7 +12,10 @@ from activityhub.tests.fakes import ADMIN_ID, MANAGER_ID, MEMBER_ID, context_for
 from activityhub.tests.test_playlog import Clock
 from activityhub.tests.test_sockets import FakeWebSocket, delivered
 
-ON = {"snake", "tanks"}
+ON = {"snake", "tanks", "secret"}
+# A game that hides itself, and the players it shows itself to
+PRIVATE = {"secret"}
+ALLOWED = {MEMBER_ID, MANAGER_ID}
 
 
 @pytest.fixture(autouse=True)
@@ -33,10 +36,10 @@ def clock():
 
 @pytest_asyncio.fixture
 async def presence(clock):
-    async def game_on(guild_id, key):
-        return key in ON
+    async def game_on(ctx, key):
+        return key in ON and (key not in PRIVATE or ctx.author.id in ALLOWED)
 
-    made = Presence(game_on, PlayLog(clock=clock))
+    made = Presence(game_on, PRIVATE.__contains__, PlayLog(clock=clock))
     yield made
     links = made.links()
     # Inside the test's loop, so the cancelled sends and graces belong to a loop that is still running
@@ -403,3 +406,49 @@ async def test_stopping_ends_open_plays(hub, presence):
     await presence.update(ann, {"where": "snake"})
     presence.stop()
     assert [row.game for row in presence.playlog.queue] == ["snake"]
+
+
+async def asked(*conns):
+    # Asking a game that hides itself who sees it takes the send a few more turns of the loop
+    await asyncio.sleep(0.05)
+    await settle(*conns)
+
+
+@pytest.mark.asyncio
+async def test_a_game_that_hides_itself_shows_only_to_those_who_see_it(hub, presence):
+    ann, bo, cy = link(hub), link(hub, MANAGER_ID), link(hub, ADMIN_ID)
+    for conn in (ann, bo, cy):
+        await presence.connect(conn)
+    await presence.update(ann, {"where": "secret", "status": "Editing", "data": {"x": 1}, "busy": True})
+    await asked(ann, bo, cy)
+    seen, unseen = last(bo)["people"][0], last(cy)["people"][0]
+    assert (seen["game"], seen["status"], seen["data"], seen["busy"]) == ("secret", "Editing", {"x": 1}, True)
+    assert (unseen["game"], unseen["status"], unseen["data"], unseen["busy"]) == (None, "", None, False)
+    assert last(ann) == last(bo)
+
+
+@pytest.mark.asyncio
+async def test_nobody_can_say_they_are_in_a_game_hidden_from_them(hub, presence):
+    cy = link(hub, ADMIN_ID)
+    await presence.connect(cy)
+    await presence.update(cy, {"where": "secret"})
+    assert presence.windows["i-1"].people[ADMIN_ID].where is None
+
+
+@pytest.mark.asyncio
+async def test_other_channels_dont_count_a_game_hidden_from_the_viewer(hub, presence):
+    cy, bo, ann = link(hub, ADMIN_ID), link(hub, MANAGER_ID), link(hub, instance="i-2")
+    for conn in (cy, bo, ann):
+        await presence.connect(conn)
+    await presence.update(ann, {"where": "secret"})
+    await asked(cy, bo, ann)
+    assert last(cy)["elsewhere"] == {} and last(bo)["elsewhere"] == {"secret": 1}
+
+
+@pytest.mark.asyncio
+async def test_a_game_that_hides_itself_makes_no_play(hub, presence):
+    ann = link(hub)
+    await presence.connect(ann)
+    await presence.update(ann, {"where": "secret"})
+    assert me_in(presence).where == "secret"
+    assert open_plays(presence) == {} and written(presence) == []

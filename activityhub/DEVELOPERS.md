@@ -45,6 +45,7 @@ You don't need to know anything about Discord Activities, web servers or Discord
 | Let players upload files | [8. Uploads](#8-uploads-and-other-raw-requests) |
 | Use extra Discord features, like the player's Discord status | [9. Extra Discord permissions](#9-extra-discord-permissions) |
 | Open my game from my own command or button | [10. Opening your game from a command or button](#10-opening-your-game-from-a-command-or-button) |
+| Show my game only to some players, like staff or testers | [Hide your game from some players](#hide-your-game-from-some-players-visible) |
 | Turn effects down on a hot phone, or fit Discord's small window and a sideways phone | [Phone heat, the small window and turning sideways](#phone-heat-the-small-window-and-turning-sideways) |
 | Use a bundler (Vite, esbuild) or a game engine (Godot, Unity) | [11. Files and caching](#11-files-and-caching) and [14. Discord's limits](#14-discords-limits) |
 | Test my Python without Discord | [Testing your Python without Discord](#testing-your-python-without-discord) |
@@ -732,6 +733,71 @@ Rules for the line:
 
 A fixed `economy` line needs ActivityHub 0.7.0 or later. A function needs 0.8.0 or later, since 0.7.0 passed it the server instead of the player's `ctx` (the object every handler gets, saying who the player is and where). Set [`requires`](REFERENCE.md#1-activityhub_game) to match.
 
+### Hide your game from some players: `visible`
+
+**In short:** add `"visible"` to `activityhub_game()`, and only the players your function says yes to can see your game or use it. Leave it out and everyone sees it.
+
+Use it for a staff tool, a game you are still testing, or anything only some people should open.
+
+```python
+STAFF = {111111111111111111, 222222222222222222}
+
+
+async def activityhub_game(self) -> dict:
+    return {
+        "key": "map-editor",
+        "name": "Map Editor",
+        "web_dir": Path(__file__).parent / "web",
+        "actions": {"save": self.save},
+        "visible": self.visible,
+        "requires": "0.19.0",
+    }
+
+
+async def visible(self, ctx) -> bool:
+    return ctx.author.id in STAFF
+```
+
+The function takes the player's `ctx` and returns `True` or `False`. Since it gets `ctx`, it can follow anything you can read from it: a list of ids, `await ctx.is_admin()`, a role, a list an admin saved in Config.
+
+Any check you would put on a command works here, written out as code. This one lets in the people Red's `@commands.admin_or_permissions(manage_messages=True)` lets run a command: admins, and anyone who can manage messages in the channel the Activity runs in.
+
+```python
+async def visible(self, ctx) -> bool:
+    if await ctx.is_admin():
+        return True
+    # Outside a server there is no channel, and nobody has permissions
+    channel = ctx.channel
+    return channel is not None and channel.permissions_for(ctx.author).manage_messages
+```
+
+Other common ones: `await ctx.is_mod()` for mods and up, `await self.bot.is_owner(ctx.author)` for the bot owner, and `ctx.author.get_role(ROLE_ID) is not None` for one role (only in a server, where `ctx.author` is a member).
+
+For a player it says no to:
+
+- **The menu has no card for your game,** and the settings tabs have no switch for it. That goes for server admins and the bot owner too.
+- **A launch only opens the menu.** A pinned game button or `hub.launch()` opens the Activity, and your game doesn't open in it.
+- **Your actions, raw routes and live connection refuse them** before your handler runs: actions and raw routes answer 403 with "This activity isn't available to you.", and a live connection closes with `4003`. You don't repeat the check in each handler.
+- **The people list doesn't give your game away.** Someone playing it looks like they are in the menu, and their status line and data aren't sent. Players who can see your game see each other in it as usual.
+
+The preview in a browser (the menu opened outside Discord) leaves your game out, since nobody is logged in there to ask about.
+
+What it doesn't hide:
+
+- **Your page and its files stay public,** like every game's. A page load carries no login, so anyone who knows the address `/games/<key>/` can load the files in `web_dir`. Keep anything private behind an action or a raw route, never in a file.
+- **The bot owner's `[p]activityhub games` still lists it.**
+
+Rules for the function:
+
+- **Answer quickly, within 2 seconds at most.** The hub asks each time a player opens the menu, on every action and raw request, on each new live connection, and when the people list changes while someone is in your game. Answer from memory or one Config read. Don't call outside services in it.
+- **A failure hides the game.** A function that raises, is too slow, or answers something that isn't `True` or `False` hides your game from that player that time. The bot log says why once, and again only after the function has answered properly in between.
+- **Raw routes need the player's login.** With `visible`, a raw request with no login is refused with 403, so your handler never gets `ctx=None`. Send every raw request with `hub.fetch()`: a plain `fetch()` or an `<img src>` carries no login.
+- **A live connection is checked when it opens,** not while it stays open. To drop someone you just took off the list, call `conn.close()` on their connection.
+- **Don't read `ctx.room_id` in it.** The hub asks before it works out the player's room.
+- **Plays of your game aren't counted** in the menu's Stats tab, which could show your game's name to an admin it is hidden from.
+
+Needs ActivityHub 0.19.0 or later: set `"requires": "0.19.0"` too, so an older hub says to update.
+
 ## 6. Multiplayer with live connections
 
 **In short:** a live connection lets players see each other's moves right away. Your Python gets three methods: `join` when a player connects, `message` when their page sends something, and `leave` when they go.
@@ -852,7 +918,7 @@ Friends who open the Activity land in the menu, not in your game: each of them p
 | `1009` | A message of 1 MB or more. The hub closes the whole connection, and `leave` still runs. | Not until you send less. |
 | `1011` | Your `join` handler raised. | No. |
 | `4001` | The login expired while connecting, and logging in again failed. The hub takes the player back to the menu by itself. | No. |
-| `4003` | Your game was turned off in this server, or by the bot owner for every server, or it has `"opens_in": "server"` and the player is outside the bot's servers. | No. |
+| `4003` | Your game was turned off in this server, or by the bot owner for every server, or it has `"opens_in": "server"` and the player is outside the bot's servers, or its `"visible"` said no to the player. | No. |
 | `4004` | Your `activityhub_game()` has no `"socket"`. | No. |
 | `4029` | The page sent more than the message limit allows (see below). The bot's log names the player. | No. |
 | `4100`-`4999` | Your own codes, from `conn.close(code)` in your Python. | Your call. |
@@ -1660,8 +1726,11 @@ The tables, by where you see the problem:
 |---|---|---|
 | The game isn't in `[p]activityhub games` at all | Your cog isn't loaded, it has no `activityhub_game` method, or `activityhub_game()` is still waiting on something. | `[p]load yourcog`. Check the method name is spelled exactly `activityhub_game`. A game whose method waits shows up once it returns. |
 | `activityhub_game must be an async def` | You wrote `def activityhub_game`. | Write `async def activityhub_game(self)`. |
-| `activityhub_game must return a dict, got ...` | The method returns something else, or nothing (`got NoneType`). | `return {...}`. |
-| `activityhub_game must return one dict (one game per cog), got ...` | The method returns several games, in a list or a tuple. | One cog gives one game. Make a cog for each. |
+| `activityhub_game must return a dict, or a list of dicts, got ...` | The method returns something else, or nothing (`got NoneType`). | `return {...}`, or `return [{...}, {...}]` for [several activities](REFERENCE.md#several-activities-from-one-cog). |
+| `activityhub_game returned an empty list: return a dict for each activity` | The method returns `[]`. | Return a dict for each activity. |
+| `activityhub_game returned a list holding str, not only dicts` | Something in the list isn't a dict. | Every item in the list is one activity's dict. |
+| The Refused list names your cog with a key in brackets, like YourCog (editor) | Your cog offers several activities, and the one with that key was refused for the reason after it. The cog's other activities still load. | Fix that activity's dict. |
+| `The key 'x' is used by two activities of this cog` | Two dicts in your list have the same key. The first one loads. | Give each activity its own key. |
 | `Unknown field 'action' (did you mean 'actions'?)` | A field name in your dict has a typo. | Use the field it suggests. |
 | `Unknown fields: ...` | A field name isn't a real field, or the game was made for a newer ActivityHub. | Use only the fields in [the table](REFERENCE.md#1-activityhub_game), or update ActivityHub with `[p]cog update`. |
 | `requires must be a version like "0.8.0", got 'latest'` | `requires` isn't two or three whole numbers with dots between them. | Write it as text, like `"0.8.0"`. |
@@ -1687,7 +1756,9 @@ The tables, by where you see the problem:
 | `platforms can only hold "desktop" and "mobile" (all Discord tells the hub), got ...` | A platform name Discord doesn't use, like `"ios"`. Discord only says whether a player is on desktop or mobile. | Use `["desktop"]` or `["mobile"]`, or leave `platforms` out. |
 | `platforms can't be empty: leave it out to run everywhere` | `platforms` is `[]`. | Leave it out, or list where your game works. |
 | `opens_in must be "server" or "everywhere", got ...` | Another value, like `"servers"` or `["server"]`. | Use `"server"`, or leave `opens_in` out to open everywhere. |
+| `visible must be an async def that takes ctx, got ...` | `visible` is a plain `def`, or a value like `True` or `"admin"`. | Pass an `async def` that takes `ctx` and returns `True` or `False`, or leave `visible` out to show everyone. |
 | `activityhub_game() raised ...` | Your method crashed. | The bot's log has the full error. |
+| Listed, but one player has no card for it | Your `visible` function said no to them, or failed for them. | Check the function, and the bot log for a `visible` warning. |
 | Listed, but not in the menu in one server | A server admin turned it off there. | The server's **This server** settings tab turns it back on. |
 | Listed with `[turned off]` | The bot owner turned it off everywhere. | The owner's **Defaults** settings tab turns it back on. |
 
@@ -1705,6 +1776,7 @@ Your game still registers, but something will likely break:
 | `economy took longer than 2 seconds, so its card has no currency label` | Your `economy` function didn't answer in time when a player opened the menu. | Answer from memory or one Config read. Don't call outside services in it. |
 | `economy failed, so its card has no currency label` | Your `economy` function raised. The error follows in the log. | Fix the error. The menu still opens meanwhile. |
 | `economy returned 45 characters, so its label was cut to 40` | The line from your `economy` function was longer than the badge fits. | Return a line of 40 characters or fewer. |
+| `visible failed, so the game is hidden from every player it happens for.` | Your `visible` function raised. The error follows in the log. In place of "failed" the line can say it took longer than 2 seconds, or what it returned that isn't `True` or `False`. It is logged once, until the function answers properly again. | Fix the error, answer from memory or one Config read, and return `True` or `False`. |
 
 This one shows up when a player logs in, not when your game registers:
 

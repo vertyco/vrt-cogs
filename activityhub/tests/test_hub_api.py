@@ -231,7 +231,7 @@ async def test_game_off_everywhere(server, hub):
 @pytest.mark.asyncio
 async def test_a_servers_only_game_is_off_outside_the_bots_servers(server, hub, tmp_path):
     local = DemoCog(write_demo_web(tmp_path / "local"), key="local", name="Local", cog_name="Local", opens_in="server")
-    assert await hub.registry.add(local) is not None
+    assert await hub.registry.add(local)
     assert await server.why_off(None, "local") == SERVER_ONLY
     assert await server.game_off(None, "local") is True
     assert await server.why_off(GUILD_ID, "local") is None

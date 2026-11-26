@@ -1,5 +1,24 @@
 # ActivityHub Changelog
 
+## 0.19.0
+
+A game can now hide itself from some players, and one cog can offer several activities.
+
+Several activities from one cog:
+
+- `activityhub_game()` can return a list of dicts, one for each activity. Each gets its own card, key, page, handlers and on/off switch. Returning one dict works as before.
+- An activity that is refused (a wrong field, or a key another cog holds) doesn't stop the cog's others from loading. `[p]activityhub games` lists it under Refused as `CogName (key)`, with the reason.
+- See "Several activities from one cog" in REFERENCE.md.
+
+Hiding a game:
+
+- New `visible` field in `activityhub_game()`: an `async def` that takes the player's `ctx` and returns `True` or `False`, like `return ctx.author.id in STAFF`. Leaving it out shows the game to everyone, as before. Set `"requires": "0.19.0"` with it.
+- A player it says no to has no card for the game in the menu and no switch for it in the settings tabs, and a launch button only opens the menu for them. The game's actions, raw routes and live connection refuse them before the game's own code runs.
+- The people list doesn't give a hidden game away: someone playing it looks like they are in the menu to a player who can't see it.
+- The menu's preview in a browser leaves out games that have `visible`, since nobody is logged in there.
+- Plays of a game that has `visible` aren't counted in the Stats tab.
+- A game's page and its files stay public, as they are for every game. See "Hide your game from some players" in DEVELOPERS.md.
+
 ## 0.18.0
 
 A polish pass on the frame the included games (2048, Snake and Brick Breaker) share: the top bar, the cards and the notes.

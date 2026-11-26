@@ -6,12 +6,14 @@ import pytest
 
 from activityhub.bundled.games import bundled_games
 from activityhub.common.files import build_id
-from activityhub.common.replies import SERVER_ONLY, SESSION_EXPIRED, TURNED_OFF
+from activityhub.common.replies import NOT_FOR_YOU, SERVER_ONLY, SESSION_EXPIRED, TURNED_OFF
 from activityhub.tests.fakes import (
     GUILD_ID,
+    MANAGER_ID,
     MEMBER_ID,
     OWNER_ID,
     DemoCog,
+    add_hiding_game,
     session_headers,
     write_demo_web,
 )
@@ -24,7 +26,7 @@ async def turn_off(hub, key="demo"):
 async def servers_only(hub, folder):
     """A game that only opens in the bot's servers"""
     cog = DemoCog(write_demo_web(folder), key="local", name="Local", cog_name="Local", opens_in="server")
-    assert await hub.registry.add(cog) is not None
+    assert await hub.registry.add(cog)
     return cog
 
 
@@ -462,3 +464,24 @@ async def test_a_servers_only_game_refuses_players_outside_the_bots_servers(clie
     assert (await client.get("/games/local/raw/hello", headers=outside)).status == 403
     assert (await client.post("/games/local/api/echo", json={}, headers=session_headers(hub))).status == 200
     assert (await client.get("/games/local/raw/hello", headers=session_headers(hub))).status == 200
+
+
+@pytest.mark.asyncio
+async def test_a_hidden_game_refuses_actions_and_raw_routes(client, hub, tmp_path):
+    cog = await add_hiding_game(hub, tmp_path / "secret", MANAGER_ID)
+    hidden, allowed = session_headers(hub), session_headers(hub, user_id=MANAGER_ID)
+    resp = await client.post("/games/secret/api/echo", json={}, headers=hidden)
+    assert resp.status == 403 and await resp.json() == {"error": NOT_FOR_YOU}
+    assert (await client.get("/games/secret/raw/hello", headers=hidden)).status == 403
+    # A request with no login has no player to ask about, so it is refused too
+    assert (await client.get("/games/secret/raw/hello")).status == 403
+    assert cog.events == []
+    assert (await client.post("/games/secret/api/echo", json={}, headers=allowed)).status == 200
+    assert (await client.get("/games/secret/raw/hello", headers=allowed)).status == 200
+
+
+@pytest.mark.asyncio
+async def test_the_page_of_a_hidden_game_loads_for_anyone(client, hub, tmp_path):
+    # A page load carries no login, so there is nobody to ask about
+    await add_hiding_game(hub, tmp_path / "secret", MANAGER_ID)
+    assert (await client.get("/games/secret/")).status == 200

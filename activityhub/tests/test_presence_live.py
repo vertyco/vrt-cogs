@@ -4,7 +4,15 @@ import pytest
 import pytest_asyncio
 
 from activityhub.common import presence as presence_module
-from activityhub.tests.fakes import GUILD_ID, MANAGER_ID, MEMBER_ID, DemoCog, register, write_demo_web
+from activityhub.tests.fakes import (
+    GUILD_ID,
+    MANAGER_ID,
+    MEMBER_ID,
+    DemoCog,
+    context_for,
+    register,
+    write_demo_web,
+)
 from activityhub.tests.test_live import READY, close_code, next_json, session_token
 
 
@@ -26,7 +34,7 @@ async def quick(monkeypatch, server, client):
 @pytest.fixture
 def follow_game(hub, tmp_path):
     cog = FollowCog(write_demo_web(tmp_path / "demo"))
-    assert register(hub, cog) is not None
+    assert register(hub, cog)
     return cog
 
 
@@ -91,23 +99,23 @@ async def test_a_failing_menu_message_keeps_the_link(client, hub, server, demo, 
 
 @pytest.mark.asyncio
 async def test_a_game_is_on_when_installed_and_not_switched_off(hub, server, demo):
-    assert await server.game_on(GUILD_ID, "demo") is True
-    assert await server.game_on(GUILD_ID, "nothing") is False
+    assert await server.game_on(context_for(hub), "demo") is True
+    assert await server.game_on(context_for(hub), "nothing") is False
     await hub.config.guild_from_id(GUILD_ID).disabled.set(["demo"])
-    assert await server.game_on(GUILD_ID, "demo") is False
+    assert await server.game_on(context_for(hub), "demo") is False
 
 
 @pytest.mark.asyncio
 async def test_a_game_the_owner_switched_off_is_off_everywhere(hub, server, demo):
     await hub.config.disabled.set(["demo"])
-    assert await server.game_on(GUILD_ID, "demo") is False
-    assert await server.game_on(None, "demo") is False
+    assert await server.game_on(context_for(hub), "demo") is False
+    assert await server.game_on(context_for(hub, guild_id=None), "demo") is False
 
 
 @pytest.mark.asyncio
 async def test_outside_a_server_only_the_owners_switch_counts(hub, server, demo):
     await hub.config.guild_from_id(GUILD_ID).disabled.set(["demo"])
-    assert await server.game_on(None, "demo") is True
+    assert await server.game_on(context_for(hub, guild_id=None), "demo") is True
 
 
 @pytest.mark.asyncio

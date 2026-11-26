@@ -351,6 +351,17 @@ def write_demo_web(folder: Path) -> Path:
     return folder
 
 
+async def add_hiding_game(hub, folder: Path, *allowed: int) -> "DemoCog":
+    """Register a game with the key "secret" that hides itself from everyone but the players in allowed"""
+
+    async def visible(ctx):
+        return ctx.author.id in allowed
+
+    cog = DemoCog(write_demo_web(folder), key="secret", name="Secret", cog_name="Secret", visible=visible)
+    assert await hub.registry.add(cog)
+    return cog
+
+
 class DemoCog:
     """A game cog using every hook, recording what the hub hands it"""
 
@@ -366,6 +377,7 @@ class DemoCog:
         platforms=None,
         room=None,
         opens_in=None,
+        visible=None,
     ):
         self.qualified_name = cog_name
         self.web_dir = web_dir
@@ -377,6 +389,7 @@ class DemoCog:
         self.platforms = platforms
         self.room = room
         self.opens_in = opens_in
+        self.visible = visible
         self.events: list[tuple] = []
         self.join_error = False
         self.result: t.Any = None  # what the "give" action returns
@@ -417,6 +430,8 @@ class DemoCog:
             desc["room"] = self.room
         if self.opens_in is not None:
             desc["opens_in"] = self.opens_in
+        if self.visible is not None:
+            desc["visible"] = self.visible
         return desc
 
     async def echo(self, ctx, data):

@@ -13,6 +13,7 @@ from activityhub.tests.fakes import (
     MEMBER_ID,
     OWNER_ID,
     DemoCog,
+    add_hiding_game,
     register,
     session_headers,
     write_demo_web,
@@ -50,7 +51,7 @@ class RoomCog(DemoCog):
 @pytest.fixture
 def room(hub, tmp_path):
     cog = RoomCog(write_demo_web(tmp_path / "demo"))
-    assert register(hub, cog) is not None
+    assert register(hub, cog)
     return cog
 
 
@@ -224,7 +225,7 @@ async def test_turned_off_game_closes_4003(client, hub, demo):
 @pytest.mark.asyncio
 async def test_a_servers_only_game_closes_4003_outside_the_bots_servers(client, hub, tmp_path):
     cog = DemoCog(write_demo_web(tmp_path / "local"), key="local", name="Local", cog_name="Local", opens_in="server")
-    assert await hub.registry.add(cog) is not None
+    assert await hub.registry.add(cog)
     ws = await open_live(client, hub, path="/games/local/ws", guild_id=None)
     assert await close_code(ws) == 4003
     assert not any(event[0] == "join" for event in cog.events)
@@ -515,3 +516,14 @@ async def test_shutdown_closes_1001(client, hub, server, demo):
     closing = asyncio.create_task(server.on_shutdown(None))
     assert await close_code(ws) == 1001
     await closing
+
+
+@pytest.mark.asyncio
+async def test_a_hidden_game_closes_4003(client, hub, tmp_path):
+    cog = await add_hiding_game(hub, tmp_path / "secret", MANAGER_ID)
+    ws = await open_live(client, hub, path="/games/secret/ws")
+    assert await close_code(ws) == 4003
+    assert not any(event[0] == "join" for event in cog.events)
+    ws = await open_live(client, hub, path="/games/secret/ws", user_id=MANAGER_ID)
+    assert await next_json(ws) == READY
+    await ws.close()

@@ -160,9 +160,10 @@ async def test_plain_def_hook_is_refused(web_dir):
 @pytest.mark.parametrize(
     "returned, reason",
     [
-        ([], r"must return one dict \(one game per cog\), got list"),
-        (None, "must return a dict, got NoneType"),
-        ("snake", "must return a dict, got str"),
+        ([], "returned an empty list: return a dict for each activity"),
+        ([{}, "snake"], "returned a list holding str, not only dicts"),
+        (None, "must return a dict, or a list of dicts, got NoneType"),
+        ("snake", "must return a dict, or a list of dicts, got str"),
     ],
 )
 async def test_hook_must_return_a_dict(web_dir, returned, reason):
@@ -177,9 +178,9 @@ async def test_hook_must_return_a_dict(web_dir, returned, reason):
 @pytest.mark.asyncio
 async def test_registry_adds_games_and_ignores_plain_cogs(web_dir):
     registry = GameRegistry(HUB_VERSION)
-    assert await registry.add(PlainCog()) is None
+    assert await registry.add(PlainCog()) == []
     assert registry.failed == {}
-    game = await registry.add(GameCog(web_dir, scopes=["b.scope", "a.scope"]))
+    [game] = await registry.add(GameCog(web_dir, scopes=["b.scope", "a.scope"]))
     assert registry.games == {"fake": game}
     assert registry.scopes() == ["a.scope", "b.scope"]
 
@@ -188,7 +189,7 @@ async def test_registry_adds_games_and_ignores_plain_cogs(web_dir):
 async def test_registry_records_refusals(web_dir):
     registry = GameRegistry(HUB_VERSION)
     cog = GameCog(web_dir, key="NOPE")
-    assert await registry.add(cog) is None
+    assert await registry.add(cog) == []
     assert registry.failed["FakeGame"][0] is cog
     assert "key" in registry.failed["FakeGame"][1]
 
@@ -200,7 +201,7 @@ async def test_registry_records_a_raising_hook(web_dir, caplog):
             raise RuntimeError("boom")
 
     registry = GameRegistry(HUB_VERSION)
-    assert await registry.add(BrokenCog(web_dir)) is None
+    assert await registry.add(BrokenCog(web_dir)) == []
     assert registry.failed["FakeGame"][1] == "activityhub_game() raised RuntimeError: boom"
     assert "boom" in caplog.text
 
@@ -208,8 +209,8 @@ async def test_registry_records_a_raising_hook(web_dir, caplog):
 @pytest.mark.asyncio
 async def test_first_cog_keeps_a_duplicate_key(web_dir):
     registry = GameRegistry(HUB_VERSION)
-    first = await registry.add(GameCog(web_dir, cog_name="First"))
-    assert await registry.add(GameCog(web_dir, cog_name="Second")) is None
+    [first] = await registry.add(GameCog(web_dir, cog_name="First"))
+    assert await registry.add(GameCog(web_dir, cog_name="Second")) == []
     assert registry.games["fake"] is first
     assert "already used by First" in registry.failed["Second"][1]
 
@@ -712,13 +713,13 @@ async def test_economy_called_by_mistake_is_refused(web_dir):
 @pytest.mark.parametrize("requires", ["0.8", "0.8.0", "0.7.9", "0.0.1"])
 async def test_a_game_for_this_hub_or_an_older_one_registers(web_dir, requires):
     registry = GameRegistry("0.8.0")
-    assert await registry.add(GameCog(web_dir, requires=requires)) is not None
+    assert await registry.add(GameCog(web_dir, requires=requires))
 
 
 @pytest.mark.asyncio
 async def test_the_registry_refuses_a_game_for_a_newer_hub(web_dir):
     registry = GameRegistry("0.8.0")
-    assert await registry.add(GameCog(web_dir, requires="0.9.0")) is None
+    assert await registry.add(GameCog(web_dir, requires="0.9.0")) == []
     assert registry.games == {}
     assert registry.failed["FakeGame"][1].startswith("This game needs ActivityHub 0.9.0 or newer")
 
@@ -959,3 +960,134 @@ async def test_hub_buttons_only_knows_back_and_people(web_dir, value):
     with pytest.raises(GameError) as refused:
         await validate_game(GameCog(web_dir, hub_buttons=value))
     assert str(refused.value) == f'hub_buttons can only hold "back" and "people", got {value!r}'
+
+
+@pytest.mark.asyncio
+async def test_everyone_sees_a_game_with_no_visible(web_dir):
+    game = await validate_game(GameCog(web_dir))
+    assert game.visible is None and await game.visible_to(None) is True
+
+
+@pytest.mark.asyncio
+async def test_visible_must_be_an_async_def_taking_ctx(web_dir):
+    def plain(ctx):
+        return True
+
+    async def two(ctx, extra):
+        return True
+
+    async def staff(ctx):
+        return True
+
+    assert (await validate_game(GameCog(web_dir, visible=staff))).visible is staff
+    for value in (plain, True, "admin"):
+        with pytest.raises(GameError) as refused:
+            await validate_game(GameCog(web_dir, visible=value))
+        assert str(refused.value) == f"visible must be an async def that takes ctx, got {value!r}"
+    with pytest.raises(GameError) as refused:
+        await validate_game(GameCog(web_dir, visible=two))
+    assert str(refused.value) == "visible takes (ctx, extra), but the hub calls it with (ctx)."
+
+
+def hiding_game(visible):
+    return games.Game(key="secret", name="Secret", web_dir=Path("."), cog=None, visible=visible)
+
+
+@pytest.mark.asyncio
+async def test_visible_picks_who_sees_the_game():
+    async def staff(ctx):
+        return ctx.author == 1
+
+    game = hiding_game(staff)
+    assert await game.visible_to(SimpleNamespace(author=1)) is True
+    assert await game.visible_to(SimpleNamespace(author=2)) is False
+
+
+@pytest.mark.asyncio
+async def test_a_broken_visible_hides_the_game_and_is_logged_once(caplog, monkeypatch):
+    answers = []
+
+    async def visible(ctx):
+        answer = answers.pop(0)
+        if answer == "raise":
+            raise RuntimeError("boom")
+        if answer == "slow":
+            await asyncio.sleep(1)
+        return answer
+
+    monkeypatch.setattr(games, "ROOM_WAIT", 0.05)
+    game = hiding_game(visible)
+    answers.extend(["raise", "slow", 1, None])
+    with caplog.at_level(logging.WARNING):
+        assert [await game.visible_to(None) for _ in range(4)] == [False] * 4
+    assert caplog.text.count("secret: visible") == 1
+    assert "secret: visible failed, so the game is hidden" in caplog.text and "boom" in caplog.text
+    # An answer that works ends the quiet, so the next failure is logged again
+    caplog.clear()
+    answers.extend([True, 1, "slow"])
+    with caplog.at_level(logging.WARNING):
+        assert [await game.visible_to(None) for _ in range(3)] == [True, False, False]
+    assert caplog.text.count("secret: visible") == 1
+    assert "secret: visible returned 1, not True or False" in caplog.text
+
+
+class ManyCog:
+    """A cog that offers several activities"""
+
+    def __init__(self, folder, *entries, cog_name="Many"):
+        self.qualified_name = cog_name
+        self.folder = folder
+        self.entries = entries
+
+    async def activityhub_game(self):
+        return [{"name": "Game", "web_dir": self.folder, **entry} for entry in self.entries]
+
+
+@pytest.mark.asyncio
+async def test_a_cog_can_offer_several_activities(web_dir):
+    registry = GameRegistry(HUB_VERSION)
+    cog = ManyCog(web_dir, {"key": "shop"}, {"key": "editor", "name": "Editor"})
+    added = await registry.add(cog)
+    assert [game.key for game in added] == ["shop", "editor"] and list(registry.games) == ["shop", "editor"]
+    assert registry.games["editor"].name == "Editor" and registry.games["shop"].cog is cog
+    assert registry.failed == {}
+    registry.remove(cog)
+    assert registry.games == {}
+
+
+@pytest.mark.asyncio
+async def test_a_refused_activity_does_not_stop_the_cogs_others(web_dir):
+    registry = GameRegistry(HUB_VERSION)
+    cog = ManyCog(web_dir, {"key": "shop"}, {"key": "editor", "action": {}}, {"key": "NOPE"}, {"name": "Keyless"})
+    assert [game.key for game in await registry.add(cog)] == ["shop"]
+    assert registry.failed["Many (editor)"] == (cog, "Unknown field 'action' (did you mean 'actions'?)")
+    assert registry.failed["Many (NOPE)"][1].startswith("key must be 2-32 characters")
+    assert registry.failed["Many (activity 4)"][1] == "Missing fields: key"
+    registry.remove(cog)
+    assert registry.games == {} and registry.failed == {}
+
+
+@pytest.mark.asyncio
+async def test_a_key_used_twice_by_one_cog_registers_once(web_dir):
+    registry = GameRegistry(HUB_VERSION)
+    added = await registry.add(ManyCog(web_dir, {"key": "shop", "name": "First"}, {"key": "shop", "name": "Second"}))
+    assert [game.name for game in added] == ["First"]
+    assert registry.failed["Many (shop)"][1] == "The key 'shop' is used by two activities of this cog"
+
+
+@pytest.mark.asyncio
+async def test_one_taken_key_only_refuses_that_activity(web_dir):
+    registry = GameRegistry(HUB_VERSION)
+    await registry.add(GameCog(web_dir, cog_name="First"))
+    added = await registry.add(ManyCog(web_dir, {"key": "fake"}, {"key": "shop"}))
+    assert [game.key for game in added] == ["shop"] and registry.games["fake"].cog.qualified_name == "First"
+    assert registry.failed["Many (fake)"][1] == "The key 'fake' is already used by First"
+    assert registry.clashes == {"Many (fake)": "fake"}
+
+
+@pytest.mark.asyncio
+async def test_adding_a_cog_again_replaces_its_activities_and_refusals(web_dir):
+    registry = GameRegistry(HUB_VERSION)
+    await registry.add(ManyCog(web_dir, {"key": "shop"}, {"key": "editor"}, {"key": "NOPE"}))
+    await registry.add(ManyCog(web_dir, {"key": "shop"}, {"key": "arena"}))
+    assert list(registry.games) == ["shop", "arena"] and registry.failed == {}

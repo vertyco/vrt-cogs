@@ -44,6 +44,7 @@ FIELDS = {
     "room",
     "opens_in",
     "hub_buttons",
+    "visible",
 }
 REQUIRED = ("key", "name", "web_dir")
 # The most characters a game's currency line can have, so the badge fits a card on a phone
@@ -57,7 +58,7 @@ ROOMS = ("window", "server", "everywhere")
 OPENS_IN = ("server", "everywhere")
 # The hub's own buttons a game can ask to have drawn over it: a way back to the menu, and the people button
 HUB_BUTTONS = ("back", "people")
-# Seconds a game's room function has to answer, since every action of that game waits on it
+# Seconds a game's room or visible function has to answer, since every action of that game waits on it
 ROOM_WAIT = 2
 SCOPE_NAME = re.compile(r"[a-z0-9_.]+")
 # These add a bot or a webhook to a server, which isn't something a player approves while logging in
@@ -112,8 +113,42 @@ class Game:
     opens_in: str = "everywhere"
     # The hub's own buttons drawn over the game, from HUB_BUTTONS. With none, the hub draws nothing over it
     hub_buttons: list[str] = field(default_factory=list)
+    # None for a game everyone sees, or an async def taking the player's ctx and returning whether they see it
+    visible: t.Callable | None = None
     # One of the games that come with the hub, which may use a hub- key and the shared arcade frame
     included: bool = False
+    # Whether the last visible answer was a failure, so a broken function is logged once and not on every request
+    visible_failed: bool = field(default=False, repr=False, compare=False)
+
+    async def visible_to(self, ctx: ActivityContext) -> bool:
+        """
+        Whether this player may see and use the game. A visible function that fails, is slow or answers something
+        other than True or False hides the game from them
+        """
+        if self.visible is None:
+            return True
+        problem, error = "", None
+        try:
+            answer = await asyncio.wait_for(self.visible(ctx), ROOM_WAIT)
+        except asyncio.TimeoutError:
+            problem = f"took longer than {ROOM_WAIT} seconds"
+        except Exception as e:
+            problem, error = "failed", e
+        else:
+            if isinstance(answer, bool):
+                self.visible_failed = False
+                return answer
+            problem = f"returned {answer!r}, not True or False"
+        if not self.visible_failed:
+            self.visible_failed = True
+            log.warning(
+                "%s: visible %s, so the game is hidden from every player it happens for. "
+                "This is logged once, until visible answers again",
+                self.key,
+                problem,
+                exc_info=error,
+            )
+        return False
 
     async def room_kind(self, ctx: ActivityContext) -> str:
         """
@@ -179,15 +214,26 @@ def check_requires(desc: dict, hub_version: str | None) -> None:
         )
 
 
-async def read_description(cog: t.Any, hub_version: str | None) -> dict:
+async def read_descriptions(cog: t.Any) -> list[dict]:
+    """What a cog's activityhub_game() returned, as a list with one dict for each activity the cog offers"""
     hook = cog.activityhub_game
     if not inspect.iscoroutinefunction(hook):
         raise GameError("activityhub_game must be an async def")
-    desc = await hook()
-    if isinstance(desc, (list, tuple)):
-        raise GameError(f"activityhub_game must return one dict (one game per cog), got {type(desc).__name__}")
-    if not isinstance(desc, dict):
-        raise GameError(f"activityhub_game must return a dict, got {type(desc).__name__}")
+    answer = await hook()
+    if isinstance(answer, dict):
+        return [answer]
+    if not isinstance(answer, (list, tuple)):
+        raise GameError(f"activityhub_game must return a dict, or a list of dicts, got {type(answer).__name__}")
+    if not answer:
+        raise GameError("activityhub_game returned an empty list: return a dict for each activity")
+    for entry in answer:
+        if not isinstance(entry, dict):
+            raise GameError(f"activityhub_game returned a list holding {type(entry).__name__}, not only dicts")
+    return list(answer)
+
+
+def check_fields(desc: dict, hub_version: str | None) -> None:
+    """Refuse a description with a field the hub doesn't know, or without one it needs"""
     # Before the unknown fields, which a game made for a newer hub may well have
     check_requires(desc, hub_version)
     unknown = sorted(str(name) for name in desc if name not in FIELDS)
@@ -203,7 +249,6 @@ async def read_description(cog: t.Any, hub_version: str | None) -> dict:
     missing = [name for name in REQUIRED if name not in desc]
     if missing:
         raise GameError(f"Missing fields: {', '.join(missing)}")
-    return desc
 
 
 def check_action_name(name: t.Any) -> None:
@@ -425,6 +470,13 @@ def check_hub_buttons(value: t.Any) -> list[str]:
     return list(dict.fromkeys(value))
 
 
+def check_visible(value: t.Any) -> t.Callable | None:
+    """None for a game everyone sees, or an async def the hub calls with the player's ctx"""
+    if value is None:
+        return None
+    return check_ctx_function("visible", value, f"visible must be an async def that takes ctx, got {value!r}")
+
+
 def check_picture(desc: dict, field_name: str, web_dir: Path) -> str | None:
     picture = desc.get(field_name)
     if picture is None:
@@ -478,8 +530,16 @@ def warn_about_page(key: str, web_dir: Path, html: str) -> None:
 
 
 async def validate_game(cog: t.Any, hub_version: str | None = None, included: bool = False) -> Game:
-    """Turn a cog's activityhub_game() description into a Game, or raise GameError saying what is wrong"""
-    desc = await read_description(cog, hub_version)
+    """
+    Turn a cog's activityhub_game() description into a Game, or raise GameError saying what is wrong. For a cog
+    that offers several activities, this is the first
+    """
+    return make_game(cog, (await read_descriptions(cog))[0], hub_version, included)
+
+
+def make_game(cog: t.Any, desc: dict, hub_version: str | None = None, included: bool = False) -> Game:
+    """Turn one activity's description into a Game, or raise GameError saying what is wrong"""
+    check_fields(desc, hub_version)
     key, name, description = check_text(desc, included)
     web_dir, html = check_web_dir(desc["web_dir"], cog)
     scopes = check_scopes(desc.get("scopes", []), cog)
@@ -500,6 +560,7 @@ async def validate_game(cog: t.Any, hub_version: str | None = None, included: bo
         room=check_room(desc.get("room", "window")),
         opens_in=check_opens_in(desc.get("opens_in", "everywhere")),
         hub_buttons=check_hub_buttons(desc.get("hub_buttons", [])),
+        visible=check_visible(desc.get("visible")),
         included=included,
     )
     warn_about_page(key, web_dir, html)
@@ -507,69 +568,103 @@ async def validate_game(cog: t.Any, hub_version: str | None = None, included: bo
 
 
 class GameRegistry:
-    """Games from loaded cogs by key, plus each refused cog with the reason"""
+    """Games from loaded cogs by key, plus each refused activity with the reason"""
 
     def __init__(self, hub_version: str):
         # ActivityHub's own version, which a game's "requires" is checked against
         self.hub_version = hub_version
         self.games: dict[str, Game] = {}
+        # Each refusal's cog and reason, under the name `[p]activityhub games` shows it by: the cog's name, with the
+        # activity in brackets after it when the cog offers several
         self.failed: dict[str, tuple[t.Any, str]] = {}
-        # Cog name to the key it was refused because another cog held it, so it can have another go once that frees
+        # A refusal's name to the key it was refused because another cog held it, so its cog can have another go
+        # once that frees
         self.clashes: dict[str, str] = {}
 
     async def add(
         self, cog: t.Any, still_loaded: t.Callable[[], bool] = lambda: True, included: bool = False
-    ) -> Game | None:
+    ) -> list[Game]:
         """
-        Register a cog's game. Returns None when the cog has no game, its description was refused, or
-        still_loaded() says the cog unloaded (or was replaced by a reloaded copy) while it described itself.
-        included is for the games that come with the hub, and only the hub passes it
+        Register a cog's activities, and return the ones that registered. An activity that is refused doesn't stop
+        the cog's others. Empty when the cog has none, all were refused, or still_loaded() says the cog unloaded (or
+        was replaced by a reloaded copy) while it described itself. included is for the games that come with the
+        hub, and only the hub passes it
         """
         if not hasattr(cog, "activityhub_game"):
-            return None
+            return []
         cog_name = cog.qualified_name
-        self.failed.pop(cog_name, None)
-        self.clashes.pop(cog_name, None)
-        game, reason = None, ""
+        self.forget_refusals(lambda refused: refused.qualified_name == cog_name)
+        descs, reason = [], ""
         try:
-            game = await validate_game(cog, self.hub_version, included)
+            descs = await read_descriptions(cog)
         except GameError as e:
             reason = str(e)
         except Exception as e:
             log.error("activityhub_game() of %s raised", cog_name, exc_info=e)
             reason = f"activityhub_game() raised {type(e).__name__}: {e}"
         # Checked before anything changes: an old copy finishing after its reloaded copy registered would
-        # otherwise replace the new copy's game or refusal, and then be removed itself, leaving neither
+        # otherwise replace the new copy's games or refusals, and then be removed itself, leaving neither
         if not still_loaded():
-            return None
-        if game is None:
-            return self.refuse(cog, reason)
-        holder = self.games.get(game.key)
-        if holder is not None and holder.cog.qualified_name != cog_name:
-            self.clashes[cog_name] = game.key
-            return self.refuse(cog, f"The key {game.key!r} is already used by {holder.cog.qualified_name}")
-        # A reload can add the new copy before removing the old one, so the new copy replaces
-        # whatever the same cog registered before, even under a different key
-        for old in [g for g in self.games.values() if g.cog.qualified_name == cog_name]:
-            del self.games[old.key]
-        self.games[game.key] = game
-        log.info("Registered activity %s from %s", game.key, cog_name)
-        return game
+            return []
+        if reason:
+            self.refuse(cog, cog_name, reason)
+            return []
+        games = self.checked(cog, descs, included)
+        if games:
+            # A reload can add the new copy before removing the old one, so the new copy replaces
+            # whatever the same cog registered before, even under different keys
+            for old in [g for g in self.games.values() if g.cog.qualified_name == cog_name]:
+                del self.games[old.key]
+        for game in games:
+            self.games[game.key] = game
+            log.info("Registered activity %s from %s", game.key, cog_name)
+        return games
 
-    def refuse(self, cog: t.Any, reason: str) -> None:
-        log.warning("Skipped the activity from %s: %s", cog.qualified_name, reason)
-        self.failed[cog.qualified_name] = (cog, reason)
-        return None
+    def checked(self, cog: t.Any, descs: list[dict], included: bool) -> list[Game]:
+        """The cog's activities that pass every check. Each one that doesn't is refused by itself, with its reason"""
+        cog_name = cog.qualified_name
+        games: dict[str, Game] = {}
+        for number, desc in enumerate(descs, 1):
+            label = self.label(cog_name, desc, number, len(descs))
+            try:
+                game = make_game(cog, desc, self.hub_version, included)
+            except GameError as e:
+                self.refuse(cog, label, str(e))
+                continue
+            holder = self.games.get(game.key)
+            if game.key in games:
+                self.refuse(cog, label, f"The key {game.key!r} is used by two activities of this cog")
+            elif holder is not None and holder.cog.qualified_name != cog_name:
+                self.clashes[label] = game.key
+                self.refuse(cog, label, f"The key {game.key!r} is already used by {holder.cog.qualified_name}")
+            else:
+                games[game.key] = game
+        return list(games.values())
+
+    def label(self, cog_name: str, desc: dict, number: int, count: int) -> str:
+        """The name a refusal is listed under: the cog's, plus which of its activities when it offers several"""
+        if count == 1:
+            return cog_name
+        key = desc.get("key")
+        label = f"{cog_name} ({key})" if isinstance(key, str) and key else f"{cog_name} (activity {number})"
+        # Two refused activities with the same key each keep their own line
+        return f"{label} #{number}" if label in self.failed else label
+
+    def refuse(self, cog: t.Any, label: str, reason: str) -> None:
+        log.warning("Skipped the activity from %s: %s", label, reason)
+        self.failed[label] = (cog, reason)
+
+    def forget_refusals(self, belongs: t.Callable[[t.Any], bool]) -> None:
+        for label in [label for label, (cog, reason) in self.failed.items() if belongs(cog)]:
+            del self.failed[label]
+            self.clashes.pop(label, None)
 
     def remove(self, cog: t.Any) -> None:
         """Forget what this exact cog object registered (a reloaded copy is a different object)"""
         for game in [g for g in self.games.values() if g.cog is cog]:
             del self.games[game.key]
             log.info("Removed activity %s", game.key)
-        entry = self.failed.get(cog.qualified_name)
-        if entry is not None and entry[0] is cog:
-            del self.failed[cog.qualified_name]
-            self.clashes.pop(cog.qualified_name, None)
+        self.forget_refusals(lambda refused: refused is cog)
 
     def scopes(self) -> list[str]:
         """Every extra Discord permission the installed games ask for"""

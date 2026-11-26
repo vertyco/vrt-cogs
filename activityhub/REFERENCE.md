@@ -19,6 +19,8 @@ async def activityhub_game(self) -> dict:
     ...
 ```
 
+It returns one dict for one game, or a list of dicts when your cog offers [several activities](#several-activities-from-one-cog).
+
 It must be an `async def`. It may await things, like reading Config. It can run while the bot is still starting, before it connects to Discord, so servers and members may not be cached yet. If it waits for something slow (for example `bot.wait_until_red_ready()`), your game appears in the menu once it returns. If anything in the dict is wrong, the hub skips your game and `[p]activityhub games` says why.
 
 These are the fields the dict can have. Any other field name is refused, so a typo can't slip through quietly. The refusal suggests the field you probably meant, or, for a game made for a newer ActivityHub, says to update ActivityHub.
@@ -41,6 +43,7 @@ These are the fields the dict can have. Any other field name is refused, so a ty
 | `room` | `str` or `async def (ctx)` | no | Who plays together on a live connection. `"window"` (the default): everyone in the same Activity window, for example the same voice channel. `"server"`: everyone in the same Discord server, whichever channel they opened the Activity in. A window outside a server (a DM call, or a server your bot isn't in) stays a room of its own. `"everywhere"`: everyone, in every server and DM. It sets `conn.room`, `conn.peers()`, `conn.broadcast()` and `ctx.room_id`. An `async def` taking the player's `ctx` returns one of the three for that player, so the choice can follow a server admin's setting or the player's own (a public mode next to a private one). The hub asks it on each new live connection and each action, and gives it 2 seconds: one that fails, is slow or answers something else puts the player in `"window"` and logs a warning. The hub's people lists and **Join** still cover only the player's own window. See [who plays together](DEVELOPERS.md#who-plays-together-room). Needs ActivityHub 0.10.0 or later: set `"requires": "0.10.0"` too, so an older hub says to update. |
 | `opens_in` | `str` | no | Where your game opens. `"everywhere"` (the default): in the bot's servers, and in DMs, group DMs and servers the bot isn't in, where `ctx.guild` is `None`. `"server"`: only in servers the bot is in. Elsewhere the menu dims your card with a "Servers only" note, the hub shows a message instead of opening your game, and your actions, raw routes and live connection refuse the player (close code `4003`). See [servers only](DEVELOPERS.md#14-discords-limits). Needs ActivityHub 0.13.0 or later: set `"requires": "0.13.0"` too. |
 | `hub_buttons` | `list[str]` | no | The hub's own buttons to draw over your game: `"back"` (a small button that takes the player back to the menu, like `backToMenu()`), `"people"` (the floating people button, for a game that doesn't place one with `hub.peopleButton()`), or both. They share one small bar in the top-right corner, below Discord's own buttons. Leaving it out means none: the hub then draws no button over your game. See [what the hub draws over your game](DEVELOPERS.md#what-the-hub-draws-over-your-game). Needs ActivityHub 0.17.0 or later: set `"requires": "0.17.0"` too. |
+| `visible` | `async def (ctx)` | no | Who may see and use your game. An `async def` taking the player's `ctx` returns `True` or `False`, for example `return ctx.author.id in STAFF`. Leaving it out means everyone. A player it says no to gets no card in the menu, no switch for it in the settings tabs, and no launch into it. Your actions, raw routes and live connection refuse them (403, close code `4003`) before your handler runs, and the people list shows nobody as playing it. With `visible`, a raw request with no login is refused too, so use `hub.fetch()`. Your page and its files stay public, like every game's. The hub asks often and gives it 2 seconds: one that fails, is slow or answers something else hides the game from that player, and logs a warning once. See [hide your game from some players](DEVELOPERS.md#hide-your-game-from-some-players-visible). Needs ActivityHub 0.19.0 or later: set `"requires": "0.19.0"` too. |
 
 Every handler (in `actions`, `socket` and `routes`) must be an `async def` that takes the arguments [the hub passes](#3-handlers). The hub checks both when your game registers, so a mistake shows up in `[p]activityhub games` right away, not when a player first presses a button. Put the method itself in the dict, `self.click`, not `self.click()`.
 
@@ -58,6 +61,38 @@ async def activityhub_game(self) -> dict:
         "actions": {"start": self.start, "finish": self.finish},
     }
 ```
+
+### Several activities from one cog
+
+Return a list of dicts, and each dict is its own activity: its own card in the menu, its own key, page, handlers and settings switch.
+
+```python
+async def activityhub_game(self) -> list[dict]:
+    return [
+        {
+            "key": "space-race",
+            "name": "Space Race",
+            "web_dir": Path(__file__).parent / "web" / "race",
+            "actions": {"start": self.start, "finish": self.finish},
+            "requires": "0.19.0",
+        },
+        {
+            "key": "space-race-editor",
+            "name": "Track Editor",
+            "web_dir": Path(__file__).parent / "web" / "editor",
+            "actions": {"save": self.save_track},
+            "visible": self.is_staff,
+            "requires": "0.19.0",
+        },
+    ]
+```
+
+- **Every field is per activity,** `requires` and `visible` included. Give each one its own `web_dir`: two activities sharing a folder would share one `index.html`.
+- **Each key must be different,** from each other and from every other cog's.
+- **One bad activity doesn't stop the others.** The hub skips the one that is wrong and loads the rest. `[p]activityhub games` lists it under Refused as `YourCog (its-key)`, with the reason.
+- **Unloading the cog removes all of them.**
+
+Needs ActivityHub 0.19.0 or later. An older hub refuses a list outright, so the cog shows none of its activities there until the bot owner updates.
 
 ## 2. `ctx`
 

@@ -34,7 +34,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.18.0"
+    __version__ = "0.19.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -170,7 +170,10 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         # Red's reload unloads a cog and then loads it again, so the holder gets a moment to come back and keep
         # its key. After that, a loaded cog refused because this one held its key gets the key, without a reload
         await asyncio.sleep(HANDOVER_DELAY)
-        for name, key in list(self.registry.clashes.items()):
-            refused = self.registry.failed.get(name)
-            if key in freed and key not in self.registry.games and refused and self.bot.get_cog(name) is refused[0]:
+        for label, key in list(self.registry.clashes.items()):
+            # Adding a cog again replaces its refusals, so one this loop already handled is gone by now
+            refused = self.registry.failed.get(label)
+            if refused is None or key not in freed or key in self.registry.games:
+                continue
+            if self.bot.get_cog(refused[0].qualified_name) is refused[0]:
                 await self.add_game(refused[0])

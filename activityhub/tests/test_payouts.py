@@ -29,7 +29,7 @@ SNAKE_DEFAULTS = {"on": False, "rate": 25, "cap": 1000, "plays": 3}
 @pytest.fixture
 def games(hub):
     for game in bundled_games(hub.scores, hub.payouts):
-        assert register(hub, game) is not None
+        assert register(hub, game)
     return hub.payouts.games
 
 

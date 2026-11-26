@@ -41,14 +41,14 @@ def hub_web(tmp_path):
 @pytest.fixture
 def demo(hub, tmp_path):
     cog = DemoCog(write_demo_web(tmp_path / "demo"))
-    assert register(hub, cog) is not None
+    assert register(hub, cog)
     return cog
 
 
 @pytest.fixture
 def second(hub, tmp_path):
     cog = DemoCog(write_demo_web(tmp_path / "second"), key="second", name="Alpha Game", cog_name="Second")
-    assert register(hub, cog) is not None
+    assert register(hub, cog)
     return cog
 
 
